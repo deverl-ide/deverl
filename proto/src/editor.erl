@@ -3,15 +3,13 @@
 
 -module(editor).
 
--export([start/1, 
-	 init/1, terminate/2,  code_change/3,
-	 handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
-
--compile(export_all).
-
+-export([start/1, init/1, terminate/2,  code_change/3,
+	       handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 -include_lib("wx/include/wx.hrl").
 -behaviour(wx_object).
+
+-define(DEFAULT_FONT_SIZE, 11).
 
 %% The record containing the State.
 -record(state, {win}).
@@ -26,12 +24,28 @@ init(Config) ->
   Panel = wxPanel:new(Parent),
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),
-  Editor = wxTextCtrl:new(Panel, 3, [{value, "This is a\nmultiline\nwxTextCtrl"},
-					  {style, ?wxDEFAULT bor ?wxTE_MULTILINE}]),
+  Editor = wxStyledTextCtrl:new(Panel),
   
-  wxSizer:add(Sizer, Editor, [{border, 8}, 
-                              {flag, ?wxALL bor ?wxEXPAND},
+  wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND},
                               {proportion, 1}]),
+                              
+                              
+  %% Editor styles
+  Font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
+  wxWindow:setFont(Editor, Font),
+  wxStyledTextCtrl:styleClearAll(Editor),
+  wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
+  wxStyledTextCtrl:setLexer(Editor, ?wxSTC_LEX_ERLANG),
+  %% Margins
+  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),
+  MW = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, "9"),
+  wxStyledTextCtrl:setMarginWidth(Editor, 0, MW*2),
+  wxStyledTextCtrl:setMarginWidth(Editor, 1, 0),
+  
+  wxStyledTextCtrl:styleSetForeground (Editor, ?wxSTC_STYLE_LINENUMBER, {75, 75, 75}),
+  wxStyledTextCtrl:styleSetBackground (Editor, ?wxSTC_STYLE_LINENUMBER, {220, 220, 220}),
+  %% Markers
+  
   
   {Panel, #state{win=Panel}}.
 
@@ -67,3 +81,11 @@ code_change(_, _, State) ->
 
 terminate(_Reason, _State) ->
     wx:destroy().
+    
+%%%%% Editor Functions %%%%%
+keywords() ->
+  KWS = ["after" "and" "andalso" "band" "begin" "bnot" 
+  "bor" "bsl" "bsr" "bxor" "case" "catch" "cond" "div" 
+  "end" "fun" "if" "let" "not" "of" "or" "orelse" 
+  "receive" "rem" "try" "when" "xor"],
+  lists:flatten([KW ++ " " || KW <- KWS]).
