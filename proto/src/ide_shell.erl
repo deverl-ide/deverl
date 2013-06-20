@@ -25,17 +25,17 @@ make_window() ->
 	
 	wxFrame:show(Frame),
 	
-	wxTextCtrl:connect(ShellTextBox, char),
+	%wxTextCtrl:connect(ShellTextBox, char),
 	
 	ShellTextBox.
 	
 loop(Function, ArgNum, ShellTextBox) ->
-	wxTextCtrl:writeText(ShellTextBox, integer_to_list(ArgNum) ++ "> "),
-	receive
-		#wx{id = 001, event = #wxKey{type = char}} ->
-			io:format("BAM")
-	end,
-	loop([], 1, ShellTextBox).
+	wxTextCtrl:writeText(ShellTextBox, integer_to_list(ArgNum) ++ "> ").
+	%receive
+	%	#wx{id = 001, event = #wxKey{type = char}} ->
+	%		io:format("BAM")
+	%end,
+	%loop([], 1, ShellTextBox).
 
 		
 	
