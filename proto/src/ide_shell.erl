@@ -11,7 +11,7 @@
 -define(PROMPT, "> ").
 
 %% The record containing the State.
--record(state, {win, textctrl, input}).
+-record(state, {win, textctrl, input, lastchar, promptcount}).
 
 start() ->
   start([]).
@@ -33,7 +33,7 @@ init(Args) ->
 	
   % The style of the text box
 	ShellTextBox = wxTextCtrl:new(Panel, ?SHELL_TEXT_BOX, [{style, ?wxDEFAULT bor ?wxTE_MULTILINE}, {size, {800, 300}}]),
-  wxTextCtrl:writeText(ShellTextBox, ?PROMPT),
+  wxTextCtrl:writeText(ShellTextBox, "1" ?PROMPT),
   wxTextCtrl:setInsertionPoint(ShellTextBox, wxTextCtrl:getLastPosition(ShellTextBox)),
   % wxWindow:setForegroundColour(ShellTextBox, ?wxWHITE),
   % wxWindow:setBackgroundColour(ShellTextBox, ?wxBLACK),
@@ -48,7 +48,7 @@ init(Args) ->
 	
 	wxTextCtrl:connect(ShellTextBox, char),
 	
-	{Frame, #state{win=Frame, textctrl=ShellTextBox, input=[]}}. %% Maintained at server
+	{Frame, #state{win=Frame, textctrl=ShellTextBox, input=[], promptcount=1}}. %% Maintained at server
 	
 %%%%% Callbacks %%%%%
 %% These are all called from the server %%
@@ -75,28 +75,34 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame, input=Input}) ->
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State};
 %% This is executed where char events are handled
-%% First, deal with the the case where the user enters a full stop (this will need to be combined with the enter key)
-handle_event(#wx{event=#wxKey{type=char, keyCode=46}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) ->    %% Full stop
-    NewInput = Input ++ ".",
-    wxTextCtrl:clear(TextCtrl),
-    wxTextCtrl:writeText(TextCtrl, "You have entered:\n"),
-    wxTextCtrl:writeText(TextCtrl, NewInput),
-    {noreply, State#state{input=[]}};
+%% Deal with enter following a period
+handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, 
+             State = #state{win=Frame, textctrl = TextCtrl, input = Input, lastchar = 46}) ->  %% Enter & Full stop
+    PromptCount = State#state.promptcount + 1,
+    wxTextCtrl:writeText(TextCtrl, "\nDone."),
+    %% The collected input is now available in Input, ready to be sent to ERTS
+    wxTextCtrl:writeText(TextCtrl, get_prompt(PromptCount)),
+    {noreply, State#state{input=[], lastchar=13, promptcount=PromptCount}};
+%% Deal with ENTER
+handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+    wxTextCtrl:writeText(TextCtrl, get_prompt(State#state.promptcount)),
+    {noreply, State#state{input=Input++"\n"}};
 %% We can deal with any key as we have above (i.e. the enter key)
 %% Now just deal with any char
 handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) ->
-    %% This currently treats everything as an ascii character
+    %% This currently converts everything as an ascii character (ascii need to be filtered out)
     Key = io_lib:format("~c", [KeyCode]),
     %% Update the state
     NewInput = Input ++ Key,
-    %% Prompt again
-    wxTextCtrl:clear(TextCtrl),
-    wxTextCtrl:writeText(TextCtrl, ?PROMPT),
-    wxTextCtrl:writeText(TextCtrl, NewInput),
+    wxTextCtrl:writeText(TextCtrl, Key),
     wxTextCtrl:setInsertionPoint(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)),
-    {noreply, State#state{input=NewInput}}.
+    {noreply, State#state{input=NewInput, lastchar=KeyCode}}.
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
 
 terminate(_Reason, _State) ->
     wx:destroy().
+    
+get_prompt(Count) ->
+    I = integer_to_list(Count),
+    "\n"++I++?PROMPT.
