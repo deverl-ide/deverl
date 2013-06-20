@@ -30,14 +30,6 @@ make_window() ->
 	ShellTextBox.
 	
 loop(Function, ArgNum, ShellTextBox) ->
-<<<<<<< HEAD
-	wxTextCtrl:writeText(ShellTextBox, integer_to_list(ArgNum) ++ "> "),
-	receive
-		#wx{id = 001, event = #wxKey{type = char, keyCode = Code}} ->
-			io:format("BAM ~p~n", [Code])
-	end,
-	loop([], 1, ShellTextBox).
-=======
 	wxTextCtrl:writeText(ShellTextBox, integer_to_list(ArgNum) ++ "> ").
 	%receive
 	%	#wx{id = 001, event = #wxKey{type = char}} ->
@@ -49,4 +41,3 @@ loop(Function, ArgNum, ShellTextBox) ->
 	
 	
 	
->>>>>>> 550d34563e7002575ea1d4999622a7810015c4ad
