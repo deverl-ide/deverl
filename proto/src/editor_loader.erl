@@ -37,6 +37,7 @@ init(Options) ->
   
   wxFrame:connect(Frame, command_menu_selected),
   wxFrame:connect(Frame, close_window),
+  wxFrame:connect(Frame, key_down),
   
   load_editor([{parent, Frame}]),
   
@@ -69,14 +70,9 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
     io:format("~p Closing window ~n",[self()]),
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State};
-handle_event(#wx{id = Id},_) ->
-  case Id of
-	  ?wxID_EXIT ->
-      % wx_object:call(State#state.example, shutdown),
-	    {stop, normal, state};
-	  _ ->
-	    {noreply, state}
-  end.
+handle_event(_,State) ->
+    io:format("Event got in Frame.~n", []),
+    {noreply, State}.
 
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
