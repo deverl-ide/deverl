@@ -31,13 +31,13 @@ start(Config) ->
 init(Config) ->
   
   %% Testing events
-  wx:new(),
-  Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Main Frame", [{size,{600,400}}]),
-  Panel = wxPanel:new(Frame),
+  % wx:new(),
+  % Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Main Frame", [{size,{600,400}}]),
+  % Panel = wxPanel:new(Frame),
   %% End tests
   
-  % Parent = proplists:get_value(parent, Config),
-  % Panel = wxPanel:new(Parent),
+  Parent = proplists:get_value(parent, Config),
+  Panel = wxPanel:new(Parent),
   
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),
@@ -46,7 +46,7 @@ init(Config) ->
                               {proportion, 1}]),
   
   %% Testing events
-  wxFrame:show(Frame),                          
+  % wxFrame:show(Frame),                          
   %% End tests                
                               
   %% Editor styles
