@@ -32,12 +32,7 @@ make_window() ->
 loop(Function, ArgNum, ShellTextBox) ->
 	wxTextCtrl:writeText(ShellTextBox, integer_to_list(ArgNum) ++ "> "),
 	receive
-		#wx{id = 001, event = #wxKey{type = char}} ->
-			io:format("BAM")
+		#wx{id = 001, event = #wxKey{type = char, keyCode = Code}} ->
+			io:format("BAM ~p~n", [Code])
 	end,
 	loop([], 1, ShellTextBox).
-
-		
-	
-	
-	
