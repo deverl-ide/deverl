@@ -12,7 +12,7 @@
 -define(DEFAULT_FONT_SIZE, 11).
 
 %% Colours
--define(GREY, {125,125,125}).
+-define(GREY, {25,0,0}).
 -define(SELECTION, {200,255,255}).
 
 -define(LEFT_MARGIN_WIDTH, 6).
@@ -63,9 +63,9 @@ init(Config) ->
   %% Margins !!!!! DEFINE THESE MARGINS AS MACROS !!!!!!
   wxStyledTextCtrl:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text
   wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),
+  wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER, (?DEFAULT_FONT_SIZE - ?MARGIN_NUMBER_TEXT_REDUCTION)),
   MW = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, ?MARGIN_NUMBER_PADDING ++ "9"),
   wxStyledTextCtrl:setMarginWidth(Editor, 0, MW),
-  wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER, (?DEFAULT_FONT_SIZE - ?MARGIN_NUMBER_TEXT_REDUCTION)),
   wxStyledTextCtrl:styleSetForeground (Editor, ?wxSTC_STYLE_LINENUMBER, {75, 75, 75}),
   wxStyledTextCtrl:styleSetBackground (Editor, ?wxSTC_STYLE_LINENUMBER, {220, 220, 220}),
   
