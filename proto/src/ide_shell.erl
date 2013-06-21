@@ -2,8 +2,8 @@
 -include_lib("wx/include/wx.hrl").
 
 -export([start/0, start/1, start_link/0, start_link/1, 
-	 init/1, terminate/2,  code_change/3,
-	 handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+	     init/1, terminate/2,  code_change/3, 
+	     handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 -behaviour(wx_object).
 
@@ -14,16 +14,16 @@
 -record(state, {win, textctrl, input, lastchar, promptcount}).
 
 start() ->
-  start([]).
+	start([]).
   
 start(Args) ->
-  wx_object:start(?MODULE, Args, []).
+	wx_object:start(?MODULE, Args, []).
   
 start_link() ->
-  start_link([]).
+	start_link([]).
   
 start_link(Args) ->
-  wx_object:start_link(?MODULE, Args, []).
+	wx_object:start_link(?MODULE, Args, []).
 	
 %% Initialise the server's state
 init(Args) ->
@@ -33,8 +33,8 @@ init(Args) ->
 	
   % The style of the text box
 	ShellTextBox = wxTextCtrl:new(Panel, ?SHELL_TEXT_BOX, [{style, ?wxDEFAULT bor ?wxTE_MULTILINE}, {size, {800, 300}}]),
-  wxTextCtrl:writeText(ShellTextBox, "1" ?PROMPT),
-  wxTextCtrl:setInsertionPoint(ShellTextBox, wxTextCtrl:getLastPosition(ShellTextBox)),
+	wxTextCtrl:writeText(ShellTextBox, "1" ?PROMPT),
+	wxTextCtrl:setInsertionPoint(ShellTextBox, wxTextCtrl:getLastPosition(ShellTextBox)),
   % wxWindow:setForegroundColour(ShellTextBox, ?wxWHITE),
   % wxWindow:setBackgroundColour(ShellTextBox, ?wxBLACK),
 	wxWindow:setFont(ShellTextBox, wxFont:new(12, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
@@ -46,6 +46,7 @@ init(Args) ->
 	
 	wxFrame:show(Frame),
 	
+  % Connect listener to text box	
 	wxTextCtrl:connect(ShellTextBox, char),
 	
 	{Frame, #state{win=Frame, textctrl=ShellTextBox, input=[], promptcount=1}}. %% Maintained at server
@@ -74,19 +75,23 @@ handle_cast(Msg, State) ->
 handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame, input=Input}) ->
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State};
-%% This is executed where char events are handled
+
+%% This is executed where char events are handled.
 %% Deal with enter following a period
 handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, 
              State = #state{win=Frame, textctrl = TextCtrl, input = Input, lastchar = 46}) ->  %% Enter & Full stop
     PromptCount = State#state.promptcount + 1,
     wxTextCtrl:writeText(TextCtrl, "\nDone."),
-    %% The collected input is now available in Input, ready to be sent to ERTS
+    
+  % The collected input is now available in Input, ready to be sent to ERTS
     wxTextCtrl:writeText(TextCtrl, get_prompt(PromptCount)),
     {noreply, State#state{input=[], lastchar=13, promptcount=PromptCount}};
+    
 %% Deal with ENTER
 handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
     wxTextCtrl:writeText(TextCtrl, get_prompt(State#state.promptcount)),
     {noreply, State#state{input=Input++"\n"}};
+    
 %% We can deal with any key as we have above (i.e. the enter key)
 %% Now just deal with any char
 handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) ->
@@ -97,6 +102,7 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State = #state{win=F
     wxTextCtrl:writeText(TextCtrl, Key),
     wxTextCtrl:setInsertionPoint(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)),
     {noreply, State#state{input=NewInput, lastchar=KeyCode}}.
+    
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
 
