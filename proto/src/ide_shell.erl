@@ -95,9 +95,9 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, State = #state{win=Frame,
 %% We can deal with any key as we have above (i.e. the enter key)
 %% Now just deal with any char
 handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) ->
-    %% This currently converts everything as an ascii character (ascii need to be filtered out)
+  % This currently converts everything as an ascii character (ascii need to be filtered out)
     Key = io_lib:format("~c", [KeyCode]),
-    %% Update the state
+  % Update the state
     NewInput = Input ++ Key,
     wxTextCtrl:writeText(TextCtrl, Key),
     wxTextCtrl:setInsertionPoint(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)),
