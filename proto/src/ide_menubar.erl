@@ -1,5 +1,5 @@
 -module(ide_menubar).
--compile(export_all).
+-export([new/1]).
 -include_lib("wx/include/wx.hrl").
 
 -define(wxID_FONT, 6000).
@@ -24,8 +24,8 @@
 -define(wxID_SEARCH_DOC, 6019).
 -define(wxID_MANUAL, 6020).
 
-new() ->
-	make_menubar().
+new(Frame) ->
+	wxFrame:setMenuBar(Frame, make_menubar()).
 
 make_menubar() ->
 	MenuBar = wxMenuBar:new(),
