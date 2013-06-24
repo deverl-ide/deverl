@@ -26,31 +26,104 @@
 -define(wxID_INDENT_TABS, 6021).
 -define(wxID_INDENT_SPACES, 6022).
 
--record(state, {file, edit, view, document, wrangler, tools, help}).
+%% -record(state, {file, edit, view, document, wrangler, tools, help}).
 
 new(Frame) ->
 	wxFrame:setMenuBar(Frame, make_menubar()),
     start().
-    
+
 start() ->
-    ok.
-    
+    start([]).
+
 start(Config) ->
     wx_object:start_link(?MODULE, Config, []).
-    
-init() ->
-    ok.
-    
-start_link() ->
-    start_link([]).
-    
-start_link(Args) ->
-    ok.
-    
+
+init(Config) ->
+    wxFrame:connect(Frame, command_menu_selected),
+    ignore.
+
 %%%%% Call Backs %%%%%
-% handlers here.
-    
-    
+handle_event(#wx{event=#wxCommand{type = command_menu_select}, id = Id}, State) ->
+	case Id of
+        ?wxID_NEW ->
+            io:format("new~n");
+        ?wxID_OPEN ->
+            io:format("open~n");
+        ?wxID_SAVE ->
+            io:format("save~n");
+        ?wxID_SAVEAS ->
+            io:format("save as~n");
+        ?wxID_PRINT ->
+            io:format("print~n");
+        ?wxID_CLOSE ->
+            io:format("close~n");
+        ?wxID_CLOSE_ALL ->
+            io:format("close all~n");
+        ?wxID_EXIT ->
+            io:format("exit~n");
+        ?wxID_UNDO ->
+            io:format("undo~n");
+        ?wxID_REDO ->
+            io:format("redo~n");
+        ?wxID_CUT ->
+            io:format("cut~n");
+        ?wxID_COPY ->
+            io:format("copy~n");
+        ?wxID_PASTE ->
+            io:format("paste~n");
+        ?wxID_DELETE ->
+            io:format("delete~n");
+        ?wxID_FONT ->
+            io:format("font~n");
+        ?wxID_LN_TOGGLE ->
+            io:format("line toggle~n");
+        ?wxID_INDENT_TABS ->
+            io:format("indent tabs~n");
+        ?wxID_INDENT_SPACES ->
+            io:format("indent spaces~n");
+        ?wxID_INDENT_WIDTH ->
+            io:format("indent width~n");
+        ?wxID_FULLSCREEN ->
+            io:format("fullscreen~n");
+        ?wxID_HIDE_TEST ->
+            io:format("hide test~n");
+        ?wxID_HIDE_UTIL ->
+            io:format("hide util~n");
+        ?wxID_LINE_WRAP ->
+            io:format("line wrap~n");
+        ?wxID_AUTO_INDENT ->
+            io:format("auto indent~n");
+        ?wxID_INDENT_SELECTION ->
+            io:format("indent selection~n");
+        ?wxID_COMMENT_SELECTION ->
+            io:format("comment selection~n");
+        ?wxID_FOLD_ALL ->
+            io:format("fold all~n");
+        ?wxID_UNFOLD_ALL ->
+            io:format("unfold all~n");
+        ?wxID_COMPILE ->
+            io:format("compile~n");
+        ?wxID_RUN ->
+            io:format("run~n");
+        ?wxID_DIALYZER ->
+            io:format("run dialyzer~n");
+        ?wxID_TESTS ->
+            io:format("run tests~n");
+        ?wxID_DEBUGGER ->
+            io:format("run debugger~n");
+        ?wxID_HELP ->
+            io:format("help~n");
+        ?wxID_SHORTCUTS ->
+            io:format("shortcuts~n");
+        ?wxID_SEARCH_DOC ->
+            io:format("search doc~n");
+        ?wxID_MANUAL ->
+            io:format("manual~n");
+        ?wxID_ABOUT ->
+            io:format("about~n")
+    end,
+    {noreply, State}.
+
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
 
