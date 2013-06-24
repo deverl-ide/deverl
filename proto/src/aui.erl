@@ -30,9 +30,9 @@ init(Options) ->
   wx:new(Options),
   process_flag(trap_exit, true),
   
-  Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{600,400}}]),
+  Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{800,600}}]),
   
-  ide_menu:new(),
+  ide_menubar:new(Frame),
   
   UI = wxPanel:new(Frame, []),
   Sizer = wxBoxSizer:new(?wxVERTICAL),
@@ -47,10 +47,12 @@ init(Options) ->
   wxAuiPaneInfo:minSize(PaneInfo, {50,50}),
   wxAuiPaneInfo:paneBorder(PaneInfo),
   wxAuiPaneInfo:floatable(PaneInfo, [{b, true}]),
+  wxAuiPaneInfo:minimizeButton(PaneInfo),
   
   %% The left pane/test window
   TestWindow = wxPanel:new(UI), 
-  wxAuiManager:addPane(Manager, TestWindow, wxAuiPaneInfo:left(wxAuiPaneInfo:new(PaneInfo))),
+  wxAuiManager:addPane(Manager, TestWindow, 
+    wxAuiPaneInfo:caption(wxAuiPaneInfo:left(wxAuiPaneInfo:new(PaneInfo)), "Test Cases")),
   
   %% The centre pane/editor window
   EditorWindow = wxPanel:new(UI),
@@ -61,6 +63,7 @@ init(Options) ->
   %% The bottom pane/utility window
   UtilityWindow = wxPanel:new(UI),
   wxAuiManager:addPane(Manager, UtilityWindow, wxAuiPaneInfo:bottom(wxAuiPaneInfo:new(PaneInfo))),
+  wxAuiPaneInfo:bottomDockable(PaneInfo),
   
   wxPanel:setSizer(UI, Sizer),
   
