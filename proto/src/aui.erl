@@ -40,13 +40,13 @@ init(Options) ->
   Manager = wxAuiManager:new([{managed_wnd, UI}]),
   
   PaneInfo = wxAuiPaneInfo:new(),
-  % wxAuiPaneInfo:closeButton(PaneInfo),
+  wxAuiPaneInfo:closeButton(PaneInfo, [{visible, false}]),
   % wxAuiPaneInfo:right(PaneInfo),
-  wxAuiPaneInfo:dockable(PaneInfo, [{b, true}]),
+  % wxAuiPaneInfo:dockable(PaneInfo, [{b, false}]),
   wxAuiPaneInfo:floatingSize(PaneInfo, 300,200),
   wxAuiPaneInfo:minSize(PaneInfo, {50,50}),
-  wxAuiPaneInfo:paneBorder(PaneInfo),
-  wxAuiPaneInfo:floatable(PaneInfo, [{b, true}]),
+  % wxAuiPaneInfo:paneBorder(PaneInfo),
+  % wxAuiPaneInfo:floatable(PaneInfo, [{b, true}]),
   wxAuiPaneInfo:minimizeButton(PaneInfo, [{visible, true}]),
   wxAuiPaneInfo:bottomDockable(PaneInfo, [{b, true}]),
   
