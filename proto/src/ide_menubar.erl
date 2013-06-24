@@ -23,14 +23,16 @@
 -define(wxID_SHORTCUTS, 6018).
 -define(wxID_SEARCH_DOC, 6019).
 -define(wxID_MANUAL, 6020).
+-define(wxID_INDENT_TABS, 6021).
+-define(wxID_INDENT_SPACES, 6022).
 
 new(Frame) ->
 	wxFrame:setMenuBar(Frame, make_menubar()).
 
 make_menubar() ->
-	MenuBar = wxMenuBar:new(),
+	MenuBar     = wxMenuBar:new(),
 	
-	File     = wxMenu:new([]),
+	File        = wxMenu:new([]),
 	wxMenu:append(File, ?wxID_NEW, "New"),
 	wxMenu:append(File, ?wxID_OPEN, "Open"),
 	wxMenu:append(File, ?wxID_SEPARATOR, []),
@@ -44,7 +46,7 @@ make_menubar() ->
 	wxMenu:append(File, ?wxID_SEPARATOR, []),
 	wxMenu:append(File, ?wxID_EXIT, "Exit"),
 	
-	Edit     = wxMenu:new([]),
+	Edit        = wxMenu:new([]),
 	wxMenu:append(Edit, ?wxID_UNDO, "Undo"),
 	wxMenu:append(Edit, ?wxID_REDO, "Redo"),
 	wxMenu:append(Edit, ?wxID_SEPARATOR, []),
@@ -53,22 +55,30 @@ make_menubar() ->
 	wxMenu:append(Edit, ?wxID_PASTE, "Paste"),
 	wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
 	
-	View     = wxMenu:new([]),
+	View        = wxMenu:new([]),
 	wxMenu:append(View, ?wxID_FONT, "Font"),
 	wxMenu:append(View, ?wxID_SEPARATOR, []),
 	wxMenu:append(View, ?wxID_LN_TOGGLE, "Toggle Line Numbers", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:check(View, ?wxID_LN_TOGGLE, true),         %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
 	wxMenu:append(View, ?wxID_SEPARATOR, []),
-	wxMenu:append(View, ?wxID_INDENT_TYPE, "Indent Type"),
-	wxMenu:append(View, ?wxID_INDENT_WIDTH, "Indent Width"),
+    IndentType  = wxMenu:new([]),
+    wxMenu:appendRadioItem(IndentType, ?wxID_INDENT_TABS, "Tabs"), 
+    wxMenu:appendRadioItem(IndentType, ?wxID_INDENT_SPACES, "Spaces"), 
+	wxMenu:append(View, ?wxID_INDENT_TYPE, "Indent Type", IndentType),
+    IndentWidth = wxMenu:new([]),
+    add_tab_width(IndentWidth, 1),
+    wxMenu:check(IndentWidth, 7004, true),             %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
+	wxMenu:append(View, ?wxID_INDENT_WIDTH, "Indent Width", IndentWidth),
 	wxMenu:append(View, ?wxID_SEPARATOR, []),
 	wxMenu:append(View, ?wxID_FULLSCREEN, "Fullscreen", [{kind, ?wxITEM_CHECK}]),
 	wxMenu:append(View, ?wxID_SEPARATOR, []),
 	wxMenu:append(View, ?wxID_SHOW_HIDE_TEST, "Show/Hide Test Pane", [{kind, ?wxITEM_CHECK}]),
 	wxMenu:append(View, ?wxID_SHOW_HIDE_UTIL, "Show/Hide Utilities Pane", [{kind, ?wxITEM_CHECK}]),
 	
-	Document = wxMenu:new([]),
+	Document    = wxMenu:new([]),
 	wxMenu:append(Document, ?wxID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
 	wxMenu:append(Document, ?wxID_AUTO_INDENT, "Auto-Indent", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:check(Document, ?wxID_AUTO_INDENT, true),   %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
 	wxMenu:append(Document, ?wxID_SEPARATOR, []),
 	wxMenu:append(Document, ?wxID_INDENT_SELECTION, "Indent Selection"),
 	wxMenu:append(Document, ?wxID_COMMENT_SELECTION, "Comment Selection"),
@@ -76,10 +86,10 @@ make_menubar() ->
 	wxMenu:append(Document, ?wxID_FOLD_ALL, "Fold All"),
 	wxMenu:append(Document, ?wxID_UNFOLD_ALL, "Unfold All"),
 	
-	Wrangler = wxMenu:new([]),
+	Wrangler    = wxMenu:new([]),
 	wxMenu:append(Wrangler, 0000, "WRANGLER"),
 	
-	Tools    = wxMenu:new([]),
+	Tools       = wxMenu:new([]),
 	wxMenu:append(Tools, ?wxID_COMPILE, "Compile"),
 	wxMenu:append(Tools, ?wxID_SEPARATOR, []),
 	wxMenu:append(Tools, ?wxID_RUN, "Run Module"),
@@ -87,7 +97,7 @@ make_menubar() ->
 	wxMenu:append(Tools, ?wxID_TESTS, "Run Tests"),
 	wxMenu:append(Tools, ?wxID_DEBUGGER, "Run Debugger"),
 	
-	Help     = wxMenu:new([]),
+	Help        = wxMenu:new([]),
 	wxMenu:append(Help, ?wxID_HELP, "Help"), 
 	wxMenu:append(Help, ?wxID_SHORTCUTS, "Keyboard Shortcuts"),
 	wxMenu:append(Help, ?wxID_SEPARATOR, []),
@@ -106,3 +116,8 @@ make_menubar() ->
 	
 	MenuBar.
 	
+add_tab_width(TabMenu, 8) -> 
+    wxMenu:appendRadioItem(TabMenu, 7008, integer_to_list(8));
+add_tab_width(TabMenu, Width) ->
+    wxMenu:appendRadioItem(TabMenu, 7000 + Width, integer_to_list(Width)),
+    add_tab_width(TabMenu, Width + 1).
