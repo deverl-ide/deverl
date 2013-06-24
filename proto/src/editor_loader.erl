@@ -10,6 +10,8 @@
 
 -behaviour(wx_object).
 
+-define(MENU_WORDWRAP, 007).
+
 %% The record containing the State.
 -record(state, {win, other}).
 
@@ -33,19 +35,24 @@ init(Options) ->
   
   Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Main Frame", [{size,{600,400}}]),
   
-  % MenuBar = wxMeuBar:new([]),  
+  MenuBar = wxMenuBar:new(),  
+  Text = wxMenu:new(),
+  wxMenu:appendRadioItem(Text, ?MENU_WORDWRAP, "Wordwrap"),
+  wxMenuBar:append(MenuBar, Text, "Text"),
+  wxFrame:setMenuBar(Frame, MenuBar),
   
   wxFrame:connect(Frame, command_menu_selected),
   wxFrame:connect(Frame, close_window),
-  wxFrame:connect(Frame, key_down),
   
-  load_editor([{parent, Frame}]),
+  Server = load_editor([{parent, Frame}]), %% This server var is just for testing
+  %% !!!!! UP TO HERE -> NEED TO pass Server to the editor module: word_wrap func.
+  % io:format("w~p~n", [Server]),
   
   wxFrame:show(Frame),
   
   State = #state{win=Frame},
   
-  {Frame, State#state{other=o}}.
+  {Frame, State#state{other=Server}}.
 
 %%%%% Callbacks %%%%%
 handle_info({'EXIT',_, wx_deleted}, State) ->
@@ -70,8 +77,8 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
     io:format("~p Closing window ~n",[self()]),
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State};
-handle_event(_,State) ->
-    io:format("Event got in Frame.~n", []),
+handle_event(#wx{id = ?MENU_WORDWRAP, event=#wxCommand{type=command_menu_selected}},State) ->
+    editor:word_wrap(State#state.other),
     {noreply, State}.
 
 code_change(_, _, State) ->
@@ -82,8 +89,8 @@ terminate(_Reason, _State) ->
 
 load_editor(Parent) ->
   %% Start an editor
-  editor:start(Parent),
+  Server = editor:start(Parent),
   %% Add it to a subwindow
   
   %% Add it to a tab
-  ok.
+  Server.

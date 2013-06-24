@@ -3,6 +3,8 @@
 
 -module(editor).
 
+-export([word_wrap/1]).
+
 -export([start/1, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
@@ -24,7 +26,7 @@
 -record(state, {win, editor}).
 
 start(Config) ->
-    wx_object:start_link(?MODULE, Config, []).
+  wx_object:start_link(?MODULE, Config, []).
 
 %% init(Args) should return 
 %% {wxObject, State} | {wxObject, State, Timeout} | ignore | {stop, Reason}
@@ -123,7 +125,7 @@ handle_info(Msg, State) ->
 
 handle_call(Msg, _From, State) ->
     io:format("Got Call ~p~n",[Msg]),
-    {reply,ok,State}.
+    {reply,State#state.editor,State}.
 
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
@@ -201,3 +203,11 @@ update_style() ->
   
   %% Update the margin size (2pts smaller than text)
   ok.
+
+%% @doc Toggles wordwrap in the editor  
+word_wrap(Server) -> %% Param is the wx_object handle from the original call to start
+  io:format("WORDWRAP~n", []),
+  io:format("PID: ~p~n", [wx_object:get_pid(Server)]),
+  %% Make a call to the wx server, which call handle_call()
+  State = wx_object:call(Server, editor),
+  io:format("State: ~p~n", [State]).
