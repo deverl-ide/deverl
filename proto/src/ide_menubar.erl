@@ -1,5 +1,7 @@
 -module(ide_menubar).
 -export([new/1]).
+-export([start/0, start/1, init/1, handle_event/2, code_change/3,
+         terminate/2]).
 -include_lib("wx/include/wx.hrl").
 
 -define(wxID_FONT, 6000).
@@ -29,7 +31,7 @@
 %% -record(state, {file, edit, view, document, wrangler, tools, help}).
 
 new(Frame) ->
-	wxFrame:setMenuBar(Frame, make_menubar()),
+	wxFrame:setMenuBar(Frame, make_menubar()).
     start().
 
 start() ->
