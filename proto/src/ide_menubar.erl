@@ -81,8 +81,22 @@ handle_event(#wx{event=#wxCommand{type = command_menu_select}, id = Id}, State) 
             io:format("indent tabs~n");
         ?wxID_INDENT_SPACES ->
             io:format("indent spaces~n");
-        ?wxID_INDENT_WIDTH ->
-            io:format("indent width~n");
+        7001 ->
+            io:format("1");
+        7002 ->
+            io:format("2");
+        7003 ->
+            io:format("3");
+        7004 ->
+            io:format("4");
+        7005 ->
+            io:format("5");
+        7006 ->
+            io:format("6");
+        7007 ->
+            io:format("7");
+        7008 ->
+            io:format("8");
         ?wxID_FULLSCREEN ->
             io:format("fullscreen~n");
         ?wxID_HIDE_TEST ->
