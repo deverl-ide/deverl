@@ -61,11 +61,11 @@ make_menubar() ->
 	wxMenu:append(View, ?wxID_LN_TOGGLE, "Toggle Line Numbers", [{kind, ?wxITEM_CHECK}]),
     wxMenu:check(View, ?wxID_LN_TOGGLE, true),         %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
 	wxMenu:append(View, ?wxID_SEPARATOR, []),
-    IndentType  = wxMenu:new([]),
+    IndentType  = wxMenu:new([]),  % Submenu
     wxMenu:appendRadioItem(IndentType, ?wxID_INDENT_TABS, "Tabs"), 
     wxMenu:appendRadioItem(IndentType, ?wxID_INDENT_SPACES, "Spaces"), 
 	wxMenu:append(View, ?wxID_INDENT_TYPE, "Indent Type", IndentType),
-    IndentWidth = wxMenu:new([]),
+    IndentWidth = wxMenu:new([]),  % Submenu
     add_tab_width(IndentWidth, 1),
     wxMenu:check(IndentWidth, 7004, true),             %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
 	wxMenu:append(View, ?wxID_INDENT_WIDTH, "Indent Width", IndentWidth),
@@ -98,13 +98,13 @@ make_menubar() ->
 	wxMenu:append(Tools, ?wxID_DEBUGGER, "Run Debugger"),
 	
 	Help        = wxMenu:new([]),
-	wxMenu:append(Help, ?wxID_HELP, "Help"), 
+	wxMenu:append(Help, ?wxID_HELP, "Help"),
 	wxMenu:append(Help, ?wxID_SHORTCUTS, "Keyboard Shortcuts"),
 	wxMenu:append(Help, ?wxID_SEPARATOR, []),
 	wxMenu:append(Help, ?wxID_SEARCH_DOC, "Search Erlang API"),
 	wxMenu:append(Help, ?wxID_MANUAL, "IDE Manual"),
 	wxMenu:append(Help, ?wxID_SEPARATOR, []),
-    wxMenu:append(Help, ?wxID_ABOUT, "About"), 
+    wxMenu:append(Help, ?wxID_ABOUT, "About"),
 	
 	wxMenuBar:append(MenuBar, File, "File"),
 	wxMenuBar:append(MenuBar, Edit, "Edit"),
