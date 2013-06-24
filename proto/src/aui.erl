@@ -40,14 +40,17 @@ init(Options) ->
   Manager = wxAuiManager:new([{managed_wnd, UI}]),
   
   PaneInfo = wxAuiPaneInfo:new(),
-  wxAuiPaneInfo:closeButton(PaneInfo),
-  wxAuiPaneInfo:right(PaneInfo),
+  % wxAuiPaneInfo:closeButton(PaneInfo),
+  % wxAuiPaneInfo:right(PaneInfo),
   wxAuiPaneInfo:dockable(PaneInfo, [{b, true}]),
   wxAuiPaneInfo:floatingSize(PaneInfo, 300,200),
   wxAuiPaneInfo:minSize(PaneInfo, {50,50}),
   wxAuiPaneInfo:paneBorder(PaneInfo),
   wxAuiPaneInfo:floatable(PaneInfo, [{b, true}]),
-  wxAuiPaneInfo:minimizeButton(PaneInfo),
+  wxAuiPaneInfo:minimizeButton(PaneInfo, [{visible, true}]),
+  wxAuiPaneInfo:bottomDockable(PaneInfo, [{b, true}]),
+  
+  io:format("DOCKABLE: ~p~n", [wxAuiPaneInfo:isBottomDockable(PaneInfo)]),
   
   %% The left pane/test window
   TestWindow = wxPanel:new(UI), 
@@ -63,7 +66,7 @@ init(Options) ->
   %% The bottom pane/utility window
   UtilityWindow = wxPanel:new(UI),
   wxAuiManager:addPane(Manager, UtilityWindow, wxAuiPaneInfo:bottom(wxAuiPaneInfo:new(PaneInfo))),
-  wxAuiPaneInfo:bottomDockable(PaneInfo),
+  
   
   wxPanel:setSizer(UI, Sizer),
   
