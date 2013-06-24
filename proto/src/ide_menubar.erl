@@ -7,8 +7,8 @@
 -define(wxID_INDENT_TYPE, 6002).
 -define(wxID_INDENT_WIDTH, 6003).
 -define(wxID_FULLSCREEN, 6004).
--define(wxID_SHOW_HIDE_TEST, 6005).
--define(wxID_SHOW_HIDE_UTIL, 6006).
+-define(wxID_HIDE_TEST, 6005).
+-define(wxID_HIDE_UTIL, 6006).
 -define(wxID_LINE_WRAP, 6007).
 -define(wxID_AUTO_INDENT, 6008).
 -define(wxID_INDENT_SELECTION, 6009).
@@ -26,8 +26,36 @@
 -define(wxID_INDENT_TABS, 6021).
 -define(wxID_INDENT_SPACES, 6022).
 
+-record(state, {file, edit, view, document, wrangler, tools, help}).
+
 new(Frame) ->
-	wxFrame:setMenuBar(Frame, make_menubar()).
+	wxFrame:setMenuBar(Frame, make_menubar()),
+    start().
+    
+start() ->
+    ok.
+    
+start(Config) ->
+    wx_object:start_link(?MODULE, Config, []).
+    
+init() ->
+    ok.
+    
+start_link() ->
+    start_link([]).
+    
+start_link(Args) ->
+    ok.
+    
+%%%%% Call Backs %%%%%
+% handlers here.
+    
+    
+code_change(_, _, State) ->
+    {stop, not_yet_implemented, State}.
+
+terminate(_Reason, _State) ->
+    wx:destroy().
 
 make_menubar() ->
 	MenuBar     = wxMenuBar:new(),
@@ -66,14 +94,14 @@ make_menubar() ->
     wxMenu:appendRadioItem(IndentType, ?wxID_INDENT_SPACES, "Spaces"), 
 	wxMenu:append(View, ?wxID_INDENT_TYPE, "Indent Type", IndentType),
     IndentWidth = wxMenu:new([]),  % Submenu
-    add_tab_width(IndentWidth, 1),
+    add_tab_width_menu(IndentWidth, 1),
     wxMenu:check(IndentWidth, 7004, true),             %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
 	wxMenu:append(View, ?wxID_INDENT_WIDTH, "Indent Width", IndentWidth),
 	wxMenu:append(View, ?wxID_SEPARATOR, []),
 	wxMenu:append(View, ?wxID_FULLSCREEN, "Fullscreen", [{kind, ?wxITEM_CHECK}]),
 	wxMenu:append(View, ?wxID_SEPARATOR, []),
-	wxMenu:append(View, ?wxID_SHOW_HIDE_TEST, "Show/Hide Test Pane", [{kind, ?wxITEM_CHECK}]),
-	wxMenu:append(View, ?wxID_SHOW_HIDE_UTIL, "Show/Hide Utilities Pane", [{kind, ?wxITEM_CHECK}]),
+	wxMenu:append(View, ?wxID_HIDE_TEST, "Hide Test Pane", [{kind, ?wxITEM_CHECK}]),
+	wxMenu:append(View, ?wxID_HIDE_UTIL, "Hide Utilities Pane", [{kind, ?wxITEM_CHECK}]),
 	
 	Document    = wxMenu:new([]),
 	wxMenu:append(Document, ?wxID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
@@ -116,8 +144,8 @@ make_menubar() ->
 	
 	MenuBar.
 	
-add_tab_width(TabMenu, 8) -> 
+add_tab_width_menu(TabMenu, 8) -> 
     wxMenu:appendRadioItem(TabMenu, 7008, integer_to_list(8));
-add_tab_width(TabMenu, Width) ->
+add_tab_width_menu(TabMenu, Width) ->
     wxMenu:appendRadioItem(TabMenu, 7000 + Width, integer_to_list(Width)),
-    add_tab_width(TabMenu, Width + 1).
+    add_tab_width_menu(TabMenu, Width + 1).
