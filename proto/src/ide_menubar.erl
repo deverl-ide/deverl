@@ -1,5 +1,7 @@
 -module(ide_menubar).
 -export([new/1]).
+-export([start/0, start/1, init/1, handle_event/2, code_change/3,
+         terminate/2]).
 -include_lib("wx/include/wx.hrl").
 
 -define(wxID_FONT, 6000).
@@ -7,8 +9,8 @@
 -define(wxID_INDENT_TYPE, 6002).
 -define(wxID_INDENT_WIDTH, 6003).
 -define(wxID_FULLSCREEN, 6004).
--define(wxID_SHOW_HIDE_TEST, 6005).
--define(wxID_SHOW_HIDE_UTIL, 6006).
+-define(wxID_HIDE_TEST, 6005).
+-define(wxID_HIDE_UTIL, 6006).
 -define(wxID_LINE_WRAP, 6007).
 -define(wxID_AUTO_INDENT, 6008).
 -define(wxID_INDENT_SELECTION, 6009).
@@ -26,8 +28,123 @@
 -define(wxID_INDENT_TABS, 6021).
 -define(wxID_INDENT_SPACES, 6022).
 
+%% -record(state, {file, edit, view, document, wrangler, tools, help}).
+
 new(Frame) ->
 	wxFrame:setMenuBar(Frame, make_menubar()).
+    start().
+
+start() ->
+    start([]).
+
+start(Config) ->
+    wx_object:start_link(?MODULE, Config, []).
+
+init(Config) ->
+    wxFrame:connect(Frame, command_menu_selected),
+    ignore.
+
+%%%%% Call Backs %%%%%
+handle_event(#wx{event=#wxCommand{type = command_menu_select}, id = Id}, State) ->
+	case Id of
+        ?wxID_NEW ->
+            io:format("new~n");
+        ?wxID_OPEN ->
+            io:format("open~n");
+        ?wxID_SAVE ->
+            io:format("save~n");
+        ?wxID_SAVEAS ->
+            io:format("save as~n");
+        ?wxID_PRINT ->
+            io:format("print~n");
+        ?wxID_CLOSE ->
+            io:format("close~n");
+        ?wxID_CLOSE_ALL ->
+            io:format("close all~n");
+        ?wxID_EXIT ->
+            io:format("exit~n");
+        ?wxID_UNDO ->
+            io:format("undo~n");
+        ?wxID_REDO ->
+            io:format("redo~n");
+        ?wxID_CUT ->
+            io:format("cut~n");
+        ?wxID_COPY ->
+            io:format("copy~n");
+        ?wxID_PASTE ->
+            io:format("paste~n");
+        ?wxID_DELETE ->
+            io:format("delete~n");
+        ?wxID_FONT ->
+            io:format("font~n");
+        ?wxID_LN_TOGGLE ->
+            io:format("line toggle~n");
+        ?wxID_INDENT_TABS ->
+            io:format("indent tabs~n");
+        ?wxID_INDENT_SPACES ->
+            io:format("indent spaces~n");
+        7001 ->
+            io:format("1");
+        7002 ->
+            io:format("2");
+        7003 ->
+            io:format("3");
+        7004 ->
+            io:format("4");
+        7005 ->
+            io:format("5");
+        7006 ->
+            io:format("6");
+        7007 ->
+            io:format("7");
+        7008 ->
+            io:format("8");
+        ?wxID_FULLSCREEN ->
+            io:format("fullscreen~n");
+        ?wxID_HIDE_TEST ->
+            io:format("hide test~n");
+        ?wxID_HIDE_UTIL ->
+            io:format("hide util~n");
+        ?wxID_LINE_WRAP ->
+            io:format("line wrap~n");
+        ?wxID_AUTO_INDENT ->
+            io:format("auto indent~n");
+        ?wxID_INDENT_SELECTION ->
+            io:format("indent selection~n");
+        ?wxID_COMMENT_SELECTION ->
+            io:format("comment selection~n");
+        ?wxID_FOLD_ALL ->
+            io:format("fold all~n");
+        ?wxID_UNFOLD_ALL ->
+            io:format("unfold all~n");
+        ?wxID_COMPILE ->
+            io:format("compile~n");
+        ?wxID_RUN ->
+            io:format("run~n");
+        ?wxID_DIALYZER ->
+            io:format("run dialyzer~n");
+        ?wxID_TESTS ->
+            io:format("run tests~n");
+        ?wxID_DEBUGGER ->
+            io:format("run debugger~n");
+        ?wxID_HELP ->
+            io:format("help~n");
+        ?wxID_SHORTCUTS ->
+            io:format("shortcuts~n");
+        ?wxID_SEARCH_DOC ->
+            io:format("search doc~n");
+        ?wxID_MANUAL ->
+            io:format("manual~n");
+        ?wxID_ABOUT ->
+            io:format("about~n")
+    end,
+    {noreply, State}.
+
+code_change(_, _, State) ->
+    {stop, not_yet_implemented, State}.
+
+terminate(_Reason, _State) ->
+    wx:destroy().
 
 make_menubar() ->
 	MenuBar     = wxMenuBar:new(),
@@ -66,14 +183,14 @@ make_menubar() ->
     wxMenu:appendRadioItem(IndentType, ?wxID_INDENT_SPACES, "Spaces"), 
 	wxMenu:append(View, ?wxID_INDENT_TYPE, "Indent Type", IndentType),
     IndentWidth = wxMenu:new([]),  % Submenu
-    add_tab_width(IndentWidth, 1),
+    add_tab_width_menu(IndentWidth, 1),
     wxMenu:check(IndentWidth, 7004, true),             %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
 	wxMenu:append(View, ?wxID_INDENT_WIDTH, "Indent Width", IndentWidth),
 	wxMenu:append(View, ?wxID_SEPARATOR, []),
 	wxMenu:append(View, ?wxID_FULLSCREEN, "Fullscreen", [{kind, ?wxITEM_CHECK}]),
 	wxMenu:append(View, ?wxID_SEPARATOR, []),
-	wxMenu:append(View, ?wxID_SHOW_HIDE_TEST, "Show/Hide Test Pane", [{kind, ?wxITEM_CHECK}]),
-	wxMenu:append(View, ?wxID_SHOW_HIDE_UTIL, "Show/Hide Utilities Pane", [{kind, ?wxITEM_CHECK}]),
+	wxMenu:append(View, ?wxID_HIDE_TEST, "Hide Test Pane", [{kind, ?wxITEM_CHECK}]),
+	wxMenu:append(View, ?wxID_HIDE_UTIL, "Hide Utilities Pane", [{kind, ?wxITEM_CHECK}]),
 	
 	Document    = wxMenu:new([]),
 	wxMenu:append(Document, ?wxID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
@@ -116,8 +233,8 @@ make_menubar() ->
 	
 	MenuBar.
 	
-add_tab_width(TabMenu, 8) -> 
+add_tab_width_menu(TabMenu, 8) -> 
     wxMenu:appendRadioItem(TabMenu, 7008, integer_to_list(8));
-add_tab_width(TabMenu, Width) ->
+add_tab_width_menu(TabMenu, Width) ->
     wxMenu:appendRadioItem(TabMenu, 7000 + Width, integer_to_list(Width)),
-    add_tab_width(TabMenu, Width + 1).
+    add_tab_width_menu(TabMenu, Width + 1).
