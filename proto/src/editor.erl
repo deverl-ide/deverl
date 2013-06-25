@@ -28,28 +28,27 @@
 start(Config) ->
   wx_object:start_link(?MODULE, Config, []).
 
-%% init(Args) should return 
-%% {wxObject, State} | {wxObject, State, Timeout} | ignore | {stop, Reason}
 init(Config) ->
-  
-  %% Testing events
-  % wx:new(),
-  % Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Main Frame", [{size,{600,400}}]),
-  % Panel = wxPanel:new(Frame),
-  %% End tests
-  
   Parent = proplists:get_value(parent, Config),
-  Panel = wxPanel:new(Parent),
+  Env = proplists:get_value(env, Config),
   
+  wx:set_env(Env),
+  
+  % The following test displays the frame when set_env()/1 is set, otherwise it fails with unknown_port.
+  % spawn(fun() -> 
+  %            wx:set_env(Env),
+  %            %% Here you can do wx calls from your helper process.
+  %            Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{20,20}}]),
+  %            wxFrame:show(Frame)
+  %         end),
+  
+  Panel = wxPanel:new(Parent),
+    
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),
   Editor = wxStyledTextCtrl:new(Panel), 
   wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND},
-                              {proportion, 1}]),
-  
-  %% Testing events
-  % wxFrame:show(Frame),                          
-  %% End tests                
+                              {proportion, 1}]),           
                               
   %% Editor styles
   Font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
@@ -62,7 +61,6 @@ init(Config) ->
   wxStyledTextCtrl:setSelBackground(Editor, true, ?SELECTION),
   wxStyledTextCtrl:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
   
-  %% Margins !!!!! DEFINE THESE MARGINS AS MACROS !!!!!!
   wxStyledTextCtrl:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text
   wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),
   wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER, (?DEFAULT_FONT_SIZE - ?MARGIN_NUMBER_TEXT_REDUCTION)),

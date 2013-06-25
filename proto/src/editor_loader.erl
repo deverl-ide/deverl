@@ -77,8 +77,9 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
     io:format("~p Closing window ~n",[self()]),
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State};
-handle_event(#wx{id = ?MENU_WORDWRAP, event=#wxCommand{type=command_menu_selected}},State) ->
+handle_event(E = #wx{id = ?MENU_WORDWRAP, event=#wxCommand{type=command_menu_selected}},State) ->
     editor:word_wrap(State#state.other),
+    io:format("EVENT: ~p~n", [E]),
     {noreply, State}.
 
 code_change(_, _, State) ->
