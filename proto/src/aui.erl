@@ -23,6 +23,8 @@
 -define(DEFAULT_UTIL_HEIGHT, 200).
 -define(DEFAULT_TEST_WIDTH, 200).
 
+-define(WTF, "WHAT THE FUCK IS GOING ON").
+
 start() ->
   start([]).
   
@@ -132,7 +134,7 @@ handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, Stat
     add_editor(State#state.workspace, State#state.workspace_manager, State#state.env),
     {noreply, State};
 handle_event(#wx{event = #wxAuiNotebook{type = command_auinotebook_page_close}}, State) ->
-    io:fwrite("BOOM"),
+    io:fwrite("page closed"),
     {noreply, State};
 handle_event(A,B) ->
     io:format("~p~n~p~n", [A,B]),
