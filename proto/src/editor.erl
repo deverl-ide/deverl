@@ -26,15 +26,15 @@
 -record(state, {win, editor}).
 
 start(Config) ->
-  wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
-  % wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
+  % wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
+  wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
   % wx_object:start(?MODULE, Config, []).
 
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Env = proplists:get_value(env, Config),
   
-  % wx:set_env(Env),
+  wx:set_env(Env),
   
   % process_flag(trap_exit, true),
   
@@ -46,8 +46,8 @@ init(Config) ->
   %            wxFrame:show(Frame)
   %         end),
   
-  % Panel = wxPanel:new(Parent),
-  Panel = wxPanel:new(),
+  Panel = wxPanel:new(Parent),
+  % Panel = wxPanel:new(),
     
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),
