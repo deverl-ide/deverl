@@ -61,14 +61,13 @@ init(Options) ->
   PaneInfo = wxAuiPaneInfo:new(),
   wxAuiPaneInfo:closeButton(PaneInfo, [{visible, false}]),
   wxAuiPaneInfo:floatable(PaneInfo, [{b, false}]),
+  wxAuiPaneInfo:captionVisible(PaneInfo, [{visible, false}]),
     
   %% The left pane/test window
   TestWindow = wxPanel:new(UI),
   TestWindowPaneInfo = wxAuiPaneInfo:left(wxAuiPaneInfo:new(PaneInfo)),
-  wxAuiPaneInfo:minSize(TestWindowPaneInfo, {100,0}),
+  wxAuiPaneInfo:minSize(TestWindowPaneInfo, {200,0}),
   wxAuiPaneInfo:bestSize(TestWindowPaneInfo, {200,0}),
-  %wxAuiPaneInfo:caption(TestWindowPaneInfo,"Test Cases"),
-  wxAuiPaneInfo:captionVisible(TestWindowPaneInfo, [{visible, false}]),
   wxAuiManager:addPane(Manager, TestWindow, TestWindowPaneInfo),
   
   TestSizer = wxBoxSizer:new(?wxVERTICAL),
@@ -81,14 +80,11 @@ init(Options) ->
   EditorWindow = wxPanel:new(UI),
   EditorWindowPaneInfo = wxAuiPaneInfo:new(PaneInfo),
   wxAuiPaneInfo:centrePane(EditorWindowPaneInfo), 
-  %wxAuiPaneInfo:captionVisible(EditorWindowPaneInfo, [{visible, true}]),
-  %wxAuiPaneInfo:minimizeButton(EditorWindowPaneInfo, [{visible, true}]),
-  %wxAuiPaneInfo:maximizeButton(EditorWindowPaneInfo, [{visible, true}]),
   Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, Env, "new_file"),
   
   %% The bottom pane/utility window
   BottomPaneInfo = wxAuiPaneInfo:bottom(wxAuiPaneInfo:new(PaneInfo)),
-  wxAuiPaneInfo:minSize(BottomPaneInfo, {0,100}),
+  wxAuiPaneInfo:minSize(BottomPaneInfo, {0,200}),
   wxAuiPaneInfo:bestSize(BottomPaneInfo, {0, 200}),
   create_utils(UI, Manager, BottomPaneInfo),
 
@@ -115,8 +111,8 @@ handle_info({'EXIT',_, wx_deleted}, State) ->
 handle_info({'EXIT',_, shutdown}, State) ->
     io:format("Got Info 2~n"),
     {noreply,State};
-handle_info({'EXIT',_, normal}, State) ->
-    io:format("Got Info 3~n"),
+handle_info({'EXIT',A, normal}, State) ->
+    io:format("Got Info 3~n~p~n", [A]),
     {noreply,State};
 handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
@@ -173,7 +169,7 @@ handle_event(#wx{event = #wxAuiNotebook{type = command_auinotebook_page_close}},
     % editor:stop(),
     {noreply, State};
 handle_event(Ev = #wx{}, State) ->
-    io:format("~p\n", [Ev]),
+    io:format("aui event catchall: ~p\n", [Ev]),
     {noreply, State}.
 
 code_change(_, _, State) ->

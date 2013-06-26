@@ -26,9 +26,10 @@
 -record(state, {win, editor}).
 
 start(Config) ->
-  %wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
-  wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
-  % wx_object:start(?MODULE, Config, []).
+  % wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
+  % wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
+  wx_object:start(?MODULE, Config, []).
+  % wx_object:start_link(?MODULE, Config, []).
 
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
@@ -36,7 +37,7 @@ init(Config) ->
   
   wx:set_env(Env),
   
-  % process_flag(trap_exit, true),
+  process_flag(trap_exit, true),
   
   % The following test displays the frame when set_env()/1 is set, otherwise it fails with unknown_port.
   % spawn(fun() -> 
@@ -47,7 +48,6 @@ init(Config) ->
   %         end),
   
   Panel = wxPanel:new(Parent),
-  %Panel = wxPanel:new(),
     
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),
@@ -163,7 +163,9 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margi
         wxStyledTextCtrl:toggleFold(Editor, Ln);
       _ -> ok
     end,
-    {noreply, State}.
+    {noreply, State};
+handle_event(E,O) ->
+  io:format("editor event catchallEvent: ~p~nObject: ~p~n", [E,O]).
     
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
