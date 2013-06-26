@@ -47,10 +47,11 @@ init(Options) ->
   wx:new(Options),
 
   Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
+  wxFrame:connect(Frame, close_window),
   Env = wx:get_env(), %% The wx environment
     
   ide_menubar:new(Frame),
-  wxFrame:connect(Frame, close_window),
+  ide_toolbar:new(Frame),
   
   UI = wxPanel:new(Frame, []),
   Sizer = wxBoxSizer:new(?wxVERTICAL),
