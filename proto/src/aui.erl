@@ -66,16 +66,16 @@ init(Options) ->
   TestWindowPaneInfo = wxAuiPaneInfo:left(wxAuiPaneInfo:new(PaneInfo)),
   wxAuiPaneInfo:minSize(TestWindowPaneInfo, {100,0}),
   wxAuiPaneInfo:bestSize(TestWindowPaneInfo, {200,0}),
-  wxAuiPaneInfo:caption(TestWindowPaneInfo,"Test Cases"),
+  %wxAuiPaneInfo:caption(TestWindowPaneInfo,"Test Cases"),
   wxAuiManager:addPane(Manager, TestWindow, TestWindowPaneInfo),
   
   %% The centre pane/editor window
   EditorWindow = wxPanel:new(UI),
   EditorWindowPaneInfo = wxAuiPaneInfo:new(PaneInfo),
   wxAuiPaneInfo:centrePane(EditorWindowPaneInfo), 
-  wxAuiPaneInfo:captionVisible(EditorWindowPaneInfo, [{visible, true}]),
-  wxAuiPaneInfo:minimizeButton(EditorWindowPaneInfo, [{visible, true}]),
-  wxAuiPaneInfo:maximizeButton(EditorWindowPaneInfo, [{visible, true}]),
+  %wxAuiPaneInfo:captionVisible(EditorWindowPaneInfo, [{visible, true}]),
+  %wxAuiPaneInfo:minimizeButton(EditorWindowPaneInfo, [{visible, true}]),
+  %wxAuiPaneInfo:maximizeButton(EditorWindowPaneInfo, [{visible, true}]),
   Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, Env, "new_file"),
   
   %% The bottom pane/utility window

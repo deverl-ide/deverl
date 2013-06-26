@@ -26,7 +26,7 @@
 -record(state, {win, editor}).
 
 start(Config) ->
-  % wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
+  %wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
   % wx_object:start(?MODULE, Config, []).
 
@@ -47,7 +47,7 @@ init(Config) ->
   %         end),
   
   Panel = wxPanel:new(Parent),
-  % Panel = wxPanel:new(),
+  %Panel = wxPanel:new(),
     
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),

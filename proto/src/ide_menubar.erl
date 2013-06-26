@@ -4,29 +4,30 @@
          terminate/2]).
 -include_lib("wx/include/wx.hrl").
 
--define(wxID_FONT, 6000).
--define(wxID_LN_TOGGLE, 6001).
--define(wxID_INDENT_TYPE, 6002).
--define(wxID_INDENT_WIDTH, 6003).
--define(wxID_FULLSCREEN, 6004).
--define(wxID_HIDE_TEST, 6005).
--define(wxID_HIDE_UTIL, 6006).
--define(wxID_LINE_WRAP, 6007).
--define(wxID_AUTO_INDENT, 6008).
--define(wxID_INDENT_SELECTION, 6009).
+-define(wxID_FONT,              6000).
+-define(wxID_LN_TOGGLE,         6001).
+-define(wxID_INDENT_TYPE,       6002).
+-define(wxID_INDENT_WIDTH,      6003).
+-define(wxID_FULLSCREEN,        6004).
+-define(wxID_HIDE_TEST,         6005).
+-define(wxID_HIDE_UTIL,         6006).
+-define(wxID_LINE_WRAP,         6007).
+-define(wxID_AUTO_INDENT,       6008).
+-define(wxID_INDENT_SELECTION,  6009).
 -define(wxID_COMMENT_SELECTION, 6010).
--define(wxID_FOLD_ALL, 6011).
--define(wxID_UNFOLD_ALL, 6012).
--define(wxID_COMPILE, 6013).
--define(wxID_RUN, 6014).
--define(wxID_DIALYZER, 6015).
--define(wxID_TESTS, 6016).
--define(wxID_DEBUGGER, 6017).
--define(wxID_SHORTCUTS, 6018).
--define(wxID_SEARCH_DOC, 6019).
--define(wxID_MANUAL, 6020).
--define(wxID_INDENT_TABS, 6021).
--define(wxID_INDENT_SPACES, 6022).
+-define(wxID_FOLD_ALL,          6011).
+-define(wxID_UNFOLD_ALL,        6012).
+-define(wxID_WRANGLER,          6013).
+-define(wxID_COMPILE,           6014).
+-define(wxID_RUN,               6015).
+-define(wxID_DIALYZER,          6016).
+-define(wxID_TESTS,             6017).
+-define(wxID_DEBUGGER,          6018).
+-define(wxID_SHORTCUTS,         6019).
+-define(wxID_SEARCH_DOC,        6020).
+-define(wxID_MANUAL,            6021).
+-define(wxID_INDENT_TABS,       6022).
+-define(wxID_INDENT_SPACES,     6023).
 
 -record(state, {file, edit, view, document, wrangler, tools, help}).
 
@@ -98,7 +99,7 @@ init(Config) ->
     wxMenu:append(Document, ?wxID_UNFOLD_ALL, "Unfold All"),
   
     Wrangler    = wxMenu:new([]),
-    wxMenu:append(Wrangler, 0000, "WRANGLER"),
+    wxMenu:append(Wrangler, ?wxID_WRANGLER, "WRANGLER"),
   
     Tools       = wxMenu:new([]),
     wxMenu:append(Tools, ?wxID_COMPILE, "Compile"),
@@ -204,6 +205,8 @@ handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
             io:format("fold all~n");
         ?wxID_UNFOLD_ALL ->
             io:format("unfold all~n");
+        ?wxID_WRANGLER ->
+            io:format("wrangler~n");
         ?wxID_COMPILE ->
             io:format("compile~n");
         ?wxID_RUN ->
