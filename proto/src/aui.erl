@@ -137,6 +137,7 @@ handle_call(Msg, _From, State) ->
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
+    
 %% Window close event
 handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
     io:format("~p Closing window ~n",[self()]),
@@ -169,6 +170,7 @@ handle_event(#wx{event = #wxAuiNotebook{type = command_auinotebook_page_close}},
     io:fwrite("page closed~n"),
     % editor:stop(),
     {noreply, State};
+%% Event catchall for testing
 handle_event(Ev = #wx{}, State) ->
     io:format("aui event catchall: ~p\n", [Ev]),
     {noreply, State}.

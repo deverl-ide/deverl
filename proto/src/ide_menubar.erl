@@ -4,6 +4,7 @@
          terminate/2]).
 -include_lib("wx/include/wx.hrl").
 
+%% Menubar/toolbar macros             
 -define(wxID_FONT,              6000).
 -define(wxID_LN_TOGGLE,         6001).
 -define(wxID_INDENT_TYPE,       6002).
@@ -127,11 +128,11 @@ init(Config) ->
     wxMenuBar:append(MenuBar, Help, "Help"),
   
     wxMenuBar:connect(Frame, command_menu_selected),
-    wxFrame:setMenuBar(Frame,MenuBar),
+    wxFrame:setMenuBar(Frame, MenuBar),
     {Frame, State=#state{file=File}}. %% Not complete, obvs.
     
 %%%%% Call Backs %%%%%
-%% @doc Handles all menu events
+%% Menubar/Toolbar events
 handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
 	     State = #state{}) ->
     case Id of
@@ -228,7 +229,10 @@ handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
         ?wxID_ABOUT ->
             io:format("about~n")
     end,
-    {noreply, State}.
+    {noreply, State};
+handle_event(E,O) ->
+  io:format("TRACE: In menubar handle_event ~p~n~p~n", [E,O]),
+  {noreply, O}.
 
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
