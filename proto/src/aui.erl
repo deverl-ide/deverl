@@ -50,8 +50,7 @@ init(Options) ->
   wxFrame:connect(Frame, close_window),
   Env = wx:get_env(), %% The wx environment
     
-  ide_menubar:new(Frame),
-  ide_toolbar:new(Frame),
+  menu_toolbar:new(Frame),
   
   UI = wxPanel:new(Frame, []),
   Sizer = wxBoxSizer:new(?wxVERTICAL),
