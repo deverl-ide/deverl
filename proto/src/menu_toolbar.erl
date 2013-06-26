@@ -133,8 +133,8 @@ init(Config) ->
 %%%%%%%%%%%%%%
 %%%%%%%%%%%%%%
 
-	NewIcon = wxBitmap:new("/icons/document-new.png"),
-	io:format("~nIEIEEEUEUEIIEE ~p~n", [NewIcon]),
+	NewIcon = wxBitmap:new("document-new.icns"),
+	io:format("~nBLAAAAA ~p~n", [NewIcon]),
 
   	ToolBar = wxFrame:createToolBar(Frame, []),
 	
