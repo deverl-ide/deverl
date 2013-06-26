@@ -133,12 +133,14 @@ init(Config) ->
 %%%%%%%%%%%%%%
 %%%%%%%%%%%%%%
 
-	NewIcon = wxBitmap:new("document-new.icns"),
-	io:format("~nBLAAAAA ~p~n", [NewIcon]),
+	
+	NewIcon = wxBitmap:new("icons/document-new.png"),
+	Image = wxBitmap:convertToImage(NewIcon),
+	NewIcon2 = wxBitmap:new(Image),
 
   	ToolBar = wxFrame:createToolBar(Frame, []),
 	
-  	wxToolBar:addTool(ToolBar, ?wxID_NEW, "New", NewIcon,
+  	wxToolBar:addTool(ToolBar, ?wxID_NEW, "New", NewIcon2,
     		      [{shortHelp, "New"}]),
 
     wxToolBar:addTool(ToolBar, ?wxID_OPEN, "Open", wxArtProvider:getBitmap("wxART_FILE_OPEN"),
