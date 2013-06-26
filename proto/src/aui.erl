@@ -22,10 +22,10 @@
                 editors :: list()     %% The current open editors
                 }).
 
--define(DEFAULT_FRAME_WIDTH, 1300).
+-define(DEFAULT_FRAME_WIDTH,  1300).
 -define(DEFAULT_FRAME_HEIGHT, 731).
--define(DEFAULT_UTIL_HEIGHT, 200).
--define(DEFAULT_TEST_WIDTH, 200).
+-define(DEFAULT_UTIL_HEIGHT,  200).
+-define(DEFAULT_TEST_WIDTH,   200).
 
 start() ->
   start([]).
@@ -67,16 +67,22 @@ init(Options) ->
   TestWindowPaneInfo = wxAuiPaneInfo:left(wxAuiPaneInfo:new(PaneInfo)),
   wxAuiPaneInfo:minSize(TestWindowPaneInfo, {100,0}),
   wxAuiPaneInfo:bestSize(TestWindowPaneInfo, {200,0}),
-  wxAuiPaneInfo:caption(TestWindowPaneInfo,"Test Cases"),
+  %wxAuiPaneInfo:caption(TestWindowPaneInfo,"Test Cases"),
   wxAuiManager:addPane(Manager, TestWindow, TestWindowPaneInfo),
+  
+  TestSizer = wxBoxSizer:new(?wxVERTICAL),
+  TestT = wxTextCtrl:new(TestWindow, 8001, []), 
+  wxSizer:add(TestSizer, TestT, [{flag, ?wxEXPAND},
+                                 {proportion, 1}]),
+  wxPanel:setSizer(TestWindow, TestSizer),
   
   %% The centre pane/editor window
   EditorWindow = wxPanel:new(UI),
   EditorWindowPaneInfo = wxAuiPaneInfo:new(PaneInfo),
   wxAuiPaneInfo:centrePane(EditorWindowPaneInfo), 
-  wxAuiPaneInfo:captionVisible(EditorWindowPaneInfo, [{visible, true}]),
-  wxAuiPaneInfo:minimizeButton(EditorWindowPaneInfo, [{visible, true}]),
-  wxAuiPaneInfo:maximizeButton(EditorWindowPaneInfo, [{visible, true}]),
+  %wxAuiPaneInfo:captionVisible(EditorWindowPaneInfo, [{visible, true}]),
+  %wxAuiPaneInfo:minimizeButton(EditorWindowPaneInfo, [{visible, true}]),
+  %wxAuiPaneInfo:maximizeButton(EditorWindowPaneInfo, [{visible, true}]),
   Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, Env, "new_file"),
   
   %% The bottom pane/utility window
