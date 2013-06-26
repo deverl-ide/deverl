@@ -11,7 +11,7 @@ new(Frame) ->
     wxToolBar:addTool(ToolBar, ?wxID_OPEN, "Open", wxArtProvider:getBitmap("wxART_FILE_OPEN"),
 		      [{shortHelp, "Open"}]),
 		      
-	wxToolBar:addTool(ToolBar, ?wxID_CLOSE, "Close", wxArtProvider:getBitmap("wxART_FILE_CLOSE"),
+	wxToolBar:addTool(ToolBar, ?wxID_CLOSE, "Close", wxArtProvider:getBitmap("wxART_CROSS_MARK"),
 		      [{shortHelp, "Close"}]),
 
     wxToolBar:addSeparator(ToolBar),
