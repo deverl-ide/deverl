@@ -21,10 +21,10 @@
                 editors :: list()     %% The current open editors
                 }).
 
--define(DEFAULT_FRAME_WIDTH, 1300).
+-define(DEFAULT_FRAME_WIDTH,  1300).
 -define(DEFAULT_FRAME_HEIGHT, 731).
--define(DEFAULT_UTIL_HEIGHT, 200).
--define(DEFAULT_TEST_WIDTH, 200).
+-define(DEFAULT_UTIL_HEIGHT,  200).
+-define(DEFAULT_TEST_WIDTH,   200).
 
 start() ->
   start([]).
