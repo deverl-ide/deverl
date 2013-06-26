@@ -130,9 +130,7 @@ init(Config) ->
     {Frame, State=#state{file=File}}. %% Not complete, obvs.
     
 %%%%% Call Backs %%%%%
-handle_event(E = #wx{event = #wxCommand{type = command_menu_selected}}, State) ->
-  io:format("MENU EVENT: ~p~nSTATE: ~p~n", [E,State]),
-  {noreply, State};
+%% @doc Handles all menu events
 handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
 	     State = #state{}) ->
     case Id of

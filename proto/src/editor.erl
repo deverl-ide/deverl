@@ -3,7 +3,7 @@
 
 -module(editor).
 
--export([word_wrap/1]).
+-export([word_wrap/1, stop/0]).
 
 -export([start/1, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
@@ -26,13 +26,17 @@
 -record(state, {win, editor}).
 
 start(Config) ->
-  wx_object:start_link(?MODULE, Config, []).
+  wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
+  % wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
+  % wx_object:start(?MODULE, Config, []).
 
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Env = proplists:get_value(env, Config),
   
-  wx:set_env(Env),
+  % wx:set_env(Env),
+  
+  % process_flag(trap_exit, true),
   
   % The following test displays the frame when set_env()/1 is set, otherwise it fails with unknown_port.
   % spawn(fun() -> 
@@ -42,7 +46,8 @@ init(Config) ->
   %            wxFrame:show(Frame)
   %         end),
   
-  Panel = wxPanel:new(Parent),
+  % Panel = wxPanel:new(Parent),
+  Panel = wxPanel:new(),
     
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),
@@ -107,15 +112,19 @@ init(Config) ->
   
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, []),
-  
+    
+  process_flag(trap_exit, true),
   {Panel, #state{win=Panel, editor=Editor}}.
 
 %%%%% Callbacks %%%%%
 handle_info({'EXIT',_, wx_deleted}, State) ->
+    io:format("Got Info~n"),
     {noreply,State};
 handle_info({'EXIT',_, shutdown}, State) ->
+    io:format("Got Info~n"),
     {noreply,State};
 handle_info({'EXIT',_, normal}, State) ->
+    io:format("Got Info~n"),
     {noreply,State};
 handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
@@ -125,6 +134,8 @@ handle_call(Msg, _From, State) ->
     io:format("Got Call ~p~n",[Msg]),
     {reply,State#state.editor,State}.
 
+handle_cast(stop, State)->
+    {stop, normal, State};
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
@@ -209,3 +220,8 @@ word_wrap(Server) -> %% Param is the wx_object handle from the original call to 
   %% Make a call to the wx server, which call handle_call()
   State = wx_object:call(Server, editor),
   io:format("State: ~p~n", [State]).
+  
+stop() ->
+  io:format("Terminate~n"),
+  wx_object:cast(?MODULE, stop).
+  
