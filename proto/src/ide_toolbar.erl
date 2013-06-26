@@ -2,6 +2,8 @@
 -include_lib("wx/include/wx.hrl").
 -compile(export_all).
 
+-define(wxID_POO, 6000).
+
 new(Frame) ->
 	ToolBar = wxFrame:createToolBar(Frame, []),
 	
@@ -15,5 +17,7 @@ new(Frame) ->
 		      [{shortHelp, "Close"}]),
 
     wxToolBar:addSeparator(ToolBar),
-	
-	ToolBar.
+    
+	wxToolBar:realize(ToolBar),
+    wxFrame:setToolBar(Frame,ToolBar).
+    ok.
