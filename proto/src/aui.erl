@@ -68,10 +68,11 @@ init(Options) ->
   wxAuiPaneInfo:minSize(TestWindowPaneInfo, {100,0}),
   wxAuiPaneInfo:bestSize(TestWindowPaneInfo, {200,0}),
   %wxAuiPaneInfo:caption(TestWindowPaneInfo,"Test Cases"),
+  wxAuiPaneInfo:captionVisible(TestWindowPaneInfo, [{visible, false}]),
   wxAuiManager:addPane(Manager, TestWindow, TestWindowPaneInfo),
   
   TestSizer = wxBoxSizer:new(?wxVERTICAL),
-  TestT = wxTextCtrl:new(TestWindow, 8001, []), 
+  TestT = wxTextCtrl:new(TestWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
   wxSizer:add(TestSizer, TestT, [{flag, ?wxEXPAND},
                                  {proportion, 1}]),
   wxPanel:setSizer(TestWindow, TestSizer),
