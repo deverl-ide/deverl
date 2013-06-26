@@ -165,7 +165,8 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margi
     end,
     {noreply, State};
 handle_event(E,O) ->
-  io:format("editor event catchallEvent: ~p~nObject: ~p~n", [E,O]).
+  io:format("editor event catchallEvent: ~p~nObject: ~p~n", [E,O]),
+  {noreply, O}.
     
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.

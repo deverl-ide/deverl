@@ -19,5 +19,5 @@ new(Frame) ->
     wxToolBar:addSeparator(ToolBar),
     
 	wxToolBar:realize(ToolBar),
-    wxFrame:setToolBar(Frame,ToolBar).
+    wxFrame:setToolBar(Frame,ToolBar),
     ok.
