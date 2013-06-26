@@ -1,9 +1,10 @@
--module(ide_menubar).
+-module(menu_toolbar).
 -export([new/1]).
 -export([start/0, start/1, init/1, handle_event/2, code_change/3,
          terminate/2]).
 -include_lib("wx/include/wx.hrl").
 
+%% Menubar/toolbar macros             
 -define(wxID_FONT,              6000).
 -define(wxID_LN_TOGGLE,         6001).
 -define(wxID_INDENT_TYPE,       6002).
@@ -42,8 +43,10 @@ start(Config) ->
 
 init(Config) ->
     Frame = Config,
+    
+    %% Menubar %%
     MenuBar     = wxMenuBar:new(),
-  
+      
     File        = wxMenu:new([]),
     wxMenu:append(File, ?wxID_NEW, "New"),
     wxMenu:append(File, ?wxID_OPEN, "Open"),
@@ -125,13 +128,29 @@ init(Config) ->
     wxMenuBar:append(MenuBar, Wrangler, "Wrangler"),
     wxMenuBar:append(MenuBar, Tools, "Tools"),
     wxMenuBar:append(MenuBar, Help, "Help"),
-  
+    
+    %% Toolbar %%
+  	ToolBar = wxFrame:createToolBar(Frame, []),
+	
+  	wxToolBar:addTool(ToolBar, ?wxID_NEW, "New", wxArtProvider:getBitmap("wxART_NEW"),
+    		      [{shortHelp, "New"}]),
+
+    wxToolBar:addTool(ToolBar, ?wxID_OPEN, "Open", wxArtProvider:getBitmap("wxART_FILE_OPEN"),
+    		      [{shortHelp, "Open"}]),
+		      
+  	wxToolBar:addTool(ToolBar, ?wxID_CLOSE, "Close", wxArtProvider:getBitmap("wxART_CROSS_MARK"),
+    		      [{shortHelp, "Close"}]),
+
+    wxToolBar:addSeparator(ToolBar),
+    
+  	wxToolBar:realize(ToolBar),
+    wxFrame:setToolBar(Frame,ToolBar),  
     wxMenuBar:connect(Frame, command_menu_selected),
-    wxFrame:setMenuBar(Frame,MenuBar),
+    wxFrame:setMenuBar(Frame, MenuBar),
     {Frame, State=#state{file=File}}. %% Not complete, obvs.
     
 %%%%% Call Backs %%%%%
-%% @doc Handles all menu events
+%% Menubar/Toolbar events
 handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
 	     State = #state{}) ->
     case Id of
@@ -228,7 +247,10 @@ handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
         ?wxID_ABOUT ->
             io:format("about~n")
     end,
-    {noreply, State}.
+    {noreply, State};
+handle_event(E,O) ->
+  io:format("TRACE: In menubar handle_event ~p~n~p~n", [E,O]),
+  {noreply, O}.
 
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
