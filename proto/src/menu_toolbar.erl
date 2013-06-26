@@ -134,25 +134,45 @@ init(Config) ->
 %%%%%%%%%%%%%%
 
 	
-	NewIcon = wxBitmap:new("icons/document-new.png"),
-	Image = wxBitmap:convertToImage(NewIcon),
-	NewIcon2 = wxBitmap:new(Image),
+  % NewIcon = wxBitmap:new("icons/document-new.png"),
+  % Image = wxBitmap:convertToImage(NewIcon),
+  % NewIcon2 = wxBitmap:new(Image),
 
   	ToolBar = wxFrame:createToolBar(Frame, []),
+    wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
 	
-  	wxToolBar:addTool(ToolBar, ?wxID_NEW, "New", NewIcon2,
+              
+  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/document-properties16.png")),
     		      [{shortHelp, "New"}]),
-
-    wxToolBar:addTool(ToolBar, ?wxID_OPEN, "Open", wxArtProvider:getBitmap("wxART_FILE_OPEN"),
-    		      [{shortHelp, "Open"}]),
-		      
-  	wxToolBar:addTool(ToolBar, ?wxID_CLOSE, "Close", wxArtProvider:getBitmap("wxART_CROSS_MARK"),
-    		      [{shortHelp, "Close"}]),
-
-    wxToolBar:addSeparator(ToolBar),
+              
+  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/edit-paste16.png")),
+    		      [{shortHelp, "New"}]),
     
+  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/document-properties22.png")),
+    		      [{shortHelp, "New"}]),
+              
+  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/edit-paste22.png")),
+    		      [{shortHelp, "New"}]),
+              
+  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/document-properties24.png")),
+    		      [{shortHelp, "New"}]),
+              
+  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/edit-paste24.png")),
+    		      [{shortHelp, "New"}]),
+              
+  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/application-exit32.png")),
+    		      [{shortHelp, "New"}]),
+              
+  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/address-book-new32.png")),
+    		      [{shortHelp, "New"}]),
+              
+  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/address-book-new48.png")),
+    		      [{shortHelp, "New"}]),
+              
+  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/document-properties48.png")),
+    		      [{shortHelp, "New"}]),
   	wxToolBar:realize(ToolBar),
-    wxFrame:setToolBar(Frame,ToolBar),  
+
     wxMenuBar:connect(Frame, command_menu_selected),
     wxFrame:setMenuBar(Frame, MenuBar),
     {Frame, State=#state{file=File}}. %% Not complete, obvs.
