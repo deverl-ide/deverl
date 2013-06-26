@@ -18,6 +18,7 @@
                 env,                  %% The wx environment
                 workspace,            %% Notebook
                 workspace_manager,    %% Tabbed UI manager for editors
+                perspective,          %% The AUI user perspective
                 editors :: list()     %% The current open editors
                 }).
 
@@ -85,7 +86,10 @@ init(Options) ->
   create_utils(UI, Manager, BottomPaneInfo),
 
   wxPanel:setSizer(UI, Sizer),
-      
+  
+  wxAuiManager:connect(Manager, aui_pane_maximize, [{skip,true}]),
+  wxAuiManager:connect(Manager, aui_pane_restore, [{skip,true}]),    
+  wxAuiManager:connect(Manager, aui_render, [{skip,true}]),    
   wxAuiManager:update(Manager),
     
   wxFrame:show(Frame),
@@ -115,6 +119,7 @@ handle_call(shutdown, _From, State=#state{win=Panel, workspace_manager=Manager})
     wxAuiManager:unInit(Manager),
     wxAuiManager:destroy(Manager),
     wxPanel:destroy(Panel),
+    io:format("Right here..~n"),
     {stop, normal, ok, State};
 %% @doc Return the workspace
 handle_call(workspace, _From, State) ->
@@ -128,11 +133,26 @@ handle_call(Msg, _From, State) ->
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
-
+%% Window close event
 handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
     io:format("~p Closing window ~n",[self()]),
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State};
+%% AuiManager events
+handle_event(#wx{event = #wxAuiManager{type = aui_pane_maximize} = E}, State) ->
+    io:format("maximize"),
+    Manager = E#wxAuiManager.manager,
+    Perspective = wxAuiManager:savePerspective(Manager),
+    io:format("Perspective: ~p~n", [Perspective]),
+    {noreply, State#state{perspective = Perspective}};
+handle_event(#wx{event = #wxAuiManager{type = aui_pane_restore, manager = Man}}, State) ->
+    io:format("minimize"),
+    wxAuiManager:loadPerspective(Man, State#state.perspective),
+    {noreply, State};
+handle_event(W = #wx{event = #wxAuiManager{type = aui_render} = E}, State) ->
+    % io:format("render:~n event:~p~n", [E]),   
+    {noreply, State};
+%% AuiNotebook events
 handle_event(#wx{obj = Workspace,
 		 event = #wxAuiNotebook{type = command_auinotebook_page_changed,
 					selection = Sel}}, State) ->
@@ -143,7 +163,7 @@ handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, Stat
     {noreply, State};
 handle_event(#wx{event = #wxAuiNotebook{type = command_auinotebook_page_close}}, State) ->
     io:fwrite("page closed~n"),
-    editor:stop(),
+    % editor:stop(),
     {noreply, State};
 handle_event(Ev = #wx{}, State) ->
     io:format("~p\n", [Ev]),
@@ -198,7 +218,7 @@ create_editor(Parent, Manager, Pane, Env, Filename) ->
   wxAuiManager:addPane(Manager, Workspace, Pane),
   
   wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
-  wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, false}]),
+  wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, true}]),
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed), 
   Workspace.
   
