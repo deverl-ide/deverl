@@ -69,6 +69,12 @@ init(Options) ->
   %wxAuiPaneInfo:caption(TestWindowPaneInfo,"Test Cases"),
   wxAuiManager:addPane(Manager, TestWindow, TestWindowPaneInfo),
   
+  TestSizer = wxBoxSizer:new(?wxVERTICAL),
+  TestT = wxTextCtrl:new(TestWindow, 8001, []), 
+  wxSizer:add(TestSizer, TestT, [{flag, ?wxEXPAND},
+                                 {proportion, 1}]),
+  wxPanel:setSizer(TestWindow, TestSizer),
+  
   %% The centre pane/editor window
   EditorWindow = wxPanel:new(UI),
   EditorWindowPaneInfo = wxAuiPaneInfo:new(PaneInfo),
