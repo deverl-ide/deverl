@@ -129,10 +129,16 @@ init(Config) ->
     wxMenuBar:append(MenuBar, Tools, "Tools"),
     wxMenuBar:append(MenuBar, Help, "Help"),
     
-    %% Toolbar %%
+%%%%Toolbar %%
+%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%
+
+	NewIcon = wxBitmap:new("/icons/document-new.png"),
+	io:format("~nIEIEEEUEUEIIEE ~p~n", [NewIcon]),
+
   	ToolBar = wxFrame:createToolBar(Frame, []),
 	
-  	wxToolBar:addTool(ToolBar, ?wxID_NEW, "New", wxArtProvider:getBitmap("wxART_NEW"),
+  	wxToolBar:addTool(ToolBar, ?wxID_NEW, "New", NewIcon,
     		      [{shortHelp, "New"}]),
 
     wxToolBar:addTool(ToolBar, ?wxID_OPEN, "Open", wxArtProvider:getBitmap("wxART_FILE_OPEN"),
