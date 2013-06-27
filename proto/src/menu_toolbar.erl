@@ -134,14 +134,14 @@ init(Config) ->
   	ToolBar = wxFrame:createToolBar(Frame, []),
     wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
 	
-    Tools = [{?wxID_ANY, "ToolTip", "icons/document-new.png",   [{shortHelp, "Create a new file"}],        false},
-             {?wxID_ANY, "ToolTip", "icons/document-open.png",  [{shortHelp, "Open existing document"}],   false},
-             {?wxID_ANY, "ToolTip", "icons/document-save.png",  [{shortHelp, "Save the current file"}],    true}, 
-             {?wxID_ANY, "ToolTip", "icons/document-close.png", [{shortHelp, "Close the current file"}],   true},
-             {?wxID_ANY, "ToolTip", "icons/module-compile.png", [{shortHelp, "Compile the current file"}], false},
-             {?wxID_ANY, "ToolTip", "icons/module-run.png",     [{shortHelp, "Run the current file"}],     true},
-             {?wxID_ANY, "ToolTip", "icons/hide-test.png",      [{shortHelp, "Hide the test pane"}],       false},
-             {?wxID_ANY, "ToolTip", "icons/hide-util.png",      [{shortHelp, "Hide the utilities pane"}],  false}],
+    Tools = [{?wxID_NEW,       "ToolTip", "icons/document-new.png",   [{shortHelp, "Create a new file"}],        false},
+             {?wxID_OPEN,      "ToolTip", "icons/document-open.png",  [{shortHelp, "Open existing document"}],   false},
+             {?wxID_SAVE,      "ToolTip", "icons/document-save.png",  [{shortHelp, "Save the current file"}],    true}, 
+             {?wxID_CLOSE,     "ToolTip", "icons/document-close.png", [{shortHelp, "Close the current file"}],   true},
+             {?wxID_COMPILE,   "ToolTip", "icons/module-compile.png", [{shortHelp, "Compile the current file"}], false},
+             {?wxID_RUN,       "ToolTip", "icons/module-run.png",     [{shortHelp, "Run the current file"}],     true},
+             {?wxID_HIDE_TEST, "ToolTip", "icons/hide-test.png",      [{shortHelp, "Hide the test pane"}],       false},
+             {?wxID_HIDE_UTIL, "ToolTip", "icons/hide-util.png",      [{shortHelp, "Hide the utilities pane"}],  false}],
 	
     AddTool = fun({Id, Tooltip, Filename, Args, true}) ->
 		          wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args),
