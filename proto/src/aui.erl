@@ -54,24 +54,19 @@ init(Options) ->
   
   UI = wxPanel:new(Frame, []),
   
-  % Options = (0
-  %   bor ?wxAUI_MGR_ALLOW_FLOATING
-  %   bor ?wxAUI_MGR_ALLOW_ACTIVE_PANE
-  %   bor ?wxAUI_MGR_TRANSPARENT_DRAG
-  %   bor ?wxAUI_MGR_TRANSPARENT_HINT
-  %   bor ?wxAUI_MGR_VENETIAN_BLINDS_HINT
-  %   bor ?wxAUI_MGR_RECTANGLE_HINT
-  %   bor ?wxAUI_MGR_HINT_FADE 
-  %   bor ?wxAUI_MGR_NO_VENETIAN_BLINDS_FADE
-  %   bor ?wxAUI_MGR_LIVE_RESIZE),
+
   Manager = wxAuiManager:new([{managed_wnd, UI}, {flags, ?wxAUI_MGR_RECTANGLE_HINT bor 
                                                          ?wxAUI_MGR_TRANSPARENT_DRAG}]),
-    
+  
   %% PaneInfo - default (common) pane behaviour
   PaneInfo = wxAuiPaneInfo:new(),
   wxAuiPaneInfo:closeButton(PaneInfo, [{visible, false}]),
   wxAuiPaneInfo:floatable(PaneInfo, [{b, false}]),
   wxAuiPaneInfo:captionVisible(PaneInfo, [{visible, false}]),
+  
+  wxAuiManager:addPane(Manager, wxPanel:new(UI), wxAuiPaneInfo:top(wxAuiPaneInfo:new(PaneInfo))),
+  wxAuiManager:addPane(Manager, wxPanel:new(UI), wxAuiPaneInfo:right(wxAuiPaneInfo:new(PaneInfo))),
+  
     
   %% The centre pane/editor window
   EditorWindow = wxPanel:new(UI),
