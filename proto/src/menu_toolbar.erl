@@ -104,13 +104,13 @@ init(Config) ->
     Wrangler    = wxMenu:new([]),
     wxMenu:append(Wrangler, ?wxID_WRANGLER, "WRANGLER"),
   
-    Tools       = wxMenu:new([]),
-    wxMenu:append(Tools, ?wxID_COMPILE, "Compile"),
-    wxMenu:append(Tools, ?wxID_SEPARATOR, []),
-    wxMenu:append(Tools, ?wxID_RUN, "Run Module"),
-    wxMenu:append(Tools, ?wxID_DIALYZER, "Run Dialyzer"),
-    wxMenu:append(Tools, ?wxID_TESTS, "Run Tests"),
-    wxMenu:append(Tools, ?wxID_DEBUGGER, "Run Debugger"),
+    ToolMenu       = wxMenu:new([]),
+    wxMenu:append(ToolMenu, ?wxID_COMPILE, "Compile"),
+    wxMenu:append(ToolMenu, ?wxID_SEPARATOR, []),
+    wxMenu:append(ToolMenu, ?wxID_RUN, "Run Module"),
+    wxMenu:append(ToolMenu, ?wxID_DIALYZER, "Run Dialyzer"),
+    wxMenu:append(ToolMenu, ?wxID_TESTS, "Run Tests"),
+    wxMenu:append(ToolMenu, ?wxID_DEBUGGER, "Run Debugger"),
   
     Help        = wxMenu:new([]),
     wxMenu:append(Help, ?wxID_HELP, "Help"),
@@ -126,7 +126,7 @@ init(Config) ->
     wxMenuBar:append(MenuBar, View, "View"),
     wxMenuBar:append(MenuBar, Document, "Document"),
     wxMenuBar:append(MenuBar, Wrangler, "Wrangler"),
-    wxMenuBar:append(MenuBar, Tools, "Tools"),
+    wxMenuBar:append(MenuBar, ToolMenu, "Tools"),
     wxMenuBar:append(MenuBar, Help, "Help"),
     
 %%%%Toolbar %%
@@ -141,41 +141,29 @@ init(Config) ->
   	ToolBar = wxFrame:createToolBar(Frame, []),
     wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
 	
+    Tools = [{?wxID_ANY, "ToolTip", "icons/document-properties16.png", "Short Help"},
+             {?wxID_ANY, "ToolTip", "icons/edit-paste16.png", "Short Help"},
+             {?wxID_ANY, "ToolTip", "icons/document-properties22.png", "Short Help"},
+             {?wxID_ANY, "ToolTip", "icons/edit-paste22.png", "Short Help"},
+             {?wxID_ANY, "ToolTip", "icons/document-properties24.png", "Short Help"},
+             {?wxID_ANY, "ToolTip", "icons/edit-paste24.png", "Short Help"},
+             {?wxID_ANY, "ToolTip", "icons/application-exit32.png", "Short Help"},
+             {?wxID_ANY, "ToolTip", "icons/address-book-new32.png", "Short Help"},
+             {?wxID_ANY, "ToolTip", "icons/address-book-new48.png", "Short Help"},
+             {?wxID_ANY, "ToolTip", "icons/document-properties48.png", "Short Help"}],
+             
+     AddTool = fun({Id, Tooltip, Filename, ShHelp}) ->
+             wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), [{shortHelp, ShHelp}])
+           end,
+        
+     [AddTool(Tool) || Tool <- Tools],
               
-  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/document-properties16.png")),
-    		      [{shortHelp, "New"}]),
-              
-  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/edit-paste16.png")),
-    		      [{shortHelp, "New"}]),
-    
-  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/document-properties22.png")),
-    		      [{shortHelp, "New"}]),
-              
-  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/edit-paste22.png")),
-    		      [{shortHelp, "New"}]),
-              
-  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/document-properties24.png")),
-    		      [{shortHelp, "New"}]),
-              
-  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/edit-paste24.png")),
-    		      [{shortHelp, "New"}]),
-              
-  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/application-exit32.png")),
-    		      [{shortHelp, "New"}]),
-              
-  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/address-book-new32.png")),
-    		      [{shortHelp, "New"}]),
-              
-  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/address-book-new48.png")),
-    		      [{shortHelp, "New"}]),
-              
-  	wxToolBar:addTool(ToolBar, ?wxID_ANY, "ToolTip", wxBitmap:new(wxImage:new("icons/document-properties48.png")),
-    		      [{shortHelp, "New"}]),
-  	wxToolBar:realize(ToolBar),
+    wxToolBar:realize(ToolBar),
 
     wxMenuBar:connect(Frame, command_menu_selected),
     wxFrame:setMenuBar(Frame, MenuBar),
     {Frame, State=#state{file=File}}. %% Not complete, obvs.
+
     
 %%%%% Call Backs %%%%%
 %% Menubar/Toolbar events
