@@ -133,11 +133,6 @@ init(Config) ->
 %%%%%%%%%%%%%%
 %%%%%%%%%%%%%%
 
-	
-  % NewIcon = wxBitmap:new("icons/document-new.png"),
-  % Image = wxBitmap:convertToImage(NewIcon),
-  % NewIcon2 = wxBitmap:new(Image),
-
   	ToolBar = wxFrame:createToolBar(Frame, []),
     wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
 	
