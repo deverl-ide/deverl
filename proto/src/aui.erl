@@ -54,7 +54,18 @@ init(Options) ->
   
   UI = wxPanel:new(Frame, []),
   
-  Manager = wxAuiManager:new([{managed_wnd, UI}]),
+  % Options = (0
+  %   bor ?wxAUI_MGR_ALLOW_FLOATING
+  %   bor ?wxAUI_MGR_ALLOW_ACTIVE_PANE
+  %   bor ?wxAUI_MGR_TRANSPARENT_DRAG
+  %   bor ?wxAUI_MGR_TRANSPARENT_HINT
+  %   bor ?wxAUI_MGR_VENETIAN_BLINDS_HINT
+  %   bor ?wxAUI_MGR_RECTANGLE_HINT
+  %   bor ?wxAUI_MGR_HINT_FADE 
+  %   bor ?wxAUI_MGR_NO_VENETIAN_BLINDS_FADE
+  %   bor ?wxAUI_MGR_LIVE_RESIZE),
+  Manager = wxAuiManager:new([{managed_wnd, UI}, {flags, ?wxAUI_MGR_RECTANGLE_HINT bor 
+                                                         ?wxAUI_MGR_TRANSPARENT_DRAG}]),
     
   %% PaneInfo - default (common) pane behaviour
   PaneInfo = wxAuiPaneInfo:new(),
