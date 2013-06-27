@@ -164,7 +164,7 @@ handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
 	     State = #state{}) ->
     case Id of
         ?wxID_NEW ->
-            io:format("new~n");
+            aui:add_editor();
         ?wxID_OPEN ->
             io:format("open~n");
         ?wxID_SAVE ->
@@ -219,8 +219,11 @@ handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
             io:format("fullscreen~n");
         ?wxID_HIDE_TEST ->
             io:format("hide test~n");
+            
+            
         ?wxID_HIDE_UTIL ->
             io:format("hide util~n");
+            
         ?wxID_LINE_WRAP ->
             io:format("line wrap~n");
         ?wxID_AUTO_INDENT ->
