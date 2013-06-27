@@ -54,6 +54,7 @@ init(Options) ->
   
   UI = wxPanel:new(Frame, []),
   Sizer = wxBoxSizer:new(?wxVERTICAL),
+  wxPanel:setSizer(UI, Sizer),
   
   Manager = wxAuiManager:new([{managed_wnd, UI}]),
   
@@ -87,8 +88,6 @@ init(Options) ->
   wxAuiPaneInfo:minSize(BottomPaneInfo, {0,200}),
   wxAuiPaneInfo:bestSize(BottomPaneInfo, {0, 200}),
   create_utils(UI, Manager, BottomPaneInfo),
-
-  wxPanel:setSizer(UI, Sizer),
   
   wxAuiManager:connect(Manager, aui_pane_maximize, [{skip,true}]),
   wxAuiManager:connect(Manager, aui_pane_restore, [{skip,true}]),    
