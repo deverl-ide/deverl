@@ -63,15 +63,16 @@ init(Options) ->
   wxAuiPaneInfo:closeButton(PaneInfo, [{visible, false}]),
   wxAuiPaneInfo:floatable(PaneInfo, [{b, false}]),
   wxAuiPaneInfo:captionVisible(PaneInfo, [{visible, false}]),
+  wxAuiPaneInfo:dockable(PaneInfo, [{b, true}]),
   
-  wxAuiManager:addPane(Manager, wxPanel:new(UI), wxAuiPaneInfo:top(wxAuiPaneInfo:new(PaneInfo))),
-  wxAuiManager:addPane(Manager, wxPanel:new(UI), wxAuiPaneInfo:right(wxAuiPaneInfo:new(PaneInfo))),
+  % wxAuiManager:addPane(Manager, wxPanel:new(UI), wxAuiPaneInfo:top(wxAuiPaneInfo:new(PaneInfo))),
+  % wxAuiManager:addPane(Manager, wxPanel:new(UI), wxAuiPaneInfo:right(wxAuiPaneInfo:new(PaneInfo))),
   
     
   %% The centre pane/editor window
   EditorWindow = wxPanel:new(UI),
   EditorWindowPaneInfo = wxAuiPaneInfo:new(PaneInfo),
-  wxAuiPaneInfo:centrePane(EditorWindowPaneInfo), 
+  wxAuiPaneInfo:right(EditorWindowPaneInfo), 
   Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, Env, "new_file"),
   
   %% The left pane/test window
