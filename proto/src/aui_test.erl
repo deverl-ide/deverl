@@ -47,13 +47,32 @@ init() ->
   wxAuiPaneInfo:captionVisible(PaneInfo, [{visible, false}]),
     
   %% The centre pane/editor window
-  EditorWindow = wxPanel:new(UI),
-  wxAuiManager:addPane(Manager, EditorWindow, wxAuiPaneInfo:centrePane(PaneInfo)),
-  S1 = wxBoxSizer:new(?wxVERTICAL),
-  TestT = wxTextCtrl:new(EditorWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
-  wxSizer:add(S1, TestT, [{flag, ?wxEXPAND},
-                                 {proportion, 1}]),
-  wxPanel:setSizer(EditorWindow, S1),
+  % EditorWindow = wxPanel:new(UI),
+  % wxAuiManager:addPane(Manager, EditorWindow, wxAuiPaneInfo:centrePane(PaneInfo)),
+
+  % S1 = wxBoxSizer:new(?wxVERTICAL),
+  % TestT = wxTextCtrl:new(EditorWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
+  % wxSizer:add(S1, TestT, [{flag, ?wxEXPAND},
+  %                                {proportion, 1}]),
+  % wxPanel:setSizer(EditorWindow, S1),
+    
+  Utils = wxAuiNotebook:new(UI, []),
+  % wxPanel:add(EditorWindow, Utils),
+  wxAuiManager:addPane(Manager, Utils, wxAuiPaneInfo:centrePane(PaneInfo)),
+
+  Console = wxPanel:new(Utils, []),
+  wxAuiNotebook:addPage(Utils, Console, "Console", []),
+
+  Pman = wxPanel:new(Utils, []),
+  wxAuiNotebook:addPage(Utils, Pman, "Process Manager", []),
+
+  Dialyser = wxPanel:new(Utils, []),
+  wxAuiNotebook:addPage(Utils, Dialyser, "Dialyser", []),
+  
+  Debugger = wxPanel:new(Utils, []),
+  wxAuiNotebook:addPage(Utils, Debugger, "Debugger", []),
+
+
   
   
   
