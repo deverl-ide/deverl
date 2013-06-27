@@ -48,13 +48,14 @@ init() ->
     
   %% The centre pane/editor window
   EditorWindow = wxPanel:new(UI),
-  EditorWindowPaneInfo = wxAuiPaneInfo:new(PaneInfo),
-  wxAuiPaneInfo:centrePane(EditorWindowPaneInfo), 
+  wxAuiManager:addPane(Manager, EditorWindow, wxAuiPaneInfo:centrePane(PaneInfo)),
   S1 = wxBoxSizer:new(?wxVERTICAL),
   TestT = wxTextCtrl:new(EditorWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
   wxSizer:add(S1, TestT, [{flag, ?wxEXPAND},
                                  {proportion, 1}]),
   wxPanel:setSizer(EditorWindow, S1),
+  
+  
   
   %% The left pane/test window
   TestWindow = wxPanel:new(UI),
@@ -69,6 +70,8 @@ init() ->
                                  {proportion, 1}]),
   wxPanel:setSizer(TestWindow, TestSizer),
   
+  
+  
   %% The bottom pane/utility window
   BottomWindow = wxPanel:new(UI),
   BottomPaneInfo = wxAuiPaneInfo:bottom(wxAuiPaneInfo:new(PaneInfo)),
@@ -78,7 +81,7 @@ init() ->
   
   S2 = wxBoxSizer:new(?wxVERTICAL),
   TestT3 = wxTextCtrl:new(BottomWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
-  wxSizer:add(S1, TestT3, [{flag, ?wxEXPAND},
+  wxSizer:add(S2, TestT3, [{flag, ?wxEXPAND},
                                  {proportion, 1}]),
   wxPanel:setSizer(BottomWindow, S2),
   
