@@ -53,8 +53,6 @@ init(Options) ->
   menu_toolbar:new(Frame),
   
   UI = wxPanel:new(Frame, []),
-  Sizer = wxBoxSizer:new(?wxVERTICAL),
-  wxPanel:setSizer(UI, Sizer),
   
   Manager = wxAuiManager:new([{managed_wnd, UI}]),
     
