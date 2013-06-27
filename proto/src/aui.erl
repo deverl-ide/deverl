@@ -57,13 +57,19 @@ init(Options) ->
   wxPanel:setSizer(UI, Sizer),
   
   Manager = wxAuiManager:new([{managed_wnd, UI}]),
-  
+    
   %% PaneInfo - default (common) pane behaviour
   PaneInfo = wxAuiPaneInfo:new(),
   wxAuiPaneInfo:closeButton(PaneInfo, [{visible, false}]),
   wxAuiPaneInfo:floatable(PaneInfo, [{b, false}]),
   wxAuiPaneInfo:captionVisible(PaneInfo, [{visible, false}]),
     
+  %% The centre pane/editor window
+  EditorWindow = wxPanel:new(UI),
+  EditorWindowPaneInfo = wxAuiPaneInfo:new(PaneInfo),
+  wxAuiPaneInfo:centrePane(EditorWindowPaneInfo), 
+  Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, Env, "new_file"),
+  
   %% The left pane/test window
   TestWindow = wxPanel:new(UI),
   TestWindowPaneInfo = wxAuiPaneInfo:left(wxAuiPaneInfo:new(PaneInfo)),
@@ -76,12 +82,6 @@ init(Options) ->
   wxSizer:add(TestSizer, TestT, [{flag, ?wxEXPAND},
                                  {proportion, 1}]),
   wxPanel:setSizer(TestWindow, TestSizer),
-  
-  %% The centre pane/editor window
-  EditorWindow = wxPanel:new(UI),
-  EditorWindowPaneInfo = wxAuiPaneInfo:new(PaneInfo),
-  wxAuiPaneInfo:centrePane(EditorWindowPaneInfo), 
-  Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, Env, "new_file"),
   
   %% The bottom pane/utility window
   BottomPaneInfo = wxAuiPaneInfo:bottom(wxAuiPaneInfo:new(PaneInfo)),
