@@ -178,7 +178,7 @@ code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
 
 terminate(_Reason, _State) ->
-    io:format("aui terminate~n"),
+    io:format("aui callback: terminate~n"),
     wx:destroy().
     
 create_utils(Parent, Manager, Pane) ->
@@ -188,7 +188,6 @@ create_utils(Parent, Manager, Pane) ->
      bor ?wxAUI_NB_WINDOWLIST_BUTTON
      bor ?wxAUI_NB_TAB_MOVE
      bor ?wxAUI_NB_SCROLL_BUTTONS
-     bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
     ),
   
   Utils = wxAuiNotebook:new(Parent, [{style, Style}]),
