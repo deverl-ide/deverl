@@ -50,7 +50,11 @@ init() ->
   EditorWindow = wxPanel:new(UI),
   EditorWindowPaneInfo = wxAuiPaneInfo:new(PaneInfo),
   wxAuiPaneInfo:centrePane(EditorWindowPaneInfo), 
-  Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, Env, "new_file"),
+  S1 = wxBoxSizer:new(?wxVERTICAL),
+  TestT = wxTextCtrl:new(EditorWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
+  wxSizer:add(S1, TestT, [{flag, ?wxEXPAND},
+                                 {proportion, 1}]),
+  wxPanel:setSizer(EditorWindow, S1),
   
   %% The left pane/test window
   TestWindow = wxPanel:new(UI),
@@ -60,16 +64,28 @@ init() ->
   wxAuiManager:addPane(Manager, TestWindow, TestWindowPaneInfo),
   
   TestSizer = wxBoxSizer:new(?wxVERTICAL),
-  TestT = wxTextCtrl:new(TestWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
-  wxSizer:add(TestSizer, TestT, [{flag, ?wxEXPAND},
+  TestT2 = wxTextCtrl:new(TestWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
+  wxSizer:add(TestSizer, TestT2, [{flag, ?wxEXPAND},
                                  {proportion, 1}]),
   wxPanel:setSizer(TestWindow, TestSizer),
   
   %% The bottom pane/utility window
+  BottomWindow = wxPanel:new(UI),
   BottomPaneInfo = wxAuiPaneInfo:bottom(wxAuiPaneInfo:new(PaneInfo)),
   wxAuiPaneInfo:minSize(BottomPaneInfo, {0,200}),
   wxAuiPaneInfo:bestSize(BottomPaneInfo, {0, 200}),
-  create_utils(UI, Manager, BottomPaneInfo),
+  wxAuiManager:addPane(Manager, BottomWindow, BottomPaneInfo),
+  
+  S2 = wxBoxSizer:new(?wxVERTICAL),
+  TestT3 = wxTextCtrl:new(BottomWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
+  wxSizer:add(S1, TestT3, [{flag, ?wxEXPAND},
+                                 {proportion, 1}]),
+  wxPanel:setSizer(BottomWindow, S2),
+  
+  
+  
+  
+  
   
   wxAuiManager:connect(Manager, aui_pane_maximize, [{skip,true}]),
   wxAuiManager:connect(Manager, aui_pane_restore, [{skip,true}]),    
@@ -78,55 +94,5 @@ init() ->
     
   wxFrame:show(Frame),
   
-  process_flag(trap_exit, true),
-
-  State = #state{win=Frame},
-  {Frame, State#state{workspace=Workspace, workspace_manager=Manager}}.
-
-
-    
-create_utils(Parent, Manager, Pane) ->
-  %% Notebook styles
-  Style = (0
-     bor ?wxAUI_NB_TOP
-     bor ?wxAUI_NB_WINDOWLIST_BUTTON
-     bor ?wxAUI_NB_TAB_MOVE
-     bor ?wxAUI_NB_SCROLL_BUTTONS
-    ),
+  process_flag(trap_exit, true).
   
-  Utils = wxAuiNotebook:new(Parent, [{style, Style}]),
-
-  Console = wxPanel:new(Utils, []),
-  wxAuiNotebook:addPage(Utils, Console, "Console", []),
-
-  Pman = wxPanel:new(Utils, []),
-  wxAuiNotebook:addPage(Utils, Pman, "Process Manager", []),
-
-  Dialyser = wxPanel:new(Utils, []),
-  wxAuiNotebook:addPage(Utils, Dialyser, "Dialyser", []),
-  
-  Debugger = wxPanel:new(Utils, []),
-  wxAuiNotebook:addPage(Utils, Debugger, "Debugger", []),
-
-  wxAuiManager:addPane(Manager, Utils, Pane),
-  Utils.
-  
-create_editor(Parent, Manager, Pane, Env, Filename) ->
-  Style = (0
-     bor ?wxAUI_NB_TOP
-     bor ?wxAUI_NB_WINDOWLIST_BUTTON
-     bor ?wxAUI_NB_TAB_MOVE
-     bor ?wxAUI_NB_SCROLL_BUTTONS
-     bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
-    ),
-    
-  Workspace = wxAuiNotebook:new(Parent, [{style, Style}]),
-  Editor = editor:start([{parent, Workspace}, {env, Env}]),
-  wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
-  wxAuiManager:addPane(Manager, Workspace, Pane),
-  
-  wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
-  wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, true}]),
-  wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed), 
-  Workspace.
-
