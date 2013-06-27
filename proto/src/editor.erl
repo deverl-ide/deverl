@@ -135,6 +135,7 @@ handle_call(Msg, _From, State) ->
     {reply,State#state.editor,State}.
 
 handle_cast(stop, State)->
+    io:format("Handle cast: stop~n"),
     {stop, normal, State};
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
@@ -165,14 +166,14 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margi
     end,
     {noreply, State};
 handle_event(E,O) ->
-  io:format("editor event catchallEvent: ~p~nObject: ~p~n", [E,O]),
+  io:format("editor catchall Event: ~p~nObject: ~p~n", [E,O]),
   {noreply, O}.
     
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
 
 terminate(_Reason, _State) ->
-    wx:destroy().
+  io:format("editor callback: terminate: stop~n").
     
 %%%%% Editor Functions (Internal) %%%%%
 keywords() ->
