@@ -216,9 +216,10 @@ create_editor(Parent, Manager, Pane, Env, Filename) ->
     ),
     
   Workspace = wxAuiNotebook:new(Parent, [{style, Style}]),
+  wxAuiManager:addPane(Manager, Workspace, Pane),
   Editor = editor:start([{parent, Workspace}, {env, Env}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
-  wxAuiManager:addPane(Manager, Workspace, Pane),
+
   
   wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, true}]),
