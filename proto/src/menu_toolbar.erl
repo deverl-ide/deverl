@@ -44,7 +44,7 @@ start(Config) ->
 init(Config) ->
     Frame = Config,
     
-    %% Menubar %%
+%%%%% Menubar %%%%%
     MenuBar     = wxMenuBar:new(),
       
     File        = wxMenu:new([]),
@@ -119,7 +119,7 @@ init(Config) ->
     wxMenu:append(Help, ?wxID_SEARCH_DOC, "Search Erlang API"),
     wxMenu:append(Help, ?wxID_MANUAL, "IDE Manual"),
     wxMenu:append(Help, ?wxID_SEPARATOR, []),
-      wxMenu:append(Help, ?wxID_ABOUT, "About"),
+    wxMenu:append(Help, ?wxID_ABOUT, "About"),
   
     wxMenuBar:append(MenuBar, File, "File"),
     wxMenuBar:append(MenuBar, Edit, "Edit"),
@@ -129,37 +129,35 @@ init(Config) ->
     wxMenuBar:append(MenuBar, ToolMenu, "Tools"),
     wxMenuBar:append(MenuBar, Help, "Help"),
     
-%%%%Toolbar %%
-%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%
+%%%%% Toolbar %%%%%
 
   	ToolBar = wxFrame:createToolBar(Frame, []),
     wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
 	
-    Tools = [{?wxID_ANY, "ToolTip", "icons/document-properties16.png", "Short Help"},
-             {?wxID_ANY, "ToolTip", "icons/edit-paste16.png", "Short Help"},
-             {?wxID_ANY, "ToolTip", "icons/document-properties22.png", "Short Help"},
-             {?wxID_ANY, "ToolTip", "icons/edit-paste22.png", "Short Help"},
-             {?wxID_ANY, "ToolTip", "icons/document-properties24.png", "Short Help"},
-             {?wxID_ANY, "ToolTip", "icons/edit-paste24.png", "Short Help"},
-             {?wxID_ANY, "ToolTip", "icons/application-exit32.png", "Short Help"},
-             {?wxID_ANY, "ToolTip", "icons/address-book-new32.png", "Short Help"},
-             {?wxID_ANY, "ToolTip", "icons/address-book-new48.png", "Short Help"},
-             {?wxID_ANY, "ToolTip", "icons/document-properties48.png", "Short Help"}],
-             
-     AddTool = fun({Id, Tooltip, Filename, ShHelp}) ->
-             wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), [{shortHelp, ShHelp}])
-           end,
-        
-     [AddTool(Tool) || Tool <- Tools],
-              
+    Tools = [{?wxID_ANY, "ToolTip", "icons/document-new.png",   [{shortHelp, "Create a new file"}],        false},
+             {?wxID_ANY, "ToolTip", "icons/document-open.png",  [{shortHelp, "Open existing document"}],   false},
+             {?wxID_ANY, "ToolTip", "icons/document-save.png",  [{shortHelp, "Save the current file"}],    true}, 
+             {?wxID_ANY, "ToolTip", "icons/document-close.png", [{shortHelp, "Close the current file"}],   true},
+             {?wxID_ANY, "ToolTip", "icons/module-compile.png", [{shortHelp, "Compile the current file"}], false},
+             {?wxID_ANY, "ToolTip", "icons/module-run.png",     [{shortHelp, "Run the current file"}],     true},
+             {?wxID_ANY, "ToolTip", "icons/hide-test.png",      [{shortHelp, "Hide the test pane"}],       false},
+             {?wxID_ANY, "ToolTip", "icons/hide-util.png",      [{shortHelp, "Hide the utilities pane"}],  false}],
+	
+    AddTool = fun({Id, Tooltip, Filename, Args, true}) ->
+		          wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args),
+		          wxToolBar:addSeparator(ToolBar);
+		         ({Id, Tooltip, Filename, Args, _}) ->
+		          wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args)
+              end,       
+
+    [AddTool(Tool) || Tool <- Tools],
+
     wxToolBar:realize(ToolBar),
 
     wxMenuBar:connect(Frame, command_menu_selected),
     wxFrame:setMenuBar(Frame, MenuBar),
     {Frame, State=#state{file=File}}. %% Not complete, obvs.
 
-    
 %%%%% Call Backs %%%%%
 %% Menubar/Toolbar events
 handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
