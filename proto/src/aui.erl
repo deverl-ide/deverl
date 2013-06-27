@@ -46,13 +46,13 @@ start_link(Args) ->
 init(Options) ->
   wx:new(Options),
 
-  Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
-  wxFrame:connect(Frame, close_window),
+  UI = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
+  wxFrame:connect(UI, close_window),
   Env = wx:get_env(), %% The wx environment
     
-  menu_toolbar:new(Frame),
+  menu_toolbar:new(UI),
   
-  UI = wxPanel:new(Frame, []),
+  % UI = wxPanel:new(Frame, []),
   
 
   Manager = wxAuiManager:new([{managed_wnd, UI}, {flags, ?wxAUI_MGR_RECTANGLE_HINT bor 
@@ -95,12 +95,12 @@ init(Options) ->
   wxAuiManager:connect(Manager, aui_render, [{skip,true}]),    
   wxAuiManager:update(Manager),
     
-  wxFrame:show(Frame),
+  wxFrame:show(UI),
   
   process_flag(trap_exit, true),
 
-  State = #state{win=Frame},
-  {Frame, State#state{%%workspace=Workspace, 
+  State = #state{win=UI},
+  {UI, State#state{%%workspace=Workspace, 
                       workspace_manager=Manager,
                       env=Env}}.
 
