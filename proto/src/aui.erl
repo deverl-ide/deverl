@@ -46,13 +46,13 @@ start_link(Args) ->
 init(Options) ->
   wx:new(Options),
 
-  UI = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
-  wxFrame:connect(UI, close_window),
+  Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
+  wxFrame:connect(Frame, close_window),
   Env = wx:get_env(), %% The wx environment
     
-  menu_toolbar:new(UI),
+  menu_toolbar:new(Frame),
   
-  % UI = wxPanel:new(Frame, []),
+  UI = wxPanel:new(Frame, []),
   
 
   Manager = wxAuiManager:new([{managed_wnd, UI}, {flags, ?wxAUI_MGR_RECTANGLE_HINT bor 
@@ -60,34 +60,33 @@ init(Options) ->
   
   %% PaneInfo - default (common) pane behaviour
   PaneInfo = wxAuiPaneInfo:new(),
-  % wxAuiPaneInfo:closeButton(PaneInfo, [{visible, false}]),
-  % wxAuiPaneInfo:floatable(PaneInfo, [{b, false}]),
-  % wxAuiPaneInfo:captionVisible(PaneInfo, [{visible, false}]),
-  % wxAuiPaneInfo:dockable(PaneInfo, [{b, true}]),
-
+  wxAuiPaneInfo:closeButton(PaneInfo, [{visible, false}]),
+  wxAuiPaneInfo:floatable(PaneInfo, [{b, false}]),
+  wxAuiPaneInfo:captionVisible(PaneInfo, [{visible, false}]),
+    
   %% The centre pane/editor window
   EditorWindow = wxPanel:new(UI),
   EditorWindowPaneInfo = wxAuiPaneInfo:new(PaneInfo),
   wxAuiPaneInfo:centrePane(EditorWindowPaneInfo), 
-  % Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, Env, "new_file"),
+  Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, Env, "new_file"),
   
   %% The left pane/test window
   TestWindow = wxPanel:new(UI),
   TestWindowPaneInfo = wxAuiPaneInfo:left(wxAuiPaneInfo:new(PaneInfo)),
-  % wxAuiPaneInfo:minSize(TestWindowPaneInfo, {200,0}),
-  % wxAuiPaneInfo:bestSize(TestWindowPaneInfo, {200,0}),
+  wxAuiPaneInfo:minSize(TestWindowPaneInfo, {200,0}),
+  wxAuiPaneInfo:bestSize(TestWindowPaneInfo, {200,0}),
   wxAuiManager:addPane(Manager, TestWindow, TestWindowPaneInfo),
   
-  % TestSizer = wxBoxSizer:new(?wxVERTICAL),
-  % TestT = wxTextCtrl:new(TestWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
-  % wxSizer:add(TestSizer, TestT, [{flag, ?wxEXPAND},
-  %                                {proportion, 1}]),
-  % wxPanel:setSizer(TestWindow, TestSizer),
+  TestSizer = wxBoxSizer:new(?wxVERTICAL),
+  TestT = wxTextCtrl:new(TestWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
+  wxSizer:add(TestSizer, TestT, [{flag, ?wxEXPAND},
+                                 {proportion, 1}]),
+  wxPanel:setSizer(TestWindow, TestSizer),
   
   %% The bottom pane/utility window
   BottomPaneInfo = wxAuiPaneInfo:bottom(wxAuiPaneInfo:new(PaneInfo)),
-  % wxAuiPaneInfo:minSize(BottomPaneInfo, {0,200}),
-  % wxAuiPaneInfo:bestSize(BottomPaneInfo, {0, 200}),
+  wxAuiPaneInfo:minSize(BottomPaneInfo, {0,200}),
+  wxAuiPaneInfo:bestSize(BottomPaneInfo, {0, 200}),
   create_utils(UI, Manager, BottomPaneInfo),
   
   wxAuiManager:connect(Manager, aui_pane_maximize, [{skip,true}]),
@@ -95,12 +94,12 @@ init(Options) ->
   wxAuiManager:connect(Manager, aui_render, [{skip,true}]),    
   wxAuiManager:update(Manager),
     
-  wxFrame:show(UI),
+  wxFrame:show(Frame),
   
   process_flag(trap_exit, true),
 
-  State = #state{win=UI},
-  {UI, State#state{%%workspace=Workspace, 
+  State = #state{win=Frame},
+  {Frame, State#state{workspace=Workspace, 
                       workspace_manager=Manager,
                       env=Env}}.
 
