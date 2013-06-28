@@ -41,72 +41,71 @@ init(Config) ->
     
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),
-  Editor = wxTextCtrl:new(Panel, 09829, [{style, ?wxTE_MULTILINE}]),
-  % Editor = wxStyledTextCtrl:new(Panel), 
+  Editor = wxStyledTextCtrl:new(Panel), 
   wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND},
                               {proportion, 1}]),           
                               
-  % %% Editor styles
-  % Font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
-  % wxWindow:setFont(Editor, Font),
-  % 
-  % wxStyledTextCtrl:styleClearAll(Editor),
-  % wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
-  % wxStyledTextCtrl:setLexer(Editor, ?wxSTC_LEX_ERLANG),
-  % 
-  % wxStyledTextCtrl:setSelBackground(Editor, true, ?SELECTION),
-  % wxStyledTextCtrl:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
-  % 
-  % wxStyledTextCtrl:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text
-  % wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),
-  % wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER, (?DEFAULT_FONT_SIZE - ?MARGIN_NUMBER_TEXT_REDUCTION)),
-  % MW = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, ?MARGIN_NUMBER_PADDING ++ "9"),
-  % wxStyledTextCtrl:setMarginWidth(Editor, 0, MW),
-  % wxStyledTextCtrl:styleSetForeground (Editor, ?wxSTC_STYLE_LINENUMBER, {75, 75, 75}),
-  % wxStyledTextCtrl:styleSetBackground (Editor, ?wxSTC_STYLE_LINENUMBER, {220, 220, 220}),
-  % 
-  % update_styles(Editor, Font),
-  % 
-  % %% Add the keywords
-  % wxStyledTextCtrl:setKeyWords(Editor, 0, keywords()),
-  % 
-  % %% Folding
-  % wxStyledTextCtrl:setMarginType (Editor, 1, ?wxSTC_MARGIN_SYMBOL),
-  % wxStyledTextCtrl:setMarginWidth(Editor, 1, 8),
-  % wxStyledTextCtrl:setMarginMask (Editor, 1, ?wxSTC_MASK_FOLDERS),
-  % wxStyledTextCtrl:setMarginSensitive(Editor, 1, true), %% Makes margin sensitive to mouse clicks
-  % 
-  % wxStyledTextCtrl:setProperty(Editor, "fold", "7"),
-  % wxStyledTextCtrl:setProperty(Editor, "fold.comment", "2"),
-  % wxStyledTextCtrl:setProperty(Editor, "fold.compact", "2"),
-  % 
-  % wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDER, ?wxSTC_MARK_ARROW, 
-  %   [{foreground, ?GREY}, {background, ?GREY}]),
-  %       
-  % wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEROPEN, ?wxSTC_MARK_ARROWDOWN, 
-  %   [{foreground, ?GREY}, {background, ?GREY}]),
-  %       
-  % wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERSUB, ?wxSTC_MARK_EMPTY, 
-  %   [{foreground, ?GREY}, {background, ?GREY}]),
-  %       
-  % wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEREND, ?wxSTC_MARK_ARROW, 
-  %   [{foreground, ?GREY}, {background, ?GREY}]),
-  % 
-  % wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEROPENMID, ?wxSTC_MARK_ARROWDOWN, 
-  %   [{foreground, ?GREY}, {background, ?GREY}]),
-  %       
-  % wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERMIDTAIL, ?wxSTC_MARK_EMPTY, 
-  %   [{foreground, ?GREY}, {background, ?GREY}]),
-  %       
-  % wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERTAIL, ?wxSTC_MARK_EMPTY, 
-  %   [{foreground, ?GREY}, {background, ?GREY}]),
-  % 
-  % %% Attach events
-  % wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
-  % wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Editor}]),
-  % % wxStyledTextCtrl:connect(Editor, left_down, []),
-  %   
-  % process_flag(trap_exit, true),
+  %% Editor styles
+  Font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
+  wxWindow:setFont(Editor, Font),
+  
+  wxStyledTextCtrl:styleClearAll(Editor),
+  wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
+  wxStyledTextCtrl:setLexer(Editor, ?wxSTC_LEX_ERLANG),
+  
+  wxStyledTextCtrl:setSelBackground(Editor, true, ?SELECTION),
+  wxStyledTextCtrl:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
+  
+  wxStyledTextCtrl:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text
+  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),
+  wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER, (?DEFAULT_FONT_SIZE - ?MARGIN_NUMBER_TEXT_REDUCTION)),
+  MW = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, ?MARGIN_NUMBER_PADDING ++ "9"),
+  wxStyledTextCtrl:setMarginWidth(Editor, 0, MW),
+  wxStyledTextCtrl:styleSetForeground (Editor, ?wxSTC_STYLE_LINENUMBER, {75, 75, 75}),
+  wxStyledTextCtrl:styleSetBackground (Editor, ?wxSTC_STYLE_LINENUMBER, {220, 220, 220}),
+  
+  update_styles(Editor, Font),
+  
+  %% Add the keywords
+  wxStyledTextCtrl:setKeyWords(Editor, 0, keywords()),
+  
+  %% Folding
+  wxStyledTextCtrl:setMarginType (Editor, 1, ?wxSTC_MARGIN_SYMBOL),
+  wxStyledTextCtrl:setMarginWidth(Editor, 1, 8),
+  wxStyledTextCtrl:setMarginMask (Editor, 1, ?wxSTC_MASK_FOLDERS),
+  wxStyledTextCtrl:setMarginSensitive(Editor, 1, true), %% Makes margin sensitive to mouse clicks
+  
+  wxStyledTextCtrl:setProperty(Editor, "fold", "7"),
+  wxStyledTextCtrl:setProperty(Editor, "fold.comment", "2"),
+  wxStyledTextCtrl:setProperty(Editor, "fold.compact", "2"),
+  
+  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDER, ?wxSTC_MARK_ARROW, 
+    [{foreground, ?GREY}, {background, ?GREY}]),
+        
+  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEROPEN, ?wxSTC_MARK_ARROWDOWN, 
+    [{foreground, ?GREY}, {background, ?GREY}]),
+        
+  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERSUB, ?wxSTC_MARK_EMPTY, 
+    [{foreground, ?GREY}, {background, ?GREY}]),
+        
+  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEREND, ?wxSTC_MARK_ARROW, 
+    [{foreground, ?GREY}, {background, ?GREY}]),
+  
+  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEROPENMID, ?wxSTC_MARK_ARROWDOWN, 
+    [{foreground, ?GREY}, {background, ?GREY}]),
+        
+  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERMIDTAIL, ?wxSTC_MARK_EMPTY, 
+    [{foreground, ?GREY}, {background, ?GREY}]),
+        
+  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERTAIL, ?wxSTC_MARK_EMPTY, 
+    [{foreground, ?GREY}, {background, ?GREY}]),
+  
+  %% Attach events
+  wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
+  wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Editor}]),
+  % wxStyledTextCtrl:connect(Editor, left_down, []),
+    
+  process_flag(trap_exit, true),
   {Panel, #state{win=Panel, editor=Editor}}.
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -135,41 +134,41 @@ handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
 % 
-% handle_event(_A=#wx{event=#wxMouse{type=left_down}=_E}, State = #state{editor=Editor}) ->
-%     io:format("left click~n"),
-%     wxWindow:setFocus(Editor),
-%     io:format("Mouse capture~p~n", [wxStyledTextCtrl:getMouseDownCaptures(Editor)]),
-%     wxStyledTextCtrl:moveCaretInsideView(Editor),
-%     {noreply, State};
-% handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{editor=Editor}) ->
-%     io:format("Change event: ~p~n", [_E]),
-%     {noreply, State};
-% handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E}, State = #state{editor=Editor}) ->
-%     %% Update margin width dynamically
-%     %% Using the correct event?
-%     _LineNo = wxStyledTextCtrl:getCurrentLine(Editor) + 1,
-%     _ColNo = wxStyledTextCtrl:getCurrentPos(Editor) + 1,
-%     Lns = wxStyledTextCtrl:getLineCount(Editor),
-%     Nw = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, ?MARGIN_NUMBER_PADDING ++ integer_to_list(Lns)),
-%     Cw = wxStyledTextCtrl:getMarginWidth(Editor, 0),
-%     if
-%       Nw /= Cw ->
-%         wxStyledTextCtrl:setMarginWidth(Editor, 0, Nw);
-%       true -> ok
-%     end,
-%     {noreply, State};
-% handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margin = Margin} = _E},
-%              State = #state{editor=Editor}) ->
-%     Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
-%     Fl = wxStyledTextCtrl:getFoldLevel(Editor, Ln),
-%     % io:format("Margin ~p clicked at position ~p on line number ~p.~n", [Margin, Pos, Ln]),
-%     % io:format("~p~n", [E]),
-%     case Margin of
-%       1 when Ln > 0, Fl > 0 ->
-%         wxStyledTextCtrl:toggleFold(Editor, Ln);
-%       _ -> ok
-%     end,
-%     {noreply, State};
+handle_event(_A=#wx{event=#wxMouse{type=left_down}=_E}, State = #state{editor=Editor}) ->
+    io:format("left click~n"),
+    wxWindow:setFocus(Editor),
+    io:format("Mouse capture~p~n", [wxStyledTextCtrl:getMouseDownCaptures(Editor)]),
+    wxStyledTextCtrl:moveCaretInsideView(Editor),
+    {noreply, State};
+handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{editor=Editor}) ->
+    io:format("Change event: ~p~n", [_E]),
+    {noreply, State};
+handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E}, State = #state{editor=Editor}) ->
+    %% Update margin width dynamically
+    %% Using the correct event?
+    _LineNo = wxStyledTextCtrl:getCurrentLine(Editor) + 1,
+    _ColNo = wxStyledTextCtrl:getCurrentPos(Editor) + 1,
+    Lns = wxStyledTextCtrl:getLineCount(Editor),
+    Nw = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, ?MARGIN_NUMBER_PADDING ++ integer_to_list(Lns)),
+    Cw = wxStyledTextCtrl:getMarginWidth(Editor, 0),
+    if
+      Nw /= Cw ->
+        wxStyledTextCtrl:setMarginWidth(Editor, 0, Nw);
+      true -> ok
+    end,
+    {noreply, State};
+handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margin = Margin} = _E},
+             State = #state{editor=Editor}) ->
+    Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
+    Fl = wxStyledTextCtrl:getFoldLevel(Editor, Ln),
+    % io:format("Margin ~p clicked at position ~p on line number ~p.~n", [Margin, Pos, Ln]),
+    % io:format("~p~n", [E]),
+    case Margin of
+      1 when Ln > 0, Fl > 0 ->
+        wxStyledTextCtrl:toggleFold(Editor, Ln);
+      _ -> ok
+    end,
+    {noreply, State};
 handle_event(E,O) ->
   io:format("editor catchall Event: ~p~nObject: ~p~n", [E,O]),
   {noreply, O}.

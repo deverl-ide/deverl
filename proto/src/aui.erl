@@ -244,7 +244,6 @@ create_editor(Parent, Manager, Pane, Filename) ->
 %% @doc To be called from external modules, calls wx server to obtain required state
 add_editor() -> 
   {Workspace} = wx_object:call(?MODULE, workspace), 
-  editor:start([{parent, Workspace}]),
   add_editor(Workspace),
   Workspace.
 %% @doc Called internally
