@@ -1,9 +1,8 @@
 -module(ide_shell).
 -include_lib("wx/include/wx.hrl").
 
--export([start/0, start/1, start_link/0, start_link/1, 
-	     init/1, terminate/2,  code_change/3, 
-	     handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+-export([new/1, init/1, terminate/2, code_change/3, 
+		 handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 -behaviour(wx_object).
 
@@ -13,22 +12,12 @@
 %% The record containing the State.
 -record(state, {win, textctrl, input, lastchar, promptcount}).
 
-start() ->
-	start([]).
-  
-start(Args) ->
-	wx_object:start(?MODULE, Args, []).
-  
-start_link() ->
-	start_link([]).
-  
-start_link(Args) ->
-	wx_object:start_link(?MODULE, Args, []).
+new(Config) ->
+	wx_object:start(?MODULE, Config, []).
 	
 %% Initialise the server's state
-init(Args) ->
-	Server = wx:new(),
-	Frame  = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang Shell", [{size, {800, 300}}]),
+init(Config) ->
+	Frame = proplists:get_value(parent, Config),
 	Panel  = wxPanel:new(Frame),
 	
   % The style of the text box
@@ -44,10 +33,11 @@ init(Args) ->
 	wxSizer:add(MainSizer, ShellTextBox, []),
 	wxPanel:setSizer(Panel, MainSizer),
 	
-	wxFrame:show(Frame),
+	%wxFrame:show(Frame),
 	
   % Connect listener to text box	
 	wxTextCtrl:connect(ShellTextBox, char),
+	
 	
 	{Frame, #state{win=Frame, textctrl=ShellTextBox, input=[], promptcount=1}}. %% Maintained at server
 	

@@ -199,7 +199,7 @@ create_utils(Parent, Manager, Pane) ->
   
   Utils = wxAuiNotebook:new(Parent, [{style, Style}]),
 
-  Console = wxPanel:new(Utils, []),
+  Console = ide_shell:new([{parent, Utils}]),
   wxAuiNotebook:addPage(Utils, Console, "Console", []),
 
   Pman = wxPanel:new(Utils, []),
