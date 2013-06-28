@@ -17,8 +17,8 @@ new(Config) ->
 	
 %% Initialise the server's state
 init(Config) ->
-	Frame = proplists:get_value(parent, Config),
-	Panel  = wxPanel:new(Frame),
+	Parent = proplists:get_value(parent, Config),
+	Panel  = wxPanel:new(Parent),
 	
   % The style of the text box
 	ShellTextBox = wxTextCtrl:new(Panel, ?SHELL_TEXT_BOX, [{style, ?wxDEFAULT bor ?wxTE_MULTILINE}, {size, {800, 300}}]),
@@ -32,14 +32,12 @@ init(Config) ->
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxSizer:add(MainSizer, ShellTextBox, []),
 	wxPanel:setSizer(Panel, MainSizer),
-	
-	%wxFrame:show(Frame),
-	
+		
   % Connect listener to text box	
 	wxTextCtrl:connect(ShellTextBox, char),
 	
 	
-	{Frame, #state{win=Frame, textctrl=ShellTextBox, input=[], promptcount=1}}. %% Maintained at server
+	{Panel, #state{win=Panel, textctrl=ShellTextBox, input=[], promptcount=1}}. %% Maintained at server
 	
 %%%%% Callbacks %%%%%
 %% These are all called from the server %%
