@@ -129,13 +129,17 @@ handle_call(shutdown, _From, State=#state{win=Panel, workspace_manager=Manager})
     wxPanel:destroy(Panel),
     io:format("Right here..~n"),
     {stop, normal, ok, State};
+handle_call(perspective, _From, State) ->
+	{reply, {State#state.perspective}, State};
 %% @doc Return the workspace
 handle_call(workspace, _From, State) ->
     {reply, {State#state.workspace}, State};
 handle_call(Msg, _From, State) ->
     demo:format(State#state{}, "Got Call ~p\n", [Msg]),
     {reply,{error, nyi}, State}.
-
+    
+handle_cast({perspective, P}, State) ->
+    {noreply,State#state{perspective=P}};
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
@@ -284,8 +288,13 @@ show_hide(Pane, Manager) ->
 	IsShown = wxAuiPaneInfo:isShown(Pane),
 	case IsShown of
 		true ->
+			P = wxAuiManager:savePerspective(Manager),
+			wx_object:cast(?MODULE, {perspective, P}),
 			wxAuiPaneInfo:hide(Pane);	
 		_    ->
+			P = wx_object:call(?MODULE, perspective),
+			wxAuiManager:loadPerspective(Manager, P),
+			io:format("PERSPECTIVE ~p~n",[P]),
 			wxAuiPaneInfo:show(Pane)
 	end,
 	wxAuiManager:update(Manager).
@@ -294,9 +303,14 @@ show_hide(Pane1, Pane2, Manager) ->
 	Pane2IsShown = wxAuiPaneInfo:isShown(Pane2),
 	case Pane1IsShown or Pane2IsShown of
 		true ->
+		    P = wxAuiManager:savePerspective(Manager),
+			wx_object:cast(?MODULE, {perspective, P}),
+			
 			wxAuiPaneInfo:hide(Pane1),
 			wxAuiPaneInfo:hide(Pane2);
 		_    ->
+			P = wx_object:call(?MODULE, perspective),
+			wxAuiManager:loadPerspective(Manager, P),
 			wxAuiPaneInfo:show(Pane1),
 			wxAuiPaneInfo:show(Pane2)
 	end,
