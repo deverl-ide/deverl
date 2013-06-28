@@ -227,10 +227,10 @@ create_editor(Parent, Manager, Pane, Filename) ->
     
   Workspace = wxAuiNotebook:new(Parent, [{style, Style}]),
   
-  wxAuiManager:addPane(Manager, Workspace, Pane),
-  
-  Editor = editor:start([{parent, Workspace}]),
+  Editor = editor:start([{parent, Workspace}]), %% Gets the editor instance inside a wxPanel
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
+  
+  wxAuiManager:addPane(Manager, Workspace, Pane),
   
   wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, true}]),
