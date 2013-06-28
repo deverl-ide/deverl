@@ -65,7 +65,7 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame, input=Input}) ->
     {stop, normal, State};
 
 %% This is executed where char events are handled.
-%% Deal with enter following a period
+%% Deal with an ENTER keypress immediately following a period (.)
 handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, 
              State = #state{win=Frame, textctrl = TextCtrl, input = Input, lastchar = 46}) ->  %% Enter & Full stop
     PromptCount = State#state.promptcount + 1,
@@ -80,7 +80,6 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, State = #state{win=Frame,
     wxTextCtrl:writeText(TextCtrl, get_prompt(State#state.promptcount)),
     {noreply, State#state{input=Input++"\n"}};
     
-%% We can deal with any key as we have above (i.e. the enter key)
 %% Now just deal with any char
 handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) ->
   % This currently converts everything as an ascii character (ascii need to be filtered out)
