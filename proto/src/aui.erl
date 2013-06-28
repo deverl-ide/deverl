@@ -11,21 +11,22 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 %% Client API         
--export([add_editor/0]).
+-export([add_editor/0, add_editor/2]).
 
 %% The record containing the State.
 -record(state, {win,  
                 env,                  %% The wx environment
                 workspace,            %% Notebook
                 workspace_manager,    %% Tabbed UI manager for editors
-                perspective,          %% The AUI user perspective
-                editors :: list()     %% The current open editors
+                perspective           %% The AUI user perspective
                 }).
 
 -define(DEFAULT_FRAME_WIDTH,  1300).
 -define(DEFAULT_FRAME_HEIGHT, 731).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
+
+-define(DEFAULT_TAB_LABEL, "new_file").
 
 start() ->
   start([]).
@@ -34,26 +35,23 @@ start(Args) ->
   wx_object:start({local, ?MODULE}, ?MODULE, Args, [{debug, [log]}]).
   %% Trap the error {error,{already_started,Pid()}} to prevent the app from 
   %% being opened twice.
-    
-start_link() ->
-  start_link([]).
-  
-start_link(Args) ->
-  wx_object:start_link(?MODULE, Args, []).
 
-%% init(Args) should return:
-%% {wxObject, State} | {wxObject, State, Timeout} | ignore | {stop, Reason}
 init(Options) ->
   wx:new(Options),
 
   Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
   wxFrame:connect(Frame, close_window),
-  Env = wx:get_env(), %% The wx environment
-    
+  
+  SB = wxFrame:createStatusBar(Frame),
+  wxStatusBar:setMinHeight(SB, 40),
+  wxStatusBar:setFieldsCount(SB, 4),
+  wxStatusBar:setStatusText(SB, "Line: 0:0", [{number, 0}]),
+  wxStatusBar:setStatusWidths(SB, [50]),
+  wxStatusBar:setStatusText(SB, "Help", [{number, 1}]),
+  
   menu_toolbar:new(Frame),
-  
+    
   UI = wxPanel:new(Frame, []),
-  
 
   Manager = wxAuiManager:new([{managed_wnd, UI}, {flags, ?wxAUI_MGR_RECTANGLE_HINT bor 
                                                          ?wxAUI_MGR_TRANSPARENT_DRAG}]),
@@ -65,10 +63,8 @@ init(Options) ->
   wxAuiPaneInfo:captionVisible(PaneInfo, [{visible, false}]),
     
   %% The centre pane/editor window
-  EditorWindow = wxPanel:new(UI),
-  EditorWindowPaneInfo = wxAuiPaneInfo:new(PaneInfo),
-  wxAuiPaneInfo:centrePane(EditorWindowPaneInfo), 
-  Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, Env, "new_file"),
+  EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(PaneInfo), 
+  Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, ?DEFAULT_TAB_LABEL),
   
   %% The left pane/test window
   TestWindow = wxPanel:new(UI),
@@ -90,6 +86,7 @@ init(Options) ->
   create_utils(UI, Manager, BottomPaneInfo),
   
   wxAuiManager:connect(Manager, aui_pane_maximize, [{skip,true}]),
+  wxAuiManager:connect(Manager, aui_pane_button, [{skip,true}]),
   wxAuiManager:connect(Manager, aui_pane_restore, [{skip,true}]),    
   wxAuiManager:connect(Manager, aui_render, [{skip,true}]),    
   wxAuiManager:update(Manager),
@@ -100,9 +97,9 @@ init(Options) ->
 
   State = #state{win=Frame},
   {Frame, State#state{workspace=Workspace, 
-                      workspace_manager=Manager,
-                      env=Env}}.
+                      workspace_manager=Manager}}.
 
+%%%%%%%%%%%%%%%%%%%%%
 %%%%% Callbacks %%%%%
 handle_info({'EXIT',_, wx_deleted}, State) ->
     io:format("Got Info 1~n"),
@@ -125,9 +122,7 @@ handle_call(shutdown, _From, State=#state{win=Panel, workspace_manager=Manager})
     {stop, normal, ok, State};
 %% @doc Return the workspace
 handle_call(workspace, _From, State) ->
-    {reply, {State#state.workspace, 
-             State#state.workspace_manager,
-             State#state.env}, State};
+    {reply, {State#state.workspace}, State};
 handle_call(Msg, _From, State) ->
     demo:format(State#state{}, "Got Call ~p\n", [Msg]),
     {reply,{error, nyi}, State}.
@@ -142,27 +137,35 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State};
 %% AuiManager events
+handle_event(_E=#wx{event = #wxAuiManager{type = aui_pane_button} = _R}, State) ->
+    io:format("button"),
+    io:format("E: ~p~nR:~p~n",[_E, _R]),
+    Manager = _R#wxAuiManager.manager,
+    Perspective = wxAuiManager:savePerspective(Manager),
+    % io:format("Perspective: ~p~n", [Perspective]),
+    {noreply, State#state{perspective=Perspective}};
 handle_event(#wx{event = #wxAuiManager{type = aui_pane_maximize} = E}, State) ->
     io:format("maximize"),
     Manager = E#wxAuiManager.manager,
     Perspective = wxAuiManager:savePerspective(Manager),
     io:format("Perspective: ~p~n", [Perspective]),
-    {noreply, State#state{perspective = Perspective}};
+    {noreply, State};
 handle_event(#wx{event = #wxAuiManager{type = aui_pane_restore, manager = Man}}, State) ->
     io:format("minimize"),
-    wxAuiManager:loadPerspective(Man, State#state.perspective),
+    wxAuiManager:loadPerspective(Man, State#state.perspective, [{update, false}]),
+    % wxAuiManager:loadPaneInfo(Man, State#state.perspective, [{update, false}]),
     {noreply, State};
-handle_event(W = #wx{event = #wxAuiManager{type = aui_render} = E}, State) ->
-    % io:format("render:~n event:~p~n", [E]),   
+handle_event(_W = #wx{event = #wxAuiManager{type = aui_render} = _E}, State) ->
+    io:format("render:~n"),   
     {noreply, State};
 %% AuiNotebook events
-handle_event(#wx{obj = Workspace,
+handle_event(#wx{obj = _Workspace,
 		 event = #wxAuiNotebook{type = command_auinotebook_page_changed,
-					selection = Sel}}, State) ->
+					selection = _Sel}}, State) ->
     io:format("changed page~n"),
     {noreply, State};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
-    add_editor(State#state.workspace, State#state.workspace_manager, State#state.env),
+    add_editor(State#state.workspace),
     {noreply, State};
 handle_event(#wx{event = #wxAuiNotebook{type = command_auinotebook_page_close}}, State) ->
     io:fwrite("page closed~n"),
@@ -179,7 +182,12 @@ code_change(_, _, State) ->
 terminate(_Reason, _State) ->
     io:format("aui callback: terminate~n"),
     wx:destroy().
-    
+
+%%%%%%%%%%%%%%%%%%%%%
+%%%%% Internals %%%%%
+
+%% @doc Create the utilities panel
+%% @private      
 create_utils(Parent, Manager, Pane) ->
   %% Notebook styles
   Style = (0
@@ -205,8 +213,10 @@ create_utils(Parent, Manager, Pane) ->
 
   wxAuiManager:addPane(Manager, Utils, Pane),
   Utils.
-  
-create_editor(Parent, Manager, Pane, Env, Filename) ->
+
+%% @doc Create the workspace with the initial editor
+%% @private  
+create_editor(Parent, Manager, Pane, Filename) ->
   Style = (0
      bor ?wxAUI_NB_TOP
      bor ?wxAUI_NB_WINDOWLIST_BUTTON
@@ -216,35 +226,34 @@ create_editor(Parent, Manager, Pane, Env, Filename) ->
     ),
     
   Workspace = wxAuiNotebook:new(Parent, [{style, Style}]),
+  
   wxAuiManager:addPane(Manager, Workspace, Pane),
-  Editor = editor:start([{parent, Workspace}, {env, Env}]),
+  
+  Editor = editor:start([{parent, Workspace}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
-
   
   wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, true}]),
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed), 
   Workspace.
   
+%%%%%%%%%%%%%%%%%%%%%%
+%%%%% Client API %%%%%
+  
+%% @doc Creates a new editor instance in a new tab  
 %% @doc To be called from external modules, calls wx server to obtain required state
 add_editor() -> 
-  {Workspace, Manager, Env} = wx_object:call(?MODULE, workspace),
-  
-  Editor = editor:start([{parent, Workspace}, {env, Env}]),
-  % Editor = wxPanel:new(Workspace), %% Trying to discover why it crashes
-  
-  wx:set_env(Env),
-  add_editor(Workspace, Manager, Env),
+  {Workspace} = wx_object:call(?MODULE, workspace), 
+  editor:start([{parent, Workspace}]),
+  add_editor(Workspace),
   Workspace.
 %% @doc Called internally
-add_editor(Workspace, Manager, Env) ->
-  
-  Editor = editor:start([{parent, Workspace}, {env, Env}]),
-  % Editor = wxPanel:new(Workspace), %% Trying to discover why it crashes
-  
-  wxAuiNotebook:addPage(Workspace, Editor, "new_file", [{select, true}]),
-  Pane = wxAuiPaneInfo:new(),
-  wxAuiPaneInfo:defaultPane(Pane),
-  wxAuiManager:addPane(Manager, Workspace, Pane),
+%% @private
+add_editor(Workspace) ->
+  add_editor(Workspace, ?DEFAULT_TAB_LABEL),
   Workspace.
-add_editor(FileName) -> ok.
+%% @doc Create a new editor with specified filename
+add_editor(Workspace, FileName) -> 
+  Editor = editor:start([{parent, Workspace}]),
+  wxAuiNotebook:addPage(Workspace, Editor, FileName, [{select, true}]),
+  Workspace.

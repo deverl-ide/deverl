@@ -25,6 +25,7 @@
 %% The record containing the state maintained by the server
 -record(state, {win, editor}).
 
+%% @doc Create and return a new editor instance
 start(Config) ->
   % wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
   % wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
@@ -33,19 +34,8 @@ start(Config) ->
 
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
-  Env = proplists:get_value(env, Config),
-  
-  wx:set_env(Env),
-  
+
   process_flag(trap_exit, true),
-  
-  % The following test displays the frame when set_env()/1 is set, otherwise it fails with unknown_port.
-  % spawn(fun() -> 
-  %            wx:set_env(Env),
-  %            %% Here you can do wx calls from your helper process.
-  %            Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{20,20}}]),
-  %            wxFrame:show(Frame)
-  %         end),
   
   Panel = wxPanel:new(Parent),
     
@@ -110,12 +100,15 @@ init(Config) ->
   wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERTAIL, ?wxSTC_MARK_EMPTY, 
     [{foreground, ?GREY}, {background, ?GREY}]),
   
+  %% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
-  wxStyledTextCtrl:connect(Editor, stc_modified, []),
+  wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Editor}]),
+  % wxStyledTextCtrl:connect(Editor, left_down, []),
     
   process_flag(trap_exit, true),
   {Panel, #state{win=Panel, editor=Editor}}.
 
+%%%%%%%%%%%%%%%%%%%%%
 %%%%% Callbacks %%%%%
 handle_info({'EXIT',_, wx_deleted}, State) ->
     io:format("Got Info~n"),
@@ -140,10 +133,21 @@ handle_cast(stop, State)->
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
-
-handle_event(#wx{event=#wxStyledText{type=stc_modified}}, State = #state{editor=Editor}) ->
+% 
+handle_event(_A=#wx{event=#wxMouse{type=left_down}=_E}, State = #state{editor=Editor}) ->
+    io:format("left click~n"),
+    wxWindow:setFocus(Editor),
+    io:format("Mouse capture~p~n", [wxStyledTextCtrl:getMouseDownCaptures(Editor)]),
+    wxStyledTextCtrl:moveCaretInsideView(Editor),
+    {noreply, State};
+handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{editor=Editor}) ->
+    io:format("Change event: ~p~n", [_E]),
+    {noreply, State};
+handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E}, State = #state{editor=Editor}) ->
     %% Update margin width dynamically
     %% Using the correct event?
+    _LineNo = wxStyledTextCtrl:getCurrentLine(Editor) + 1,
+    _ColNo = wxStyledTextCtrl:getCurrentPos(Editor) + 1,
     Lns = wxStyledTextCtrl:getLineCount(Editor),
     Nw = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, ?MARGIN_NUMBER_PADDING ++ integer_to_list(Lns)),
     Cw = wxStyledTextCtrl:getMarginWidth(Editor, 0),
@@ -153,7 +157,7 @@ handle_event(#wx{event=#wxStyledText{type=stc_modified}}, State = #state{editor=
       true -> ok
     end,
     {noreply, State};
-handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margin = Margin} = E},
+handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margin = Margin} = _E},
              State = #state{editor=Editor}) ->
     Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
     Fl = wxStyledTextCtrl:getFoldLevel(Editor, Ln),
@@ -175,7 +179,11 @@ code_change(_, _, State) ->
 terminate(_Reason, _State) ->
   io:format("editor callback: terminate: stop~n").
     
-%%%%% Editor Functions (Internal) %%%%%
+%%%%%%%%%%%%%%%%%%%%%
+%%%%% Internals %%%%%
+
+%% @doc Defines the keywords in the Erlang language
+%% @private
 keywords() ->
   KWS = ["after" "and" "andalso" "band" "begin" "bnot" 
   "bor" "bsl" "bsr" "bxor" "case" "catch" "cond" "div" 
@@ -183,6 +191,7 @@ keywords() ->
   "receive" "rem" "try" "when" "xor"],
   lists:flatten([KW ++ " " || KW <- KWS]).
 
+%% @doc Updates the styles for individual elements in the lexer
 update_styles(Editor, Font) ->
   %% {Style, Colour}
   Styles =  [{?wxSTC_ERLANG_DEFAULT,  {0,0,0}},
@@ -210,7 +219,9 @@ update_styles(Editor, Font) ->
   [SetStyle(Style) || Style <- Styles],
   ok.
   
-%%%%% Interface (Exported) %%%%%
+%%%%%%%%%%%%%%%%%%%%%%
+%%%%% Client API %%%%%
+
 update_style() ->
   %% Change styles
   

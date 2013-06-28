@@ -29,6 +29,8 @@
 -define(wxID_MANUAL,            6021).
 -define(wxID_INDENT_TABS,       6022).
 -define(wxID_INDENT_SPACES,     6023).
+-define(wxID_MAXIMISE_EDITOR,   6024).
+-define(wxID_MAXIMISE_UTILITIES,6025).
 
 -record(state, {file, edit, view, document, wrangler, tools, help}).
 
@@ -43,6 +45,9 @@ start(Config) ->
 
 init(Config) ->
     Frame = Config,
+    Sb = wxFrame:getStatusBar(Frame),
+    wxFrame:connect(Frame, menu_highlight,  [{userData, Sb}]),
+    wxFrame:connect(Frame, menu_close,  [{userData, Sb}]),
     
 %%%%% Menubar %%%%%
     MenuBar     = wxMenuBar:new(),
@@ -133,7 +138,7 @@ init(Config) ->
 
   	ToolBar = wxFrame:createToolBar(Frame, []),
     wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
-	
+	  %% Id, StatusBar help, filename, args, add seperator
     Tools = [{?wxID_NEW,       "ToolTip", "icons/document-new.png",   [{shortHelp, "Create a new file"}],        false},
              {?wxID_OPEN,      "ToolTip", "icons/document-open.png",  [{shortHelp, "Open existing document"}],   false},
              {?wxID_SAVE,      "ToolTip", "icons/document-save.png",  [{shortHelp, "Save the current file"}],    true}, 
@@ -141,7 +146,9 @@ init(Config) ->
              {?wxID_COMPILE,   "ToolTip", "icons/module-compile.png", [{shortHelp, "Compile the current file"}], false},
              {?wxID_RUN,       "ToolTip", "icons/module-run.png",     [{shortHelp, "Run the current file"}],     true},
              {?wxID_HIDE_TEST, "ToolTip", "icons/hide-test.png",      [{shortHelp, "Hide the test pane"}],       false},
-             {?wxID_HIDE_UTIL, "ToolTip", "icons/hide-util.png",      [{shortHelp, "Hide the utilities pane"}],  false}],
+             {?wxID_HIDE_UTIL, "ToolTip", "icons/hide-util.png",      [{shortHelp, "Hide the utilities pane"}],  false},
+             {?wxID_MAXIMISE_EDITOR, "ToolTip", "icons/maximise-editor.png",      [{shortHelp, "Maximise/minimise the text editor"}],  false},
+             {?wxID_MAXIMISE_UTILITIES, "ToolTip", "icons/maximise-util.png",      [{shortHelp, "Maximise/minimise the utilities"}],  false}],
 	
     AddTool = fun({Id, Tooltip, Filename, Args, true}) ->
 		          wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args),
@@ -156,11 +163,12 @@ init(Config) ->
 
     wxMenuBar:connect(Frame, command_menu_selected),
     wxFrame:setMenuBar(Frame, MenuBar),
-    {Frame, State=#state{file=File}}. %% Not complete, obvs.
+    {Frame, #state{file=File}}. %% Not complete, obvs.
 
+%%%%%%%%%%%%%%%%%%%%%%
 %%%%% Call Backs %%%%%
 %% Menubar/Toolbar events
-handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
+handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
 	     State = #state{}) ->
     case Id of
         ?wxID_NEW ->
@@ -219,11 +227,8 @@ handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
             io:format("fullscreen~n");
         ?wxID_HIDE_TEST ->
             io:format("hide test~n");
-            
-            
         ?wxID_HIDE_UTIL ->
-            io:format("hide util~n");
-            
+            io:format("hide util~n");       
         ?wxID_LINE_WRAP ->
             io:format("line wrap~n");
         ?wxID_AUTO_INDENT ->
@@ -257,7 +262,118 @@ handle_event(#wx{id = Id, event = #wxCommand{type = command_menu_selected}},
         ?wxID_MANUAL ->
             io:format("manual~n");
         ?wxID_ABOUT ->
-            io:format("about~n")
+            io:format("about~n");
+        ?wxID_MAXIMISE_EDITOR ->
+            io:format("max editor~n");
+        ?wxID_MAXIMISE_UTILITIES ->
+            io:format("max util~n")
+    end,
+    {noreply, State};
+%% Handle menu closed event    
+handle_event(#wx{userData=Sb, event=#wxMenu{type=menu_close}},
+	     State = #state{}) ->
+         wxStatusBar:popStatusText(Sb, [{number, 2}]),
+         {noreply, State};
+%% Handle menu highlight events    
+handle_event(#wx{id=Id, userData=Sb, event=#wxMenu{type=menu_highlight}},
+	     State = #state{}) ->
+    case Id of
+        ?wxID_NEW ->
+            wxStatusBar:pushStatusText(Sb, "Create a new file.", [{number, 2}]);
+        ?wxID_OPEN ->
+            io:format("open~n");
+        ?wxID_SAVE ->
+            io:format("save~n");
+        ?wxID_SAVEAS ->
+            io:format("save as~n");
+        ?wxID_PRINT ->
+            io:format("print~n");
+        ?wxID_CLOSE ->
+            io:format("close~n");
+        ?wxID_CLOSE_ALL ->
+            io:format("close all~n");
+        ?wxID_EXIT ->
+            io:format("exit~n");
+        ?wxID_UNDO ->
+            io:format("undo~n");
+        ?wxID_REDO ->
+            io:format("redo~n");
+        ?wxID_CUT ->
+            io:format("cut~n");
+        ?wxID_COPY ->
+            io:format("copy~n");
+        ?wxID_PASTE ->
+            io:format("paste~n");
+        ?wxID_DELETE ->
+            io:format("delete~n");
+        ?wxID_FONT ->
+            io:format("font~n");
+        ?wxID_LN_TOGGLE ->
+            io:format("line toggle~n");
+        ?wxID_INDENT_TABS ->
+            io:format("indent tabs~n");
+        ?wxID_INDENT_SPACES ->
+            io:format("indent spaces~n");
+        7001 ->
+            io:format("1");
+        7002 ->
+            io:format("2");
+        7003 ->
+            io:format("3");
+        7004 ->
+            io:format("4");
+        7005 ->
+            io:format("5");
+        7006 ->
+            io:format("6");
+        7007 ->
+            io:format("7");
+        7008 ->
+            io:format("8");
+        ?wxID_FULLSCREEN ->
+            io:format("fullscreen~n");
+        ?wxID_HIDE_TEST ->
+            io:format("hide test~n");      
+        ?wxID_HIDE_UTIL ->
+            io:format("hide util~n");        
+        ?wxID_LINE_WRAP ->
+            io:format("line wrap~n");
+        ?wxID_AUTO_INDENT ->
+            io:format("auto indent~n");
+        ?wxID_INDENT_SELECTION ->
+            io:format("indent selection~n");
+        ?wxID_COMMENT_SELECTION ->
+            io:format("comment selection~n");
+        ?wxID_FOLD_ALL ->
+            io:format("fold all~n");
+        ?wxID_UNFOLD_ALL ->
+            io:format("unfold all~n");
+        ?wxID_WRANGLER ->
+            io:format("wrangler~n");
+        ?wxID_COMPILE ->
+            io:format("compile~n");
+        ?wxID_RUN ->
+            io:format("run~n");
+        ?wxID_DIALYZER ->
+            io:format("run dialyzer~n");
+        ?wxID_TESTS ->
+            io:format("run tests~n");
+        ?wxID_DEBUGGER ->
+            io:format("run debugger~n");
+        ?wxID_HELP ->
+            io:format("help~n");
+        ?wxID_SHORTCUTS ->
+            io:format("shortcuts~n");
+        ?wxID_SEARCH_DOC ->
+            io:format("search doc~n");
+        ?wxID_MANUAL ->
+            io:format("manual~n");
+        ?wxID_ABOUT ->
+            io:format("about~n");
+        ?wxID_MAXIMISE_EDITOR ->
+            io:format("max editor~n");
+        ?wxID_MAXIMISE_UTILITIES ->
+            io:format("max util~n")
     end,
     {noreply, State};
 handle_event(E,O) ->
