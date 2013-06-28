@@ -277,23 +277,24 @@ handle_event(#wx{userData=Sb, event=#wxMenu{type=menu_close}},
 %% Handle menu highlight events    
 handle_event(#wx{id=Id, userData=Sb, event=#wxMenu{type=menu_highlight}},
 	     State = #state{}) ->
+         wxStatusBar:popStatusText(Sb, [{number, 2}]),
     case Id of
         ?wxID_NEW ->
             wxStatusBar:pushStatusText(Sb, "Create a new file.", [{number, 2}]);
         ?wxID_OPEN ->
-            io:format("open~n");
+            wxStatusBar:pushStatusText(Sb, "Open a new file.", [{number, 2}]);
         ?wxID_SAVE ->
-            io:format("save~n");
+            wxStatusBar:pushStatusText(Sb, "Save the current file.", [{number, 2}]);
         ?wxID_SAVEAS ->
-            io:format("save as~n");
+            wxStatusBar:pushStatusText(Sb, "Save.", [{number, 2}]);
         ?wxID_PRINT ->
-            io:format("print~n");
+            wxStatusBar:pushStatusText(Sb, "Print.", [{number, 2}]);
         ?wxID_CLOSE ->
-            io:format("close~n");
+            wxStatusBar:pushStatusText(Sb, "Close the current file.", [{number, 2}]);
         ?wxID_CLOSE_ALL ->
-            io:format("close all~n");
+            wxStatusBar:pushStatusText(Sb, "Close all open files.", [{number, 2}]);
         ?wxID_EXIT ->
-            io:format("exit~n");
+            wxStatusBar:pushStatusText(Sb, "Quit.", [{number, 2}]);
         ?wxID_UNDO ->
             io:format("undo~n");
         ?wxID_REDO ->
