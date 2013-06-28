@@ -42,18 +42,19 @@ init(Options) ->
   Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
   wxFrame:connect(Frame, close_window),
   
+  FrameSizer = wxBoxSizer:new(?wxVERTICAL),
+  wxWindow:setSizer(Frame, FrameSizer),
+  
   menu_toolbar:new(Frame),
         
   UI = wxPanel:new(Frame, []),
-  % UiSizer = wxBoxSizer:new(?wxVERTICAL),
-  % wxPanel:setSizer(UI, UiSi zer),
+  
+  wxSizer:add(FrameSizer, UI, [{flag, ?wxEXPAND},
+                               {proportion, 1}]),
 
   Manager = wxAuiManager:new([{managed_wnd, UI}, {flags, ?wxAUI_MGR_RECTANGLE_HINT bor 
                                                          ?wxAUI_MGR_TRANSPARENT_DRAG}]),
                                                          
-  % wxSizer:add(UiSizer, Manager, [{flag, ?wxEXPAND},
-  %                           {proportion, 1}]),
-  
   %% PaneInfo - default (common) pane behaviour
   PaneInfo = wxAuiPaneInfo:new(),
   wxAuiPaneInfo:closeButton(PaneInfo, [{visible, false}]),
@@ -69,8 +70,8 @@ init(Options) ->
   TestWindow = wxPanel:new(UI),
   TestWindowPaneInfo = wxAuiPaneInfo:left(wxAuiPaneInfo:new(PaneInfo)),
   wxAuiPaneInfo:name(TestWindowPaneInfo, "TestPane"),
-  wxAuiPaneInfo:minSize(TestWindowPaneInfo, {200,0}),
-  wxAuiPaneInfo:bestSize(TestWindowPaneInfo, {200,0}),
+  wxAuiPaneInfo:minSize(TestWindowPaneInfo, {200,-1}),
+  wxAuiPaneInfo:bestSize(TestWindowPaneInfo, {200,-1}),
   wxAuiManager:addPane(Manager, TestWindow, TestWindowPaneInfo),
   
   TestSizer = wxBoxSizer:new(?wxVERTICAL),
@@ -82,23 +83,26 @@ init(Options) ->
   %% The bottom pane/utility window
   BottomPaneInfo = wxAuiPaneInfo:bottom(wxAuiPaneInfo:new(PaneInfo)),
   wxAuiPaneInfo:name(BottomPaneInfo, "UtilPane"),
-  wxAuiPaneInfo:minSize(BottomPaneInfo, {0,200}),
-  wxAuiPaneInfo:bestSize(BottomPaneInfo, {0, 200}),
+  wxAuiPaneInfo:minSize(BottomPaneInfo, {-1,200}),
+  wxAuiPaneInfo:bestSize(BottomPaneInfo, {-1, 200}),
   create_utils(UI, Manager, BottomPaneInfo),
   
-  % wxAuiManager:connect(Manager, aui_pane_maximize, [{skip,true}]),
-  % wxAuiManager:connect(Manager, aui_pane_button, [{skip,true}]),
-  % wxAuiManager:connect(Manager, aui_pane_restore, [{skip,true}]),    
   % wxAuiManager:connect(Manager, aui_render, [{skip,true}]),    
   wxAuiManager:update(Manager),
   
   %% Custom status bar
-  % StatusBar = wxPanel:new(UI, []),
+  StatusBar = wxPanel:new(Frame, [{size,{-1,35}}]),
+  wxWindow:setBackgroundColour(StatusBar, {114,109,109}),
+  
   % SbSizer = wxBoxSizer:new(?wxHORIZONTAL),
   % wxPanel:setSizer(StatusBar, SbSizer),
-  % 
-  % wxSizer:add(UiSizer, StatusBar, [{flag, ?wxEXPAND},
+  % T = wxTextCtrl:new(StatusBar, 909, [{style, ?wxTE_MULTILINE}]), 
+  % wxSizer:add(SbSizer, T, [{flag, ?wxEXPAND},
   %                                {proportion, 1}]),
+  
+  
+  wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
+                                      {proportion, 0}]),
     
   wxFrame:show(Frame),
   
@@ -130,7 +134,7 @@ handle_call(shutdown, _From, State=#state{win=Panel, workspace_manager=Manager})
     io:format("Right here..~n"),
     {stop, normal, ok, State};
 handle_call(perspective, _From, State) ->
-	{reply, {State#state.perspective}, State};
+	  {reply, {State#state.perspective}, State};
 %% @doc Return the workspace
 handle_call(workspace, _From, State) ->
     {reply, {State#state.workspace}, State};
@@ -139,6 +143,7 @@ handle_call(Msg, _From, State) ->
     {reply,{error, nyi}, State}.
     
 handle_cast({perspective, P}, State) ->
+    io:format("CAST CALLED~n"),
     {noreply,State#state{perspective=P}};
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
@@ -150,24 +155,6 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State};
 %% AuiManager events
-handle_event(_E=#wx{event = #wxAuiManager{type = aui_pane_button} = _R}, State) ->
-    io:format("button"),
-    io:format("E: ~p~nR:~p~n",[_E, _R]),
-    Manager = _R#wxAuiManager.manager,
-    Perspective = wxAuiManager:savePerspective(Manager),
-    % io:format("Perspective: ~p~n", [Perspective]),
-    {noreply, State#state{perspective=Perspective}};
-handle_event(#wx{event = #wxAuiManager{type = aui_pane_maximize} = E}, State) ->
-    io:format("maximize"),
-    Manager = E#wxAuiManager.manager,
-    Perspective = wxAuiManager:savePerspective(Manager),
-    io:format("Perspective: ~p~n", [Perspective]),
-    {noreply, State};
-handle_event(#wx{event = #wxAuiManager{type = aui_pane_restore, manager = Man}}, State) ->
-    io:format("minimize"),
-    wxAuiManager:loadPerspective(Man, State#state.perspective, [{update, false}]),
-    % wxAuiManager:loadPaneInfo(Man, State#state.perspective, [{update, false}]),
-    {noreply, State};
 handle_event(_W = #wx{event = #wxAuiManager{type = aui_render} = _E}, State) ->
     io:format("render:~n"),   
     {noreply, State};
@@ -288,14 +275,15 @@ show_hide(Pane, Manager) ->
 	IsShown = wxAuiPaneInfo:isShown(Pane),
 	case IsShown of
 		true ->
-			P = wxAuiManager:savePerspective(Manager),
-			wx_object:cast(?MODULE, {perspective, P}),
+      % P = wxAuiManager:savePerspective(Manager),
+      % wx_object:cast(?MODULE, {perspective, P}),
 			wxAuiPaneInfo:hide(Pane);	
 		_    ->
-			P = wx_object:call(?MODULE, perspective),
-			wxAuiManager:loadPerspective(Manager, P),
-			io:format("PERSPECTIVE ~p~n",[P]),
+      % P = wx_object:call(?MODULE, perspective),
+      % wxAuiManager:loadPerspective(Manager, P, [{update, false}]),
+      % io:format("PERSPECTIVE ~p~n",[P]),
 			wxAuiPaneInfo:show(Pane)
+      % wxAuiManager:loadPerspective(Manager, P)
 	end,
 	wxAuiManager:update(Manager).
 show_hide(Pane1, Pane2, Manager) ->
@@ -303,16 +291,16 @@ show_hide(Pane1, Pane2, Manager) ->
 	Pane2IsShown = wxAuiPaneInfo:isShown(Pane2),
 	case Pane1IsShown or Pane2IsShown of
 		true ->
-		    P = wxAuiManager:savePerspective(Manager),
-			wx_object:cast(?MODULE, {perspective, P}),
+        % P = wxAuiManager:savePerspective(Manager),
+      % wx_object:cast(?MODULE, {perspective, P}),
 			
 			wxAuiPaneInfo:hide(Pane1),
 			wxAuiPaneInfo:hide(Pane2);
 		_    ->
-			P = wx_object:call(?MODULE, perspective),
-			wxAuiManager:loadPerspective(Manager, P),
+      % P = wx_object:call(?MODULE, perspective),
+      % wxAuiManager:loadPerspective(Manager, P),
 			wxAuiPaneInfo:show(Pane1),
 			wxAuiPaneInfo:show(Pane2)
 	end,
-	wxAuiManager:update(Manager).
+  wxAuiManager:update(Manager).
 	
