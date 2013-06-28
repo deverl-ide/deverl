@@ -42,15 +42,8 @@ init(Options) ->
   Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
   wxFrame:connect(Frame, close_window),
   
-  SB = wxFrame:createStatusBar(Frame),
-  wxStatusBar:setMinHeight(SB, 40),
-  wxStatusBar:setFieldsCount(SB, 4),
-  wxStatusBar:setStatusText(SB, "Line: 0:0", [{number, 0}]),
-  wxStatusBar:setStatusWidths(SB, [50]),
-  wxStatusBar:setStatusText(SB, "Help", [{number, 1}]),
-  
   menu_toolbar:new(Frame),
-    
+      
   UI = wxPanel:new(Frame, []),
 
   Manager = wxAuiManager:new([{managed_wnd, UI}, {flags, ?wxAUI_MGR_RECTANGLE_HINT bor 
@@ -93,6 +86,11 @@ init(Options) ->
   wxAuiManager:connect(Manager, aui_pane_restore, [{skip,true}]),    
   wxAuiManager:connect(Manager, aui_render, [{skip,true}]),    
   wxAuiManager:update(Manager),
+  
+  %% Custom status bar
+  StatusBar = wxPanel:new(UI, []),
+  SbSizer = wxBoxSizer:new(?wxHORIZONTAL),
+  wxPanel:setSizer(StatusBar, SbSizer),
     
   wxFrame:show(Frame),
   
