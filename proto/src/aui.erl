@@ -237,6 +237,12 @@ create_editor(Parent, Manager, Pane, Filename) ->
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed), 
   Workspace.
   
+%% @doc Called internally
+%% @private
+add_editor(Workspace) ->
+  add_editor(Workspace, ?DEFAULT_TAB_LABEL),
+  Workspace.
+  
 %%%%%%%%%%%%%%%%%%%%%%
 %%%%% Client API %%%%%
   
@@ -245,11 +251,6 @@ create_editor(Parent, Manager, Pane, Filename) ->
 add_editor() -> 
   {Workspace} = wx_object:call(?MODULE, workspace), 
   add_editor(Workspace),
-  Workspace.
-%% @doc Called internally
-%% @private
-add_editor(Workspace) ->
-  add_editor(Workspace, ?DEFAULT_TAB_LABEL),
   Workspace.
 %% @doc Create a new editor with specified filename
 add_editor(Workspace, FileName) -> 
