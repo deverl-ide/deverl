@@ -43,11 +43,16 @@ init(Options) ->
   wxFrame:connect(Frame, close_window),
   
   menu_toolbar:new(Frame),
-      
+        
   UI = wxPanel:new(Frame, []),
+  % UiSizer = wxBoxSizer:new(?wxVERTICAL),
+  % wxPanel:setSizer(UI, UiSi zer),
 
   Manager = wxAuiManager:new([{managed_wnd, UI}, {flags, ?wxAUI_MGR_RECTANGLE_HINT bor 
                                                          ?wxAUI_MGR_TRANSPARENT_DRAG}]),
+                                                         
+  % wxSizer:add(UiSizer, Manager, [{flag, ?wxEXPAND},
+  %                           {proportion, 1}]),
   
   %% PaneInfo - default (common) pane behaviour
   PaneInfo = wxAuiPaneInfo:new(),
@@ -81,16 +86,19 @@ init(Options) ->
   wxAuiPaneInfo:bestSize(BottomPaneInfo, {0, 200}),
   create_utils(UI, Manager, BottomPaneInfo),
   
-  wxAuiManager:connect(Manager, aui_pane_maximize, [{skip,true}]),
-  wxAuiManager:connect(Manager, aui_pane_button, [{skip,true}]),
-  wxAuiManager:connect(Manager, aui_pane_restore, [{skip,true}]),    
-  wxAuiManager:connect(Manager, aui_render, [{skip,true}]),    
+  % wxAuiManager:connect(Manager, aui_pane_maximize, [{skip,true}]),
+  % wxAuiManager:connect(Manager, aui_pane_button, [{skip,true}]),
+  % wxAuiManager:connect(Manager, aui_pane_restore, [{skip,true}]),    
+  % wxAuiManager:connect(Manager, aui_render, [{skip,true}]),    
   wxAuiManager:update(Manager),
   
   %% Custom status bar
-  StatusBar = wxPanel:new(UI, []),
-  SbSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  wxPanel:setSizer(StatusBar, SbSizer),
+  % StatusBar = wxPanel:new(UI, []),
+  % SbSizer = wxBoxSizer:new(?wxHORIZONTAL),
+  % wxPanel:setSizer(StatusBar, SbSizer),
+  % 
+  % wxSizer:add(UiSizer, StatusBar, [{flag, ?wxEXPAND},
+  %                                {proportion, 1}]),
     
   wxFrame:show(Frame),
   
