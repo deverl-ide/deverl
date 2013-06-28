@@ -11,7 +11,7 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 %% Client API         
--export([add_editor/0, add_editor/2]).
+-export([add_editor/0, add_editor/2, show_hide/1, show_hide/2]).
 
 %% The record containing the State.
 -record(state, {win,  
@@ -64,11 +64,13 @@ init(Options) ->
     
   %% The centre pane/editor window
   EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(PaneInfo), 
+  wxAuiPaneInfo:name(EditorWindowPaneInfo, "EditorPane"),
   Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, ?DEFAULT_TAB_LABEL),
   
   %% The left pane/test window
   TestWindow = wxPanel:new(UI),
   TestWindowPaneInfo = wxAuiPaneInfo:left(wxAuiPaneInfo:new(PaneInfo)),
+  wxAuiPaneInfo:name(TestWindowPaneInfo, "TestPane"),
   wxAuiPaneInfo:minSize(TestWindowPaneInfo, {200,0}),
   wxAuiPaneInfo:bestSize(TestWindowPaneInfo, {200,0}),
   wxAuiManager:addPane(Manager, TestWindow, TestWindowPaneInfo),
@@ -81,6 +83,7 @@ init(Options) ->
   
   %% The bottom pane/utility window
   BottomPaneInfo = wxAuiPaneInfo:bottom(wxAuiPaneInfo:new(PaneInfo)),
+  wxAuiPaneInfo:name(BottomPaneInfo, "UtilPane"),
   wxAuiPaneInfo:minSize(BottomPaneInfo, {0,200}),
   wxAuiPaneInfo:bestSize(BottomPaneInfo, {0, 200}),
   create_utils(UI, Manager, BottomPaneInfo),
@@ -257,3 +260,39 @@ add_editor(Workspace, FileName) ->
   Editor = editor:start([{parent, Workspace}]),
   wxAuiNotebook:addPage(Workspace, Editor, FileName, [{select, true}]),
   Workspace.
+  
+show_hide(PaneType) ->
+	{Workspace} = wx_object:call(?MODULE, workspace),
+	Manager = wxAuiManager:getManager(Workspace),
+	TestPane = wxAuiManager:getPane(Manager, "TestPane"),
+	UtilPane = wxAuiManager:getPane(Manager, "UtilPane"),
+	case PaneType of
+		"test" ->
+			show_hide(TestPane, Manager);
+		"util" ->
+			show_hide(UtilPane, Manager);
+		"editor" ->
+			show_hide(TestPane, UtilPane, Manager)
+	end.
+show_hide(Pane, Manager) ->
+	IsShown = wxAuiPaneInfo:isShown(Pane),
+	case IsShown of
+		true ->
+			wxAuiPaneInfo:hide(Pane);	
+		_    ->
+			wxAuiPaneInfo:show(Pane)
+	end,
+	wxAuiManager:update(Manager).
+show_hide(Pane1, Pane2, Manager) ->
+	Pane1IsShown = wxAuiPaneInfo:isShown(Pane1),
+	Pane2IsShown = wxAuiPaneInfo:isShown(Pane2),
+	case Pane1IsShown or Pane2IsShown of
+		true ->
+			wxAuiPaneInfo:hide(Pane1),
+			wxAuiPaneInfo:hide(Pane2);
+		_    ->
+			wxAuiPaneInfo:show(Pane1),
+			wxAuiPaneInfo:show(Pane2)
+	end,
+	wxAuiManager:update(Manager).
+	

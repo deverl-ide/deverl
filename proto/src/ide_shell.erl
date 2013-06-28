@@ -23,7 +23,7 @@ init(Config) ->
 	wxPanel:setSizer(Panel, MainSizer),
 	
   % The style of the text box
-	ShellTextBox = wxTextCtrl:new(Panel, ?SHELL_TEXT_BOX, [{style, ?wxDEFAULT bor ?wxTE_MULTILINE}, {size, {800, 300}}]),
+	ShellTextBox = wxTextCtrl:new(Panel, ?SHELL_TEXT_BOX, [{style, ?wxDEFAULT bor ?wxTE_MULTILINE}]),
 	wxTextCtrl:writeText(ShellTextBox, "1" ?PROMPT),
 	wxTextCtrl:setInsertionPoint(ShellTextBox, wxTextCtrl:getLastPosition(ShellTextBox)),
   % wxWindow:setForegroundColour(ShellTextBox, ?wxWHITE),

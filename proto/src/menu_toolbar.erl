@@ -29,8 +29,8 @@
 -define(wxID_MANUAL,            6021).
 -define(wxID_INDENT_TABS,       6022).
 -define(wxID_INDENT_SPACES,     6023).
--define(wxID_MAXIMISE_EDITOR,   6024).
--define(wxID_MAXIMISE_UTILITIES,6025).
+-define(wxID_MAX_EDITOR,   6024).
+-define(wxID_MAX_UTIL,6025).
 
 -record(state, {file, edit, view, document, wrangler, tools, help}).
 
@@ -139,16 +139,16 @@ init(Config) ->
   	ToolBar = wxFrame:createToolBar(Frame, []),
     wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
 	  %% Id, StatusBar help, filename, args, add seperator
-    Tools = [{?wxID_NEW,       "ToolTip", "icons/document-new.png",   [{shortHelp, "Create a new file"}],        false},
-             {?wxID_OPEN,      "ToolTip", "icons/document-open.png",  [{shortHelp, "Open existing document"}],   false},
-             {?wxID_SAVE,      "ToolTip", "icons/document-save.png",  [{shortHelp, "Save the current file"}],    true}, 
-             {?wxID_CLOSE,     "ToolTip", "icons/document-close.png", [{shortHelp, "Close the current file"}],   true},
-             {?wxID_COMPILE,   "ToolTip", "icons/module-compile.png", [{shortHelp, "Compile the current file"}], false},
-             {?wxID_RUN,       "ToolTip", "icons/module-run.png",     [{shortHelp, "Run the current file"}],     true},
-             {?wxID_HIDE_TEST, "ToolTip", "icons/hide-test.png",      [{shortHelp, "Hide the test pane"}],       false},
-             {?wxID_HIDE_UTIL, "ToolTip", "icons/hide-util.png",      [{shortHelp, "Hide the utilities pane"}],  false},
-             {?wxID_MAXIMISE_EDITOR, "ToolTip", "icons/maximise-editor.png",      [{shortHelp, "Maximise/minimise the text editor"}],  false},
-             {?wxID_MAXIMISE_UTILITIES, "ToolTip", "icons/maximise-util.png",      [{shortHelp, "Maximise/minimise the utilities"}],  false}],
+    Tools = [{?wxID_NEW,        "ToolTip", "icons/document-new.png",    [{shortHelp, "Create a new file"}],        			false},
+             {?wxID_OPEN,       "ToolTip", "icons/document-open.png",   [{shortHelp, "Open existing document"}],   			false},
+             {?wxID_SAVE,       "ToolTip", "icons/document-save.png",   [{shortHelp, "Save the current file"}],    			true}, 
+             {?wxID_CLOSE,      "ToolTip", "icons/document-close.png",  [{shortHelp, "Close the current file"}],   			true},
+             {?wxID_COMPILE,    "ToolTip", "icons/module-compile.png",  [{shortHelp, "Compile the current file"}], 			false},
+             {?wxID_RUN,        "ToolTip", "icons/module-run.png",      [{shortHelp, "Run the current file"}],     			true},
+             {?wxID_HIDE_TEST,  "ToolTip", "icons/hide-test.png",       [{shortHelp, "Hide the test pane"}],       			false},
+             {?wxID_HIDE_UTIL,  "ToolTip", "icons/hide-util.png",       [{shortHelp, "Hide the utilities pane"}],  			false},
+             {?wxID_MAX_EDITOR, "ToolTip", "icons/maximise-editor.png", [{shortHelp, "Maximise/minimise the text editor"}], false},
+             {?wxID_MAX_UTIL,   "ToolTip", "icons/maximise-util.png",   [{shortHelp, "Maximise/minimise the utilities"}],   false}],
 	
     AddTool = fun({Id, Tooltip, Filename, Args, true}) ->
 		          wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args),
@@ -226,9 +226,13 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
         ?wxID_FULLSCREEN ->
             io:format("fullscreen~n");
         ?wxID_HIDE_TEST ->
-            io:format("hide test~n");
+			aui:show_hide("test");
         ?wxID_HIDE_UTIL ->
-            io:format("hide util~n");       
+            aui:show_hide("util");  
+        ?wxID_MAX_EDITOR ->
+			aui:show_hide("editor");
+		?wxID_MAX_UTIL ->
+			io:format("max util~n");
         ?wxID_LINE_WRAP ->
             io:format("line wrap~n");
         ?wxID_AUTO_INDENT ->
@@ -262,11 +266,7 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
         ?wxID_MANUAL ->
             io:format("manual~n");
         ?wxID_ABOUT ->
-            io:format("about~n");
-        ?wxID_MAXIMISE_EDITOR ->
-            io:format("max editor~n");
-        ?wxID_MAXIMISE_UTILITIES ->
-            io:format("max util~n")
+            io:format("about~n")
     end,
     {noreply, State};
 %% Handle menu closed event    
@@ -370,11 +370,7 @@ handle_event(#wx{id=Id, userData=Sb, event=#wxMenu{type=menu_highlight}},
         ?wxID_MANUAL ->
             io:format("manual~n");
         ?wxID_ABOUT ->
-            io:format("about~n");
-        ?wxID_MAXIMISE_EDITOR ->
-            io:format("max editor~n");
-        ?wxID_MAXIMISE_UTILITIES ->
-            io:format("max util~n")
+            io:format("about~n")
     end,
     {noreply, State};
 handle_event(E,O) ->
