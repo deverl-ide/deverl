@@ -19,6 +19,8 @@ new(Config) ->
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
 	Panel  = wxPanel:new(Parent),
+	MainSizer = wxBoxSizer:new(?wxVERTICAL),
+	wxPanel:setSizer(Panel, MainSizer),
 	
   % The style of the text box
 	ShellTextBox = wxTextCtrl:new(Panel, ?SHELL_TEXT_BOX, [{style, ?wxDEFAULT bor ?wxTE_MULTILINE}, {size, {800, 300}}]),
@@ -28,10 +30,8 @@ init(Config) ->
   % wxWindow:setBackgroundColour(ShellTextBox, ?wxBLACK),
 	wxWindow:setFont(ShellTextBox, wxFont:new(12, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
 	
-  % Set sizers
-	MainSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxSizer:add(MainSizer, ShellTextBox, []),
-	wxPanel:setSizer(Panel, MainSizer),
+	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
+                                          {proportion, 1}]),
 		
   % Connect listener to text box	
 	wxTextCtrl:connect(ShellTextBox, char),
