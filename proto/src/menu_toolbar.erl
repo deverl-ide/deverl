@@ -44,8 +44,8 @@ start(Config) ->
     wx_object:start_link(?MODULE, Config, []).
 
 init(Config) ->
-    Frame = Config,
-    Sb = wxFrame:getStatusBar(Frame),
+    Frame = proplists:get_value(parent, Config),
+    Sb = proplists:get_value(sb, Config),
     wxFrame:connect(Frame, menu_highlight,  [{userData, Sb}]),
     wxFrame:connect(Frame, menu_close,  [{userData, Sb}]),
     
@@ -269,32 +269,34 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
             io:format("about~n")
     end,
     {noreply, State};
+%% Here:
+%% http://forums.wxwidgets.org/viewtopic.php?f=1&t=30059&p=128994&hilit=statusbar+refresh&#p128994
 %% Handle menu closed event    
 handle_event(#wx{userData=Sb, event=#wxMenu{type=menu_close}},
 	     State = #state{}) ->
-         wxStatusBar:popStatusText(Sb, [{number, 2}]),
+         customStatusBar:set_text(Sb, {field, help}, "Fuckit"),
          {noreply, State};
 %% Handle menu highlight events    
 handle_event(#wx{id=Id, userData=Sb, event=#wxMenu{type=menu_highlight}},
 	     State = #state{}) ->
-         wxStatusBar:popStatusText(Sb, [{number, 2}]),
     case Id of
         ?wxID_NEW ->
-            wxStatusBar:pushStatusText(Sb, "Create a new file.", [{number, 2}]);
+            customStatusBar:set_text(Sb, {field, help}, "Whatever"),
+            customStatusBar:set_text(Sb, {field, help}, "Create a new file.");
         ?wxID_OPEN ->
-            wxStatusBar:pushStatusText(Sb, "Open a new file.", [{number, 2}]);
+            customStatusBar:set_text(Sb, {field, help}, "Open a new file.");
         ?wxID_SAVE ->
-            wxStatusBar:pushStatusText(Sb, "Save the current file.", [{number, 2}]);
+            customStatusBar:set_text(Sb, {field, help}, "Save the current file.");
         ?wxID_SAVEAS ->
-            wxStatusBar:pushStatusText(Sb, "Save.", [{number, 2}]);
+            customStatusBar:set_text(Sb, {field, help}, "Save.");
         ?wxID_PRINT ->
-            wxStatusBar:pushStatusText(Sb, "Print.", [{number, 2}]);
+            customStatusBar:set_text(Sb, {field, help}, "Print.");
         ?wxID_CLOSE ->
-            wxStatusBar:pushStatusText(Sb, "Close the current file.", [{number, 2}]);
+            customStatusBar:set_text(Sb, {field, help}, "Close the current file.");
         ?wxID_CLOSE_ALL ->
-            wxStatusBar:pushStatusText(Sb, "Close all open files.", [{number, 2}]);
+            customStatusBar:set_text(Sb, {field, help}, "Close all open files.");
         ?wxID_EXIT ->
-            wxStatusBar:pushStatusText(Sb, "Quit.", [{number, 2}]);
+            customStatusBar:set_text(Sb, {field, help}, "Quit.");
         ?wxID_UNDO ->
             io:format("undo~n");
         ?wxID_REDO ->

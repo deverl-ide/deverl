@@ -45,12 +45,23 @@ init(Options) ->
   FrameSizer = wxBoxSizer:new(?wxVERTICAL),
   wxWindow:setSizer(Frame, FrameSizer),
   
-  menu_toolbar:new(Frame),
+  %% Custom status bar
+  StatusBar = customStatusBar:new([{parent, Frame}]),
+  
+  %% Test status bar API
+  customStatusBar:set_text(StatusBar,{field, help},"Testing"),
+  customStatusBar:set_text(StatusBar,{field, line},"123:14"),
+  customStatusBar:set_text(StatusBar,{field, selection},"123"),
+
+  %% Menubar
+  menu_toolbar:new([{parent, Frame}, {sb, StatusBar}]),
         
   UI = wxPanel:new(Frame, []),
   
   wxSizer:add(FrameSizer, UI, [{flag, ?wxEXPAND},
                                {proportion, 1}]),
+ wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
+                                     {proportion, 0}]),
 
   Manager = wxAuiManager:new([{managed_wnd, UI}, {flags, ?wxAUI_MGR_RECTANGLE_HINT bor 
                                                          ?wxAUI_MGR_TRANSPARENT_DRAG}]),
@@ -89,20 +100,6 @@ init(Options) ->
   
   % wxAuiManager:connect(Manager, aui_render, [{skip,true}]),    
   wxAuiManager:update(Manager),
-  
-  %% Custom status bar
-  StatusBar = wxPanel:new(Frame, [{size,{-1,35}}]),
-  wxWindow:setBackgroundColour(StatusBar, {114,109,109}),
-  
-  % SbSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  % wxPanel:setSizer(StatusBar, SbSizer),
-  % T = wxTextCtrl:new(StatusBar, 909, [{style, ?wxTE_MULTILINE}]), 
-  % wxSizer:add(SbSizer, T, [{flag, ?wxEXPAND},
-  %                                {proportion, 1}]),
-  
-  
-  wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
-                                      {proportion, 0}]),
     
   wxFrame:show(Frame),
   
@@ -149,7 +146,7 @@ handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
     
-%% Window close event
+%% Window close event 
 handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
     io:format("~p Closing window ~n",[self()]),
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),

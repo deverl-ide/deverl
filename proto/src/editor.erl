@@ -103,6 +103,7 @@ init(Config) ->
   %% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Editor}]),
+  wxStyledTextCtrl:connect(Editor, command_menu_selected),
   % wxStyledTextCtrl:connect(Editor, left_down, []),
     
   process_flag(trap_exit, true),
@@ -133,13 +134,7 @@ handle_cast(stop, State)->
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
-% 
-handle_event(_A=#wx{event=#wxMouse{type=left_down}=_E}, State = #state{editor=Editor}) ->
-    io:format("left click~n"),
-    wxWindow:setFocus(Editor),
-    io:format("Mouse capture~p~n", [wxStyledTextCtrl:getMouseDownCaptures(Editor)]),
-    wxStyledTextCtrl:moveCaretInsideView(Editor),
-    {noreply, State};
+
 handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{editor=Editor}) ->
     io:format("Change event: ~p~n", [_E]),
     {noreply, State};
