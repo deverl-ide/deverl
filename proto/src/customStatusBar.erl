@@ -11,9 +11,9 @@
 %% Client API         
 -export([new/1, set_text/3]).
 
--record(state, {parent,
-                sb,             %% Status bar
-                func_menu,      %% The popup function menu
+-record(state, {parent :: wxWindow:wxWindow(),
+                sb :: wxWindow:wxWindow(),     %% Status bar
+                func_menu,                     %% The popup function menu
                 fields :: [wxStaticText:wxSaticText()] 
                 }).
 
@@ -42,14 +42,14 @@ init(Config) ->
   Separator = wxBitmap:new(wxImage:new("icons/separator.png")),
 
   add_label(Sb, ?wxID_ANY, SbSizer, "Text:"),                                    
-  Line = wxStaticText:new(Sb, ?SB_ID_LINE, ":", []),
+  Line = wxStaticText:new(Sb, ?SB_ID_LINE, "1", []),
   set_style(Line),  
   wxSizer:add(SbSizer, Line, [{border, ?PADDING}, {flag, ?wxALL}]),
 
   add_separator(Sb, SbSizer, Separator),
  
   add_label(Sb, ?wxID_ANY, SbSizer, "Selection:"),
-  Selection = wxStaticText:new(Sb, ?SB_ID_SELECTION, ":", []), 
+  Selection = wxStaticText:new(Sb, ?SB_ID_SELECTION, "-", []), 
   set_style(Selection), 
   wxSizer:add(SbSizer, Selection, [{border, ?PADDING}, {flag, ?wxALL}]),
    
@@ -167,7 +167,8 @@ set_text(Sb, {field, Field}, Label) ->
     help ->
       T = proplists:get_value(help, Fields),
       set_text(T, Label)
-    end.
+    end,
+    wxSizer:layout(wxPanel:getSizer(Sb)).
 
 set_text(Field, Label) ->
   wxStaticText:setLabel(Field, Label).  

@@ -34,6 +34,7 @@ start(Config) ->
 
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
+  Sb = proplists:get_value(status_bar, Config),
   
   Panel = wxPanel:new(Parent),
 
@@ -100,8 +101,7 @@ init(Config) ->
   
   %% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
-  wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Editor}]),
-  % wxStyledTextCtrl:connect(Editor, command_menu_selected),
+  wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Sb}]),
   % wxStyledTextCtrl:connect(Editor, left_down, []),
     
   process_flag(trap_exit, true),
@@ -136,12 +136,13 @@ handle_cast(Msg, State) ->
 handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{editor=Editor}) ->
     io:format("Change event: ~p~n", [_E]),
     {noreply, State};
-handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E}, State = #state{editor=Editor}) ->
+handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, State = #state{editor=Editor}) ->
+    %% Update status bar line/col position
+    LineNo = wxStyledTextCtrl:getCurrentLine(Editor),
+    Pos = wxStyledTextCtrl:getCurrentPos(Editor) + 1,
+    ColNo = Pos - wxStyledTextCtrl:positionFromLine(Editor, LineNo),
+    customStatusBar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[LineNo+1, ColNo])),
     %% Update margin width dynamically
-    %% Using the correct event?
-    _LineNo = wxStyledTextCtrl:getCurrentLine(Editor) + 1,
-    _ColNo = wxStyledTextCtrl:getCurrentPos(Editor) + 1,
-    
     Lns = wxStyledTextCtrl:getLineCount(Editor),
     Nw = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, ?MARGIN_NUMBER_PADDING ++ integer_to_list(Lns)),
     Cw = wxStyledTextCtrl:getMarginWidth(Editor, 0),

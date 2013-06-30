@@ -18,7 +18,8 @@
                 env,                  %% The wx environment
                 workspace,            %% Notebook
                 workspace_manager,    %% Tabbed UI manager for editors
-                perspective           %% The AUI user perspective
+                perspective,          %% The AUI user perspective
+                status_bar
                 }).
 
 -define(DEFAULT_FRAME_WIDTH,  1300).
@@ -70,7 +71,7 @@ init(Options) ->
   %% The centre pane/editor window
   EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(PaneInfo), 
   wxAuiPaneInfo:name(EditorWindowPaneInfo, "EditorPane"),
-  Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, ?DEFAULT_TAB_LABEL),
+  Workspace = create_editor(UI, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
   
   %% The left pane/test window
   TestWindow = wxPanel:new(UI),
@@ -102,7 +103,8 @@ init(Options) ->
 
   State = #state{win=Frame},
   {Frame, State#state{workspace=Workspace, 
-                      workspace_manager=Manager}}.
+                      workspace_manager=Manager,
+                      status_bar=StatusBar}}.
 
 %%%%%%%%%%%%%%%%%%%%%
 %%%%% Callbacks %%%%%
@@ -208,7 +210,7 @@ create_utils(Parent, Manager, Pane) ->
 
 %% @doc Create the workspace with the initial editor
 %% @private  
-create_editor(Parent, Manager, Pane, Filename) ->
+create_editor(Parent, Manager, Pane, Sb, Filename) ->
   Style = (0
      bor ?wxAUI_NB_TOP
      bor ?wxAUI_NB_WINDOWLIST_BUTTON
@@ -219,7 +221,7 @@ create_editor(Parent, Manager, Pane, Filename) ->
     
   Workspace = wxAuiNotebook:new(Parent, [{style, Style}]),
   
-  Editor = editor:start([{parent, Workspace}]), %% Gets the editor instance inside a wxPanel
+  Editor = editor:start([{parent, Workspace}, {status_bar, Sb}]), %% Gets the editor instance inside a wxPanel
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
   wxAuiManager:addPane(Manager, Workspace, Pane),
