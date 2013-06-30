@@ -26,7 +26,7 @@
 -record(state, {win, editor}).
 
 %% @doc Create and return a new editor instance
-start(Config) ->
+start(Config) ->  
   % wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
   % wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
   wx_object:start(?MODULE, Config, []).
@@ -34,17 +34,15 @@ start(Config) ->
 
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
-
-  process_flag(trap_exit, true),
   
   Panel = wxPanel:new(Parent),
-    
+
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),
   Editor = wxStyledTextCtrl:new(Panel), 
   wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND},
-                              {proportion, 1}]),           
-                              
+                              {proportion, 1}]),   
+                                                                                             
   %% Editor styles
   Font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
   wxWindow:setFont(Editor, Font),
@@ -103,7 +101,7 @@ init(Config) ->
   %% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Editor}]),
-  wxStyledTextCtrl:connect(Editor, command_menu_selected),
+  % wxStyledTextCtrl:connect(Editor, command_menu_selected),
   % wxStyledTextCtrl:connect(Editor, left_down, []),
     
   process_flag(trap_exit, true),
@@ -143,6 +141,7 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E}, State = #state{e
     %% Using the correct event?
     _LineNo = wxStyledTextCtrl:getCurrentLine(Editor) + 1,
     _ColNo = wxStyledTextCtrl:getCurrentPos(Editor) + 1,
+    
     Lns = wxStyledTextCtrl:getLineCount(Editor),
     Nw = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, ?MARGIN_NUMBER_PADDING ++ integer_to_list(Lns)),
     Cw = wxStyledTextCtrl:getMarginWidth(Editor, 0),

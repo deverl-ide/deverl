@@ -11,14 +11,15 @@
 %% Client API         
 -export([new/1, set_text/3]).
 
--record(state, {sb,             %% Status bar
+-record(state, {parent,
+                sb,             %% Status bar
                 func_menu,      %% The popup function menu
                 fields :: [wxStaticText:wxSaticText()] 
                 }).
 
 -define(FG_COLOUR, {60,60,60}).
 -define(FONT_SIZE, 11).
--define(PADDING, 6).
+-define(PADDING, 4).
 
 -define(SB_ID_LINE, 1).
 -define(SB_ID_SELECTION, 2).
@@ -73,7 +74,7 @@ init(Config) ->
   
   wxSizer:layout(SbSizer),
   Fields = [{line, Line} | [{selection, Selection} | [{help, Help} | []]]],   
-  {Sb, #state{sb=Sb, func_menu=FunctionPopup, fields=Fields}}.
+  {Sb, #state{parent=Parent, sb=Sb, func_menu=FunctionPopup, fields=Fields}}.
   
 %%%%%%%%%%%%%%%%%%%%%
 %%%%% Callbacks %%%%%
@@ -95,7 +96,7 @@ handle_cast(Msg, State) ->
     {noreply,State}.
 
 handle_call(fields, _From, State) ->
-    {reply, State#state.fields, State};
+    {reply, {State#state.fields, State#state.parent}, State};
 handle_call(shutdown, _From, State) ->
     ok,
     {reply,{error, nyi}, State}.
@@ -155,7 +156,7 @@ create_menu() ->
       Label :: unicode:chardata(),
       Result :: atom().
 set_text(Sb, {field, Field}, Label) ->
-  Fields = wx_object:call(Sb, fields),
+  {Fields, Parent} = wx_object:call(Sb, fields),
   case Field of
     line ->
       T = proplists:get_value(line, Fields),
@@ -165,11 +166,7 @@ set_text(Sb, {field, Field}, Label) ->
       set_text(T, Label);
     help ->
       T = proplists:get_value(help, Fields),
-      set_text(T, Label),
-      wxSizer:layout(wxWindow:getSizer(Sb)),
-      wxWindow:refresh(Sb),
-      wxWindow:update(Sb),
-      wxWindow:updateWindowUI(Sb)   
+      set_text(T, Label)
     end.
 
 set_text(Field, Label) ->

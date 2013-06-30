@@ -1,4 +1,4 @@
--module(menu_toolbar).
+-module(ide_menu_v1).
 -export([new/1]).
 -export([start/0, start/1, init/1, handle_event/2, code_change/3,
          terminate/2]).
@@ -46,10 +46,8 @@ start(Config) ->
 init(Config) ->
     Frame = proplists:get_value(parent, Config),
     Sb = proplists:get_value(sb, Config),
-    wxFrame:connect(Frame, menu_highlight,  [{userData, Sb}]),
-    wxFrame:connect(Frame, menu_close,  [{userData, Sb}]),
     
-%%%%% Menubar %%%%%
+    %%%%% Menubar %%%%%
     MenuBar     = wxMenuBar:new(),
       
     File        = wxMenu:new([]),
@@ -134,8 +132,7 @@ init(Config) ->
     wxMenuBar:append(MenuBar, ToolMenu, "Tools"),
     wxMenuBar:append(MenuBar, Help, "Help"),
     
-%%%%% Toolbar %%%%%
-
+    %%%%% Toolbar %%%%%
   	ToolBar = wxFrame:createToolBar(Frame, []),
     wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
 	  %% Id, StatusBar help, filename, args, add seperator
@@ -161,13 +158,15 @@ init(Config) ->
 
     wxToolBar:realize(ToolBar),
 
-    wxMenuBar:connect(Frame, command_menu_selected),
+    wxFrame:connect(Frame, menu_highlight,  [{userData, Sb}]),
+    wxFrame:connect(Frame, menu_close,  [{userData, Sb}]),
+    wxFrame:connect(Frame, command_menu_selected),
+    
     wxFrame:setMenuBar(Frame, MenuBar),
     {Frame, #state{file=File}}. %% Not complete, obvs.
 
-%%%%%%%%%%%%%%%%%%%%%%
-%%%%% Call Backs %%%%%
-%% Menubar/Toolbar events
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%% Event Handlers %%%%%
 handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
 	     State = #state{}) ->
     case Id of
@@ -269,8 +268,7 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
             io:format("about~n")
     end,
     {noreply, State};
-%% Here:
-%% http://forums.wxwidgets.org/viewtopic.php?f=1&t=30059&p=128994&hilit=statusbar+refresh&#p128994
+
 %% Handle menu closed event    
 handle_event(#wx{userData=Sb, event=#wxMenu{type=menu_close}},
 	     State = #state{}) ->
@@ -279,6 +277,7 @@ handle_event(#wx{userData=Sb, event=#wxMenu{type=menu_close}},
 %% Handle menu highlight events    
 handle_event(#wx{id=Id, userData=Sb, event=#wxMenu{type=menu_highlight}},
 	     State = #state{}) ->
+       io:format("menu_highlight~n"),
     case Id of
         ?wxID_NEW ->
             customStatusBar:set_text(Sb, {field, help}, "Whatever"),
