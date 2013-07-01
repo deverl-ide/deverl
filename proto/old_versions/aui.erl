@@ -1,4 +1,9 @@
 %% AUI Manager
+%% @date 1/07/2013
+%% This was the first implementation of the GUI using wxAuiManager.
+%% Buggy. Unable to save and therefore revert to the previous size of
+%% a pane after resize (show/hide) event.
+
 %% aui.erl
 
 -module(aui).
