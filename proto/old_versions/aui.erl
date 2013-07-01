@@ -58,7 +58,6 @@ init(Options) ->
                                {proportion, 1}]),
   wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                      {proportion, 0}]),
-
   Manager = wxAuiManager:new([{managed_wnd, UI}, {flags, ?wxAUI_MGR_RECTANGLE_HINT bor 
                                                          ?wxAUI_MGR_TRANSPARENT_DRAG}]),
                                                          
@@ -77,7 +76,7 @@ init(Options) ->
   TestWindow = wxPanel:new(UI),
   TestWindowPaneInfo = wxAuiPaneInfo:left(wxAuiPaneInfo:new(PaneInfo)),
   wxAuiPaneInfo:name(TestWindowPaneInfo, "TestPane"),
-  wxAuiPaneInfo:minSize(TestWindowPaneInfo,  {200,-1}),
+  wxAuiPaneInfo:minSize(TestWindowPaneInfo, {200,-1}),
   wxAuiPaneInfo:bestSize(TestWindowPaneInfo, {200,-1}),
   wxAuiManager:addPane(Manager, TestWindow, TestWindowPaneInfo),
   
@@ -254,30 +253,30 @@ add_editor(Workspace, FileName) ->
   
 toggle_pane(PaneType) ->
 	{Workspace} = wx_object:call(?MODULE, workspace),
-	Manager     = wxAuiManager:getManager(Workspace),
-	TestPane    = wxAuiManager:getPane(Manager, "TestPane"),
-	UtilPane    = wxAuiManager:getPane(Manager, "UtilPane"),
-	EditorPane  = wxAuiManager:getPane(Manager, "EditorPane"),
+	Manager = wxAuiManager:getManager(Workspace),
+	TestPane = wxAuiManager:getPane(Manager, "TestPane"),
+	UtilPane = wxAuiManager:getPane(Manager, "UtilPane"),	
+  EditorPane = wxAuiManager:getPane(Manager, "EditorPane"),
 	case PaneType of
 		test ->
 			toggle_pane(TestPane, Manager);
 		util ->
 			toggle_pane(UtilPane, Manager);
 		editor ->
-			toggle_pane(TestPane, UtilPane, Manager);
-		maxutil ->
-			toggle_pane(EditorPane, TestPane, Manager)
+			toggle_pane(TestPane, UtilPane, EditorPane, Manager);
+    maxutil ->
+      toggle_pane(EditorPane, TestPane, UtilPane, Manager)
 	end.
 toggle_pane(Pane, Manager) ->
 	IsShown = wxAuiPaneInfo:isShown(Pane),
 	case IsShown of
 		true ->
-			wxAuiPaneInfo:hide(Pane);
+			wxAuiPaneInfo:hide(Pane);	
 		_    ->
 			wxAuiPaneInfo:show(Pane)
 	end,
 	wxAuiManager:update(Manager).
-toggle_pane(Pane1, Pane2, Manager) ->
+toggle_pane(Pane1, Pane2, Other, Manager) ->
 	Pane1IsShown = wxAuiPaneInfo:isShown(Pane1),
 	Pane2IsShown = wxAuiPaneInfo:isShown(Pane2),
 	case Pane1IsShown or Pane2IsShown of
@@ -288,5 +287,5 @@ toggle_pane(Pane1, Pane2, Manager) ->
 			wxAuiPaneInfo:show(Pane1),
 			wxAuiPaneInfo:show(Pane2)
 	end,
-    wxAuiManager:update(Manager).
-
+  wxAuiManager:update(Manager).
+	

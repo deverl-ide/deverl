@@ -57,7 +57,7 @@ init(Config) ->
     %%%%%%%%%%%%%%%%%%%%%
     %%%%% ETS Table %%%%%
     TabId = ets:new(myTable, []),
-    ets:insert(TabId,{?wxID_NEW, "New", "Create a new file.", {aui,add_editor,[]}}),
+    ets:insert(TabId,{?wxID_NEW, "New", "Create a new file.", {ide,add_editor,[]}}),
     ets:insert(TabId,{?wxID_OPEN, "Open", "Open an existing file.", {}}),
     ets:insert(TabId,{?wxID_SAVE, "Save", "Save the current file.", {}}),
     ets:insert(TabId,{?wxID_SAVEAS, "Save As", "Save the file with a new name.", {}}),
@@ -80,10 +80,10 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_INDENT_SPACES, "Spaces", "Indent using spaces.", {}}),
     ets:insert(TabId,{?MENU_ID_INDENT_WIDTH, "Indent width", "Width of indent in spaces.", {}}),
     ets:insert(TabId,{?MENU_ID_FULLSCREEN, "Fullscreen", "Toggle fullscreen.", {}}),
-    ets:insert(TabId,{?MENU_ID_HIDE_TEST, "Hide Test Pane", "Hide/Show the test pane.", {aui,toggle_pane,[test]}}),
-    ets:insert(TabId,{?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", "Hide/Show the utilities pane.", {aui,toggle_pane,[util]}}),
-    ets:insert(TabId,{?MENU_ID_MAX_EDITOR, "Maximise editor", "Maximise the editor pane.", {aui,toggle_pane,[editor]}}),
-    ets:insert(TabId,{?MENU_ID_MAX_UTIL, "Maximise utilities", "Maximise the utilities pane.", {aui,toggle_pane,[maxutil]}}),
+    ets:insert(TabId,{?MENU_ID_HIDE_TEST, "Hide Test Pane", "Hide/Show the test pane.", {ide,toggle_pane,[test]}}),
+    ets:insert(TabId,{?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", "Hide/Show the utilities pane.", {ide,toggle_pane,[util]}}),
+    ets:insert(TabId,{?MENU_ID_MAX_EDITOR, "Maximise editor", "Maximise the editor pane.", {ide,toggle_pane,[editor]}}),
+    ets:insert(TabId,{?MENU_ID_MAX_UTIL, "Maximise utilities", "Maximise the utilities pane.", {ide,toggle_pane,[maxutil]}}),
     
     ets:insert(TabId,{?MENU_ID_LINE_WRAP, "Line Wrap", "Line wrap.", {}}),
     ets:insert(TabId,{?MENU_ID_AUTO_INDENT, "Auto indent", "Auto indent.", {}}),
