@@ -56,18 +56,34 @@ init(Config) ->
   add_separator(Sb, SbSizer, Separator),
   
   %% Function Menu Popup %%
-  add_label(Sb, ?wxID_ANY, SbSizer, "Function:"),
-  FuncDyn = wxStaticText:new(Sb, ?SB_ID_FUNCTION, ":", []), 
-  wxSizer:add(SbSizer, FuncDyn, [{proportion, 1}, {border, ?PADDING}, {flag, ?wxALL}]),
-  FunctionPopup = create_menu(),
-  wxPanel:connect(FuncDyn, left_down),
+  % add_label(Sb, ?wxID_ANY, SbSizer, "Function:"),
+  % FuncDyn = wxStaticText:new(Sb, ?SB_ID_FUNCTION, ":", []), 
+  % set_style(FuncDyn), 
+  % wxSizer:add(SbSizer, FuncDyn, [{proportion, 1}, {border, ?PADDING}, {flag, ?wxALL}]),
+  % FunctionPopup = create_menu(),
+  % wxPanel:connect(FuncDyn, left_down),
 
   % PopupSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  % add_label(Sb, ?wxID_ANY, PopupSizer, "Function:"),
-  % Icon = wxBitmap:new(wxImage:new("icons/sb_menu.png")),
-  % wxSizer:add(PopupSizer, wxStaticBitmap:new(Sb, 345, Icon), [{flag, ?wxALIGN_CENTER_VERTICAL}]),
+  % add_label(Sb, ?wxID_ANY, PopupSizer, "Functions"),
+  % % Icon = wxBitmap:new(wxImage:new("icons/sb_menu.png")),
+  % Icon = wxStaticBitmap:new(Sb, 345, wxBitmap:new(wxImage:new("icons/sb_menu.png"))),
+  % wxSizer:add(PopupSizer, 0, 0, [{proportion, 1}]),
+  % % wxSizer:add(PopupSizer, wxStaticBitmap:new(Sb, 345, Icon), [{border,5},{proportion,0},{flag, ?wxALIGN_CENTER_VERTICAL bor ?wxRIGHT}]),
+  % wxSizer:add(PopupSizer, Icon, [{border,5},{proportion,0},{flag, ?wxALIGN_CENTER_VERTICAL bor ?wxRIGHT}]),
   % FunctionPopup = create_menu(),
-
+  % wxSizer:add(SbSizer, PopupSizer, [{proportion, 1}]),
+  % wxPanel:connect(Icon, left_down),
+  
+  PopupSizer = wxBoxSizer:new(?wxHORIZONTAL),
+  L = wxStaticText:new(Sb, ?wxID_ANY, "Functions"),
+  set_style(L),
+  wxSizer:add(PopupSizer, L, [{proportion, 1},{border, ?PADDING},{flag, ?wxALL}]),
+  Icon = wxStaticBitmap:new(Sb, 345, wxBitmap:new(wxImage:new("icons/sb_menu.png"))),
+  wxSizer:add(PopupSizer, Icon, [{border,5},{proportion,0},{flag, ?wxALIGN_CENTER_VERTICAL bor ?wxRIGHT}]),
+  FunctionPopup = create_menu(),
+  wxSizer:add(SbSizer, PopupSizer, [{proportion, 1}]),
+  wxPanel:connect(Icon, left_down),
+  wxPanel:connect(L, left_down),
 
   add_separator(Sb, SbSizer, Separator),
   
