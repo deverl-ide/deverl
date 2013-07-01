@@ -1,0 +1,3 @@
+<util pane resize>  when resizing util, the pane can go too far, so cannot scale down again
+<window resize>     when resizing window smaller horizontally, test pane resize bar becomes hidden
+<pane resize>       when hiding/showing, panes resize to default, not last used
