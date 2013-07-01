@@ -257,8 +257,8 @@ handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxCommand{type=command_menu_se
        Fun(Result),
        {noreply, State};
 handle_event(E,O) ->
-  io:format("TRACE: In menubar handle_event ~p~n~p~n", [E,O]),
-  {noreply, O}.
+	io:format("TRACE: In menubar handle_event ~p~n~p~n", [E,O]),
+	{noreply, O}.
 
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
