@@ -101,7 +101,7 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_SHORTCUTS, "Keyboard shortcuts", "View keyboard shortcuts.", {}}),
     ets:insert(TabId,{?MENU_ID_SEARCH_DOC, "Search doc", "Search the Erlang documentation.", {}}),
     ets:insert(TabId,{?MENU_ID_MANUAL, "Manual", "View the IDE manual.", {}}),
-    ets:insert(TabId,{?wxID_ABOUT, "About", "About.", {}}),
+    ets:insert(TabId,{?wxID_ABOUT, "About", "About.", {about, new, [{parent, Frame}]}}),
     
     %%%%%%%%%%%%%%%%%%%
     %%%%% Menubar %%%%%
