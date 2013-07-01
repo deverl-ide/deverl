@@ -1,0 +1,2 @@
+<util pane resize>  when resizing util, the pane can go too far, so cannot scale down again
+<pane resize>       when hiding/showing, panes resize to default, not last used

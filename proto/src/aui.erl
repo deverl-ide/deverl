@@ -266,7 +266,7 @@ toggle_pane(PaneType) ->
 		editor ->
 			toggle_pane(TestPane, UtilPane, Manager);
 		maxutil ->
-			toggle_pane(TestPane, EditorPane, Manager)
+			toggle_pane(EditorPane, TestPane, Manager)
 	end.
 toggle_pane(Pane, Manager) ->
 	IsShown = wxAuiPaneInfo:isShown(Pane),
@@ -288,5 +288,5 @@ toggle_pane(Pane1, Pane2, Manager) ->
 			wxAuiPaneInfo:show(Pane1),
 			wxAuiPaneInfo:show(Pane2)
 	end,
-  wxAuiManager:update(Manager).
+    wxAuiManager:update(Manager).
 
