@@ -75,7 +75,7 @@ init(Config) ->
     
     ets:insert(TabId,{?MENU_ID_FONT, "Font", "Select font.", {}}),
     ets:insert(TabId,{?MENU_ID_LN_TOGGLE, "Toggle line numbers", "Toggle line numbers on/off.", {}}),
-    ets:insert(TabId,{?MENU_ID_INDENT_TYPE, "Indent Type", "Create a new file.", {}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_TYPE, "Indent Type", "Indent type: tabs/spaces.", {}}),
     ets:insert(TabId,{?MENU_ID_INDENT_TABS, "Tabs", "Indent using tabs.", {}}),
     ets:insert(TabId,{?MENU_ID_INDENT_SPACES, "Spaces", "Indent using spaces.", {}}),
     ets:insert(TabId,{?MENU_ID_INDENT_WIDTH, "Indent width", "Width of indent in spaces.", {}}),
@@ -94,7 +94,8 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_WRANGLER, "Wrangler", "Wrangler.", {}}),
     ets:insert(TabId,{?MENU_ID_COMPILE, "Compile", "Compile the current file.", {}}),
     ets:insert(TabId,{?MENU_ID_RUN, "Run", "Run the current file.", {}}),
-    ets:insert(TabId,{?MENU_ID_TESTS, "Run Tests", "Run tests for current file.", {}}),
+    ets:insert(TabId,{?MENU_ID_DIALYZER, "Dialyzer", "Run Dialyzer.", {}}),
+    ets:insert(TabId,{?MENU_ID_TESTS, "Run tests", "Run tests for current file.", {}}),
     ets:insert(TabId,{?MENU_ID_DEBUGGER, "Run debugger", "Run debugger.", {}}),
     ets:insert(TabId,{?wxID_HELP, "Help", "View Help.", {}}),
     ets:insert(TabId,{?MENU_ID_SHORTCUTS, "Keyboard shortcuts", "View keyboard shortcuts.", {}}),
