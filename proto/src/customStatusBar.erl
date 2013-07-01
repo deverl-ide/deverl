@@ -55,13 +55,19 @@ init(Config) ->
    
   add_separator(Sb, SbSizer, Separator),
   
+  %% Function Menu Popup %%
   add_label(Sb, ?wxID_ANY, SbSizer, "Function:"),
   FuncDyn = wxStaticText:new(Sb, ?SB_ID_FUNCTION, ":", []), 
   wxSizer:add(SbSizer, FuncDyn, [{proportion, 1}, {border, ?PADDING}, {flag, ?wxALL}]),
-
   FunctionPopup = create_menu(),
-  
   wxPanel:connect(FuncDyn, left_down),
+
+  % PopupSizer = wxBoxSizer:new(?wxHORIZONTAL),
+  % add_label(Sb, ?wxID_ANY, PopupSizer, "Function:"),
+  % Icon = wxBitmap:new(wxImage:new("icons/sb_menu.png")),
+  % wxSizer:add(PopupSizer, wxStaticBitmap:new(Sb, 345, Icon), [{flag, ?wxALIGN_CENTER_VERTICAL}]),
+  % FunctionPopup = create_menu(),
+
 
   add_separator(Sb, SbSizer, Separator),
   
