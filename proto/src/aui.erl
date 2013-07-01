@@ -77,7 +77,7 @@ init(Options) ->
   TestWindow = wxPanel:new(UI),
   TestWindowPaneInfo = wxAuiPaneInfo:left(wxAuiPaneInfo:new(PaneInfo)),
   wxAuiPaneInfo:name(TestWindowPaneInfo, "TestPane"),
-  wxAuiPaneInfo:minSize(TestWindowPaneInfo, {200,-1}),
+  wxAuiPaneInfo:minSize(TestWindowPaneInfo,  {200,-1}),
   wxAuiPaneInfo:bestSize(TestWindowPaneInfo, {200,-1}),
   wxAuiManager:addPane(Manager, TestWindow, TestWindowPaneInfo),
   
