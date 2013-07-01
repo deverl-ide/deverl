@@ -268,20 +268,20 @@ toggle_pane(PaneType) ->
 		util ->
 			toggle_pane(UtilPane, Manager);
 		editor ->
-			toggle_pane(TestPane, UtilPane, EditorPane, Manager);
-    maxutil ->
-      toggle_pane(EditorPane, TestPane, UtilPane, Manager)
-	end.
-toggle_pane(Pane, Manager) ->
+			toggle_pane(TestPane, UtilPane, Manager);
+		maxutil ->
+			toggle_pane(EditorPane, TestPane, Manager)
+	end,
+	wxAuiManager:update(Manager).
+toggle_pane(Pane, _Manager) ->
 	IsShown = wxAuiPaneInfo:isShown(Pane),
 	case IsShown of
 		true ->
 			wxAuiPaneInfo:hide(Pane);	
 		_    ->
 			wxAuiPaneInfo:show(Pane)
-	end,
-	wxAuiManager:update(Manager).
-toggle_pane(Pane1, Pane2, Other, Manager) ->
+	end.
+toggle_pane(Pane1, Pane2, _Manager) ->
 	Pane1IsShown = wxAuiPaneInfo:isShown(Pane1),
 	Pane2IsShown = wxAuiPaneInfo:isShown(Pane2),
 	case Pane1IsShown or Pane2IsShown of
@@ -293,4 +293,3 @@ toggle_pane(Pane1, Pane2, Other, Manager) ->
 			wxAuiPaneInfo:show(Pane2)
 	end,
   wxAuiManager:update(Manager).
-	
