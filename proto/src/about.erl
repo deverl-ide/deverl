@@ -7,7 +7,10 @@
 -export([start/1, init/1, terminate/2,  code_change/3, handle_event/2]).
 -record(state, {win}).
 
-%-define(TABBED_PANE, 7001).
+-define(TABBED_PANE,  7000).
+-define(INFO_PANE,    7001).
+-define(CREDITS_PANE, 7002).
+-define(LICENSE_PANE, 7003).
 
 new(Frame) ->
 	start([Frame]).
@@ -25,15 +28,15 @@ init(Args) ->
 	Panel = wxPanel:new(Frame),
 	MainSizer   = wxBoxSizer:new(?wxVERTICAL),
 	
-	Text  = wxStaticText:new(Panel, 7000, []),
-	Text2 = wxStaticText:new(Panel, 7001, []),
-	
-	TabbedPane = wxNotebook:new(Panel, 7002, []),
-	
-	wxNotebook:addPage(TabbedPane, Text, "Info"),
-	wxNotebook:addPage(TabbedPane, Text2, "Credits"),
-	
+	TabbedPane  = wxNotebook:new(Panel, ?TABBED_PANE, []),
+	InfoPane    = wxStaticText:new(TabbedPane, ?INFO_PANE, []),
+	CreditsPane = wxStaticText:new(TabbedPane, ?CREDITS_PANE, []),
+	LicensePane = wxStaticText:new(TabbedPane, ?LICENSE_PANE, []),
 	CloseButton = wxButton:new(Panel, ?wxID_EXIT, [{label, "&Close"}]),
+	
+	wxNotebook:addPage(TabbedPane, InfoPane, "Info"),
+	wxNotebook:addPage(TabbedPane, CreditsPane, "Credits"),
+	wxNotebook:addPage(TabbedPane, LicensePane, "License"),
 	
 	wxSizer:add(MainSizer, TabbedPane, [{flag, ?wxEXPAND}, {proportion, 1}]),
 	wxSizer:add(MainSizer, CloseButton, [{flag, ?wxALIGN_RIGHT}]),
