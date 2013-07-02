@@ -175,12 +175,25 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
 %% Splitter window events
 handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
              State) ->
-    % Pos = wxSplitterWindow:getSashPosition(State#state{sash_v}),
-    {noreply, State#state{sash_v_pos=wxSplitterWindow:getSashPosition(State#state.sash_v)}};
+    Pos = wxSplitterWindow:getSashPosition(State#state.sash_v),
+    %% Don't save the pos if the sash is dragged to zero, as the sash will revert to the middle when shown again (on mac)
+    if
+      Pos =:= 0 ->
+        NewPos = State#state.sash_v_pos;
+      true ->
+        NewPos = Pos
+    end,
+    {noreply, State#state{sash_v_pos=NewPos}};
 handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
              State) ->
-               % wxSplitterWindow:getSashPosition(State#state{sash_v})
-    {noreply, State#state{sash_h_pos=wxSplitterWindow:getSashPosition(State#state.sash_h)}};
+     Pos = wxSplitterWindow:getSashPosition(State#state.sash_h), 
+     if
+       Pos =:= 0 ->
+         NewPos = State#state.sash_h_pos;
+       true ->
+         NewPos = Pos
+     end,
+    {noreply, State#state{sash_h_pos=NewPos}};
 handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_sash_pos_changing} = _E}, 
              State) ->
     io:format("Sash position changing ~n"),    
