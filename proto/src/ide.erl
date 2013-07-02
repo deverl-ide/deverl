@@ -1,5 +1,5 @@
-%% AUI Manager
-%% aui.erl
+%% The main GUI for the IDE
+%% ide.erl
 
 -module(ide).
 
@@ -15,16 +15,16 @@
 
 %% The record containing the State.
 -record(state, {win,  
-                env,                  %% The wx environment
-                workspace,            %% Notebook
-                utilities,
-                test_pane,
-                workspace_manager,    %% Tabbed UI manager for editors
-                sash_v,
-                sash_h,
-                sash_v_pos,
-                sash_h_pos,
-                status_bar
+                env,                                           %% The wx environment
+                workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
+                utilities,                                     %% The utilities pane
+                test_pane,                                     %% The test pane
+                workspace_manager,                             %% Tabbed UI manager for editors
+                sash_v :: wxSpliiterWindow:wxSplitterWindow(), %% The vertical splitter
+                sash_h :: wxSpliiterWindow:wxSplitterWindow(), %% The horizontal splitter
+                sash_v_pos :: integer(),
+                sash_h_pos :: integer(),
+                status_bar,
                 }).
 
 -define(DEFAULT_FRAME_WIDTH,  1300).
