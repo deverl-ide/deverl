@@ -20,7 +20,19 @@ init(Args) ->
 																?wxSYSTEM_MENU bor
 																?wxFRAME_NO_TASKBAR bor
 																?wxCLOSE_BOX}]),
-	%{Frame, #state{win=Frame}}.
+	Panel = wxPanel:new(Frame),
+	CloseButton = wxButton:new(Panel, ?wxID_EXIT, [{label, "&Close"}]),
+	MainSizer   = wxBoxSizer:new(?wxVERTICAL),
+	
+	%NoteBook = wxNoteBook:new(Panel, 7000, []),
+	
+	%Info = wxStaticText:new(Panel, 7001, "Info"),
+	%wxNoteBook:addPage(NoteBook, Info, "Info", []),
+	
+	%wxSizer:add(MainSizer, NoteBook, []),
+	wxSizer:add(MainSizer, CloseButton, []),
+	wxPanel:setSizer(Panel, MainSizer),
+	
 	wxFrame:centerOnParent(Frame),
 	wxFrame:show(Frame).
 
