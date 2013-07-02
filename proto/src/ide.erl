@@ -97,8 +97,6 @@ init(Options) ->
   wxSplitterWindow:splitVertically(SplitterLeftRight, TestWindow, Workspace,
 		         [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
              
-  io:format("INIT TESTWINDOW: ~p~n~p~n", [TestWindow, Workspace]),
-
   wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
 				     [{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
              
@@ -145,7 +143,6 @@ handle_call(shutdown, _From, State=#state{win=Panel, workspace_manager=Manager})
     wxAuiManager:unInit(Manager),
     wxAuiManager:destroy(Manager),
     wxPanel:destroy(Panel),
-    io:format("Right here..~n"),
     {stop, normal, ok, State};
 %% @doc Get the frames sash positions
 handle_call(splitter, _From, State) ->
@@ -227,7 +224,6 @@ code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
 
 terminate(_Reason, _State) ->
-    io:format("aui callback: terminate~n"),
     wx:destroy().
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -309,7 +305,8 @@ add_editor(Workspace, FileName) ->
   Editor = editor:start([{parent, Workspace}]),
   wxAuiNotebook:addPage(Workspace, Editor, FileName, [{select, true}]),
   Workspace.
-  
+
+%% @doc Display or hide a given window pane
 toggle_pane(PaneType) ->
   {V,H,Vp,Hp,W,T,U} = wx_object:call(?MODULE, splitter),
 	case PaneType of
