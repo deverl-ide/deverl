@@ -1,0 +1,11 @@
+Platform dependent issues:
+
+<ide.erl>
+<1>
+The following two lines cause window display issues in Windows 7. Although widened to the specified dimension, the sash displays retained data (i.e. the notebooks margin).
+
+  % wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
+  % wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
+
+They are required on MacOSX so that the default sash image is visible, although this is only a minor visual issue (which we can probably ignore).
+</1>

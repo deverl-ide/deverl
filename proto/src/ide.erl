@@ -24,7 +24,7 @@
                 sash_h :: wxSpliiterWindow:wxSplitterWindow(), %% The horizontal splitter
                 sash_v_pos :: integer(),
                 sash_h_pos :: integer(),
-                status_bar,
+                status_bar
                 }).
 
 -define(DEFAULT_FRAME_WIDTH,  1300).
