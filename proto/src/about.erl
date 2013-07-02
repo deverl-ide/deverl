@@ -7,6 +7,8 @@
 -export([start/1, init/1, terminate/2,  code_change/3, handle_event/2]).
 -record(state, {win}).
 
+%-define(TABBED_PANE, 7001).
+
 new(Frame) ->
 	start([Frame]).
 
@@ -21,18 +23,22 @@ init(Args) ->
 																?wxFRAME_NO_TASKBAR bor
 																?wxCLOSE_BOX}]),
 	Panel = wxPanel:new(Frame),
-	CloseButton = wxButton:new(Panel, ?wxID_EXIT, [{label, "&Close"}]),
 	MainSizer   = wxBoxSizer:new(?wxVERTICAL),
 	
-	%NoteBook = wxNoteBook:new(Panel, 7000, []),
+	Text  = wxStaticText:new(Panel, 7000, []),
+	Text2 = wxStaticText:new(Panel, 7001, []),
 	
-	%Info = wxStaticText:new(Panel, 7001, "Info"),
-	%wxNoteBook:addPage(NoteBook, Info, "Info", []),
+	TabbedPane = wxNotebook:new(Panel, 7002, []),
 	
-	%wxSizer:add(MainSizer, NoteBook, []),
-	wxSizer:add(MainSizer, CloseButton, []),
+	wxNotebook:addPage(TabbedPane, Text, "Info"),
+	wxNotebook:addPage(TabbedPane, Text2, "Credits"),
+	
+	CloseButton = wxButton:new(Panel, ?wxID_EXIT, [{label, "&Close"}]),
+	
+	wxSizer:add(MainSizer, TabbedPane, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	wxSizer:add(MainSizer, CloseButton, [{flag, ?wxALIGN_RIGHT}]),
+	
 	wxPanel:setSizer(Panel, MainSizer),
-	
 	wxFrame:centerOnParent(Frame),
 	wxFrame:show(Frame).
 
