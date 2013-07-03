@@ -1,7 +1,7 @@
 -module(about).
 -export([new/1]).
--export([start/1, init/1, terminate/2, code_change/3, 
-		 handle_event/2, handle_call/3]).
+-export([start/1, init/1, terminate/2, code_change/3, handle_event/2, 
+		 handle_call/3, handle_cast/2, handle_info/2]).
 -include_lib("wx/include/wx.hrl").
 
 -behaviour(wx_object).
@@ -33,7 +33,7 @@ init(Args) ->
 	
 	TabbedPane  = wxNotebook:new(Panel, ?TABBED_PANE, []),
 	InfoPane    = wxStaticText:new(TabbedPane, ?INFO_PANE, []),
-	  %set_info(InfoPane, ?INFO),
+	set_info(InfoPane, ?INFO),
 	LicensePane = wxStaticText:new(TabbedPane, ?LICENSE_PANE, []),
 	CloseButton = wxButton:new(Panel, ?wxID_EXIT, [{label, "&Close"}]),
 	
@@ -48,7 +48,16 @@ init(Args) ->
 	
 	wxFrame:connect(CloseButton, command_button_clicked),
 	
-	{Frame, State=#state{win=Frame}}.
+	State = #state{win = Frame},
+	{Frame, State}.
+	
+handle_cast(_Msg, State) ->
+	io:format("handle_cast/2: ABOUT PANE"),
+	{noreply, State}.
+	
+handle_info(_Info, State) ->
+	io:format("handle_info/2: ABOUT PANE"),
+	{noreply, State}.
 
 handle_call(shutdown, _From, State=#state{win=Frame}) ->
     wxFrame:destroy(Frame),
@@ -63,7 +72,7 @@ handle_event(#wx{id = ?wxID_EXIT, event = #wxCommand{type = command_button_click
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
     
-terminate(_Reason, State=#state{win=Frame}) ->
+terminate(_Reason, #state{win=Frame}) ->
     wxFrame:destroy(Frame).
 	
 set_info(StaticText, Info) ->
