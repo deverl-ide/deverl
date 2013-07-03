@@ -11,7 +11,8 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 %% Client API         
--export([add_editor/0, add_editor/2, toggle_pane/1, update_styles/0]).
+-export([add_editor/0, add_editor/2, toggle_pane/1, get_selected_editor/0, 
+         get_all_editors/0, update_styles/0]).
 
 %% The record containing the State.
 -record(state, {win,  
@@ -348,26 +349,31 @@ toggle_pane(PaneType) ->
       end
 	end.
   
+%% @doc Get the editor contained within a workspace tab
+-spec get_selected_editor() -> Result when
+  Result :: wxStyledTextCtrl:wxStyledTextCtrl().
+get_selected_editor() ->
+  {Workspace, _} = wx_object:call(?MODULE, workspace), 
+  Index = wxAuiNotebook:getSelection(Workspace),   %% Get the index of the tab
+  W     = wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
+  [Children | _] = wxWindow:getChildren(W),        %% The first child is the STC
+  Editor = wx:typeCast(Children, wxStyledTextCtrl),
+  io:format("Editor: ~p~n", [Editor]),
+  Editor.
+  
+%% @doc Get all open editor instances
+-spec get_all_editors() -> Result when
+  Result :: [wxStyledTextCtrl:wxStyledTextCtrl()].
+get_all_editors() ->
+  {Workspace, _} = wx_object:call(?MODULE, workspace), 
+  Children = wxWindow:getChildren(Workspace),
+  io:format("Children: ~p~n", [Children]).
+  
+%% @doc Apply a function to all editors
+  
 %% @doc Change the font styles within the editors
 update_styles() ->
-  {Workspace, _} = wx_object:call(?MODULE, workspace), 
-  %% Get the selected workspace tab
-  Index = wxAuiNotebook:getSelection(Workspace),
-  W = wxAuiNotebook:getPage(Workspace, Index),
-  io:format("Index: ~p~nPage: ~p~n", [Index, W]),
-  
-  Children = wxStyledTextCtrl:getChildren(W),
-  io:format("Children~p~n", [Children]),
-  % io:format("Name: ~p~n", [wxWindow:getName(Children)]),
-  
-  % Editor = hd(Children),
-  
-  Editor = wx:typeCast(hd(Children), wxStyledTextCtrl),
-  
-  io:format("EDITOR IN IDE: ~p~n", [Editor]),
-  
-  
-  wxStyledTextCtrl:clearAll(Editor),
+  ok.
   
   
   % %% Get the current font
@@ -398,4 +404,3 @@ update_styles() ->
   % Size = wxFont:getPointSize(Font),
   % wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_LINENUMBER, 
   %   wxFont:new(Size, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]));]
-  ok.
