@@ -62,8 +62,8 @@ init(Options) ->
   SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},{style, ?wxSP_NOBORDER}]),
   SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, {style, ?wxSP_NOBORDER}]),
   wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
-  wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
-  wxSplitterWindow:setSashGravity(SplitterTopBottom,   0.5),
+  %wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
+  %wxSplitterWindow:setSashGravity(SplitterTopBottom,   0.5),
   wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
   
   wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),

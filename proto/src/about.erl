@@ -1,16 +1,18 @@
 -module(about).
--compile(export_all).
+-export([new/1]).
+-export([start/1, init/1, terminate/2, code_change/3, handle_event/2, handle_call/3]).
 -include_lib("wx/include/wx.hrl").
 
 -behaviour(wx_object).
 
--export([start/1, init/1, terminate/2,  code_change/3, handle_event/2]).
 -record(state, {win}).
 
 -define(TABBED_PANE,  7000).
 -define(INFO_PANE,    7001).
 -define(CREDITS_PANE, 7002).
 -define(LICENSE_PANE, 7003).
+
+-define(INFO, " ").
 
 new(Frame) ->
 	start([Frame]).
@@ -30,12 +32,11 @@ init(Args) ->
 	
 	TabbedPane  = wxNotebook:new(Panel, ?TABBED_PANE, []),
 	InfoPane    = wxStaticText:new(TabbedPane, ?INFO_PANE, []),
-	CreditsPane = wxStaticText:new(TabbedPane, ?CREDITS_PANE, []),
+	  %set_info(InfoPane),
 	LicensePane = wxStaticText:new(TabbedPane, ?LICENSE_PANE, []),
 	CloseButton = wxButton:new(Panel, ?wxID_EXIT, [{label, "&Close"}]),
 	
 	wxNotebook:addPage(TabbedPane, InfoPane, "Info"),
-	wxNotebook:addPage(TabbedPane, CreditsPane, "Credits"),
 	wxNotebook:addPage(TabbedPane, LicensePane, "License"),
 	
 	wxSizer:add(MainSizer, TabbedPane, [{flag, ?wxEXPAND}, {proportion, 1}]),
@@ -43,14 +44,31 @@ init(Args) ->
 	
 	wxPanel:setSizer(Panel, MainSizer),
 	wxFrame:centerOnParent(Frame),
-	wxFrame:show(Frame).
+	wxFrame:show(Frame),
+	
+	wxButton:connect(CloseButton, command_button_clicked),
+	
+	{state, Frame}.
 
-terminate(_Reason, _State) ->
-    io:format("aui callback: terminate~n"),
-    wx:destroy().
+handle_call(shutdown, _From, State=#state{win=Frame}) ->
+    wxPanel:destroy(Frame),
+    {stop, normal, ok, State}.
+
+handle_event(#wx{event = #wxClose{}}, State) ->
+	io:format("CALL!!!"),
+	{stop, normal, State};
+handle_event(#wx{id = ?wxID_EXIT, event = #wxCommand{type = command_button_clicked}}, State=#state{win=Frame}) ->
+	io:format("CALL!!!"),
+	wxWindow:destroy(Frame),
+	{stop, normal, State}.
 
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
-
-handle_event(_,_) ->
+    
+terminate(_Reason, State=#state{win=Frame}) ->
+	io:format("TERMINATE!!!"),
+    wxWindow:destroy(Frame).
+	
+set_info(StaticText) ->
+	%wxStaticText:setLabel(StaticText, ?INFO).
 	ok.
