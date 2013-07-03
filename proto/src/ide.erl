@@ -11,7 +11,7 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 %% Client API         
--export([add_editor/0, add_editor/2, toggle_pane/1]).
+-export([add_editor/0, add_editor/2, toggle_pane/1, update_styles/0]).
 
 %% The record containing the State.
 -record(state, {win,  
@@ -61,8 +61,9 @@ init(Options) ->
   
   SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},{style, ?wxSP_NOBORDER}]),
   SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, {style, ?wxSP_NOBORDER}]),
-  wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
-  wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
+  %% Following two lines, see platforms.txt <1> 
+  % wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
+  % wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
   wxSplitterWindow:setSashGravity(SplitterTopBottom,   0.5),
   wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
   
@@ -105,8 +106,6 @@ init(Options) ->
   
   wxSplitterWindow:setSashGravity(SplitterTopBottom,   1.0), %% Only the top window grows on resize
   wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0),   %% Only the right window grows
-  % wxSplitterWindow:setMinimumPaneSize(SplitterTopBottom, 1),
-  % wxSplitterWindow:setMinimumPaneSize(SplitterLeftRight, 1),
   
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed, [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
@@ -155,7 +154,7 @@ handle_call(splitter, _From, State) ->
              State#state.utilities}, State};
 %% @doc Return the workspace
 handle_call(workspace, _From, State) ->
-    {reply, {State#state.workspace}, State};
+    {reply, {State#state.workspace, State#state.status_bar}, State};
 handle_call(Msg, _From, State) ->
     demo:format(State#state{}, "Got Call ~p\n", [Msg]),
     {reply,{error, nyi}, State}.
@@ -210,7 +209,7 @@ handle_event(#wx{obj = _Workspace,
     io:format("changed page~n"),
     {noreply, State};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
-    add_editor(State#state.workspace),
+    add_editor(State#state.workspace, State#state.status_bar),
     {noreply, State};
 handle_event(#wx{event = #wxAuiNotebook{type = command_auinotebook_page_close}}, State) ->
     io:fwrite("page closed~n"),
@@ -276,6 +275,12 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
   
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}]), %% Gets the editor instance inside a wxPanel
+  
+  
+  %% TESTING
+  io:format("EDITOR WINDOW: ~p~n", [Editor]),
+  %% // TESTING
+  
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
   wxAuiManager:addPane(Manager, Workspace, Pane),
@@ -287,8 +292,8 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   
 %% @doc Called internally
 %% @private
-add_editor(Workspace) ->
-  add_editor(Workspace, ?DEFAULT_TAB_LABEL),
+add_editor(Workspace, Sb) ->
+  add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb),
   Workspace.
   
 %%%%%%%%%%%%%%%%%%%%%%
@@ -297,12 +302,12 @@ add_editor(Workspace) ->
 %% @doc Creates a new editor instance in a new tab  
 %% @doc To be called from external modules, calls wx server to obtain required state
 add_editor() -> 
-  {Workspace} = wx_object:call(?MODULE, workspace), 
-  add_editor(Workspace),
+  {Workspace, Sb} = wx_object:call(?MODULE, workspace), 
+  add_editor(Workspace, Sb),
   Workspace.
 %% @doc Create a new editor with specified filename
-add_editor(Workspace, FileName) -> 
-  Editor = editor:start([{parent, Workspace}]),
+add_editor(Workspace, FileName, Sb) -> 
+  Editor = editor:start([{parent, Workspace}, {status_bar, Sb}]),
   wxAuiNotebook:addPage(Workspace, Editor, FileName, [{select, true}]),
   Workspace.
 
@@ -341,3 +346,55 @@ toggle_pane(PaneType) ->
           wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
       end
 	end.
+  
+%% @doc Change the font styles within the editors
+update_styles() ->
+  {Workspace, _} = wx_object:call(?MODULE, workspace), 
+  %% Get the selected workspace tab
+  Index = wxAuiNotebook:getSelection(Workspace),
+  W = wxAuiNotebook:getPage(Workspace, Index),
+  io:format("Index: ~p~nPage: ~p~n", [Index, W]),
+  
+  Children = wxStyledTextCtrl:getChildren(W),
+  io:format("Children~p~n", [Children]),
+  % io:format("Name: ~p~n", [wxWindow:getName(Children)]),
+  
+  % Editor = hd(Children),
+  
+  Editor = wx:typeCast(hd(Children), wxStyledTextCtrl),
+  
+  io:format("EDITOR IN IDE: ~p~n", [Editor]),
+  
+  
+  wxStyledTextCtrl:clearAll(Editor),
+  
+  
+  % %% Get the current font
+  % OldFont = wxTextCtrl:getFont(Editor),
+  % io:format("Old Font: ~p~n", [wxFont:getNativeFontInfoUserDesc(OldFont)]), % 
+  % 
+  % %% Set the initial font in the font dialog 
+  % FD = wxFontData:new(),
+  % 
+  % wxFontData:setInitialFont(FD, OldFont), %%% I'm very confused as to how FD is changed?
+  % 
+  % %% Get the editors parent frame
+  % Parent = wxWindow:getParent(Editor),
+  % %% Display the system font picker
+  % Dialog = wxFontDialog:new(Parent, FD),
+  % wxDialog:showModal(Dialog),
+  % 
+  % Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
+  % 
+  % %% Now set the editors font (so the dialog can retrieve it)
+  % wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
+  % wxWindow:setFont(Editor, Font),
+  % 
+  % %% Update the lexer styles
+  % update_styles(Editor, Font),
+  % 
+  % %% Reset the margin size
+  % Size = wxFont:getPointSize(Font),
+  % wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_LINENUMBER, 
+  %   wxFont:new(Size, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]));]
+  ok.
