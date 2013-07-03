@@ -104,6 +104,7 @@ init(Options) ->
 				     [{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
              
   % wxSizer:layout(FrameSizer),
+  wxFrame:center(Frame),
   wxFrame:show(Frame),
   
   wxSplitterWindow:setSashGravity(SplitterTopBottom,   1.0), %% Only the top window grows on resize
@@ -318,19 +319,19 @@ toggle_pane(PaneType) ->
   {V,H,Vp,Hp,W,T,U} = wx_object:call(?MODULE, splitter),
 	case PaneType of
 		test ->
-      case wxSplitterWindow:isSplit(V) of
-        true ->
-          wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-        false ->
-          wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
-      end;
+            case wxSplitterWindow:isSplit(V) of
+                true ->
+                    wxSplitterWindow:unsplit(V,[{toRemove, T}]);
+                false ->
+                    wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
+            end;
 		util ->
-      case wxSplitterWindow:isSplit(H) of
-        true ->
-          wxSplitterWindow:unsplit(H,[{toRemove, U}]);
-        false ->
-          wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
-      end;
+            case wxSplitterWindow:isSplit(H) of
+                true ->
+					wxSplitterWindow:unsplit(H,[{toRemove, U}]);
+				false ->
+					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
+			end;
 		editor ->
       case wxSplitterWindow:isSplit(V) of
         true ->
@@ -394,33 +395,3 @@ apply_to_all_editors() ->
 %% @doc Change the font styles within the editors
 update_styles() ->
   ok.
-  
-  
-  % %% Get the current font
-  % OldFont = wxTextCtrl:getFont(Editor),
-  % io:format("Old Font: ~p~n", [wxFont:getNativeFontInfoUserDesc(OldFont)]), % 
-  % 
-  % %% Set the initial font in the font dialog 
-  % FD = wxFontData:new(),
-  % 
-  % wxFontData:setInitialFont(FD, OldFont), %%% I'm very confused as to how FD is changed?
-  % 
-  % %% Get the editors parent frame
-  % Parent = wxWindow:getParent(Editor),
-  % %% Display the system font picker
-  % Dialog = wxFontDialog:new(Parent, FD),
-  % wxDialog:showModal(Dialog),
-  % 
-  % Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
-  % 
-  % %% Now set the editors font (so the dialog can retrieve it)
-  % wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
-  % wxWindow:setFont(Editor, Font),
-  % 
-  % %% Update the lexer styles
-  % update_styles(Editor, Font),
-  % 
-  % %% Reset the margin size
-  % Size = wxFont:getPointSize(Font),
-  % wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_LINENUMBER, 
-  %   wxFont:new(Size, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]));]
