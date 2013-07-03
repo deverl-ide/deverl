@@ -12,7 +12,7 @@
 -define(INFO_PANE,    7001).
 -define(LICENSE_PANE, 7002).
 
--define(INFO, " ").
+-define(INFO, "Cool Erlang IDE").
 
 new(Frame) ->
 	start([Frame]).
