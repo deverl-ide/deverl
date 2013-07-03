@@ -1,6 +1,7 @@
 -module(about).
 -export([new/1]).
--export([start/1, init/1, terminate/2, code_change/3, handle_event/2, handle_call/3]).
+-export([start/1, init/1, terminate/2, code_change/3, 
+		 handle_event/2, handle_call/3]).
 -include_lib("wx/include/wx.hrl").
 
 -behaviour(wx_object).
@@ -9,8 +10,7 @@
 
 -define(TABBED_PANE,  7000).
 -define(INFO_PANE,    7001).
--define(CREDITS_PANE, 7002).
--define(LICENSE_PANE, 7003).
+-define(LICENSE_PANE, 7002).
 
 -define(INFO, " ").
 
@@ -51,7 +51,7 @@ init(Args) ->
 	{state, Frame}.
 
 handle_call(shutdown, _From, State=#state{win=Frame}) ->
-    wxPanel:destroy(Frame),
+    wxFrame:destroy(Frame),
     {stop, normal, ok, State}.
 
 handle_event(#wx{event = #wxClose{}}, State) ->
@@ -59,7 +59,7 @@ handle_event(#wx{event = #wxClose{}}, State) ->
 	{stop, normal, State};
 handle_event(#wx{id = ?wxID_EXIT, event = #wxCommand{type = command_button_clicked}}, State=#state{win=Frame}) ->
 	io:format("CALL!!!"),
-	wxWindow:destroy(Frame),
+	wxFrame:destroy(Frame),
 	{stop, normal, State}.
 
 code_change(_, _, State) ->
@@ -67,7 +67,7 @@ code_change(_, _, State) ->
     
 terminate(_Reason, State=#state{win=Frame}) ->
 	io:format("TERMINATE!!!"),
-    wxWindow:destroy(Frame).
+    wxFrame:destroy(Frame).
 	
 set_info(StaticText) ->
 	%wxStaticText:setLabel(StaticText, ?INFO).
