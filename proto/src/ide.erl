@@ -64,8 +64,8 @@ init(Options) ->
   SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, {style, ?wxSP_NOBORDER}]),
 
   %% Following two lines, see platforms.txt <1> 
-  % wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
-  % wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
+  wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
+  wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
   wxSplitterWindow:setSashGravity(SplitterTopBottom,   0.5),
   wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
   
@@ -103,7 +103,7 @@ init(Options) ->
   wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
 				     [{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
              
-  % wxSizer:layout(FrameSizer),
+  wxSizer:layout(FrameSizer),
   wxFrame:center(Frame),
   wxFrame:show(Frame),
   
@@ -244,7 +244,7 @@ create_utils(Parent, Manager, Pane) ->
   
   % Utils = wxAuiNotebook:new(Parent, [{style, Style}]),
   Utils = wxNotebook:new(Parent, 8989, [{style, ?wxBORDER_NONE}]),
-
+  
   Console = ide_shell:new([{parent, Utils}]),
   % wxAuiNotebook:addPage(Utils, Console, "Console", []),
   wxNotebook:addPage(Utils, Console, "Console", []),  
@@ -278,11 +278,6 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
   
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}]), %% Gets the editor instance inside a wxPanel
-  
-  
-  %% TESTING
-  io:format("EDITOR WINDOW: ~p~n", [Editor]),
-  %% // TESTING
   
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
