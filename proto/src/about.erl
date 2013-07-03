@@ -12,7 +12,10 @@
 -define(INFO_PANE,    7001).
 -define(LICENSE_PANE, 7002).
 
--define(INFO, "\n\nCool Erlang IDE").
+-define(INFO, "\n\nCool Erlang IDE" ++ 
+			  "\n\nAuthors:\n" ++
+			  "Tom Richmond (tr201@kent.ac.uk)\n" ++ 
+			  "Michael Quested (mdq3@kent.ac.uk)\n").
 
 new(Frame) ->
 	start([Frame]).
@@ -46,7 +49,7 @@ init(Args) ->
 
 	wxSizer:add(MainSizer, Banner,      [{border, 10}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}]),
 	wxSizer:add(MainSizer, TabbedPane,  [{border, 8},  {proportion, 1}, {flag, ?wxALL bor ?wxEXPAND}]),
-	wxSizer:add(MainSizer, CloseButton, [{border, 8},  {flag, ?wxALL bor ?wxALIGN_RIGHT}]),
+	wxSizer:add(MainSizer, CloseButton, [{border, 10}, {flag, ?wxALL bor ?wxALIGN_RIGHT}]),
 
 	wxFrame:centerOnParent(Frame),
 	wxFrame:show(Frame),
