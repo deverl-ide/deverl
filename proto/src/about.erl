@@ -1,7 +1,7 @@
 -module(about).
 -export([new/1]).
--export([start/1, init/1, terminate/2, code_change/3, 
-		 handle_event/2, handle_call/3]).
+-export([start/1, init/1, terminate/2, code_change/3, handle_event/2, 
+		 handle_call/3, handle_cast/2, handle_info/2]).
 -include_lib("wx/include/wx.hrl").
 
 -behaviour(wx_object).
@@ -12,7 +12,7 @@
 -define(INFO_PANE,    7001).
 -define(LICENSE_PANE, 7002).
 
--define(INFO, " ").
+-define(INFO, "Cool Erlang IDE").
 
 new(Frame) ->
 	start([Frame]).
@@ -31,24 +31,38 @@ init(Args) ->
 	MainSizer   = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(Panel, MainSizer),
 	
+	Banner = wxPanel:new(Panel),
+	wxPanel:setBackgroundColour(Banner, ?wxCYAN),
+	wxPanel:setSize(Banner, -1, 75),
+	
 	TabbedPane  = wxNotebook:new(Panel, ?TABBED_PANE, []),
 	InfoPane    = wxStaticText:new(TabbedPane, ?INFO_PANE, []),
-	  %set_info(InfoPane, ?INFO),
+	set_info(InfoPane, ?INFO),
 	LicensePane = wxStaticText:new(TabbedPane, ?LICENSE_PANE, []),
 	CloseButton = wxButton:new(Panel, ?wxID_EXIT, [{label, "&Close"}]),
 	
 	wxNotebook:addPage(TabbedPane, InfoPane, "Info"),
 	wxNotebook:addPage(TabbedPane, LicensePane, "License"),
 	
-	wxSizer:add(MainSizer, TabbedPane, [{flag, ?wxEXPAND}, {proportion, 1}]),
-	wxSizer:add(MainSizer, CloseButton, [{flag, ?wxALIGN_RIGHT}]),
+	wxSizer:add(MainSizer, Banner,      [{border, 10}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}]),
+	wxSizer:add(MainSizer, TabbedPane,  [{border, 8},  {proportion, 1}, {flag, ?wxALL bor ?wxEXPAND}]),
+	wxSizer:add(MainSizer, CloseButton, [{border, 8},  {flag, ?wxALL bor ?wxALIGN_RIGHT}]),
 	
 	wxFrame:centerOnParent(Frame),
 	wxFrame:show(Frame),
 	
 	wxFrame:connect(CloseButton, command_button_clicked),
 	
-	{Frame, State=#state{win=Frame}}.
+	State = #state{win = Frame},
+	{Frame, State}.
+	
+handle_cast(_Msg, State) ->
+	io:format("handle_cast/2: ABOUT PANE"),
+	{noreply, State}.
+	
+handle_info(_Info, State) ->
+	io:format("handle_info/2: ABOUT PANE"),
+	{noreply, State}.
 
 handle_call(shutdown, _From, State=#state{win=Frame}) ->
     wxFrame:destroy(Frame),
@@ -63,7 +77,7 @@ handle_event(#wx{id = ?wxID_EXIT, event = #wxCommand{type = command_button_click
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
     
-terminate(_Reason, State=#state{win=Frame}) ->
+terminate(_Reason, #state{win=Frame}) ->
     wxFrame:destroy(Frame).
 	
 set_info(StaticText, Info) ->
