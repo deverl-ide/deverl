@@ -101,6 +101,7 @@ init(Options) ->
 				     [{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
              
   % wxSizer:layout(FrameSizer),
+  wxFrame:center(Frame),
   wxFrame:show(Frame),
   
   wxSplitterWindow:setSashGravity(SplitterTopBottom,   1.0), %% Only the top window grows on resize
@@ -311,33 +312,33 @@ toggle_pane(PaneType) ->
   {V,H,Vp,Hp,W,T,U} = wx_object:call(?MODULE, splitter),
 	case PaneType of
 		test ->
-      case wxSplitterWindow:isSplit(V) of
-        true ->
-          wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-        false ->
-          wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
-      end;
+            case wxSplitterWindow:isSplit(V) of
+                true ->
+                    wxSplitterWindow:unsplit(V,[{toRemove, T}]);
+                false ->
+                    wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
+            end;
 		util ->
-      case wxSplitterWindow:isSplit(H) of
-        true ->
-          wxSplitterWindow:unsplit(H,[{toRemove, U}]);
-        false ->
-          wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
-      end;
+            case wxSplitterWindow:isSplit(H) of
+                true ->
+					wxSplitterWindow:unsplit(H,[{toRemove, U}]);
+				false ->
+					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
+			end;
 		editor ->
-      case wxSplitterWindow:isSplit(V) of
-        true ->
-          wxSplitterWindow:unsplit(H,[{toRemove, U}]),
-          wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-        false ->
-          wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-          wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
-      end;
-    maxutil ->
-      case wxSplitterWindow:isSplit(H) of
-        true ->
-          wxSplitterWindow:unsplit(H,[{toRemove, V}]);
-        false ->
-          wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
-      end
-	end.
+			case wxSplitterWindow:isSplit(V) of
+				true ->
+					wxSplitterWindow:unsplit(H,[{toRemove, U}]),
+					wxSplitterWindow:unsplit(V,[{toRemove, T}]);
+				false ->
+					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+					wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
+			end;
+		maxutil ->
+			case wxSplitterWindow:isSplit(H) of
+				true ->
+					wxSplitterWindow:unsplit(H,[{toRemove, V}]);
+				false ->
+					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
+			end
+		end.

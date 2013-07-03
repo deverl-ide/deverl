@@ -39,9 +39,15 @@ init(Args) ->
 	wxPanel:setSize(Banner, -1, 75),
 
 	TabbedPane  = wxNotebook:new(Panel, ?TABBED_PANE, []),
-	InfoPane    = wxTextCtrl:new(TabbedPane, ?INFO_PANE, [{style, ?wxTE_MULTILINE bor ?wxTE_CENTRE bor ?wxTE_READONLY}]),
+	InfoPane    = wxTextCtrl:new(TabbedPane, ?INFO_PANE,    [{style, ?wxTE_MULTILINE bor 
+																     ?wxTE_CENTRE bor 
+																     ?wxTE_READONLY bor
+																     ?wxBORDER_NONE}]),
 	set_info(InfoPane, ?INFO),
-	LicensePane = wxTextCtrl:new(TabbedPane, ?LICENSE_PANE, [{style, ?wxTE_MULTILINE bor ?wxTE_CENTRE bor ?wxTE_READONLY}]),
+	LicensePane = wxTextCtrl:new(TabbedPane, ?LICENSE_PANE, [{style, ?wxTE_MULTILINE bor 
+																	 ?wxTE_CENTRE bor 
+																	 ?wxTE_READONLY bor
+																	 ?wxBORDER_NONE}]),
 	CloseButton = wxButton:new(Panel, ?wxID_EXIT, [{label, "&Close"}]),
 
 	wxNotebook:addPage(TabbedPane, InfoPane, "Info"),
