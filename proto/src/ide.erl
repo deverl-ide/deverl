@@ -61,6 +61,7 @@ init(Options) ->
   
   SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},{style, ?wxSP_NOBORDER}]),
   SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, {style, ?wxSP_NOBORDER}]),
+
   %% Following two lines, see platforms.txt <1> 
   % wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
   % wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
