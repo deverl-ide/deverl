@@ -43,14 +43,23 @@ init(Config) ->
   Editor = wxStyledTextCtrl:new(Panel), 
   wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND},
                               {proportion, 1}]),   
+                              
+                              
+  %% TESTING
+  io:format("EDITOR: ~p~n", [Editor]),
+  Name = wxWindow:getName(Editor),
+  io:format("EDITOR NAME: ~p~n", [Name]),
+  %% // TESTING
+                              
                                                                                              
   %% Editor styles
   Font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
-  wxWindow:setFont(Editor, Font),
+  % wxWindow:setFont(Editor, Font),
   
   wxStyledTextCtrl:styleClearAll(Editor),
-  wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
+  % wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
   wxStyledTextCtrl:setLexer(Editor, ?wxSTC_LEX_ERLANG),
+  
   
   wxStyledTextCtrl:setSelBackground(Editor, true, ?SELECTION),
   wxStyledTextCtrl:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
@@ -74,33 +83,32 @@ init(Config) ->
   wxStyledTextCtrl:setMarginMask (Editor, 1, ?wxSTC_MASK_FOLDERS),
   wxStyledTextCtrl:setMarginSensitive(Editor, 1, true), %% Makes margin sensitive to mouse clicks
   
-  wxStyledTextCtrl:setProperty(Editor, "fold", "7"),
-  wxStyledTextCtrl:setProperty(Editor, "fold.comment", "2"),
-  wxStyledTextCtrl:setProperty(Editor, "fold.compact", "2"),
+  wxStyledTextCtrl:setProperty(Editor, "fold", "1"),
+  wxStyledTextCtrl:setProperty(Editor, "fold.comment", "1"),
+  wxStyledTextCtrl:setProperty(Editor, "fold.compact", "1"),
   
   wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDER, ?wxSTC_MARK_ARROW, 
     [{foreground, ?GREY}, {background, ?GREY}]),
-        
   wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEROPEN, ?wxSTC_MARK_ARROWDOWN, 
     [{foreground, ?GREY}, {background, ?GREY}]),
-        
   wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERSUB, ?wxSTC_MARK_EMPTY, 
     [{foreground, ?GREY}, {background, ?GREY}]),
-        
   wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEREND, ?wxSTC_MARK_ARROW, 
     [{foreground, ?GREY}, {background, ?GREY}]),
-  
   wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEROPENMID, ?wxSTC_MARK_ARROWDOWN, 
-    [{foreground, ?GREY}, {background, ?GREY}]),
-        
+    [{foreground, ?GREY}, {background, ?GREY}]),        
   wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERMIDTAIL, ?wxSTC_MARK_EMPTY, 
     [{foreground, ?GREY}, {background, ?GREY}]),
-        
   wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERTAIL, ?wxSTC_MARK_EMPTY, 
     [{foreground, ?GREY}, {background, ?GREY}]),
   
   %% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
+  % wxStyledTextCtrl:connect(Editor, stc_drag_over, []),
+  % wxStyledTextCtrl:connect(Editor, stc_start_drag, []),
+  % wxStyledTextCtrl:connect(Editor, stc_key, []),
+  % wxStyledTextCtrl:connect(Editor, stc_userlistselection, []),
+  % wxStyledTextCtrl:connect(Editor, stc_do_drop, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Sb}]),
   % wxStyledTextCtrl:connect(Editor, left_down, []),
     
@@ -138,10 +146,8 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{edi
     {noreply, State};
 handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, State = #state{editor=Editor}) ->
     %% Update status bar line/col position
-    LineNo = wxStyledTextCtrl:getCurrentLine(Editor),
-    Pos = wxStyledTextCtrl:getCurrentPos(Editor) + 1,
-    ColNo = Pos - wxStyledTextCtrl:positionFromLine(Editor, LineNo),
-    customStatusBar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[LineNo+1, ColNo])),
+    {X,Y} = get_x_y(Editor),
+    customStatusBar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
     %% Update margin width dynamically
     Lns = wxStyledTextCtrl:getLineCount(Editor),
     Nw = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, ?MARGIN_NUMBER_PADDING ++ integer_to_list(Lns)),
@@ -187,6 +193,9 @@ keywords() ->
   lists:flatten([KW ++ " " || KW <- KWS]).
 
 %% @doc Updates the styles for individual elements in the lexer
+-spec update_styles(Editor, Font) -> ok when
+  Editor :: wxStyledTextCtrl:wxStyledTextCtrl(),
+  Font :: wxFont:wxFont().
 update_styles(Editor, Font) ->
   %% {Style, Colour}
   Styles =  [{?wxSTC_ERLANG_DEFAULT,  {0,0,0}},
@@ -214,12 +223,22 @@ update_styles(Editor, Font) ->
   [SetStyle(Style) || Style <- Styles],
   ok.
   
+%% @doc Get the cursor position in the editor
+%% @doc x=line no, y=col no.
+-spec editor:get_x_y(Editor) -> Result when
+  Editor :: wxStyledTextCtrl:wxStyledTextCtrl(),
+  Result :: {integer(), integer()}.
+get_x_y(Editor) ->
+  LineNo = wxStyledTextCtrl:getCurrentLine(Editor),
+  Pos = wxStyledTextCtrl:getCurrentPos(Editor) + 1,
+  ColNo = Pos - wxStyledTextCtrl:positionFromLine(Editor, LineNo),
+  {LineNo+1, ColNo}.
+  
 %%%%%%%%%%%%%%%%%%%%%%
 %%%%% Client API %%%%%
 
 update_style() ->
-  %% Change styles
-  
+
   %% Update the margin size (2pts smaller than text)
   ok.
 
@@ -230,6 +249,12 @@ word_wrap(Server) -> %% Param is the wx_object handle from the original call to 
   %% Make a call to the wx server, which call handle_call()
   State = wx_object:call(Server, editor),
   io:format("State: ~p~n", [State]).
+  
+%% Set the zoom
+
+%% @doc Get the outer panels associated editor
+
+
   
 stop() ->
   io:format("Terminate~n"),

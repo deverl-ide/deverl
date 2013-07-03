@@ -11,7 +11,8 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 %% Client API         
--export([add_editor/0, add_editor/2, toggle_pane/1]).
+-export([add_editor/0, add_editor/2, toggle_pane/1, get_selected_editor/0, 
+         get_all_editors/0, update_styles/0, apply_to_all_editors/0]).
 
 %% The record containing the State.
 -record(state, {win,  
@@ -61,9 +62,11 @@ init(Options) ->
   
   SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},{style, ?wxSP_NOBORDER}]),
   SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, {style, ?wxSP_NOBORDER}]),
-  wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
-  %wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
-  %wxSplitterWindow:setSashGravity(SplitterTopBottom,   0.5),
+
+  %% Following two lines, see platforms.txt <1> 
+  % wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
+  % wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
+  wxSplitterWindow:setSashGravity(SplitterTopBottom,   0.5),
   wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
   
   wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
@@ -106,8 +109,6 @@ init(Options) ->
   
   wxSplitterWindow:setSashGravity(SplitterTopBottom,   1.0), %% Only the top window grows on resize
   wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0),   %% Only the right window grows
-  % wxSplitterWindow:setMinimumPaneSize(SplitterTopBottom, 1),
-  % wxSplitterWindow:setMinimumPaneSize(SplitterLeftRight, 1),
   
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed, [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
@@ -156,7 +157,7 @@ handle_call(splitter, _From, State) ->
              State#state.utilities}, State};
 %% @doc Return the workspace
 handle_call(workspace, _From, State) ->
-    {reply, {State#state.workspace}, State};
+    {reply, {State#state.workspace, State#state.status_bar}, State};
 handle_call(Msg, _From, State) ->
     demo:format(State#state{}, "Got Call ~p\n", [Msg]),
     {reply,{error, nyi}, State}.
@@ -211,7 +212,7 @@ handle_event(#wx{obj = _Workspace,
     io:format("changed page~n"),
     {noreply, State};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
-    add_editor(State#state.workspace),
+    add_editor(State#state.workspace, State#state.status_bar),
     {noreply, State};
 handle_event(#wx{event = #wxAuiNotebook{type = command_auinotebook_page_close}}, State) ->
     io:fwrite("page closed~n"),
@@ -277,6 +278,12 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
   
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}]), %% Gets the editor instance inside a wxPanel
+  
+  
+  %% TESTING
+  io:format("EDITOR WINDOW: ~p~n", [Editor]),
+  %% // TESTING
+  
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
   wxAuiManager:addPane(Manager, Workspace, Pane),
@@ -288,8 +295,8 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   
 %% @doc Called internally
 %% @private
-add_editor(Workspace) ->
-  add_editor(Workspace, ?DEFAULT_TAB_LABEL),
+add_editor(Workspace, Sb) ->
+  add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb),
   Workspace.
   
 %%%%%%%%%%%%%%%%%%%%%%
@@ -298,12 +305,12 @@ add_editor(Workspace) ->
 %% @doc Creates a new editor instance in a new tab  
 %% @doc To be called from external modules, calls wx server to obtain required state
 add_editor() -> 
-  {Workspace} = wx_object:call(?MODULE, workspace), 
-  add_editor(Workspace),
+  {Workspace, Sb} = wx_object:call(?MODULE, workspace), 
+  add_editor(Workspace, Sb),
   Workspace.
 %% @doc Create a new editor with specified filename
-add_editor(Workspace, FileName) -> 
-  Editor = editor:start([{parent, Workspace}]),
+add_editor(Workspace, FileName, Sb) -> 
+  Editor = editor:start([{parent, Workspace}, {status_bar, Sb}]),
   wxAuiNotebook:addPage(Workspace, Editor, FileName, [{select, true}]),
   Workspace.
 
@@ -326,6 +333,7 @@ toggle_pane(PaneType) ->
 					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
 			end;
 		editor ->
+<<<<<<< HEAD
 			case wxSplitterWindow:isSplit(V) orelse wxSplitterWindow:isSplit(H) of
 				true ->
 					wxSplitterWindow:unsplit(H,[{toRemove, U}]),
@@ -342,3 +350,67 @@ toggle_pane(PaneType) ->
 					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
 			end
 		end. 
+=======
+      case wxSplitterWindow:isSplit(V) of
+        true ->
+          wxSplitterWindow:unsplit(H,[{toRemove, U}]),
+          wxSplitterWindow:unsplit(V,[{toRemove, T}]);
+        false ->
+          wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+          wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
+      end;
+    maxutil ->
+      case wxSplitterWindow:isSplit(H) of
+        true ->
+          wxSplitterWindow:unsplit(H,[{toRemove, V}]);
+        false ->
+          wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
+      end
+	end.
+  
+%% @doc Get the editor instance from a notebook tab
+%% @private
+-spec get_editor(Index, Workspace) -> Result when
+  Index :: integer(),
+  Workspace :: wxAuiNotebook:wxAuiNotebook(),
+  Result :: wxStyledTextCtrl:wxStyledTextCtrl().
+get_editor(Index, Workspace) ->
+  W     = wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
+  [Children | _] = wxWindow:getChildren(W),        %% The first child is the STC
+  Editor = wx:typeCast(Children, wxStyledTextCtrl),
+  Editor.
+  
+%% @doc Get the editor contained within a workspace tab
+-spec get_selected_editor() -> Result when
+  Result :: wxStyledTextCtrl:wxStyledTextCtrl().
+get_selected_editor() ->
+  {Workspace, _} = wx_object:call(?MODULE, workspace), 
+  Index = wxAuiNotebook:getSelection(Workspace),   %% Get the index of the tab
+  W     = wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
+  get_editor(Index, Workspace).
+  
+%% @doc Get all open editor instances
+-spec get_all_editors() -> Result when
+  Result :: [wxStyledTextCtrl:wxStyledTextCtrl()].
+get_all_editors() ->
+  {Workspace, _} = wx_object:call(?MODULE, workspace),
+  Count = wxAuiNotebook:getPageCount(Workspace),
+  get_all_editors(Workspace, Count - 1, []).
+%% @private
+get_all_editors(Workspace, -1, Acc) -> Acc;
+get_all_editors(Workspace, Count, Acc) ->
+  get_all_editors(Workspace, Count -1, [get_editor(Count, Workspace) | Acc]).
+  
+%% @doc Apply the given function to all open editor instances
+%% EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
+apply_to_all_editors() ->
+  Fun = fun(STC) ->
+        wxStyledTextCtrl:clearAll(STC)
+        end,
+  lists:map(Fun, get_all_editors()).
+  
+  
+%% @doc Change the font styles within the editors
+update_styles() ->
+  ok.
+>>>>>>> 435168c1b1c1e62ea18a8cdf9afa09a62a8f7933
