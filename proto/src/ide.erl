@@ -192,7 +192,9 @@ handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter
        true ->
          NewPos = Pos
      end,
-    {noreply, State#state{sash_h_pos=NewPos}};
+     wxWindow:refresh(State#state.sash_v),
+     wxWindow:update(State#state.sash_v),
+     {noreply, State#state{sash_h_pos=NewPos}};
 handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_sash_pos_changing} = _E}, 
              State) ->
     io:format("Sash position changing ~n"),    
