@@ -12,7 +12,7 @@
 -define(INFO_PANE,    7001).
 -define(LICENSE_PANE, 7002).
 
--define(INFO, "Cool Erlang IDE").
+-define(INFO, "\n\nCool Erlang IDE").
 
 new(Frame) ->
 	start([Frame]).
@@ -36,9 +36,9 @@ init(Args) ->
 	wxPanel:setSize(Banner, -1, 75),
 	
 	TabbedPane  = wxNotebook:new(Panel, ?TABBED_PANE, []),
-	InfoPane    = wxStaticText:new(TabbedPane, ?INFO_PANE, []),
+	InfoPane    = wxTextCtrl:new(TabbedPane, ?INFO_PANE, [{style, ?wxTE_MULTILINE bor ?wxTE_CENTRE bor ?wxTE_READONLY}]),
 	set_info(InfoPane, ?INFO),
-	LicensePane = wxStaticText:new(TabbedPane, ?LICENSE_PANE, []),
+	LicensePane = wxTextCtrl:new(TabbedPane, ?LICENSE_PANE, [{style, ?wxTE_MULTILINE bor ?wxTE_CENTRE bor ?wxTE_READONLY}]),
 	CloseButton = wxButton:new(Panel, ?wxID_EXIT, [{label, "&Close"}]),
 	
 	wxNotebook:addPage(TabbedPane, InfoPane, "Info"),
@@ -80,6 +80,8 @@ code_change(_, _, State) ->
 terminate(_Reason, #state{win=Frame}) ->
     wxFrame:destroy(Frame).
 	
-set_info(StaticText, Info) ->
-	wxStaticText:setLabel(StaticText, Info).
+set_info(TextBox, Text) ->
+	wxTextCtrl:appendText(TextBox, Text).
+	
+	
 	
