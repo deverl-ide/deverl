@@ -13,7 +13,8 @@
 
 -define(STATUS_BAR_HELP_DEFAULT, "").
 
-%% Menubar/toolbar macros             
+%% Menubar/toolbar macros   
+-define(MENU_ID_SAVE_ALL,          4001).          
 -define(MENU_ID_FONT,              6000).
 -define(MENU_ID_LN_TOGGLE,         6001).
 -define(MENU_ID_INDENT_TYPE,       6002).
@@ -60,7 +61,8 @@ init(Config) ->
     ets:insert(TabId,{?wxID_NEW, "New", "Create a new file.", {ide,add_editor,[]}}),
     ets:insert(TabId,{?wxID_OPEN, "Open", "Open an existing file.", {ide,get_selected_editor,[]}}),
     ets:insert(TabId,{?wxID_SAVE, "Save", "Save the current file.", {ide,get_all_editors,[]}}),
-    ets:insert(TabId,{?wxID_SAVEAS, "Save As", "Save the file with a new name.", {}}),
+    ets:insert(TabId,{?wxID_SAVEAS, "Save As", "Save the file with a new name.", {ide,apply_to_all_editors,[]}}),
+    ets:insert(TabId,{?MENU_ID_SAVE_ALL, "Save All", "Save all open files.", {}}),
     ets:insert(TabId,{?wxID_PRINT, "Print", "Print the current file.", {}}),
     ets:insert(TabId,{?wxID_CLOSE, "Close", "Close the current file.", {}}),
     ets:insert(TabId,{?wxID_CLOSE_ALL, "Close All", "Close all open files.", {}}),
@@ -113,6 +115,7 @@ init(Config) ->
     wxMenu:append(File, ?wxID_SEPARATOR, []),
     wxMenu:append(File, ?wxID_SAVE, "Save"),
     wxMenu:append(File, ?wxID_SAVEAS, "Save As"),
+    wxMenu:append(File, ?MENU_ID_SAVE_ALL, "Save All"),
     wxMenu:append(File, ?wxID_SEPARATOR, []),
     wxMenu:append(File, ?wxID_PRINT, "Print"),
     wxMenu:append(File, ?wxID_SEPARATOR, []),

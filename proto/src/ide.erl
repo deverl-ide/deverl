@@ -12,7 +12,7 @@
 
 %% Client API         
 -export([add_editor/0, add_editor/2, toggle_pane/1, get_selected_editor/0, 
-         get_all_editors/0, update_styles/0]).
+         get_all_editors/0, update_styles/0, apply_to_all_editors/0]).
 
 %% The record containing the State.
 -record(state, {win,  
@@ -349,6 +349,18 @@ toggle_pane(PaneType) ->
       end
 	end.
   
+%% @doc Get the editor instance from a notebook tab
+%% @private
+-spec get_editor(Index, Workspace) -> Result when
+  Index :: integer(),
+  Workspace :: wxAuiNotebook:wxAuiNotebook(),
+  Result :: wxStyledTextCtrl:wxStyledTextCtrl().
+get_editor(Index, Workspace) ->
+  W     = wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
+  [Children | _] = wxWindow:getChildren(W),        %% The first child is the STC
+  Editor = wx:typeCast(Children, wxStyledTextCtrl),
+  Editor.
+  
 %% @doc Get the editor contained within a workspace tab
 -spec get_selected_editor() -> Result when
   Result :: wxStyledTextCtrl:wxStyledTextCtrl().
@@ -356,20 +368,28 @@ get_selected_editor() ->
   {Workspace, _} = wx_object:call(?MODULE, workspace), 
   Index = wxAuiNotebook:getSelection(Workspace),   %% Get the index of the tab
   W     = wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
-  [Children | _] = wxWindow:getChildren(W),        %% The first child is the STC
-  Editor = wx:typeCast(Children, wxStyledTextCtrl),
-  io:format("Editor: ~p~n", [Editor]),
-  Editor.
+  get_editor(Index, Workspace).
   
 %% @doc Get all open editor instances
 -spec get_all_editors() -> Result when
   Result :: [wxStyledTextCtrl:wxStyledTextCtrl()].
 get_all_editors() ->
-  {Workspace, _} = wx_object:call(?MODULE, workspace), 
-  Children = wxWindow:getChildren(Workspace),
-  io:format("Children: ~p~n", [Children]).
+  {Workspace, _} = wx_object:call(?MODULE, workspace),
+  Count = wxAuiNotebook:getPageCount(Workspace),
+  get_all_editors(Workspace, Count - 1, []).
+%% @private
+get_all_editors(Workspace, -1, Acc) -> Acc;
+get_all_editors(Workspace, Count, Acc) ->
+  get_all_editors(Workspace, Count -1, [get_editor(Count, Workspace) | Acc]).
   
-%% @doc Apply a function to all editors
+%% @doc Apply the given function to all open editor instances
+%% EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
+apply_to_all_editors() ->
+  Fun = fun(STC) ->
+        wxStyledTextCtrl:clearAll(STC)
+        end,
+  lists:map(Fun, get_all_editors()).
+  
   
 %% @doc Change the font styles within the editors
 update_styles() ->
