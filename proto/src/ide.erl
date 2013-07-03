@@ -326,7 +326,7 @@ toggle_pane(PaneType) ->
 					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
 			end;
 		editor ->
-			case wxSplitterWindow:isSplit(V) of
+			case wxSplitterWindow:isSplit(V) orelse wxSplitterWindow:isSplit(H) of
 				true ->
 					wxSplitterWindow:unsplit(H,[{toRemove, U}]),
 					wxSplitterWindow:unsplit(V,[{toRemove, T}]);
@@ -341,4 +341,4 @@ toggle_pane(PaneType) ->
 				false ->
 					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
 			end
-		end.
+		end. 
