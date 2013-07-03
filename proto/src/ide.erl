@@ -333,7 +333,6 @@ toggle_pane(PaneType) ->
 					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
 			end;
 		editor ->
-<<<<<<< HEAD
 			case wxSplitterWindow:isSplit(V) orelse wxSplitterWindow:isSplit(H) of
 				true ->
 					wxSplitterWindow:unsplit(H,[{toRemove, U}]),
@@ -350,23 +349,6 @@ toggle_pane(PaneType) ->
 					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
 			end
 		end. 
-=======
-      case wxSplitterWindow:isSplit(V) of
-        true ->
-          wxSplitterWindow:unsplit(H,[{toRemove, U}]),
-          wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-        false ->
-          wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-          wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
-      end;
-    maxutil ->
-      case wxSplitterWindow:isSplit(H) of
-        true ->
-          wxSplitterWindow:unsplit(H,[{toRemove, V}]);
-        false ->
-          wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
-      end
-	end.
   
 %% @doc Get the editor instance from a notebook tab
 %% @private
@@ -409,8 +391,7 @@ apply_to_all_editors() ->
         end,
   lists:map(Fun, get_all_editors()).
   
-  
 %% @doc Change the font styles within the editors
 update_styles() ->
   ok.
->>>>>>> 435168c1b1c1e62ea18a8cdf9afa09a62a8f7933
+
