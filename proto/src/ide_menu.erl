@@ -130,7 +130,7 @@ init(Config) ->
     wxMenu:append(Edit, ?wxSTC_CMD_PASTE, "Paste"),
     wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
   
-    View = wxMenu:new([]),
+    View        = wxMenu:new([]),
     wxMenu:append(View, ?MENU_ID_FONT, "Font"),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers", [{kind, ?wxITEM_CHECK}]),
@@ -150,7 +150,7 @@ init(Config) ->
     wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Hide Test Pane", [{kind, ?wxITEM_CHECK}]),
     wxMenu:append(View, ?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", [{kind, ?wxITEM_CHECK}]),
   
-    Document = wxMenu:new([]),
+    Document    = wxMenu:new([]),
     wxMenu:append(Document, ?MENU_ID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
     wxMenu:append(Document, ?MENU_ID_AUTO_INDENT, "Auto-Indent", [{kind, ?wxITEM_CHECK}]),
     wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, true),   %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
@@ -161,10 +161,10 @@ init(Config) ->
     wxMenu:append(Document, ?MENU_ID_FOLD_ALL, "Fold All"),
     wxMenu:append(Document, ?MENU_ID_UNFOLD_ALL, "Unfold All"),
   
-    Wrangler = wxMenu:new([]),
+    Wrangler    = wxMenu:new([]),
     wxMenu:append(Wrangler, ?MENU_ID_WRANGLER, "WRANGLER"),
   
-    ToolMenu = wxMenu:new([]),
+    ToolMenu    = wxMenu:new([]),
     wxMenu:append(ToolMenu, ?MENU_ID_COMPILE, "Compile"),
     wxMenu:append(ToolMenu, ?wxID_SEPARATOR, []),
     wxMenu:append(ToolMenu, ?MENU_ID_RUN, "Run Module"),
@@ -172,7 +172,7 @@ init(Config) ->
     wxMenu:append(ToolMenu, ?MENU_ID_TESTS, "Run Tests"),
     wxMenu:append(ToolMenu, ?MENU_ID_DEBUGGER, "Run Debugger"),
   
-    Help  = wxMenu:new([]),
+    Help        = wxMenu:new([]),
     wxMenu:append(Help, ?wxID_HELP, "Help"),
     wxMenu:append(Help, ?MENU_ID_SHORTCUTS, "Keyboard Shortcuts"),
     wxMenu:append(Help, ?wxID_SEPARATOR, []),
