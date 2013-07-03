@@ -64,10 +64,10 @@ init(Options) ->
   SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, {style, ?wxSP_NOBORDER}]),
 
   %% Following two lines, see platforms.txt <1> 
-  % wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
-  % wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
-  wxSplitterWindow:setSashGravity(SplitterTopBottom,   0.5),
-  wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
+  wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
+  wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
+  %wxSplitterWindow:setSashGravity(SplitterTopBottom,   0.5),
+  %wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
   
   wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
@@ -232,7 +232,7 @@ terminate(_Reason, _State) ->
 %%%%% Internals %%%%%
 
 %% @doc Create the utilities panel
-%% @private      
+%% @private
 create_utils(Parent, Manager, Pane) ->
   %% Notebook styles
   Style = (0
@@ -242,12 +242,17 @@ create_utils(Parent, Manager, Pane) ->
      bor ?wxAUI_NB_SCROLL_BUTTONS
     ),
   
+  UtilPanel = wxPanel:new(Parent, []),
+  
   % Utils = wxAuiNotebook:new(Parent, [{style, Style}]),
-  Utils = wxNotebook:new(Parent, 8989, [{style, ?wxBORDER_NONE}]),
-
+  Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
+  
+  UtilSizer = wxBoxSizer:new(?wxVERTICAL),
+  wxPanel:setSizer(UtilPanel, UtilSizer),
+  
   Console = ide_shell:new([{parent, Utils}]),
   % wxAuiNotebook:addPage(Utils, Console, "Console", []),
-  wxNotebook:addPage(Utils, Console, "Console", []),  
+  wxNotebook:addPage(Utils, Console, "Console", []),
 
   Pman = wxPanel:new(Utils, []),
   % wxAuiNotebook:addPage(Utils, Pman, "Process Manager", []),
@@ -260,9 +265,12 @@ create_utils(Parent, Manager, Pane) ->
   Debugger = wxPanel:new(Utils, []),
   % wxAuiNotebook:addPage(Utils, Debugger, "Debugger", []),
   wxNotebook:addPage(Utils, Debugger, "Debugger", []),
+  
+  wxSizer:addSpacer(UtilSizer, 1),
+  wxSizer:add(UtilSizer, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   % wxAuiManager:addPane(Manager, Utils, Pane),
-  Utils.
+  UtilPanel.
 
 %% @doc Create the workspace with the initial editor
 %% @private  
