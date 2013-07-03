@@ -31,6 +31,10 @@ init(Args) ->
 	MainSizer   = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(Panel, MainSizer),
 	
+	Banner = wxPanel:new(Panel),
+	wxPanel:setBackgroundColour(Banner, ?wxCYAN),
+	wxPanel:setSize(Banner, -1, 75),
+	
 	TabbedPane  = wxNotebook:new(Panel, ?TABBED_PANE, []),
 	InfoPane    = wxStaticText:new(TabbedPane, ?INFO_PANE, []),
 	set_info(InfoPane, ?INFO),
@@ -40,8 +44,9 @@ init(Args) ->
 	wxNotebook:addPage(TabbedPane, InfoPane, "Info"),
 	wxNotebook:addPage(TabbedPane, LicensePane, "License"),
 	
-	wxSizer:add(MainSizer, TabbedPane, [{flag, ?wxEXPAND}, {proportion, 1}]),
-	wxSizer:add(MainSizer, CloseButton, [{flag, ?wxALIGN_RIGHT}]),
+	wxSizer:add(MainSizer, Banner,      [{border, 10}, {proportion, 0}, {flag, ?wxALL bor ?wxEXPAND}]),
+	wxSizer:add(MainSizer, TabbedPane,  [{border, 8},  {proportion, 1}, {flag, ?wxALL bor ?wxEXPAND}]),
+	wxSizer:add(MainSizer, CloseButton, [{border, 8},  {flag, ?wxALL bor ?wxALIGN_RIGHT}]),
 	
 	wxFrame:centerOnParent(Frame),
 	wxFrame:show(Frame),
