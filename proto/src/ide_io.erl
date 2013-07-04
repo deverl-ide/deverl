@@ -8,13 +8,17 @@ open_file(Parent) ->
 	wxFileDialog:showModal(Dialog),
 
 	Path = wxFileDialog:getPath(Dialog),
-	Filename = wxFileDialog:getFilename(Dialog),
-	File = file:open(Path, [read, write]),
-	Text = file:read_file(File),
 	
-	{Filename, Text}.
-	%io:format(Path ++ "~n"),
-	%io:format(Filename ++ "~n").
+	Filename = wxFileDialog:getFilename(Dialog),
+	
+	File = file:open(Path, [read, write]),
+	
+	{ok, Contents} = file:read_file(Path),
+	
+	io:format(Path ++ "~n"),
+	io:format(Filename ++ "~n"),
+	io:format("~p~n",[binary_to_list(Contents)]),
+	{Filename, binary_to_list(Contents)}.
 	  
 save(Parent, Contents) ->
   Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_SAVE}]),
