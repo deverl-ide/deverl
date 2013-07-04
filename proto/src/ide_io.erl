@@ -10,6 +10,10 @@ open_file(_Frame) ->
 	wxFileDialog:showModal(OpenDialog).
 	
   
-save(Parent) ->
-  Dialog = wxFileDialog:new(Parent, []),
-  wxFileDialog:showModal(Dialog)
+save(Parent, Contents) ->
+  Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_SAVE}]),
+  wxFileDialog:showModal(Dialog),
+  Path = wxFileDialog:getPath(Dialog),
+  
+  Handle = file:open(Path, [write]),
+  file:write(Handle,Contents).

@@ -18,7 +18,7 @@
 -define(RIGHT_MARGIN_WIDTH, 6).
 -define(MARGIN_LINE_NUMBER_PADDING, " ").
 -define(MARGIN_LINE_NUMBER_WIDTH, "  ").
--define(MARGIN_LINE_NUMBER_POINT_REDUCTION, 4). %% The size (pts) to reduce margin text by
+-define(MARGIN_LINE_NUMBER_POINT_REDUCTION, 2). %% The size (pts) to reduce margin text by
 
 %% The record containing the state maintained by the server
 -record(state, {win, 
@@ -34,6 +34,8 @@ init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Sb = proplists:get_value(status_bar, Config),
   Font = proplists:get_value(font, Config),
+  
+  Contents = proplists:get_value(contents, Config, false),
   
   Panel = wxPanel:new(Parent),
 
@@ -91,6 +93,13 @@ init(Config) ->
   %% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Sb}]),
+  
+  %% Load contents if any
+  if
+    Contents /= false ->
+      wxStyledTextCtrl:setText(Editor, Contents);
+    true -> ok
+  end,
     
   % process_flag(trap_exit, true),
   {Panel, #state{win=Panel, editor=Editor}}.
@@ -248,7 +257,6 @@ word_wrap(Server) -> %% Param is the wx_object handle from the original call to 
 %% Set the zoom
 
 %% @doc Get the outer panels associated editor
-
 
   
 stop() ->

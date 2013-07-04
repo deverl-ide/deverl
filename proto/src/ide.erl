@@ -8,7 +8,8 @@
 
 %% wx_objects callbacks
 -export([start/0, init/1, terminate/2,  code_change/3,
-         handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+         handle_info/2, handle_call/3, handle_cast/2, handle_event/2,
+         save_current_file/0]).
 
 %% Client API         
 -export([add_editor/0, add_editor/1, toggle_pane/1, get_selected_editor/0, 
@@ -330,6 +331,12 @@ add_editor(Workspace, Filename, Sb, Font) ->
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
   ok.
+%% @doc Create an editor from an existing file
+add_editor(Filename, Contents) -> 
+  {Workspace, Sb, Font} = wx_object:call(?MODULE, workspace), 
+  Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}, {contents, Contents}]),
+  wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
+  ok.
 
 %% @doc Display or hide a given window pane
 -spec toggle_pane(PaneType) -> Result when
@@ -401,7 +408,7 @@ get_editor(Index, Workspace) ->
 -spec get_selected_editor() -> Result when
   Result :: wxStyledTextCtrl:wxStyledTextCtrl().
 get_selected_editor() ->
-  {Workspace, _} = wx_object:call(?MODULE, workspace), 
+  {Workspace,_,_} = wx_object:call(?MODULE, workspace), 
   Index = wxAuiNotebook:getSelection(Workspace),   %% Get the index of the tab
   W     = wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
   get_editor(Index, Workspace).
@@ -433,6 +440,12 @@ update_styles(Frame) ->
         end,
   lists:map(Fun, get_all_editors()),
   ok.
+  
+%% @doc Save the contents of a file to disk
+save_current_file() ->
+  Ed = get_selected_editor(),
+  Contents = wxStyledTextCtrl:getText(Ed),
+  ide_io:save(Ed, Contents).
   
 %% @doc Apply the given function to all open editor instances
 %% EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
