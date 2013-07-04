@@ -11,8 +11,8 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 %% Client API         
--export([add_editor/0, add_editor/2, toggle_pane/1, get_selected_editor/0, 
-         get_all_editors/0, update_styles/0, apply_to_all_editors/0]).
+-export([add_editor/0, add_editor/1, toggle_pane/1, get_selected_editor/0, 
+         get_all_editors/0, update_styles/1, apply_to_all_editors/0]).
 
 %% The record containing the State.
 -record(state, {win,  
@@ -25,13 +25,15 @@
                 sash_h :: wxSpliiterWindow:wxSplitterWindow(), %% The horizontal splitter
                 sash_v_pos :: integer(),
                 sash_h_pos :: integer(),
-                status_bar
+                status_bar :: wxPanel:wxPanel(),
+                font :: wxFont:wxFont()                        %% The initial font used in the editors
                 }).
 
 -define(DEFAULT_FRAME_WIDTH,  1300).
 -define(DEFAULT_FRAME_HEIGHT, 731).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
+-define(DEFAULT_FONT_SIZE, 12).
 
 -define(DEFAULT_TAB_LABEL, "new_file").
 
@@ -56,6 +58,7 @@ init(Options) ->
 
   Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
   wxFrame:connect(Frame, close_window),
+  wxFrame:setMinSize(Frame, {300,200}),
   
   FrameSizer = wxBoxSizer:new(?wxVERTICAL),
   wxWindow:setSizer(Frame, FrameSizer),  
@@ -85,7 +88,7 @@ init(Options) ->
   %% The centre pane/editor window
   EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
   wxAuiPaneInfo:name(EditorWindowPaneInfo, "EditorPane"),
-  Workspace = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
+  {Workspace, Font} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
   
   %% The left (test case) window
   TestWindow = wxPanel:new(SplitterLeftRight),
@@ -123,7 +126,8 @@ init(Options) ->
                       sash_v_pos=?SASH_VERT_DEFAULT_POS,
                       sash_h_pos=?SASH_HOR_DEFAULT_POS,
                       sash_v=SplitterLeftRight,
-                      sash_h=SplitterTopBottom
+                      sash_h=SplitterTopBottom,
+                      font=Font
                       }}.
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -157,7 +161,11 @@ handle_call(splitter, _From, State) ->
              State#state.utilities}, State};
 %% @doc Return the workspace
 handle_call(workspace, _From, State) ->
-    {reply, {State#state.workspace, State#state.status_bar}, State};
+    {reply, {State#state.workspace, 
+             State#state.status_bar,
+             State#state.font}, State};
+handle_call({update_font, Font}, _From, State) ->
+    {reply, ok, State#state{font=Font}};
 handle_call(Msg, _From, State) ->
     demo:format(State#state{}, "Got Call ~p\n", [Msg]),
     {reply,{error, nyi}, State}.
@@ -214,7 +222,7 @@ handle_event(#wx{obj = _Workspace,
     io:format("changed page~n"),
     {noreply, State};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
-    add_editor(State#state.workspace, State#state.status_bar),
+    add_editor(State#state.workspace, State#state.status_bar, State#state.font),
     {noreply, State};
 handle_event(#wx{event = #wxAuiNotebook{type = command_auinotebook_page_close}}, State) ->
     io:fwrite("page closed~n"),
@@ -286,8 +294,10 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
     ),
     
   Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
+  Font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
   
-  Editor = editor:start([{parent, Workspace}, {status_bar, Sb}]), %% Gets the editor instance inside a wxPanel
+  Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
+                         {font, Font}]), %% Returns an editor instance inside a wxPanel
   
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
@@ -296,30 +306,35 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, true}]),
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed), 
-  Workspace.
+  {Workspace, Font}.
   
 %% @doc Called internally
 %% @private
-add_editor(Workspace, Sb) ->
-  add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb),
+add_editor(Workspace, Sb, Font) ->
+  add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb, Font),
   Workspace.
   
 %%%%%%%%%%%%%%%%%%%%%%
 %%%%% Client API %%%%%
   
-%% @doc Creates a new editor instance in a new tab  
-%% @doc To be called from external modules, calls wx server to obtain required state
+%% @doc Create a new editor instance in the notebook  
 add_editor() -> 
-  {Workspace, Sb} = wx_object:call(?MODULE, workspace), 
-  add_editor(Workspace, Sb),
-  Workspace.
+  add_editor(?DEFAULT_TAB_LABEL).
 %% @doc Create a new editor with specified filename
-add_editor(Workspace, FileName, Sb) -> 
-  Editor = editor:start([{parent, Workspace}, {status_bar, Sb}]),
-  wxAuiNotebook:addPage(Workspace, Editor, FileName, [{select, true}]),
-  Workspace.
+add_editor(Filename) ->
+  {Workspace, Sb, Font} = wx_object:call(?MODULE, workspace), 
+  add_editor(Workspace, Filename, Sb, Font),
+  ok.
+%% @private
+add_editor(Workspace, Filename, Sb, Font) -> 
+  Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}]),
+  wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
+  ok.
 
 %% @doc Display or hide a given window pane
+-spec toggle_pane(PaneType) -> Result when
+  PaneType :: 'test' | 'util' | 'editor' | 'maxutil',
+  Result :: 'ok'.
 toggle_pane(PaneType) ->
   {V,H,Vp,Hp,W,T,U} = wx_object:call(?MODULE, splitter),
 	case PaneType of
@@ -353,7 +368,8 @@ toggle_pane(PaneType) ->
 				false ->
 					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
 			end
-		end. 
+		end,
+  ok. 
   
 %% @doc Get the editor instance from a notebook tab
 %% @private
@@ -380,13 +396,29 @@ get_selected_editor() ->
 -spec get_all_editors() -> Result when
   Result :: [wxStyledTextCtrl:wxStyledTextCtrl()].
 get_all_editors() ->
-  {Workspace, _} = wx_object:call(?MODULE, workspace),
+  {Workspace,_,_} = wx_object:call(?MODULE, workspace),
   Count = wxAuiNotebook:getPageCount(Workspace),
   get_all_editors(Workspace, Count - 1, []).
 %% @private
 get_all_editors(Workspace, -1, Acc) -> Acc;
 get_all_editors(Workspace, Count, Acc) ->
   get_all_editors(Workspace, Count -1, [get_editor(Count, Workspace) | Acc]).
+
+%% @doc Change the font style across all open editors
+update_styles(Frame) ->
+  {_,_,CurrentFont} = wx_object:call(?MODULE, workspace), 
+  FD = wxFontData:new(),
+  wxFontData:setInitialFont(FD, CurrentFont),
+  %% Display the system font picker
+  Dialog = wxFontDialog:new(Frame, FD),
+  wxDialog:showModal(Dialog),
+  Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
+  wx_object:call(?MODULE, {update_font, Font}),
+  Fun = fun(STC) ->
+        editor:update_style(STC, Font)
+        end,
+  lists:map(Fun, get_all_editors()),
+  ok.
   
 %% @doc Apply the given function to all open editor instances
 %% EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
@@ -395,8 +427,3 @@ apply_to_all_editors() ->
         wxStyledTextCtrl:clearAll(STC)
         end,
   lists:map(Fun, get_all_editors()).
-  
-%% @doc Change the font styles within the editors
-update_styles() ->
-  ok.
-
