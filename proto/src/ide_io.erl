@@ -21,5 +21,6 @@ save(Parent, Contents) ->
   wxFileDialog:showModal(Dialog),
   Path = wxFileDialog:getPath(Dialog),
   
-  Handle = file:open(Path, [write]),
-  file:write(Handle,Contents).
+  {ok, Fd} = file:open(Path, [read, write, raw]),
+  file:write(Fd, Contents),
+  file:close(Fd).
