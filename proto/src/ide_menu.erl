@@ -87,6 +87,7 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_MAX_EDITOR, "Maximise editor", "Maximise the editor pane.", {ide,toggle_pane,[editor]}}),
     ets:insert(TabId,{?MENU_ID_MAX_UTIL, "Maximise utilities", "Maximise the utilities pane.", {ide,toggle_pane,[maxutil]}}),
     
+    
     ets:insert(TabId,{?MENU_ID_LINE_WRAP, "Line Wrap", "Line wrap.", {}}),
     ets:insert(TabId,{?MENU_ID_AUTO_INDENT, "Auto indent", "Auto indent.", {}}),
     ets:insert(TabId,{?MENU_ID_INDENT_SELECTION, "Indent selection", "Indent selected text.", {}}),
@@ -152,6 +153,8 @@ init(Config) ->
     wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Hide Test Pane", [{kind, ?wxITEM_CHECK}]),
     wxMenu:append(View, ?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:append(View, ?MENU_ID_MAX_EDITOR, "Maximise Editor", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:append(View, ?MENU_ID_MAX_UTIL, "Maximise Utilities", [{kind, ?wxITEM_CHECK}]),
   
     Document    = wxMenu:new([]),
     wxMenu:append(Document, ?MENU_ID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
