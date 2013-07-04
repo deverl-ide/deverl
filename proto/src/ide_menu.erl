@@ -86,10 +86,11 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_INDENT_SPACES, "Spaces", "Indent using spaces.", {}}),
     ets:insert(TabId,{?MENU_ID_INDENT_WIDTH, "Indent width", "Width of indent in spaces.", {}}),
     ets:insert(TabId,{?MENU_ID_FULLSCREEN, "Fullscreen", "Toggle fullscreen.", {}}),
-    ets:insert(TabId,{?MENU_ID_HIDE_TEST, "Hide Test Pane", "Hide/Show the test pane.", {ide,toggle_pane,[test]}}),
-    ets:insert(TabId,{?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", "Hide/Show the utilities pane.", {ide,toggle_pane,[util]}}),
-    ets:insert(TabId,{?MENU_ID_MAX_EDITOR, "Maximise editor", "Maximise the editor pane.", {ide,toggle_pane,[editor]}}),
-    ets:insert(TabId,{?MENU_ID_MAX_UTIL, "Maximise utilities", "Maximise the utilities pane.", {ide,toggle_pane,[maxutil]}}),
+    ets:insert(TabId,{?MENU_ID_HIDE_TEST, "Hide Test Pane", "Hide/Show the test pane.",           {ide,toggle_pane,[test]}, {update_label,Frame,2}}),
+    ets:insert(TabId,{?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", "Hide/Show the utilities pane.", {ide,toggle_pane,[util]}, {update_label,Frame,2}}),
+    ets:insert(TabId,{?MENU_ID_MAX_EDITOR, "Maximise editor", "Maximise the editor pane.",        {ide,toggle_pane,[editor]}}),
+    ets:insert(TabId,{?MENU_ID_MAX_UTIL, "Maximise utilities", "Maximise the utilities pane.",    {ide,toggle_pane,[maxutil]}}),
+    
     
     ets:insert(TabId,{?MENU_ID_LINE_WRAP, "Line Wrap", "Line wrap.", {}}),
     ets:insert(TabId,{?MENU_ID_AUTO_INDENT, "Auto indent", "Auto indent.", {}}),
@@ -161,8 +162,10 @@ init(Config) ->
     wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_FULLSCREEN, "Fullscreen", [{kind, ?wxITEM_CHECK}]),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
-    wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Hide Test Pane", [{kind, ?wxITEM_CHECK}]),
-    wxMenu:append(View, ?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Hide Test Pane", []),
+    wxMenu:append(View, ?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", []),
+    wxMenu:append(View, ?MENU_ID_MAX_EDITOR, "Maximise Editor", []),
+    wxMenu:append(View, ?MENU_ID_MAX_UTIL, "Maximise Utilities", []),
   
     Document    = wxMenu:new([]),
     wxMenu:append(Document, ?MENU_ID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
@@ -203,8 +206,8 @@ init(Config) ->
     wxMenuBar:append(MenuBar, ToolMenu, "Tools"),
     wxMenuBar:append(MenuBar, Help, "Help"),
     
-  %%%%%%%%%%%%%%%%%%%
-  %%%%% Toolbar %%%%%
+    %%%%%%%%%%%%%%%%%%%
+    %%%%% Toolbar %%%%%
   	ToolBar = wxFrame:createToolBar(Frame, []),
     wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
 	%% Id, StatusBar help, filename, args, add seperator
@@ -261,7 +264,12 @@ handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxMenu{type=menu_highlight}},
 handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxCommand{type=command_menu_selected}},
              State) ->
        Result = ets:lookup(Tab,Id),
-       Fun = fun([{_,_,_,{Module,Function,[]}}]) ->
+       Fun = fun([{MenuItem,_,_,{Module, Function, Args},{update_label, Frame, Pos}}]) ->
+			   erlang:apply(Module,Function,Args),
+			   MenuBar = wxFrame:getMenuBar(Frame),
+			   Menu = wxMenuBar:getMenu(MenuBar, Pos),
+			   update_label(MenuItem, Menu);
+			 ([{_,_,_,{Module,Function,[]}}]) ->
                Module:Function();
              ([{_,_,_,{Module,Function,Args}}]) ->
                erlang:apply(Module,Function,Args);
@@ -279,9 +287,27 @@ code_change(_, _, State) ->
 
 terminate(_Reason, _State) ->
     wx:destroy().
-  
-add_tab_width_menu(TabMenu, 8) -> 
+
+add_tab_width_menu(TabMenu, 8) ->
     wxMenu:appendRadioItem(TabMenu, 7008, integer_to_list(8));
 add_tab_width_menu(TabMenu, Width) ->
     wxMenu:appendRadioItem(TabMenu, 7000 + Width, integer_to_list(Width)),
     add_tab_width_menu(TabMenu, Width + 1).
+
+update_label(MenuItem, Menu) ->
+	case wxMenu:getLabel(Menu, MenuItem) of
+		"Hide Test Pane" ->
+			wxMenu:setLabel(Menu, MenuItem, "Show Test Pane");
+		"Show Test Pane" ->
+			wxMenu:setLabel(Menu, MenuItem, "Hide Test Pane");
+		"Hide Utilities Pane" ->
+			wxMenu:setLabel(Menu, MenuItem, "Show Utilities Pane");
+		"Show Utilities Pane" ->
+			wxMenu:setLabel(Menu, MenuItem, "Hide Utilities Pane")
+	end.
+		
+		
+		
+		
+		
+			
