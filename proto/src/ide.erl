@@ -343,20 +343,34 @@ toggle_pane(PaneType) ->
 					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
 			end;
 		editor ->
-			case wxSplitterWindow:isSplit(V) orelse wxSplitterWindow:isSplit(H) of
+			case wxSplitterWindow:isSplit(H) of
 				true ->
 					wxSplitterWindow:unsplit(H,[{toRemove, U}]),
 					wxSplitterWindow:unsplit(V,[{toRemove, T}]);
 				false ->
-					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-					wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
+					case wxSplitterWindow:isShown(U) of
+						true ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:unsplit(H,[{toRemove, U}]),
+							wxSplitterWindow:unsplit(V,[{toRemove, T}]);
+						false ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
+					end
 			end;
 		maxutil ->
 			case wxSplitterWindow:isSplit(H) of
 				true ->
 					wxSplitterWindow:unsplit(H,[{toRemove, V}]);
 				false ->
-					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
+				    case wxSplitterWindow:isShown(U) of
+						true ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}]);
+						false ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:unsplit(H,[{toRemove, V}])
+					end
 			end
 		end. 
   
