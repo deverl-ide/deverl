@@ -16,6 +16,8 @@
 %% Menubar/toolbar macros   
 -define(MENU_ID_SAVE_ALL,          4001).          
 -define(MENU_ID_FONT,              6000).
+-define(MENU_FONT_BIGGER,          4002).
+-define(MENU_FONT_SMALLER,         4003).
 -define(MENU_ID_LN_TOGGLE,         6001).
 -define(MENU_ID_INDENT_TYPE,       6002).
 -define(MENU_ID_INDENT_WIDTH,      6003).
@@ -75,7 +77,9 @@ init(Config) ->
     ets:insert(TabId,{?wxSTC_CMD_PASTE, "Paste", "Paste from clipboard.", {}}),
     ets:insert(TabId,{?wxID_DELETE, "Delete", "Delete the current selection.", {}}),
     
-    ets:insert(TabId,{?MENU_ID_FONT, "Font", "Select font.", {}}),
+    ets:insert(TabId,{?MENU_ID_FONT, "Font", "Select font.", {ide,update_styles,[Frame]}}),
+    ets:insert(TabId,{?MENU_FONT_BIGGER, "Bigger", "Increase the font size.", {}}),
+    ets:insert(TabId,{?MENU_FONT_SMALLER, "Smaller", "Decrease the font size.", {}}),
     ets:insert(TabId,{?MENU_ID_LN_TOGGLE, "Toggle line numbers", "Toggle line numbers on/off.", {}}),
     ets:insert(TabId,{?MENU_ID_INDENT_TYPE, "Indent Type", "Indent type: tabs/spaces.", {}}),
     ets:insert(TabId,{?MENU_ID_INDENT_TABS, "Tabs", "Indent using tabs.", {}}),
@@ -134,8 +138,15 @@ init(Config) ->
     wxMenu:append(Edit, ?wxSTC_CMD_PASTE, "Paste"),
     wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
   
+    Font = wxMenu:new([]), %% Sub-menu
+    wxMenu:append(Font, ?MENU_ID_FONT, "Font Picker"),
+    wxMenu:appendSeparator(Font),
+    wxMenu:append(Font, ?MENU_FONT_BIGGER, "&Bigger\tCtrl++"),
+    wxMenu:append(Font, ?MENU_FONT_SMALLER, "Smaller\tCtrl+-"),
+    wxMenu:appendSeparator(Font),
+    
     View        = wxMenu:new([]),
-    wxMenu:append(View, ?MENU_ID_FONT, "Font"),
+    wxMenu:append(View, ?wxID_ANY, "Font", Font),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers", [{kind, ?wxITEM_CHECK}]),
     wxMenu:check(View, ?MENU_ID_LN_TOGGLE, true),         %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
