@@ -12,7 +12,8 @@
 
 %% Client API         
 -export([add_editor/0, add_editor/1, toggle_pane/1, get_selected_editor/0, 
-         get_all_editors/0, update_styles/1, apply_to_all_editors/0]).
+         get_all_editors/0, update_styles/1, apply_to_all_editors/0,
+         open_dialog/1]).
 
 %% The record containing the State.
 -record(state, {win,  
@@ -193,7 +194,7 @@ handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_s
     {noreply, State#state{sash_v_pos=NewPos}};
 handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
              State) ->
-     Pos = wxSplitterWindow:getSashPosition(State#state.sash_h), 
+     Pos = wxSplitterWindow:getSashPosition(State#state.sash_h),
      if
        Pos =:= 0 ->
          NewPos = State#state.sash_h_pos;
@@ -441,3 +442,7 @@ apply_to_all_editors() ->
         wxStyledTextCtrl:clearAll(STC)
         end,
   lists:map(Fun, get_all_editors()).
+
+open_dialog(Frame) ->
+	{Filename, Text} = ide_io:open_file(Frame),
+	add_editor(Filename, Text).

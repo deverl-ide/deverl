@@ -61,7 +61,7 @@ init(Config) ->
     %%%%% ETS Table %%%%%
     TabId = ets:new(myTable, []),
     ets:insert(TabId,{?wxID_NEW, "New", "Create a new file.", {ide,add_editor,[]}}),
-    ets:insert(TabId,{?wxID_OPEN, "Open", "Open an existing file.", {ide,get_selected_editor,[]}}),
+    ets:insert(TabId,{?wxID_OPEN, "Open", "Open an existing file.", {ide,open_dialog,[Frame]}}),
     ets:insert(TabId,{?wxID_SAVE, "Save", "Save the current file.", {ide,get_all_editors,[]}}),
     ets:insert(TabId,{?wxID_SAVEAS, "Save As", "Save the file with a new name.", {ide,apply_to_all_editors,[]}}),
     ets:insert(TabId,{?MENU_ID_SAVE_ALL, "Save All", "Save all open files.", {}}),
