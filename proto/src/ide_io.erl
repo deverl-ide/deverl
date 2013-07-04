@@ -9,3 +9,7 @@ open_file(_Frame) ->
 	
 	wxFileDialog:showModal(OpenDialog).
 	
+  
+save(Parent) ->
+  Dialog = wxFileDialog:new(Parent, []),
+  wxFileDialog:showModal(Dialog)
