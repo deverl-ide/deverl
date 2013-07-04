@@ -3,7 +3,7 @@
 -include_lib("wx/include/wx.hrl").
 
 
-open_file(_Frame) ->
+open_file(_Parent) ->
 	OpenDialog = wxFileDialog:new(wx:null(), [{style, wxFD_OPEN}]),
 	
 	
