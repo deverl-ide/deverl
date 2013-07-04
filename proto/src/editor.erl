@@ -18,7 +18,7 @@
 -define(RIGHT_MARGIN_WIDTH, 6).
 -define(MARGIN_LINE_NUMBER_PADDING, " ").
 -define(MARGIN_LINE_NUMBER_WIDTH, "  ").
--define(MARGIN_LINE_NUMBER_POINT_REDUCTION, 2). %% The size (pts) to reduce margin text by
+-define(MARGIN_LINE_NUMBER_POINT_REDUCTION, 4). %% The size (pts) to reduce margin text by
 
 %% The record containing the state maintained by the server
 -record(state, {win, 
@@ -43,40 +43,31 @@ init(Config) ->
   wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND},
                               {proportion, 1}]),              
                                                                                              
-  %% Editor styles
-  
+  %% Editor styles  
   wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
+  
+  % wxStyledTextCtrl:styleClearAll(Editor),
+  
   wxStyledTextCtrl:setLexer(Editor, ?wxSTC_LEX_ERLANG),
-  
   wxStyledTextCtrl:setSelBackground(Editor, true, ?SELECTION_COLOUR),
-  wxStyledTextCtrl:setSelectionMode(Editor, ?wxSTC_SEL_RECTANGLE),
-  
+  wxStyledTextCtrl:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
   wxStyledTextCtrl:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text
- 
-  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),
-        
+
+  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),   
   Mw = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, 
         ?MARGIN_LINE_NUMBER_PADDING ++ ?MARGIN_LINE_NUMBER_WIDTH),
   wxStyledTextCtrl:setMarginWidth(Editor, 0, Mw),
-  
-  % wxStyledTextCtrl:styleClearAll(Editor),
-  wxStyledTextCtrl:styleSetForeground (Editor, ?wxSTC_STYLE_LINENUMBER, {100,100,100}),
-  % wxStyledTextCtrl:styleSetBackground (Editor, ?wxSTC_STYLE_LINENUMBER, ?wxBLUE),
-  
-  % This must be set after styleClearAll()
   wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER,
         (wxFont:getPointSize(Font) - ?MARGIN_LINE_NUMBER_POINT_REDUCTION)),
-  
-  update_styles(Editor),
   
   %% Add the keywords
   wxStyledTextCtrl:setKeyWords(Editor, 0, keywords()),
   
+  update_styles(Editor),
+  
   %% Folding
   wxStyledTextCtrl:setMarginType (Editor, 1, ?wxSTC_MARGIN_SYMBOL),
-  % wxStyledTextCtrl:setFoldMarginColour(Editor, true, ?wxRED),
-  % wxStyledTextCtrl:styleSetForeground (Editor, ?wxSTC_STYLE_LINENUMBER, {75, 75, 75}),
-  wxStyledTextCtrl:setMarginWidth(Editor, 1, 8),
+  wxStyledTextCtrl:setMarginWidth(Editor, 1, 4),
   wxStyledTextCtrl:setMarginMask (Editor, 1, ?wxSTC_MASK_FOLDERS),
   wxStyledTextCtrl:setMarginSensitive(Editor, 1, true), %% Makes margin sensitive to mouse clicks
   
@@ -101,7 +92,7 @@ init(Config) ->
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Sb}]),
     
-  process_flag(trap_exit, true),
+  % process_flag(trap_exit, true),
   {Panel, #state{win=Panel, editor=Editor}}.
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -174,7 +165,7 @@ keywords() ->
   lists:flatten([KW ++ " " || KW <- KWS]).
 
 %% @doc Updates the styles for individual elements in the lexer
--spec update_styles(Editor) -> ok when
+-spec update_styles(Editor) -> 'ok' when
   Editor :: wxStyledTextCtrl:wxStyledTextCtrl().
 update_styles(Editor) ->
   %% {Style, Colour}
@@ -191,7 +182,8 @@ update_styles(Editor) ->
        {?wxSTC_ERLANG_MACRO,    {40,144,170}},
        {?wxSTC_ERLANG_RECORD,   {40,100,20}},
        {?wxSTC_ERLANG_SEPARATOR,{0,0,0}},
-       {?wxSTC_ERLANG_NODE_NAME,{0,0,0}}
+       {?wxSTC_ERLANG_NODE_NAME,{0,0,0}},
+       {?wxSTC_STYLE_LINENUMBER,{100,100,100}}
       ],
     
   %% Set the font and style
