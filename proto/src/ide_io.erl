@@ -37,6 +37,7 @@ open(Parent) ->
 	
 -spec save_as(Parent, Contents) -> Result when
     Parent :: wxWindow:wxWindow(),
+    Contents :: string(),
     Result :: {'ok', {string(), string()}}
             | {'cancel'}.
     

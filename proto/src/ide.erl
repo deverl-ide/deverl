@@ -100,7 +100,7 @@ init(Options) ->
   wxSizer:add(TestSizer, TestT, [{flag, ?wxEXPAND}, {proportion, 1}]),
   
   %% The bottom pane/utility window
-  Utilities = create_utils(SplitterTopBottom, Manager, ok),  
+  Utilities = create_utils(SplitterTopBottom),  
                                      
   wxSplitterWindow:splitVertically(SplitterLeftRight, TestWindow, Workspace,
 		         [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
@@ -252,7 +252,7 @@ terminate(_Reason, _State) ->
 %%
 %% @private
 
-create_utils(Parent, Manager, Pane) ->
+create_utils(Parent) ->
   %% Notebook styles
   Style = (0
      bor ?wxAUI_NB_TOP
@@ -263,32 +263,26 @@ create_utils(Parent, Manager, Pane) ->
   
   UtilPanel = wxPanel:new(Parent, []),
   
-  % Utils = wxAuiNotebook:new(Parent, [{style, Style}]),
   Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
   
   UtilSizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(UtilPanel, UtilSizer),
   
   Console = ide_shell:new([{parent, Utils}]),
-  % wxAuiNotebook:addPage(Utils, Console, "Console", []),
   wxNotebook:addPage(Utils, Console, "Console", []),
 
   Pman = wxPanel:new(Utils, []),
-  % wxAuiNotebook:addPage(Utils, Pman, "Process Manager", []),
   wxNotebook:addPage(Utils, Pman, "Process Manager", []),
 
   Dialyser = wxPanel:new(Utils, []),
-  % wxAuiNotebook:addPage(Utils, Dialyser, "Dialyser", []),
   wxNotebook:addPage(Utils, Dialyser, "Dialyser", []),
   
   Debugger = wxPanel:new(Utils, []),
-  % wxAuiNotebook:addPage(Utils, Debugger, "Debugger", []),
   wxNotebook:addPage(Utils, Debugger, "Debugger", []),
   
   wxSizer:addSpacer(UtilSizer, 1),
   wxSizer:add(UtilSizer, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-  % wxAuiManager:addPane(Manager, Utils, Pane),
   UtilPanel.
   
   
@@ -560,7 +554,7 @@ save_new(Index, Editor, Workspace, Sb, Pid) ->
 
 open_file(Frame) ->
 	{Path, Filename, Contents} = ide_io:open(Frame),
-	add_editor(Path, Filename, Contents)
+	add_editor(Path, Filename, Contents),
   ok.
   
 

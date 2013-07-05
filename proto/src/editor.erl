@@ -1,5 +1,5 @@
 %% editor.erl
-%% Simple frame that loads an editor object
+%% Creates an instance of an editor in a wxPanel().
 
 -module(editor).
 
