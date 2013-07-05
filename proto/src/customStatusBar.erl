@@ -9,12 +9,12 @@
          handle_info/2, handle_cast/2, handle_call/3, handle_event/2]).
 
 %% Client API         
--export([new/1, set_text/3]).
+-export([new/1, set_text/3, set_text_timeout/3]).
 
 -record(state, {parent :: wxWindow:wxWindow(),
                 sb :: wxWindow:wxWindow(),     %% Status bar
                 func_menu,                     %% The popup function menu
-                fields :: [wxStaticText:wxSaticText()] 
+                fields :: [wxStaticText:wxStaticText()] 
                 }).
 
 -define(FG_COLOUR, {60,60,60}).
@@ -25,6 +25,8 @@
 -define(SB_ID_SELECTION, 2).
 -define(SB_ID_FUNCTION, 3).
 -define(SB_ID_HELP, 4).
+
+-define(TIMEOUT, 1000).
 
 new(Config) ->
   start(Config).
@@ -139,44 +141,61 @@ terminate(_Reason, _State) ->
     io:format("aui callback: terminate~n"),
     wx:destroy().
 
-%%%%%%%%%%%%%%%%%%%%%
-%%%%% Internals %%%%%
 
-%% @doc Set common status bar styles
+%% =====================================================================
+%% @doc Set common status bar styles i.e font
+%%
 %% @private
+
 set_style(Window) ->
   Font = wxFont:new(?FONT_SIZE, ?wxFONTFAMILY_SWISS, ?wxNORMAL, ?wxNORMAL,[]),
   wxWindow:setFont(Window, Font),
   wxWindow:setForegroundColour(Window, ?FG_COLOUR).
 
+
+%% =====================================================================
 %% @doc Insert a separator into the status bar
+%%
 %% @private
+
 add_separator(Sb, Sizer, Bitmap) ->
   wxSizer:add(Sizer, wxStaticBitmap:new(Sb, 345, Bitmap), [{flag, ?wxALIGN_CENTER_VERTICAL}]).
-  
+
+
+%% =====================================================================
 %% @doc Insert a text label into the status bar
+%%
 %% @private
+
 add_label(Sb, Id, Sizer, Label) ->
   L = wxStaticText:new(Sb, ?wxID_ANY, Label),
   set_style(L),
   wxSizer:add(Sizer, L, [{border, ?PADDING}, {flag, ?wxALL}]).
-  
+
+
+%% =====================================================================
 %% @doc Create the function popup menu
+%%
 %% @private
+
 create_menu() ->
   Menu = wxMenu:new([]),
   wxMenuItem:enable(wxMenu:appendRadioItem(
           Menu, ?wxID_UNDO, "Document currently empty.", []), [{enable,false}]),
   wxMenu:connect(Menu, command_menu_selected),
   Menu.
- 
-%%%%%%%%%%%%%%%%%%%%%%
-%%%%% Client API %%%%%
+
+
+%% =====================================================================
+%% @doc Set the text in the specified field.
+%% @see init Fields for field names.
+
 -spec customStatusBar:set_text(Sb, Field, Label) -> Result when
       Sb :: wxStatusBar:wxStatusBar(),
       Field :: {field, atom()},
       Label :: unicode:chardata(),
       Result :: atom().
+      
 set_text(Sb, {field, Field}, Label) ->
   {Fields, Parent} = wx_object:call(Sb, fields),
   case Field of
@@ -191,6 +210,24 @@ set_text(Sb, {field, Field}, Label) ->
       set_text(T, Label)
     end,
     wxSizer:layout(wxPanel:getSizer(Sb)).
+
+
+%% =====================================================================
+%% @doc Set the text in the specified field, for the period specified
+%% in TIMEOUT, after which the field will be cleared.
+    
+set_text_timeout(Sb, {field,Field}, Label) ->
+  set_text(Sb, {field,Field}, Label),
+  receive 
+    after ?TIMEOUT ->
+      set_text(Sb, {field,Field}, "")
+  end.
+
+
+%% =====================================================================
+%% @doc Set the text
+%%
+%% @private
 
 set_text(Field, Label) ->
   wxStaticText:setLabel(Field, Label).  

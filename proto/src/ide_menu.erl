@@ -274,7 +274,7 @@ handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxCommand{type=command_menu_se
              ([{_,_,_,{Module,Function,Args}}]) ->
                erlang:apply(Module,Function,Args);
              (_) ->
-               customStatusBar:set_text(Sb, {field, help}, "Not yet implemented.")
+               customStatusBar:set_text_timeout(Sb, {field, help}, "Not yet implemented.")
              end,
        Fun(Result),
        {noreply, State};
