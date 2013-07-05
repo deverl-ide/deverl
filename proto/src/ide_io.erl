@@ -5,11 +5,15 @@
 
 open(Parent) ->
 	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_OPEN}]),
-	wxFileDialog:showModal(Dialog),
-	Path = wxFileDialog:getPath(Dialog),
-	Filename = wxFileDialog:getFilename(Dialog),
-	{ok, Contents} = file:read_file(Path),
-	{Filename, binary_to_list(Contents)}.
+	case wxFileDialog:showModal(Dialog) of
+		?wxID_OK ->
+			Path = wxFileDialog:getPath(Dialog),
+			Filename = wxFileDialog:getFilename(Dialog),
+			{ok, Contents} = file:read_file(Path),
+			{Path, Filename, binary_to_list(Contents)};
+		?wxID_CANCEL ->
+			{cancel}
+	end.
 	  
 save_as(Parent, Contents) ->
 	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_SAVE}]),

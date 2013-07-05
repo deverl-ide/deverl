@@ -500,8 +500,8 @@ save_new(Index, Editor, Workspace, Pid) ->
   end.
 
 open_file(Frame) ->
-	{Filename, Contents} = ide_io:open(Frame),
-	add_editor(Filename, Contents).
+	{Path, Filename, Contents} = ide_io:open(Frame),
+	add_editor(Path, Filename, Contents).
   
 %% @doc Apply the given function to all open editor instances
 %% EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
