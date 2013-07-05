@@ -305,9 +305,3 @@ update_label(MenuItem, Menu) ->
 		"Show Utilities Pane" ->
 			wxMenu:setLabel(Menu, MenuItem, "Hide Utilities Pane")
 	end.
-		
-		
-		
-		
-		
-			

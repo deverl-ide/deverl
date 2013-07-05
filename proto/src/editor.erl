@@ -3,7 +3,7 @@
 
 -module(editor).
 
--export([word_wrap/1, stop/0, update_style/2]).
+-export([update_style/2, save_request/1, save_complete/3]).
 
 -export([start/1, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
@@ -21,8 +21,10 @@
 -define(MARGIN_LINE_NUMBER_POINT_REDUCTION, 2). %% The size (pts) to reduce margin text by
 
 %% The record containing the state maintained by the server
+-record(file, {path, filename, modified}).
 -record(state, {win, 
-                editor
+                editor,
+                file_data
                }).
 
 %% @doc Create and return a new editor instance
@@ -93,6 +95,7 @@ init(Config) ->
   %% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Sb}]),
+  % wxStyledTextCtrl:connect(Editor, stc_savepointreached, [{userData, Sb}]),
   
   %% Load contents if any
   if
@@ -100,9 +103,11 @@ init(Config) ->
       wxStyledTextCtrl:setText(Editor, Contents);
     true -> ok
   end,
+  
+  wxStyledTextCtrl:setSavePoint(Editor),
     
   % process_flag(trap_exit, true),
-  {Panel, #state{win=Panel, editor=Editor}}.
+  {Panel, #state{win=Panel, editor=Editor, file_data=#file{}}}.
 
 %%%%%%%%%%%%%%%%%%%%%
 %%%%% Callbacks %%%%%
@@ -119,6 +124,12 @@ handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
     {noreply,State}.
 
+handle_call(save_request, _From, State=#state{file_data=#file{path=Path, filename=Fn, modified=Mod}}) ->
+    {reply,{Path,Fn,Mod},State};
+handle_call({save_complete,{Path,Filename}}, _From, State) ->
+    wxStyledTextCtrl:setSavePoint(State#state.editor),
+    io:format("save complete~n"),
+    {reply,ok,State#state{file_data=#file{path=Path, filename=Filename}}};
 handle_call(Msg, _From, State) ->
     io:format("Got Call ~p~n",[Msg]),
     {reply,State#state.editor,State}.
@@ -133,14 +144,20 @@ handle_cast(Msg, State) ->
 handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{editor=Editor}) ->
     io:format("Change event: ~p~n", [_E]),
     {noreply, State};
+handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointreached}=_E}, State) ->
+    io:format("Save point reached: ~p~n", [_E]),
+    {noreply, State#state{file_data=#file{modified=false}}};
+handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointleft}=_E}, State = #state{editor=Editor}) ->
+    io:format("Save point left: ~p~n", [_E]),
+    {noreply, State};
 handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, 
-             State=#state{editor=Editor}) ->
+             State=#state{editor=Editor, file_data=#file{filename=Fn, path=Path}}) ->
     %% Update status bar line/col position
     {X,Y} = get_x_y(Editor),
     customStatusBar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
     %% Update margin width if required
     adjust_margin_width(Editor),  
-    {noreply, State};
+    {noreply, State#state{file_data=#file{modified=true, filename=Fn, path=Path}}};
 handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margin = Margin} = _E},
              State = #state{editor=Editor}) ->
     Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
@@ -205,6 +222,7 @@ update_styles(Editor) ->
   
 %% @doc Get the cursor position in the editor
 %% @doc x=line no, y=col no.
+%% @private
 -spec editor:get_x_y(Editor) -> Result when
   Editor :: wxStyledTextCtrl:wxStyledTextCtrl(),
   Result :: {integer(), integer()}.
@@ -245,21 +263,23 @@ update_style(Editor, Font) ->
   %% Update the margin size
   adjust_margin_width(Editor),
   ok.
-
-%% @doc Toggles wordwrap in the editor  
-word_wrap(Server) -> %% Param is the wx_object handle from the original call to start
-  io:format("WORDWRAP~n", []),
-  io:format("PID: ~p~n", [wx_object:get_pid(Server)]),
-  %% Make a call to the wx server, which call handle_call()
-  State = wx_object:call(Server, editor),
-  io:format("State: ~p~n", [State]).
   
-%% Set the zoom
-
-%% @doc Get the outer panels associated editor
-
+%% @doc Request a save
+save_request(Editor) ->
+  case wx_object:call(Editor, save_request) of
+    {_, undefined, _} ->
+      io:format("undef~n"),
+      {ok, unsaved};
+    {_,_,false} ->
+      io:format("unmod~n"),
+      {ok, unmodified};
+    {Path, Fn, _} ->
+      io:format("save~n"),
+      {ok, Path, Fn}
+  end.
   
-stop() ->
-  io:format("Terminate~n"),
-  wx_object:cast(?MODULE, stop).
-  
+%% @doc Add a save point, update the document state to unmodified
+save_complete(Path,Filename,Server) ->
+  wx_object:call(Server, {save_complete,{Path,Filename}}).
+    
+ 

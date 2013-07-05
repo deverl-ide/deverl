@@ -28,7 +28,8 @@
                 sash_v_pos :: integer(),
                 sash_h_pos :: integer(),
                 status_bar :: wxPanel:wxPanel(),
-                font :: wxFont:wxFont()                        %% The initial font used in the editors
+                font :: wxFont:wxFont(),                        %% The initial font used in the editors
+                editor_pids
                 }).
 
 -define(DEFAULT_FRAME_WIDTH,  1300).
@@ -90,7 +91,7 @@ init(Options) ->
   %% The centre pane/editor window
   EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
   wxAuiPaneInfo:name(EditorWindowPaneInfo, "EditorPane"),
-  {Workspace, Font} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
+  {Workspace, TabId, Font} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
   
   %% The left (test case) window
   TestWindow = wxPanel:new(SplitterLeftRight),
@@ -129,7 +130,8 @@ init(Options) ->
                       sash_h_pos=?SASH_HOR_DEFAULT_POS,
                       sash_v=SplitterLeftRight,
                       sash_h=SplitterTopBottom,
-                      font=Font
+                      font=Font,
+                      editor_pids=TabId
                       }}.
 
 %%%%%%%%%%%%%%%%%%%%%
@@ -165,7 +167,8 @@ handle_call(splitter, _From, State) ->
 handle_call(workspace, _From, State) ->
     {reply, {State#state.workspace, 
              State#state.status_bar,
-             State#state.font}, State};
+             State#state.font,
+             State#state.editor_pids}, State};
 handle_call({update_font, Font}, _From, State) ->
     {reply, ok, State#state{font=Font}};
 handle_call(Msg, _From, State) ->
@@ -185,7 +188,7 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
 handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
              State) ->
     Pos = wxSplitterWindow:getSashPosition(State#state.sash_v),
-    %% Don't save the pos if the sash is dragged to zero, as the sash will revert to the middle when shown again (on mac)
+    %% Don't save the pos if the sash is dragged to zero, as the sash will revert to the middle when shown again (on mac definitely, probably on all platforms)
     if
       Pos =:= 0 ->
         NewPos = State#state.sash_v_pos;
@@ -226,8 +229,8 @@ handle_event(#wx{obj = _Workspace,
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
     add_editor(State#state.workspace, State#state.status_bar, State#state.font),
     {noreply, State};
-handle_event(#wx{event = #wxAuiNotebook{type = command_auinotebook_page_close}}, State) ->
-    io:fwrite("page closed~n"),
+handle_event(#wx{event = #wxAuiNotebook{type=command_auinotebook_page_close, selection=Index}}, State) ->
+    io:format("Page ~p closed.~n", [Index]),
     {noreply, State};
 %% Event catchall for testing
 handle_event(Ev = #wx{}, State) ->
@@ -300,15 +303,20 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
                          {font, Font}]), %% Returns an editor instance inside a wxPanel
-  
+                         
+  TabId = ets:new(editors, []),
+  {_,Id,_,Pid} = Editor,
+  ets:insert(TabId,{Id, Pid}),
+  io:format("Id~p ~n", [Editor]),
+                           
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
   wxAuiManager:addPane(Manager, Workspace, Pane),
   
   wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
-  wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, true}]),
+  wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, true},{userData,TabId}]),
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed), 
-  {Workspace, Font}.
+  {Workspace, TabId, Font}.
   
 %% @doc Called internally
 %% @private
@@ -324,7 +332,7 @@ add_editor() ->
   add_editor(?DEFAULT_TAB_LABEL).
 %% @doc Create a new editor with specified filename
 add_editor(Filename) ->
-  {Workspace, Sb, Font} = wx_object:call(?MODULE, workspace), 
+  {Workspace, Sb, Font, _} = wx_object:call(?MODULE, workspace), 
   add_editor(Workspace, Filename, Sb, Font),
   ok.
 %% @private
@@ -334,7 +342,7 @@ add_editor(Workspace, Filename, Sb, Font) ->
   ok.
 %% @doc Create an editor from an existing file
 add_editor(Filename, Contents) -> 
-  {Workspace, Sb, Font} = wx_object:call(?MODULE, workspace), 
+  {Workspace, Sb, Font, _} = wx_object:call(?MODULE, workspace), 
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}, {contents, Contents}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
   ok.
@@ -407,18 +415,23 @@ get_editor(Index, Workspace) ->
   
 %% @doc Get the editor contained within a workspace tab
 -spec get_selected_editor() -> Result when
-  Result :: wxStyledTextCtrl:wxStyledTextCtrl().
+  Result :: {'error', 'no_open_editor'} | 
+            {'ok', {integer(), wxStyledTextCtrl:wxStyledTextCtrl()}}.
 get_selected_editor() ->
-  {Workspace,_,_} = wx_object:call(?MODULE, workspace), 
+  {Workspace,_,_,Tab} = wx_object:call(?MODULE, workspace), 
   Index = wxAuiNotebook:getSelection(Workspace),   %% Get the index of the tab
-  W     = wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
-  get_editor(Index, Workspace).
-  
+  Valid = fun(-1) -> %% no editor instance
+            {error, no_open_editor};
+          (_) ->
+            wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
+            {ok, {Index, get_editor(Index, Workspace), Workspace, Tab}}
+          end,
+  Valid(Index).   
 %% @doc Get all open editor instances
 -spec get_all_editors() -> Result when
   Result :: [wxStyledTextCtrl:wxStyledTextCtrl()].
 get_all_editors() ->
-  {Workspace,_,_} = wx_object:call(?MODULE, workspace),
+  {Workspace,_,_,_} = wx_object:call(?MODULE, workspace),
   Count = wxAuiNotebook:getPageCount(Workspace),
   get_all_editors(Workspace, Count - 1, []).
 %% @private
@@ -444,9 +457,35 @@ update_styles(Frame) ->
   
 %% @doc Save the contents of a file to disk
 save_current_file() ->
-  Ed = get_selected_editor(),
-  Contents = wxStyledTextCtrl:getText(Ed),
-  ide_io:save(Ed, Contents).
+  case get_selected_editor() of
+    {error, no_open_editor} ->
+      %% This should disable the save controls on both menu and toolbar
+      io:format("No editor open.~n");
+    {ok, {Index, Editor, Workspace, Tab}} ->
+      save_file(Index, Editor, Workspace, Tab)
+  end.
+  
+save_file(Index, Editor, Workspace, Tab) ->
+  {_,Id,_,_} = wxWindow:getParent(Editor),
+  [{_,Pid}] = ets:lookup(Tab, Id),
+  case editor:save_request(Pid) of
+    {ok, unsaved} ->
+      %% Display save dialog
+      Contents = wxStyledTextCtrl:getText(Editor),
+      {ok, {Path, Filename}} = ide_io:save_as(Editor, Contents),
+      wxAuiNotebook:setPageText(Workspace, Index, Filename),
+      editor:save_complete(Path, Filename, Pid);
+    {ok, unmodified} ->
+      %% Document is unmodified, no need to save
+      ok;
+    {ok, Path, Fn} ->
+      %% Document already exists, overwrite
+      Contents = wxStyledTextCtrl:getText(Editor),
+      ide_io:save(Path, Contents),
+      editor:save_complete(Path, Fn, Pid)
+  end.
+
+
   
 %% @doc Apply the given function to all open editor instances
 %% EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
