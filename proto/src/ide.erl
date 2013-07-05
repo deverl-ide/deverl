@@ -305,10 +305,11 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
                          {font, Font}]), %% Returns an editor instance inside a wxPanel
                          
-  TabId = ets:new(editors, []),
+  TabId = ets:new(editors, [public]),
   {_,Id,_,Pid} = Editor,
   ets:insert(TabId,{Id, Pid}),
-  io:format("Id~p ~n", [Editor]),
+  io:format("TabId: ~p ~n", [TabId]),
+  io:format("Id: ~p ~n", [Id]),
                            
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
@@ -341,7 +342,8 @@ add_editor(Workspace, Filename, Sb, Font, TabId) ->
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
   {_,Id,_,Pid} = Editor,
-  ets:insert(TabId,{Id, Pid}),
+  io:format("TAB: ~p~n", [ets:tab2list(TabId)]),
+  ets:insert_new(TabId,{Id, Pid}),
   ok.
 %% @doc Create an editor from an existing file
 add_editor(Filename, Contents) ->
@@ -349,7 +351,7 @@ add_editor(Filename, Contents) ->
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}, {contents, Contents}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
   {_,Id,_,Pid} = Editor,
-  ets:insert(TabId,{Id, Pid}),
+  ets:insert_new(TabId,{Id, Pid}),
   ok.
 
 %% @doc Display or hide a given window pane
@@ -477,10 +479,6 @@ save_file(Index, Editor, Workspace, Tab) ->
     {ok, unsaved} ->
       %% Display save dialog
       save_new(Index, Editor, Workspace, Pid);
-      % Contents = wxStyledTextCtrl:getText(Editor),
- %      {ok, {Path, Filename}} = ide_io:save_as(Editor, Contents),
- %      wxAuiNotebook:setPageText(Workspace, Index, Filename),
- %      editor:save_complete(Path, Filename, Pid);
     {ok, unmodified} ->
       %% Document is unmodified, no need to save
       ok;
