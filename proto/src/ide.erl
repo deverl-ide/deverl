@@ -337,15 +337,15 @@ add_editor(Filename) ->
   add_editor(Workspace, Filename, Sb, Font, TabId),
   ok.
 %% @private
-add_editor(Workspace, Filename, Sb, Font, TabId) -> 
+add_editor(Workspace, Filename, Sb, Font, TabId) ->
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
   {_,Id,_,Pid} = Editor,
   ets:insert(TabId,{Id, Pid}),
   ok.
 %% @doc Create an editor from an existing file
-add_editor(Filename, Contents) -> 
-  {Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
+add_editor(Filename, Contents) ->
+  {Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace),
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}, {contents, Contents}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
   {_,Id,_,Pid} = Editor,
