@@ -8,13 +8,12 @@
 
 %% wx_objects callbacks
 -export([start/0, init/1, terminate/2,  code_change/3,
-         handle_info/2, handle_call/3, handle_cast/2, handle_event/2,
-         save_current_file/0]).
+         handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 %% Client API         
 -export([add_editor/0, add_editor/1, toggle_pane/1, get_selected_editor/0, 
          get_all_editors/0, update_styles/1, apply_to_all_editors/0,
-         open_dialog/1]).
+         save_current_file/0, open_file/1]).
 
 %% The record containing the State.
 -record(state, {win,  
@@ -501,6 +500,10 @@ save_new(Index, Editor, Workspace, Pid) ->
       wxAuiNotebook:setPageText(Workspace, Index, Filename),
       editor:save_complete(Path, Filename, Pid)
   end.
+
+open_file(Frame) ->
+	{Filename, Contents} = ide_io:open(Frame),
+	add_editor(Filename, Contents).
   
 %% @doc Apply the given function to all open editor instances
 %% EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
@@ -510,6 +513,4 @@ apply_to_all_editors() ->
         end,
   lists:map(Fun, get_all_editors()).
 
-open_dialog(Frame) ->
-	{Filename, Contents} = ide_io:open_file(Frame),
-	add_editor(Filename, Contents).
+
