@@ -35,7 +35,7 @@
 -define(DEFAULT_FRAME_HEIGHT, 731).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
--define(DEFAULT_FONT_SIZE, 12).
+-define(DEFAULT_FONT_SIZE,    12).
 
 -define(DEFAULT_TAB_LABEL, "new_file").
 
@@ -71,7 +71,7 @@ init(Options) ->
   %% Following two lines, see platforms.txt <1> 
   wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
   wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
-  wxSplitterWindow:setSashGravity(SplitterTopBottom,   0.5),
+  wxSplitterWindow:setSashGravity(SplitterTopBottom, 0.5),
   wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
 
   wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
@@ -83,7 +83,7 @@ init(Options) ->
   ide_menu:new([{parent, Frame}, {sb, StatusBar}]),
  
   wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
-                                     {proportion, 0}]),      
+                                      {proportion, 0}]),      
 
   %% The workspace/text editors %%
   Manager = wxAuiManager:new([{managed_wnd, Frame}]),
@@ -338,7 +338,7 @@ add_editor(Filename) ->
   add_editor(Workspace, Filename, Sb, Font, TabId),
   ok.
 %% @private
-add_editor(Workspace, Filename, Sb, Font, TabId) -> 
+add_editor(Workspace, Filename, Sb, Font, TabId) ->
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
   {_,Id,_,Pid} = Editor,
@@ -500,8 +500,8 @@ save_new(Index, Editor, Workspace, Pid) ->
   end.
 
 open_file(Frame) ->
-	{Filename, Contents} = ide_io:open(Frame),
-	add_editor(Filename, Contents).
+	{Path, Filename, Contents} = ide_io:open(Frame),
+	add_editor(Path, Filename, Contents).
   
 %% @doc Apply the given function to all open editor instances
 %% EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
