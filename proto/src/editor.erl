@@ -99,7 +99,7 @@ init(Config) ->
   
   %% Load contents if any
   case File of
-    {file, Path, Filename, Contents} ->
+    {file, {Path, Filename, Contents}} ->
       F = #file{path=Path, filename=Filename},
       wxStyledTextCtrl:setText(Editor, Contents);
     false ->
