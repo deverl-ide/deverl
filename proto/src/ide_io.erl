@@ -6,10 +6,8 @@
 open(Parent) ->
 	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_OPEN}]),
 	wxFileDialog:showModal(Dialog),
-
 	Path = wxFileDialog:getPath(Dialog),
 	Filename = wxFileDialog:getFilename(Dialog),
-	
 	{ok, Contents} = file:read_file(Path),
 	{Filename, binary_to_list(Contents)}.
 	  
