@@ -227,10 +227,12 @@ handle_event(#wx{obj = _Workspace,
     io:format("changed page~n"),
     {noreply, State};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
-    add_editor(State#state.workspace, State#state.status_bar, State#state.font),
+    add_editor(State#state.workspace, State#state.status_bar, State#state.font, State#state.editor_pids),
     {noreply, State};
 handle_event(#wx{event = #wxAuiNotebook{type=command_auinotebook_page_close, selection=Index}}, State) ->
     io:format("Page ~p closed.~n", [Index]),
+    %% Remove the process from the ETS
+    
     {noreply, State};
 %% Event catchall for testing
 handle_event(Ev = #wx{}, State) ->
@@ -320,8 +322,8 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   
 %% @doc Called internally
 %% @private
-add_editor(Workspace, Sb, Font) ->
-  add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb, Font),
+add_editor(Workspace, Sb, Font, TabId) ->
+  add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb, Font, TabId),
   Workspace.
   
 %%%%%%%%%%%%%%%%%%%%%%
@@ -332,19 +334,23 @@ add_editor() ->
   add_editor(?DEFAULT_TAB_LABEL).
 %% @doc Create a new editor with specified filename
 add_editor(Filename) ->
-  {Workspace, Sb, Font, _} = wx_object:call(?MODULE, workspace), 
-  add_editor(Workspace, Filename, Sb, Font),
+  {Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
+  add_editor(Workspace, Filename, Sb, Font, TabId),
   ok.
 %% @private
-add_editor(Workspace, Filename, Sb, Font) -> 
+add_editor(Workspace, Filename, Sb, Font, TabId) -> 
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
+  {_,Id,_,Pid} = Editor,
+  ets:insert(TabId,{Id, Pid}),
   ok.
 %% @doc Create an editor from an existing file
 add_editor(Filename, Contents) -> 
-  {Workspace, Sb, Font, _} = wx_object:call(?MODULE, workspace), 
+  {Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}, {contents, Contents}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
+  {_,Id,_,Pid} = Editor,
+  ets:insert(TabId,{Id, Pid}),
   ok.
 
 %% @doc Display or hide a given window pane
@@ -471,10 +477,11 @@ save_file(Index, Editor, Workspace, Tab) ->
   case editor:save_request(Pid) of
     {ok, unsaved} ->
       %% Display save dialog
-      Contents = wxStyledTextCtrl:getText(Editor),
-      {ok, {Path, Filename}} = ide_io:save_as(Editor, Contents),
-      wxAuiNotebook:setPageText(Workspace, Index, Filename),
-      editor:save_complete(Path, Filename, Pid);
+      save_new(Index, Editor, Workspace, Pid);
+      % Contents = wxStyledTextCtrl:getText(Editor),
+ %      {ok, {Path, Filename}} = ide_io:save_as(Editor, Contents),
+ %      wxAuiNotebook:setPageText(Workspace, Index, Filename),
+ %      editor:save_complete(Path, Filename, Pid);
     {ok, unmodified} ->
       %% Document is unmodified, no need to save
       ok;
@@ -485,7 +492,15 @@ save_file(Index, Editor, Workspace, Tab) ->
       editor:save_complete(Path, Fn, Pid)
   end.
 
-
+save_new(Index, Editor, Workspace, Pid) ->
+  Contents = wxStyledTextCtrl:getText(Editor),
+  case ide_io:save_as(Editor, Contents) of
+    {cancel} ->
+      ok;
+    {ok, {Path, Filename}}  ->
+      wxAuiNotebook:setPageText(Workspace, Index, Filename),
+      editor:save_complete(Path, Filename, Pid)
+  end.
   
 %% @doc Apply the given function to all open editor instances
 %% EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
