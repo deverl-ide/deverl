@@ -8,13 +8,12 @@
 
 %% wx_objects callbacks
 -export([start/0, init/1, terminate/2,  code_change/3,
-         handle_info/2, handle_call/3, handle_cast/2, handle_event/2,
-         save_current_file/0]).
+         handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 %% Client API         
 -export([add_editor/0, add_editor/1, toggle_pane/1, get_selected_editor/0, 
          get_all_editors/0, update_styles/1, apply_to_all_editors/0,
-         open_dialog/1]).
+         save_current_file/0, open_file/1]).
 
 %% The record containing the State.
 -record(state, {win,  
