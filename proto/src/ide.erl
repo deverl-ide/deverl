@@ -530,17 +530,7 @@ save_file(Index, Editor, Workspace, Sb, Tab) ->
       customStatusBar:set_text_timeout(Sb, {field, help}, "Document saved.")
   end.
 
-<<<<<<< HEAD
-save_new(Index, Editor, Workspace, Pid) ->
-	Contents = wxStyledTextCtrl:getText(Editor),
-	case ide_io:save_as(Editor, Contents) of
-		{cancel} ->
-			ok;
-		{ok, {Path, Filename}}  ->
-			wxAuiNotebook:setPageText(Workspace, Index, Filename),
-			editor:save_complete(Path, Filename, Pid)
-	end.
-=======
+
 
 %% =====================================================================
 %% @doc
@@ -555,7 +545,6 @@ save_new(Index, Editor, Workspace, Sb, Pid) ->
       editor:save_complete(Path, Filename, Pid),
       customStatusBar:set_text_timeout(Sb, {field, help}, "Document saved.")
   end.
->>>>>>> a8c891169c823547890df528f62c1befb9e66646
 
 
 %% =====================================================================
@@ -565,18 +554,14 @@ save_new(Index, Editor, Workspace, Sb, Pid) ->
   Frame :: wxWindow:wxWindow().
 
 open_file(Frame) ->
-<<<<<<< HEAD
 	case ide_io:open(Frame) of
 		{cancel} ->
 			ok;
 		{Path, Filename, Contents} ->
-			add_editor(Path, Filename, Contents)
+			add_editor(Path, Filename, Contents),
+      ok
 	end.
-=======
-	{Path, Filename, Contents} = ide_io:open(Frame),
-	add_editor(Path, Filename, Contents),
-  ok.
->>>>>>> a8c891169c823547890df528f62c1befb9e66646
+
   
 
 %% =====================================================================  
