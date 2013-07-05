@@ -35,7 +35,7 @@
 -define(DEFAULT_FRAME_HEIGHT, 731).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
--define(DEFAULT_FONT_SIZE, 12).
+-define(DEFAULT_FONT_SIZE,    12).
 
 -define(DEFAULT_TAB_LABEL, "new_file").
 
@@ -71,7 +71,7 @@ init(Options) ->
   %% Following two lines, see platforms.txt <1> 
   wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
   wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
-  wxSplitterWindow:setSashGravity(SplitterTopBottom,   0.5),
+  wxSplitterWindow:setSashGravity(SplitterTopBottom, 0.5),
   wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
 
   wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
@@ -83,7 +83,7 @@ init(Options) ->
   ide_menu:new([{parent, Frame}, {sb, StatusBar}]),
  
   wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
-                                     {proportion, 0}]),      
+                                      {proportion, 0}]),      
 
   %% The workspace/text editors %%
   Manager = wxAuiManager:new([{managed_wnd, Frame}]),
