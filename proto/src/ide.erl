@@ -100,7 +100,7 @@ init(Options) ->
   wxSizer:add(TestSizer, TestT, [{flag, ?wxEXPAND}, {proportion, 1}]),
   
   %% The bottom pane/utility window
-  Utilities = create_utils(SplitterTopBottom, Manager, ok),  
+  Utilities = create_utils(SplitterTopBottom),  
                                      
   wxSplitterWindow:splitVertically(SplitterLeftRight, TestWindow, Workspace,
 		         [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
@@ -244,12 +244,15 @@ code_change(_, _, State) ->
 terminate(_Reason, _State) ->
     wx:destroy().
 
-%%%%%%%%%%%%%%%%%%%%%
-%%%%% Internals %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Internals %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+%% =====================================================================
 %% @doc Create the utilities panel
+%%
 %% @private
-create_utils(Parent, Manager, Pane) ->
+
+create_utils(Parent) ->
   %% Notebook styles
   Style = (0
      bor ?wxAUI_NB_TOP
@@ -260,36 +263,33 @@ create_utils(Parent, Manager, Pane) ->
   
   UtilPanel = wxPanel:new(Parent, []),
   
-  % Utils = wxAuiNotebook:new(Parent, [{style, Style}]),
   Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
   
   UtilSizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(UtilPanel, UtilSizer),
   
   Console = ide_shell:new([{parent, Utils}]),
-  % wxAuiNotebook:addPage(Utils, Console, "Console", []),
   wxNotebook:addPage(Utils, Console, "Console", []),
 
   Pman = wxPanel:new(Utils, []),
-  % wxAuiNotebook:addPage(Utils, Pman, "Process Manager", []),
   wxNotebook:addPage(Utils, Pman, "Process Manager", []),
 
   Dialyser = wxPanel:new(Utils, []),
-  % wxAuiNotebook:addPage(Utils, Dialyser, "Dialyser", []),
   wxNotebook:addPage(Utils, Dialyser, "Dialyser", []),
   
   Debugger = wxPanel:new(Utils, []),
-  % wxAuiNotebook:addPage(Utils, Debugger, "Debugger", []),
   wxNotebook:addPage(Utils, Debugger, "Debugger", []),
   
   wxSizer:addSpacer(UtilSizer, 1),
   wxSizer:add(UtilSizer, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-  % wxAuiManager:addPane(Manager, Utils, Pane),
   UtilPanel.
-
+  
+  
+%% =====================================================================
 %% @doc Create the workspace with the initial editor
 %% @private  
+
 create_editor(Parent, Manager, Pane, Sb, Filename) ->
   Style = (0
      bor ?wxAUI_NB_TOP
@@ -319,24 +319,34 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, true},{userData,TabId}]),
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed), 
   {Workspace, TabId, Font}.
-  
-%% @doc Called internally
+
+
+%% =====================================================================
+%% @doc 
+%%
 %% @private
+
 add_editor(Workspace, Sb, Font, TabId) ->
   add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb, Font, TabId),
   Workspace.
   
-%%%%%%%%%%%%%%%%%%%%%%
-%%%%% Client API %%%%%
   
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Client API %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+%% =====================================================================
 %% @doc Create a new editor instance in the notebook  
+
 add_editor() -> 
   add_editor(?DEFAULT_TAB_LABEL).
+  
 %% @doc Create a new editor with specified filename
 add_editor(Filename) ->
   {Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
   add_editor(Workspace, Filename, Sb, Font, TabId),
   ok.
+  
 %% @private
 add_editor(Workspace, Filename, Sb, Font, TabId) ->
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}]),
@@ -345,6 +355,7 @@ add_editor(Workspace, Filename, Sb, Font, TabId) ->
   io:format("TAB: ~p~n", [ets:tab2list(TabId)]),
   ets:insert_new(TabId,{Id, Pid}),
   ok.
+  
 %% @doc Create an editor from an existing file
 add_editor(Path, Filename, Contents) -> 
   {Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
@@ -354,7 +365,10 @@ add_editor(Path, Filename, Contents) ->
   ets:insert_new(TabId,{Id, Pid}),
   ok.
 
+
+%% =====================================================================
 %% @doc Display or hide a given window pane
+
 -spec toggle_pane(PaneType) -> Result when
   PaneType :: 'test' | 'util' | 'editor' | 'maxutil',
   Result :: 'ok'.
@@ -407,46 +421,65 @@ toggle_pane(PaneType) ->
 			end
 		end,
   ok. 
-  
+
+
+%% =====================================================================
 %% @doc Get the editor instance from a notebook tab
+%%
 %% @private
+
 -spec get_editor(Index, Workspace) -> Result when
   Index :: integer(),
   Workspace :: wxAuiNotebook:wxAuiNotebook(),
   Result :: wxStyledTextCtrl:wxStyledTextCtrl().
+  
 get_editor(Index, Workspace) ->
   W     = wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
   [Children | _] = wxWindow:getChildren(W),        %% The first child is the STC
   Editor = wx:typeCast(Children, wxStyledTextCtrl),
   Editor.
-  
+
+
+%% =====================================================================
 %% @doc Get the editor contained within a workspace tab
+
 -spec get_selected_editor() -> Result when
   Result :: {'error', 'no_open_editor'} | 
             {'ok', {integer(), wxStyledTextCtrl:wxStyledTextCtrl()}}.
+            
 get_selected_editor() ->
-  {Workspace,_,_,Tab} = wx_object:call(?MODULE, workspace), 
+  {Workspace,Sb,_,Tab} = wx_object:call(?MODULE, workspace), 
   Index = wxAuiNotebook:getSelection(Workspace),   %% Get the index of the tab
   Valid = fun(-1) -> %% no editor instance
             {error, no_open_editor};
           (_) ->
             wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
-            {ok, {Index, get_editor(Index, Workspace), Workspace, Tab}}
+            {ok, {Index, get_editor(Index, Workspace), Workspace, Sb, Tab}}
           end,
   Valid(Index).   
+
+
+%% =====================================================================
 %% @doc Get all open editor instances
+
 -spec get_all_editors() -> Result when
   Result :: [wxStyledTextCtrl:wxStyledTextCtrl()].
+  
 get_all_editors() ->
-  {Workspace,_,_,_} = wx_object:call(?MODULE, workspace),
+  {Workspace,Sb,_,_} = wx_object:call(?MODULE, workspace),
   Count = wxAuiNotebook:getPageCount(Workspace),
   get_all_editors(Workspace, Count - 1, []).
-%% @private
+
 get_all_editors(Workspace, -1, Acc) -> Acc;
+
 get_all_editors(Workspace, Count, Acc) ->
   get_all_editors(Workspace, Count -1, [get_editor(Count, Workspace) | Acc]).
 
+
+
+%% =====================================================================
 %% @doc Change the font style across all open editors
+
 update_styles(Frame) ->
   {_,_,CurrentFont} = wx_object:call(?MODULE, workspace), 
   FD = wxFontData:new(),
@@ -461,34 +494,43 @@ update_styles(Frame) ->
         end,
   lists:map(Fun, get_all_editors()),
   ok.
-  
+
+
+%% =====================================================================
 %% @doc Save the contents of a file to disk
+
 save_current_file() ->
   case get_selected_editor() of
     {error, no_open_editor} ->
       %% This should disable the save controls on both menu and toolbar
       io:format("No editor open.~n");
-    {ok, {Index, Editor, Workspace, Tab}} ->
-      save_file(Index, Editor, Workspace, Tab)
+    {ok, {Index, Editor, Workspace, Sb, Tab}} ->
+      save_file(Index, Editor, Workspace, Sb, Tab)
   end.
+
+
+%% =====================================================================
+%% @doc
   
-save_file(Index, Editor, Workspace, Tab) ->
+save_file(Index, Editor, Workspace, Sb, Tab) ->
   {_,Id,_,_} = wxWindow:getParent(Editor),
   [{_,Pid}] = ets:lookup(Tab, Id),
-  case editor:save_request(Pid) of
+  case editor:save_status(Pid) of
     {ok, unsaved} ->
       %% Display save dialog
-      save_new(Index, Editor, Workspace, Pid);
+      save_new(Index, Editor, Workspace, Sb, Pid);
     {ok, unmodified} ->
       %% Document is unmodified, no need to save
-      ok;
+      customStatusBar:set_text_timeout(Sb, {field, help}, "Document already saved.");
     {ok, Path, Fn} ->
       %% Document already exists, overwrite
       Contents = wxStyledTextCtrl:getText(Editor),
       ide_io:save(Path, Contents),
-      editor:save_complete(Path, Fn, Pid)
+      editor:save_complete(Path, Fn, Pid),
+      customStatusBar:set_text_timeout(Sb, {field, help}, "Document saved.")
   end.
 
+<<<<<<< HEAD
 save_new(Index, Editor, Workspace, Pid) ->
 	Contents = wxStyledTextCtrl:getText(Editor),
 	case ide_io:save_as(Editor, Contents) of
@@ -498,21 +540,51 @@ save_new(Index, Editor, Workspace, Pid) ->
 			wxAuiNotebook:setPageText(Workspace, Index, Filename),
 			editor:save_complete(Path, Filename, Pid)
 	end.
+=======
+
+%% =====================================================================
+%% @doc
+
+save_new(Index, Editor, Workspace, Sb, Pid) ->
+  Contents = wxStyledTextCtrl:getText(Editor),
+  case ide_io:save_as(Editor, Contents) of
+    {cancel} ->
+      customStatusBar:set_text_timeout(Sb, {field, help}, "Document not saved.");
+    {ok, {Path, Filename}}  ->
+      wxAuiNotebook:setPageText(Workspace, Index, Filename),
+      editor:save_complete(Path, Filename, Pid),
+      customStatusBar:set_text_timeout(Sb, {field, help}, "Document saved.")
+  end.
+>>>>>>> a8c891169c823547890df528f62c1befb9e66646
+
+
+%% =====================================================================
+%% @doc
+
+-spec open_file(Frame) -> 'ok' when
+  Frame :: wxWindow:wxWindow().
 
 open_file(Frame) ->
+<<<<<<< HEAD
 	case ide_io:open(Frame) of
 		{cancel} ->
 			ok;
 		{Path, Filename, Contents} ->
 			add_editor(Path, Filename, Contents)
 	end.
+=======
+	{Path, Filename, Contents} = ide_io:open(Frame),
+	add_editor(Path, Filename, Contents),
+  ok.
+>>>>>>> a8c891169c823547890df528f62c1befb9e66646
   
+
+%% =====================================================================  
 %% @doc Apply the given function to all open editor instances
-%% EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
+%% !!!!!!! EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
+
 apply_to_all_editors() ->
   Fun = fun(STC) ->
         wxStyledTextCtrl:clearAll(STC)
         end,
   lists:map(Fun, get_all_editors()).
-
-

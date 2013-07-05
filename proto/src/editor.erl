@@ -1,9 +1,9 @@
 %% editor.erl
-%% Simple frame that loads an editor object
+%% Creates an instance of an editor in a wxPanel().
 
 -module(editor).
 
--export([update_style/2, save_request/1, save_complete/3]).
+-export([update_style/2, save_status/1, save_complete/3]).
 
 -export([start/1, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
@@ -36,9 +36,7 @@ init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Sb = proplists:get_value(status_bar, Config),
   Font = proplists:get_value(font, Config),
-  
   File = proplists:get_value(file, Config, false),
-  io:format("FILE: ~p~n", [File]),
   
   Panel = wxPanel:new(Parent),
 
@@ -96,19 +94,18 @@ init(Config) ->
   %% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Sb}]),
-  % wxStyledTextCtrl:connect(Editor, stc_savepointreached, [{userData, Sb}]),
+  wxStyledTextCtrl:connect(Editor, stc_change, [{userData, Sb}]),
+  wxStyledTextCtrl:connect(Editor, stc_savepointreached, [{userData, Sb}]),
   
   %% Load contents if any
   case File of
     {Path, Filename, Contents} ->
-      F = #file{path=Path, filename=Filename},
+      F = #file{path=Path, filename=Filename, modified=false},
       wxStyledTextCtrl:setText(Editor, Contents);
     false ->
       F = #file{}
   end,
-  
-  wxStyledTextCtrl:setSavePoint(Editor),
-    
+      
   % process_flag(trap_exit, true),
   {Panel, #state{win=Panel, editor=Editor, file_data=F}}.
 
@@ -127,31 +124,28 @@ handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
     {noreply,State}.
 
+
 handle_call(save_request, _From, State=#state{file_data=#file{path=Path, filename=Fn, modified=Mod}}) ->
     {reply,{Path,Fn,Mod},State};
 handle_call({save_complete,{Path,Filename}}, _From, State) ->
     wxStyledTextCtrl:setSavePoint(State#state.editor),
-    io:format("save complete~n"),
     {reply,ok,State#state{file_data=#file{path=Path, filename=Filename}}};
 handle_call(Msg, _From, State) ->
-    io:format("Got Call ~p~n",[Msg]),
+    io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
     {reply,State#state.editor,State}.
 
-handle_cast(stop, State)->
-    io:format("Handle cast: stop~n"),
-    {stop, normal, State};
+
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
 
+
 handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{editor=Editor}) ->
-    io:format("Change event: ~p~n", [_E]),
     {noreply, State};
-handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointreached}=_E}, State) ->
-    io:format("Save point reached: ~p~n", [_E]),
-    {noreply, State#state{file_data=#file{modified=false}}};
+handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointreached}=_E}, 
+            State=#state{file_data=#file{path=Path, filename=Fn}}) ->
+    {noreply, State#state{file_data=#file{path=Path,filename=Fn,modified=false}}};
 handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointleft}=_E}, State = #state{editor=Editor}) ->
-    io:format("Save point left: ~p~n", [_E]),
     {noreply, State};
 handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, 
              State=#state{editor=Editor, file_data=#file{filename=Fn, path=Path}}) ->
@@ -181,11 +175,12 @@ code_change(_, _, State) ->
 terminate(_Reason, _State) ->
   io:format("editor callback: terminate: stop~n").
     
-%%%%%%%%%%%%%%%%%%%%%
-%%%%% Internals %%%%%
 
+%% =====================================================================
 %% @doc Defines the keywords in the Erlang language
+%%
 %% @private
+
 keywords() ->
   KWS = ["after" "and" "andalso" "band" "begin" "bnot" 
   "bor" "bsl" "bsr" "bxor" "case" "catch" "cond" "div" 
@@ -193,9 +188,15 @@ keywords() ->
   "receive" "rem" "try" "when" "xor"],
   lists:flatten([KW ++ " " || KW <- KWS]).
 
+
+%% =====================================================================
 %% @doc Updates the styles for individual elements in the lexer
+%%
+%% @private
+
 -spec update_styles(Editor) -> 'ok' when
   Editor :: wxStyledTextCtrl:wxStyledTextCtrl().
+  
 update_styles(Editor) ->
   %% {Style, Colour}
   Styles =  [{?wxSTC_ERLANG_DEFAULT,  {0,0,0}},
@@ -222,25 +223,34 @@ update_styles(Editor) ->
 
   [SetStyle(Style) || Style <- Styles],
   ok.
-  
+
+
+%% =====================================================================  
 %% @doc Get the cursor position in the editor
-%% @doc x=line no, y=col no.
+%% x=line no, y=col no.
 %% @private
+
 -spec editor:get_x_y(Editor) -> Result when
   Editor :: wxStyledTextCtrl:wxStyledTextCtrl(),
   Result :: {integer(), integer()}.
+  
 get_x_y(Editor) ->
   LineNo = wxStyledTextCtrl:getCurrentLine(Editor),
   Pos = wxStyledTextCtrl:getCurrentPos(Editor) + 1,
   ColNo = Pos - wxStyledTextCtrl:positionFromLine(Editor, LineNo),
   {LineNo+1, ColNo}.
   
+  
+%% =====================================================================  
 %% @doc Adjust the width of the line_number margin if necessary,
-%% @doc dynamically (it doesn't currently decrease).
+%% dynamically (it doesn't currently decrease).
+%%
 %% @private
+
 -spec adjust_margin_width(Editor) -> Result when
   Editor :: wxStyledTextCtrl:wxStyledTextCtrl(),
   Result :: 'ok'.
+  
 adjust_margin_width(Editor) ->
   Lns = wxStyledTextCtrl:getLineCount(Editor),
   NewWidth = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, integer_to_list(Lns)),
@@ -254,35 +264,48 @@ adjust_margin_width(Editor) ->
     true -> ok
   end,
   ok.  
-  
-%%%%%%%%%%%%%%%%%%%%%%
-%%%%% Client API %%%%%
 
--spec update_style(Editor, Font) -> ok when
+%% =====================================================================
+%% @doc Update the font used in the editor
+
+-spec update_style(Editor, Font) -> 'ok' when
   Editor :: wxStyledTextCtrl:wxStyledTextCtrl(),
   Font :: wxFont:wxFont().
+  
 update_style(Editor, Font) ->
   wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
   %% Update the margin size
   adjust_margin_width(Editor),
   ok.
   
-%% @doc Request a save
-save_request(Editor) ->
+  
+%% =====================================================================
+%% @doc Get the status of the document
+
+-spec save_status(Editor) -> Result when
+  Editor :: pid(),
+  Result :: {'ok', 'unsaved'}
+          | {'ok', 'unmodified'}
+          | {'ok', {unicode:charlist(), unicode:charlist()}}.
+          
+save_status(Editor) ->
   case wx_object:call(Editor, save_request) of
     {_, undefined, _} ->
-      io:format("undef~n"),
       {ok, unsaved};
     {_,_,false} ->
-      io:format("unmod~n"),
       {ok, unmodified};
     {Path, Fn, _} ->
-      io:format("save~n"),
       {ok, Path, Fn}
   end.
-  
+
+
+%% ===================================================================== 
 %% @doc Add a save point, update the document state to unmodified
+
+-spec save_complete(Path,Filename,Server) -> 'ok' when
+  Path :: unicode:charlist(),
+  Filename :: unicode:charlist(),
+  Server :: pid().
+  
 save_complete(Path,Filename,Server) ->
   wx_object:call(Server, {save_complete,{Path,Filename}}).
-    
- 
