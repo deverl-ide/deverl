@@ -37,7 +37,7 @@ init(Config) ->
   Sb = proplists:get_value(status_bar, Config),
   Font = proplists:get_value(font, Config),
   
-  Contents = proplists:get_value(contents, Config, false),
+  File = proplists:get_value(file, Config, false),
   
   Panel = wxPanel:new(Parent),
 
@@ -98,16 +98,18 @@ init(Config) ->
   % wxStyledTextCtrl:connect(Editor, stc_savepointreached, [{userData, Sb}]),
   
   %% Load contents if any
-  if
-    Contents /= false ->
+  case File of
+    {file, Path, Filename, Contents} ->
+      F = #file{path=Path, filename=Filename},
       wxStyledTextCtrl:setText(Editor, Contents);
-    true -> ok
+    false ->
+      F = #file{}
   end,
   
   wxStyledTextCtrl:setSavePoint(Editor),
     
   % process_flag(trap_exit, true),
-  {Panel, #state{win=Panel, editor=Editor, file_data=#file{}}}.
+  {Panel, #state{win=Panel, editor=Editor, file_data=F}}.
 
 %%%%%%%%%%%%%%%%%%%%%
 %%%%% Callbacks %%%%%

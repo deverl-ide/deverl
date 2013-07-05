@@ -21,7 +21,7 @@ save_as(Parent, Contents) ->
 			file:close(Fd),
 			{ok, {Path, wxFileDialog:getFilename(Dialog)}};
 		?wxID_CANCEL -> 
-			cancel
+			{cancel}
 	end.
 
 save(Path, Contents) ->
