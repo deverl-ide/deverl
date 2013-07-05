@@ -496,5 +496,5 @@ apply_to_all_editors() ->
   lists:map(Fun, get_all_editors()).
 
 open_dialog(Frame) ->
-	{Filename, Contents} = ide_io:open_file(Frame),
+	{Filename, Contents} = ide_io:open(Frame),
 	add_editor(Filename, Contents).
