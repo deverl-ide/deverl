@@ -1,5 +1,5 @@
 -module(ide_io).
--compile(export_all).
+-export([open/1, save_as/2, save/2]).
 -include_lib("wx/include/wx.hrl").
 
 

@@ -485,6 +485,9 @@ save_file(Index, Editor, Workspace, Tab) ->
       editor:save_complete(Path, Fn, Pid)
   end.
 
+open_file(Frame) ->
+	{Filename, Contents} = ide_io:open(Frame),
+	add_editor(Filename, Contents).
 
   
 %% @doc Apply the given function to all open editor instances
@@ -495,6 +498,4 @@ apply_to_all_editors() ->
         end,
   lists:map(Fun, get_all_editors()).
 
-open_dialog(Frame) ->
-	{Filename, Contents} = ide_io:open(Frame),
-	add_editor(Filename, Contents).
+
