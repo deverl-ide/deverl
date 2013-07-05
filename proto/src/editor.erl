@@ -38,6 +38,7 @@ init(Config) ->
   Font = proplists:get_value(font, Config),
   
   File = proplists:get_value(file, Config, false),
+  io:format("FILE: ~p~n", [File]),
   
   Panel = wxPanel:new(Parent),
 
@@ -99,7 +100,7 @@ init(Config) ->
   
   %% Load contents if any
   case File of
-    {file, {Path, Filename, Contents}} ->
+    {Path, Filename, Contents} ->
       F = #file{path=Path, filename=Filename},
       wxStyledTextCtrl:setText(Editor, Contents);
     false ->
