@@ -490,18 +490,22 @@ save_file(Index, Editor, Workspace, Tab) ->
   end.
 
 save_new(Index, Editor, Workspace, Pid) ->
-  Contents = wxStyledTextCtrl:getText(Editor),
-  case ide_io:save_as(Editor, Contents) of
-    {cancel} ->
-      ok;
-    {ok, {Path, Filename}}  ->
-      wxAuiNotebook:setPageText(Workspace, Index, Filename),
-      editor:save_complete(Path, Filename, Pid)
-  end.
+	Contents = wxStyledTextCtrl:getText(Editor),
+	case ide_io:save_as(Editor, Contents) of
+		{cancel} ->
+			ok;
+		{ok, {Path, Filename}}  ->
+			wxAuiNotebook:setPageText(Workspace, Index, Filename),
+			editor:save_complete(Path, Filename, Pid)
+	end.
 
 open_file(Frame) ->
-	{Path, Filename, Contents} = ide_io:open(Frame),
-	add_editor(Path, Filename, Contents).
+	case ide_io:open(Frame) of
+		{cancel} ->
+			ok;
+		{Path, Filename, Contents} ->
+			add_editor(Path, Filename, Contents)
+	end.
   
 %% @doc Apply the given function to all open editor instances
 %% EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS

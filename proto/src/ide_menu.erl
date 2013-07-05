@@ -56,6 +56,9 @@ start(Config) ->
 init(Config) ->
     Frame = proplists:get_value(parent, Config),
     Sb = proplists:get_value(sb, Config),
+    
+    %% Format of table entry:
+    %% (TabId, {ItemId, {Label, AltLabel}, HelpString, Separator, ParentMenu, {Type, Bool}, [{Module, Function, [Args]}]})
    
     %%%%%%%%%%%%%%%%%%%%%
     %%%%% ETS Table %%%%%
