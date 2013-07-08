@@ -21,8 +21,9 @@
   update_styles/1, 
   save_current_file/0,
   save_new/0, 
+  save_all/0,
   open_file/1,
-	open_dialog/4]).
+	open_dialog/1]).
 
 
 %% The record containing the State.
@@ -200,6 +201,7 @@ handle_call(Msg, _From, State) ->
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
+
 
 %% =====================================================================
 %% Window close event 
@@ -438,7 +440,7 @@ get_selected_editor() ->
 
 %% =====================================================================
 %% @doc Get all open editor instances.
-%% Returns a list of tuples of the form: {Index, EditorPid}.
+%% Returns a list of tuples of the form: {Index, EditorPid}, where
 %% Index starts at 0.
   
 -spec get_all_editors() -> Result when
@@ -538,6 +540,16 @@ save_new() ->
 
 
 %% =====================================================================
+%% @doc Save all open editors.
+
+save_all() ->
+  Fun = fun({Index, Pid}) ->
+    save_file(Index, Pid)
+  end,
+  lists:map(Fun, get_all_editors()).
+
+
+%% =====================================================================
 %% @doc
 
 -spec open_file(Frame) -> 'ok' when
@@ -597,20 +609,36 @@ close_all_editors() ->
 %% @doc Open a dialog box for various functions
 %% Buttons = [{Label, Id, Function}]
 
-open_dialog(Parent, Title, Message, Buttons) ->
-	Dialog = wxDialog:new(Parent, ?ID_DIALOG, Title),
-	DialogSizer = wxBoxSizer:new(?wxVERTICAL),
-	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
-	add_buttons(ButtonSizer, Dialog, Buttons),
-	
-	Text = wxStaticText:new(Dialog, ?ID_DIALOG_TEXT, Message),
-	
-	wxBoxSizer:addSpacer(DialogSizer, 20),
-	wxSizer:add(DialogSizer, Text, [{border, 10}, {proportion, 0},{flag, ?wxALIGN_CENTER}]),
-	wxBoxSizer:addSpacer(DialogSizer, 20),
-	wxSizer:add(DialogSizer, ButtonSizer, [{flag, ?wxALIGN_RIGHT}]),
-	wxDialog:setSizer(Dialog, DialogSizer),
-	
+open_dialog(Parent) ->
+	Dialog = wxDialog:new(Parent, ?ID_DIALOG, "Title"),
+  % DialogSizer = wxBoxSizer:new(?wxVERTICAL),
+  % ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+  % add_buttons(ButtonSizer, Dialog, Buttons),
+  % 
+  % Text = wxStaticText:new(Dialog, ?ID_DIALOG_TEXT, Message),
+  % 
+  % wxBoxSizer:addSpacer(DialogSizer, 20),
+  % wxSizer:add(DialogSizer, Text, [{border, 10}, {proportion, 0},{flag, ?wxALIGN_CENTER}]),
+  % wxBoxSizer:addSpacer(DialogSizer, 20),
+  % wxSizer:add(DialogSizer, ButtonSizer, [{flag, ?wxALIGN_RIGHT}]),
+  % wxDialog:setSizer(Dialog, DialogSizer),
+  % Bs = wxDialog:createButtonSizer(Dialog, ?wx_CANCEL bor ?wx_OK),
+  Bs = wxBoxSizer:new(?wxHORIZONTAL),
+  Ba = wxButton:new(Dialog, 1, [{label, "Nibble"}]),
+  Bb = wxButton:new(Dialog, 2, [{label, "Nobble"}]),
+  wxSizer:add(Bs, Ba),
+  wxSizer:add(Bs, Bb),
+  % wxSizer:add(Bs, wxButton:new(Dialog,234,[{label, "BOOM"}])),
+  % wxSizer:add(Bs, wxButton:new(Dialog,235,[{label, "NOBO"}])),
+    
+  Box  = wxBoxSizer:new(?wxVERTICAL),
+  
+  % wxSizer:add(Box, Top,  [{border, 2}, {flag, ?wxALL bor ?wxEXPAND}]),
+  wxSizer:add(Box, Bs,  [{border, 2}, {flag, ?wxALL bor ?wxEXPAND}]),    
+  wxWindow:setSizer(Dialog, Box),
+  wxSizer:fit(Box, Dialog),
+  wxSizer:setSizeHints(Box,Dialog),
+  
 	wxDialog:showModal(Dialog).
 	
 	
