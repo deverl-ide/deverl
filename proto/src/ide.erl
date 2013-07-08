@@ -45,6 +45,8 @@
 -define(SASH_VERT_DEFAULT_POS, 200).
 -define(SASH_HOR_DEFAULT_POS, -200).
 
+-define(ID_DIALOG, 9000).
+
 -define(ID_WORKSPACE, 3211).
 
 start() ->
@@ -580,28 +582,32 @@ open_file(Frame) ->
 %% Buttons = [{Label, Id, Function}]
 
 open_dialog(Parent, Title, Message, Buttons) ->
-	Dialog = wxDialog:new(Parent, 9000, Title),
+	Dialog = wxDialog:new(Parent, ?ID_DIALOG, Title),
 	DialogSizer = wxBoxSizer:new(?wxVERTICAL),
 	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
 	add_buttons(ButtonSizer, Dialog, Buttons),
 	
-	Text = wxStaticText:new(Dialog, 999999, Message),
+	Text = wxStaticText:new(Dialog, 8888, Message),
 	
 	wxBoxSizer:addSpacer(DialogSizer, 20),
-	wxSizer:add(DialogSizer, Text, [{flag, ?wxALIGN_CENTER}]),
+	wxSizer:add(DialogSizer, Text, [{border, 10}, {proportion, 0},{flag, ?wxALIGN_CENTER}]),
 	wxBoxSizer:addSpacer(DialogSizer, 20),
 	wxSizer:add(DialogSizer, ButtonSizer, [{flag, ?wxALIGN_RIGHT}]),
 	wxDialog:setSizer(Dialog, DialogSizer),
 	
 	wxDialog:showModal(Dialog).
+	
+	
+%% =====================================================================
+%% @doc Add buttons to Sizer
 
 add_buttons(_, _, []) -> 
 	ok;
-add_buttons(ButtonSizer, Dialog, [{Label, Id, _Function}|Rest]) ->
-	Button = wxButton:new(Dialog, Id),
+add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
+	Button = wxButton:new(Parent, Id),
 	wxButton:setLabel(Button, Label),
-	wxSizer:add(ButtonSizer, Button, []),
-	add_buttons(ButtonSizer, Dialog, Rest).
+	wxSizer:add(ButtonSizer, Button, [{border, 5}, {proportion, 1}]),
+	add_buttons(ButtonSizer, Parent, Rest).
 	
 	
 %% =====================================================================  
