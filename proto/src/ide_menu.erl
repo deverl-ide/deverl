@@ -66,7 +66,7 @@ init(Config) ->
     ets:insert(TabId,{?wxID_SAVEAS, "Save As", "Save the file with a new name.", {ide,apply_to_all_editors,[]}}),
     ets:insert(TabId,{?MENU_ID_SAVE_ALL, "Save All", "Save all open files.", {}}),
     ets:insert(TabId,{?wxID_PRINT, "Print", "Print the current file.", {}}),
-    ets:insert(TabId,{?wxID_CLOSE, "Close", "Close the current file.", {}}),
+    ets:insert(TabId,{?wxID_CLOSE, "Close", "Close the current file.", {ide, close_editor, []}}),
     ets:insert(TabId,{?wxID_CLOSE_ALL, "Close All", "Close all open files.", {}}),
     ets:insert(TabId,{?wxID_EXIT, "Exit", "Quit the application.", {}}),
     
@@ -99,7 +99,7 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_FOLD_ALL, "Fold all", "Fold all code.", {}}),
     ets:insert(TabId,{?MENU_ID_UNFOLD_ALL, "Unfold all", "Unfold all code.", {}}),
     ets:insert(TabId,{?MENU_ID_WRANGLER, "Wrangler", "Wrangler.", {}}),
-    ets:insert(TabId,{?MENU_ID_COMPILE, "Compile", "Compile the current file.", {}}),
+    ets:insert(TabId,{?MENU_ID_COMPILE, "Compile", "Compile the current file.", {ide,open_dialog, [Frame,"Test","This is a test", [{"OK", 9998, []},{"Cancel", 9999, []}, {"Yup", 99999, []}]]}}),
     ets:insert(TabId,{?MENU_ID_RUN, "Run", "Run the current file.", {}}),
     ets:insert(TabId,{?MENU_ID_DIALYZER, "Dialyzer", "Run Dialyzer.", {}}),
     ets:insert(TabId,{?MENU_ID_TESTS, "Run tests", "Run tests for current file.", {}}),

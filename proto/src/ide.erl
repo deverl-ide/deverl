@@ -11,9 +11,10 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 %% Client API         
--export([add_editor/0, add_editor/1, toggle_pane/1, get_selected_editor/0, 
-         get_all_editors/0, update_styles/1, apply_to_all_editors/0,
-         save_current_file/0, open_file/1]).
+-export([add_editor/0, add_editor/1, close_editor/0, toggle_pane/1, 
+		 get_selected_editor/0, get_all_editors/0, update_styles/1, 
+		 apply_to_all_editors/0, save_current_file/0, open_file/1,
+		 open_dialog/4]).
 
 %% The record containing the State.
 -record(state, {win,  
@@ -316,11 +317,17 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
                          {font, Font}]), %% Returns an editor instance inside a wxPanel
-                         
+  
   TabId = ets:new(editors, [public]),
   {_,Id,_,Pid} = Editor,
   ets:insert(TabId,{Id, Pid}),
+<<<<<<< HEAD
                            
+=======
+  io:format("TabId: ~p ~n", [TabId]),
+  io:format("Id: ~p ~n", [Id]),
+  
+>>>>>>> 60b74681223e82647215c9975cdf763007919603
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
   wxAuiManager:addPane(Manager, Workspace, Pane),
@@ -341,18 +348,18 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   
     
   {Workspace, TabId, Font}.
-
-
+  
+  
 %% =====================================================================
 %% @doc 
 %%
 %% @private
 
 add_editor(Workspace, Sb, Font, TabId) ->
-  add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb, Font, TabId),
-  Workspace.
+	add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb, Font, TabId),
+	Workspace.
   
-  
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Client API %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -379,15 +386,16 @@ add_editor(Workspace, Filename, Sb, Font, TabId) ->
   
 %% @doc Create an editor from an existing file
 add_editor(Path, Filename, Contents) -> 
-  {Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
-  Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}, {file, {Path, Filename, Contents}}]),
-  wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
-  {_,Id,_,Pid} = Editor,
-  ets:insert_new(TabId,{Id, Pid}),
-  ok.
+	{Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
+	Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}, {file, {Path, Filename, Contents}}]),
+	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
+	{_,Id,_,Pid} = Editor,
+	ets:insert_new(TabId,{Id, Pid}),
+	ok.
 
 
 %% =====================================================================
+<<<<<<< HEAD
 %% @doc Display or hide a given window pane
 
 -spec toggle_pane(PaneType) -> Result when
@@ -445,26 +453,45 @@ toggle_pane(PaneType) ->
   ok. 
 
 
+=======
+%% @doc Close current editor
+	
+close_editor() ->
+	{Workspace,Sb,_,Tab} = wx_object:call(?MODULE, workspace),
+	Index = wxAuiNotebook:getSelection(Workspace),
+	
+	% Check if modified...
+	
+	case get_selected_editor() of
+		{error, _} ->
+			{error, no_open_editor};
+		{ok, {Index, Editor, _, _, _}} ->
+			{_,Id,_,_} = wxWindow:getParent(Editor),
+			ets:delete(Tab, Id),
+			wxAuiNotebook:deletePage(Workspace, Index)
+	end.
+	
+	
 %% =====================================================================
 %% @doc Get the editor instance from a notebook tab
 %%
 %% @private
-
+	
 -spec get_editor(Index, Workspace) -> Result when
-  Index :: integer(),
-  Workspace :: wxAuiNotebook:wxAuiNotebook(),
-  Result :: wxStyledTextCtrl:wxStyledTextCtrl().
-  
+	Index :: integer(),
+	Workspace :: wxAuiNotebook:wxAuiNotebook(),
+	Result :: wxStyledTextCtrl:wxStyledTextCtrl().
+	
 get_editor(Index, Workspace) ->
-  W     = wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
-  [Child | _] = wxWindow:getChildren(W),        %% The first child is the STC
-  Editor = wx:typeCast(Child, wxStyledTextCtrl),
-  Editor.
-
-
+	W = wxAuiNotebook:getPage(Workspace, Index), % Get the top-level contents (::wxPanel() from editor.erl)
+	[Children | _] = wxWindow:getChildren(W),    % The first child is the STC
+	Editor = wx:typeCast(Children, wxStyledTextCtrl),
+	Editor.
+	
+	
 %% =====================================================================
 %% @doc Get the editor contained within a workspace tab
-
+	
 -spec get_selected_editor() -> Result when
   Result :: {'error', 'no_open_editor'} | 
             {'ok', {integer(), 
@@ -508,20 +535,20 @@ get_selected_editor_new() ->
 
 %% =====================================================================
 %% @doc Get all open editor instances
-
+	
 -spec get_all_editors() -> Result when
-  Result :: [wxStyledTextCtrl:wxStyledTextCtrl()].
-  
+	Result :: [wxStyledTextCtrl:wxStyledTextCtrl()].
+	
 get_all_editors() ->
-  {Workspace,Sb,_,_} = wx_object:call(?MODULE, workspace),
-  Count = wxAuiNotebook:getPageCount(Workspace),
-  get_all_editors(Workspace, Count - 1, []).
+	{Workspace,Sb,_,_} = wx_object:call(?MODULE, workspace),
+	Count = wxAuiNotebook:getPageCount(Workspace),
+	get_all_editors(Workspace, Count - 1, []).
 
-get_all_editors(Workspace, -1, Acc) -> Acc;
+get_all_editors(Workspace, -1, Acc) -> 
+	Acc;
 
 get_all_editors(Workspace, Count, Acc) ->
-  get_all_editors(Workspace, Count -1, [get_editor(Count, Workspace) | Acc]).
-
+	get_all_editors(Workspace, Count -1, [get_editor(Count, Workspace) | Acc]).
 
 
 %% =====================================================================
@@ -620,12 +647,36 @@ open_file(Frame) ->
 	end.
 
 
+
 %% =====================================================================
-%% @doc Display a two-button dialog to the user
-  
+%% @doc Open a dialog box for various functions
+%% Buttons = [{Label, Id, Function}]
 
+open_dialog(Parent, Title, Message, Buttons) ->
+	Dialog = wxDialog:new(Parent, 9000, Title),
+	DialogSizer = wxBoxSizer:new(?wxVERTICAL),
+	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	add_buttons(ButtonSizer, Dialog, Buttons),
+	
+	Text = wxStaticText:new(Dialog, 999999, Message),
+	
+	wxBoxSizer:addSpacer(DialogSizer, 20),
+	wxSizer:add(DialogSizer, Text, [{flag, ?wxALIGN_CENTER}]),
+	wxBoxSizer:addSpacer(DialogSizer, 20),
+	wxSizer:add(DialogSizer, ButtonSizer, [{flag, ?wxALIGN_RIGHT}]),
+	wxDialog:setSizer(Dialog, DialogSizer),
+	
+	wxDialog:showModal(Dialog).
 
-
+add_buttons(_, _, []) -> 
+	ok;
+add_buttons(ButtonSizer, Dialog, [{Label, Id, _Function}|Rest]) ->
+	Button = wxButton:new(Dialog, Id),
+	wxButton:setLabel(Button, Label),
+	wxSizer:add(ButtonSizer, Button, []),
+	add_buttons(ButtonSizer, Dialog, Rest).
+	
+	
 %% =====================================================================  
 %% @doc Apply the given function to all open editor instances
 %% !!!!!!! EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
@@ -635,3 +686,60 @@ apply_to_all_editors() ->
         wxStyledTextCtrl:clearAll(STC)
         end,
   lists:map(Fun, get_all_editors()).
+  
+  
+%% =====================================================================
+%% @doc Display or hide a given window pane
+
+-spec toggle_pane(PaneType) -> Result when
+	PaneType :: 'test' | 'util' | 'editor' | 'maxutil',
+	Result :: 'ok'.
+toggle_pane(PaneType) ->
+    {V,H,Vp,Hp,W,T,U} = wx_object:call(?MODULE, splitter),
+	case PaneType of
+		test ->
+            case wxSplitterWindow:isSplit(V) of
+                true ->
+                    wxSplitterWindow:unsplit(V,[{toRemove, T}]);
+                false ->
+                    wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
+            end;
+		util ->
+            case wxSplitterWindow:isSplit(H) of
+                true ->
+					wxSplitterWindow:unsplit(H,[{toRemove, U}]);
+				false ->
+					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
+			end;
+		editor ->
+			case wxSplitterWindow:isSplit(H) of
+				true ->
+					wxSplitterWindow:unsplit(H,[{toRemove, U}]),
+					wxSplitterWindow:unsplit(V,[{toRemove, T}]);
+				false ->
+					case wxSplitterWindow:isShown(U) of
+						true ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:unsplit(H,[{toRemove, U}]),
+							wxSplitterWindow:unsplit(V,[{toRemove, T}]);
+						false ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
+					end
+			end;
+		maxutil ->
+			case wxSplitterWindow:isSplit(H) of
+				true ->
+					wxSplitterWindow:unsplit(H,[{toRemove, V}]);
+				false ->
+				    case wxSplitterWindow:isShown(U) of
+						true ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}]);
+						false ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:unsplit(H,[{toRemove, V}])
+					end
+			end
+	end,
+	ok. 
