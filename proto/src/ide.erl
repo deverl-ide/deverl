@@ -24,6 +24,7 @@
   open_file/1,
 	open_dialog/4]).
 
+
 %% The record containing the State.
 -record(state, {win,  
                 env,                                           %% The wx environment
@@ -52,6 +53,9 @@
 -define(SASH_HORIZONTAL, 2).
 -define(SASH_VERT_DEFAULT_POS, 200).
 -define(SASH_HOR_DEFAULT_POS, -200).
+
+-define(ID_DIALOG, 9000).
+-define(ID_DIALOG_TEXT, 9001).
 
 -define(ID_WORKSPACE, 3211).
 
@@ -397,22 +401,22 @@ add_editor(Path, Filename, Contents) ->
 -spec get_editor_pid(Index) -> Result when
 	Index :: integer(),
 	Result :: pid().  
-	  
+
 get_editor_pid(Index) ->
   {Workspace,_,_,PidTable} = wx_object:call(?MODULE, workspace), 
   get_editor_pid(Index, Workspace, PidTable).
   
 -spec get_editor_pid(Index, Workspace, PidTable) -> Result when
 	Index :: integer(),
-	Workspace :: wxAuiNotebook:wxAuiNotebook(),
+  Workspace :: wxAuiNotebook:wxAuiNotebook(),
   PidTable :: term(),
-	Result :: pid().
-	
+	Result :: pid().  
+
 get_editor_pid(Index, Workspace, PidTable) ->
 	{_,Key,_,_} = wxAuiNotebook:getPage(Workspace, Index),
   [{_,Pid}] = ets:lookup(PidTable, Key),
   Pid.
-  
+
 	
 %% =====================================================================
 %% @doc Get the Pid to the currently selected editor.
@@ -594,33 +598,37 @@ close_all_editors() ->
 %% Buttons = [{Label, Id, Function}]
 
 open_dialog(Parent, Title, Message, Buttons) ->
-	Dialog = wxDialog:new(Parent, 9000, Title),
+	Dialog = wxDialog:new(Parent, ?ID_DIALOG, Title),
 	DialogSizer = wxBoxSizer:new(?wxVERTICAL),
 	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
 	add_buttons(ButtonSizer, Dialog, Buttons),
 	
-	Text = wxStaticText:new(Dialog, 999999, Message),
+	Text = wxStaticText:new(Dialog, ?ID_DIALOG_TEXT, Message),
 	
 	wxBoxSizer:addSpacer(DialogSizer, 20),
-	wxSizer:add(DialogSizer, Text, [{flag, ?wxALIGN_CENTER}]),
+	wxSizer:add(DialogSizer, Text, [{border, 10}, {proportion, 0},{flag, ?wxALIGN_CENTER}]),
 	wxBoxSizer:addSpacer(DialogSizer, 20),
 	wxSizer:add(DialogSizer, ButtonSizer, [{flag, ?wxALIGN_RIGHT}]),
 	wxDialog:setSizer(Dialog, DialogSizer),
 	
 	wxDialog:showModal(Dialog).
+	
+	
+%% =====================================================================
+%% @doc Add buttons to Sizer
 
 add_buttons(_, _, []) -> 
 	ok;
-add_buttons(ButtonSizer, Dialog, [{Label, Id, _Function}|Rest]) ->
-	Button = wxButton:new(Dialog, Id),
+  
+add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
+	Button = wxButton:new(Parent, Id),
 	wxButton:setLabel(Button, Label),
-	wxSizer:add(ButtonSizer, Button, []),
-	add_buttons(ButtonSizer, Dialog, Rest).
+	wxSizer:add(ButtonSizer, Button, [{border, 5}, {proportion, 1}]),
+	add_buttons(ButtonSizer, Parent, Rest).
   
 
 %% =====================================================================
 %% @doc Change the font style across all open editors
-
  update_styles(Frame) ->
    {_,_,CurrentFont,_} = wx_object:call(?MODULE, workspace), 
    %% Display the system font picker
