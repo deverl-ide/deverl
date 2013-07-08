@@ -321,13 +321,7 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   TabId = ets:new(editors, [public]),
   {_,Id,_,Pid} = Editor,
   ets:insert(TabId,{Id, Pid}),
-<<<<<<< HEAD
-                           
-=======
-  io:format("TabId: ~p ~n", [TabId]),
-  io:format("Id: ~p ~n", [Id]),
-  
->>>>>>> 60b74681223e82647215c9975cdf763007919603
+
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
   wxAuiManager:addPane(Manager, Workspace, Pane),
@@ -335,7 +329,7 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   Fun = fun(E,O) ->
     io:format("Event object: ~w~n",[O]),
     io:format("ID: ~w~n",[wxEvent:getId(O)])
-    {_,_,_,_,_} = get_selected_editor(),
+    % {_,_,_,_,_} = get_selected_editor(),
     % wxNotifyEvent:veto(O)
     end,
   
@@ -395,65 +389,6 @@ add_editor(Path, Filename, Contents) ->
 
 
 %% =====================================================================
-<<<<<<< HEAD
-%% @doc Display or hide a given window pane
-
--spec toggle_pane(PaneType) -> Result when
-  PaneType :: 'test' | 'util' | 'editor' | 'maxutil',
-  Result :: 'ok'.
-  
-toggle_pane(PaneType) ->
-  {V,H,Vp,Hp,W,T,U} = wx_object:call(?MODULE, splitter),
-	case PaneType of
-		test ->
-            case wxSplitterWindow:isSplit(V) of
-                true ->
-                    wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-                false ->
-                    wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
-            end;
-		util ->
-            case wxSplitterWindow:isSplit(H) of
-                true ->
-					wxSplitterWindow:unsplit(H,[{toRemove, U}]);
-				false ->
-					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
-			end;
-		editor ->
-			case wxSplitterWindow:isSplit(H) of
-				true ->
-					wxSplitterWindow:unsplit(H,[{toRemove, U}]),
-					wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-				false ->
-					case wxSplitterWindow:isShown(U) of
-						true ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:unsplit(H,[{toRemove, U}]),
-							wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-						false ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
-					end
-			end;
-		maxutil ->
-			case wxSplitterWindow:isSplit(H) of
-				true ->
-					wxSplitterWindow:unsplit(H,[{toRemove, V}]);
-				false ->
-				    case wxSplitterWindow:isShown(U) of
-						true ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}]);
-						false ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:unsplit(H,[{toRemove, V}])
-					end
-			end
-		end,
-  ok. 
-
-
-=======
 %% @doc Close current editor
 	
 close_editor() ->
@@ -581,14 +516,6 @@ save_current_file() ->
     {ok, {Index, Editor, Workspace, Sb, Tab}} ->
       save_file(Index, Editor, Workspace, Sb, Tab)
   end.
-
-
-%% =====================================================================
-%% @doc
-
-get_editor_pid(Editor) ->
-  {_,Id,_,_} = wxWindow:getParent(Editor),
-  [{_,Pid}] = ets:lookup(Tab, Id).
 
 
 %% =====================================================================
