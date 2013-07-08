@@ -11,10 +11,10 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 %% Client API         
--export([add_editor/0, add_editor/1, close_editor/0, toggle_pane/1, 
-		 get_selected_editor/0, get_all_editors/0, update_styles/1, 
-		 apply_to_all_editors/0, save_current_file/0, open_file/1,
-		 open_dialog/4]).
+-export([add_editor/0, add_editor/1, close_editor/0, close_all/0, 
+		 toggle_pane/1, get_selected_editor/0, get_all_editors/0, 
+		 update_styles/1, apply_to_all_editors/0, save_current_file/0, 
+		 open_file/1, open_dialog/4]).
 
 %% The record containing the State.
 -record(state, {win,  
@@ -46,6 +46,7 @@
 -define(SASH_HOR_DEFAULT_POS, -200).
 
 -define(ID_DIALOG, 9000).
+-define(ID_DIALOG_TEXT, 9001).
 
 -define(ID_WORKSPACE, 3211).
 
@@ -391,7 +392,7 @@ add_editor(Path, Filename, Contents) ->
 
 
 %% =====================================================================
-%% @doc Close current editor
+%% @doc Close current file
 	
 close_editor() ->
 	{Workspace,Sb,_,Tab} = wx_object:call(?MODULE, workspace),
@@ -407,6 +408,13 @@ close_editor() ->
 			ets:delete(Tab, Id),
 			wxAuiNotebook:deletePage(Workspace, Index)
 	end.
+	
+	
+%% =====================================================================
+%% @doc Close all files
+
+close_all() ->
+	ok.
 	
 	
 %% =====================================================================
@@ -587,7 +595,7 @@ open_dialog(Parent, Title, Message, Buttons) ->
 	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
 	add_buttons(ButtonSizer, Dialog, Buttons),
 	
-	Text = wxStaticText:new(Dialog, 8888, Message),
+	Text = wxStaticText:new(Dialog, ?ID_DIALOG_TEXT, Message),
 	
 	wxBoxSizer:addSpacer(DialogSizer, 20),
 	wxSizer:add(DialogSizer, Text, [{border, 10}, {proportion, 0},{flag, ?wxALIGN_CENTER}]),

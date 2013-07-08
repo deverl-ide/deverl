@@ -67,7 +67,7 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_SAVE_ALL, "Save All", "Save all open files.", {}}),
     ets:insert(TabId,{?wxID_PRINT, "Print", "Print the current file.", {}}),
     ets:insert(TabId,{?wxID_CLOSE, "Close", "Close the current file.", {ide, close_editor, []}}),
-    ets:insert(TabId,{?wxID_CLOSE_ALL, "Close All", "Close all open files.", {}}),
+    ets:insert(TabId,{?wxID_CLOSE_ALL, "Close All", "Close all open files.", {ide, close_all, []}}),
     ets:insert(TabId,{?wxID_EXIT, "Exit", "Quit the application.", {}}),
     
     ets:insert(TabId,{?wxSTC_CMD_UNDO, "Undo", "Undo the last change.", {}}),
