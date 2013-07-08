@@ -13,7 +13,8 @@
 %% Client API         
 -export([add_editor/0, add_editor/1, close_editor/0, toggle_pane/1, 
 		 get_selected_editor/0, get_all_editors/0, update_styles/1, 
-		 apply_to_all_editors/0, save_current_file/0, open_file/1]).
+		 apply_to_all_editors/0, save_current_file/0, open_file/1,
+		 open_dialog/4]).
 
 %% The record containing the State.
 -record(state, {win,  
@@ -304,13 +305,13 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
                          {font, Font}]), %% Returns an editor instance inside a wxPanel
-                         
+  
   TabId = ets:new(editors, [public]),
   {_,Id,_,Pid} = Editor,
   ets:insert(TabId,{Id, Pid}),
   io:format("TabId: ~p ~n", [TabId]),
   io:format("Id: ~p ~n", [Id]),
-                           
+  
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
   wxAuiManager:addPane(Manager, Workspace, Pane),
@@ -319,8 +320,8 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, true},{userData,TabId}]),
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed), 
   {Workspace, TabId, Font}.
-
-
+  
+  
 %% =====================================================================
 %% @doc 
 %%
@@ -523,7 +524,36 @@ open_file(Frame) ->
       ok
 	end.
 
-  
+
+%% =====================================================================
+%% @doc Open a dialog box for various functions
+%% Buttons = [{Label, Id, Function}]
+
+open_dialog(Parent, Title, Message, Buttons) ->
+	Dialog = wxDialog:new(Parent, 9000, Title),
+	DialogSizer = wxBoxSizer:new(?wxVERTICAL),
+	ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	add_buttons(ButtonSizer, Dialog, Buttons),
+	
+	Text = wxStaticText:new(Dialog, 999999, Message),
+	
+	wxBoxSizer:addSpacer(DialogSizer, 20),
+	wxSizer:add(DialogSizer, Text, [{flag, ?wxALIGN_CENTER}]),
+	wxBoxSizer:addSpacer(DialogSizer, 20),
+	wxSizer:add(DialogSizer, ButtonSizer, [{flag, ?wxALIGN_RIGHT}]),
+	wxDialog:setSizer(Dialog, DialogSizer),
+	
+	wxDialog:showModal(Dialog).
+
+add_buttons(_, _, []) -> 
+	ok;
+add_buttons(ButtonSizer, Dialog, [{Label, Id, _Function}|Rest]) ->
+	Button = wxButton:new(Dialog, Id),
+	wxButton:setLabel(Button, Label),
+	wxSizer:add(ButtonSizer, Button, []),
+	add_buttons(ButtonSizer, Dialog, Rest).
+	
+	
 %% =====================================================================  
 %% @doc Apply the given function to all open editor instances
 %% !!!!!!! EXAMPLE ON HOW TO CALL A FUNCTION ON ALL EDITORS
