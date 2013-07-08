@@ -42,7 +42,8 @@ open(Parent) ->
             | {'cancel'}.
     
 save_as(Parent, Contents) ->
-	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_SAVE}]),
+	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_SAVE bor 
+           ?wxFD_OVERWRITE_PROMPT bor ?wxFD_CHANGE_DIR}]),
 	case wxFileDialog:showModal(Dialog) of
 		?wxID_OK ->
 			Path = wxFileDialog:getPath(Dialog),

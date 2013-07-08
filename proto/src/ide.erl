@@ -28,7 +28,7 @@
                 sash_h_pos :: integer(),
                 status_bar :: wxPanel:wxPanel(),
                 font :: wxFont:wxFont(),                        %% The initial font used in the editors
-                editor_pids
+                editor_pids :: {integer(), pid()}               %% A table containing the Id returned when an editor is created, and the associated pid
                 }).
 
 -define(DEFAULT_FRAME_WIDTH,  1300).
@@ -89,7 +89,7 @@ init(Options) ->
   Manager = wxAuiManager:new([{managed_wnd, Frame}]),
   %% The centre pane/editor window
   EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
-  wxAuiPaneInfo:name(EditorWindowPaneInfo, "EditorPane"),
+  % wxAuiPaneInfo:name(EditorWindowPaneInfo, "EditorPane"),
   {Workspace, TabId, Font} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
   
   %% The left (test case) window
@@ -178,12 +178,14 @@ handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
 
+%% =====================================================================
 %% Window close event 
 handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
     io:format("~p Closing window ~n",[self()]),
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State};
-%% Splitter window events
+    
+%% Vertical sash dragged
 handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
              State) ->
     Pos = wxSplitterWindow:getSashPosition(State#state.sash_v),
@@ -195,6 +197,8 @@ handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_s
         NewPos = Pos
     end,
     {noreply, State#state{sash_v_pos=NewPos}};
+
+%% Horizontal sash dragged
 handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
              State) ->
      Pos = wxSplitterWindow:getSashPosition(State#state.sash_h),
@@ -207,6 +211,7 @@ handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter
      wxWindow:refresh(State#state.sash_v),
      wxWindow:update(State#state.sash_v),
      {noreply, State#state{sash_h_pos=NewPos}};
+     
 handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_sash_pos_changing} = _E}, 
              State) ->
     io:format("Sash position changing ~n"),    
@@ -215,24 +220,31 @@ handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_doubleclicked}
              State) ->
     io:format("Sash double clicked ~n"),    
     {noreply, State};
+    
 %% AuiManager events
 handle_event(_W = #wx{event = #wxAuiManager{type = aui_render} = _E}, State) ->
     io:format("render:~n"),   
     {noreply, State};
-%% AuiNotebook events
+    
 handle_event(#wx{obj = _Workspace,
 		 event = #wxAuiNotebook{type = command_auinotebook_page_changed,
 					selection = _Sel}}, State) ->
     io:format("changed page~n"),
     {noreply, State};
-handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
-    add_editor(State#state.workspace, State#state.status_bar, State#state.font, State#state.editor_pids),
-    {noreply, State};
-handle_event(#wx{event = #wxAuiNotebook{type=command_auinotebook_page_close, selection=Index}}, State) ->
-    io:format("Page ~p closed.~n", [Index]),
-    %% Remove the process from the ETS
     
+handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
+    add_editor(State#state.workspace, State#state.status_bar, State#state.font, 
+               State#state.editor_pids),
     {noreply, State};
+    
+handle_event(E=#wx{event = #wxAuiNotebook{type=command_auinotebook_page_close, selection=Index}=A}, 
+             State) ->
+
+    wxAuiNotebookEvent:getSelection(A),
+    
+    %% Remove the editor Id and Pid from the ETS    
+    {noreply, State};
+    
 %% Event catchall for testing
 handle_event(Ev = #wx{}, State) ->
     io:format("aui event catchall: ~p\n", [Ev]),
@@ -308,16 +320,26 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
   TabId = ets:new(editors, [public]),
   {_,Id,_,Pid} = Editor,
   ets:insert(TabId,{Id, Pid}),
-  io:format("TabId: ~p ~n", [TabId]),
-  io:format("Id: ~p ~n", [Id]),
                            
   wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
   wxAuiManager:addPane(Manager, Workspace, Pane),
   
+  Fun = fun(E,O) ->
+    io:format("Event object: ~w~n",[O]),
+    io:format("ID: ~w~n",[wxEvent:getId(O)])
+    {_,_,_,_,_} = get_selected_editor(),
+    % wxNotifyEvent:veto(O)
+    end,
+  
   wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
-  wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{skip, true},{userData,TabId}]),
+  wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Fun},{userData,TabId}]),
   wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed), 
+  
+  
+  io:format("SAVE STATUS~p~n", [editor:save_status(Pid)]),
+  
+    
   {Workspace, TabId, Font}.
 
 
@@ -352,7 +374,6 @@ add_editor(Workspace, Filename, Sb, Font, TabId) ->
   Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}]),
   wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
   {_,Id,_,Pid} = Editor,
-  io:format("TAB: ~p~n", [ets:tab2list(TabId)]),
   ets:insert_new(TabId,{Id, Pid}),
   ok.
   
@@ -372,6 +393,7 @@ add_editor(Path, Filename, Contents) ->
 -spec toggle_pane(PaneType) -> Result when
   PaneType :: 'test' | 'util' | 'editor' | 'maxutil',
   Result :: 'ok'.
+  
 toggle_pane(PaneType) ->
   {V,H,Vp,Hp,W,T,U} = wx_object:call(?MODULE, splitter),
 	case PaneType of
@@ -435,8 +457,8 @@ toggle_pane(PaneType) ->
   
 get_editor(Index, Workspace) ->
   W     = wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
-  [Children | _] = wxWindow:getChildren(W),        %% The first child is the STC
-  Editor = wx:typeCast(Children, wxStyledTextCtrl),
+  [Child | _] = wxWindow:getChildren(W),        %% The first child is the STC
+  Editor = wx:typeCast(Child, wxStyledTextCtrl),
   Editor.
 
 
@@ -445,7 +467,11 @@ get_editor(Index, Workspace) ->
 
 -spec get_selected_editor() -> Result when
   Result :: {'error', 'no_open_editor'} | 
-            {'ok', {integer(), wxStyledTextCtrl:wxStyledTextCtrl()}}.
+            {'ok', {integer(), 
+                    wxStyledTextCtrl:wxStyledTextCtrl(),
+                    wxAuiNotebook:wxAuiNotebook(),
+                    wxWindow:wxWindow(),
+                    term()}}.
             
 get_selected_editor() ->
   {Workspace,Sb,_,Tab} = wx_object:call(?MODULE, workspace), 
@@ -453,10 +479,31 @@ get_selected_editor() ->
   Valid = fun(-1) -> %% no editor instance
             {error, no_open_editor};
           (_) ->
-            wxAuiNotebook:getPage(Workspace, Index), %% Get the top-level contents (::wxPanel() from editor.erl)
             {ok, {Index, get_editor(Index, Workspace), Workspace, Sb, Tab}}
           end,
   Valid(Index).   
+
+
+%% =====================================================================
+%% @doc Get the editor contained within a workspace tab
+
+-spec get_selected_editor_new() -> Result when
+  Result :: {'error', 'no_open_editor'} | 
+            {'ok', {integer(), 
+                    wxStyledTextCtrl:wxStyledTextCtrl(),
+                    wxAuiNotebook:wxAuiNotebook(),
+                    wxWindow:wxWindow(),
+                    term()}}.
+            
+get_selected_editor_new() ->
+  {Workspace,Sb,_,Tab} = wx_object:call(?MODULE, workspace), 
+  Index = wxAuiNotebook:getSelection(Workspace),   %% Get the index of the tab
+  Valid = fun(-1) -> %% no editor instance
+            {error, no_open_editor};
+          (_) ->
+            {ok, {Index, get_editor(Index, Workspace), Workspace, Sb, Tab}}
+          end,
+  Valid(Index).  
 
 
 %% =====================================================================
@@ -511,25 +558,35 @@ save_current_file() ->
 
 %% =====================================================================
 %% @doc
+
+get_editor_pid(Editor) ->
+  {_,Id,_,_} = wxWindow:getParent(Editor),
+  [{_,Pid}] = ets:lookup(Tab, Id).
+
+
+%% =====================================================================
+%% @doc
   
 save_file(Index, Editor, Workspace, Sb, Tab) ->
   {_,Id,_,_} = wxWindow:getParent(Editor),
   [{_,Pid}] = ets:lookup(Tab, Id),
+  
+  io:format("SAVE STATUS: ~p~n", [editor:save_status(Pid)]),
+  
   case editor:save_status(Pid) of
-    {ok, unsaved} ->
+    {save_status, unsaved} ->
       %% Display save dialog
       save_new(Index, Editor, Workspace, Sb, Pid);
-    {ok, unmodified} ->
+    {save_status, unmodified} ->
       %% Document is unmodified, no need to save
       customStatusBar:set_text_timeout(Sb, {field, help}, "Document already saved.");
-    {ok, Path, Fn} ->
+    {save_status, Path, Fn} ->
       %% Document already exists, overwrite
       Contents = wxStyledTextCtrl:getText(Editor),
       ide_io:save(Path, Contents),
       editor:save_complete(Path, Fn, Pid),
       customStatusBar:set_text_timeout(Sb, {field, help}, "Document saved.")
   end.
-
 
 
 %% =====================================================================
@@ -562,7 +619,12 @@ open_file(Frame) ->
       ok
 	end.
 
+
+%% =====================================================================
+%% @doc Display a two-button dialog to the user
   
+
+
 
 %% =====================================================================  
 %% @doc Apply the given function to all open editor instances

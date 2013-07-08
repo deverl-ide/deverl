@@ -3,10 +3,18 @@
 
 -module(editor).
 
--export([update_style/2, save_status/1, save_complete/3]).
+-export([update_style/2,
+  save_status/1, 
+  save_complete/3]).
 
--export([start/1, init/1, terminate/2,  code_change/3,
-         handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+-export([start/1,
+  init/1, 
+  terminate/2,  
+  code_change/3,
+  handle_info/2,
+  handle_call/3,
+  handle_cast/2,
+  handle_event/2]).
 
 -include_lib("wx/include/wx.hrl").
 -behaviour(wx_object).
@@ -26,6 +34,10 @@
                 editor,
                 file_data
                }).
+               
+-type path()      :: string().
+-type filename()  :: string().
+
 
 %% @doc Create and return a new editor instance
 start(Config) ->
@@ -103,7 +115,7 @@ init(Config) ->
       F = #file{path=Path, filename=Filename, modified=false},
       wxStyledTextCtrl:setText(Editor, Contents);
     false ->
-      F = #file{}
+      F = #file{modified=false}
   end,
       
   % process_flag(trap_exit, true),
@@ -127,9 +139,11 @@ handle_info(Msg, State) ->
 
 handle_call(save_request, _From, State=#state{file_data=#file{path=Path, filename=Fn, modified=Mod}}) ->
     {reply,{Path,Fn,Mod},State};
+
 handle_call({save_complete,{Path,Filename}}, _From, State) ->
     wxStyledTextCtrl:setSavePoint(State#state.editor),
     {reply,ok,State#state{file_data=#file{path=Path, filename=Filename}}};
+
 handle_call(Msg, _From, State) ->
     io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
     {reply,State#state.editor,State}.
@@ -138,23 +152,30 @@ handle_call(Msg, _From, State) ->
 handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
-
+    
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{editor=Editor}) ->
+    io:format("CHANGE EVENT~n"),
     {noreply, State};
+
 handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointreached}=_E}, 
             State=#state{file_data=#file{path=Path, filename=Fn}}) ->
     {noreply, State#state{file_data=#file{path=Path,filename=Fn,modified=false}}};
+
 handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointleft}=_E}, State = #state{editor=Editor}) ->
     {noreply, State};
+
 handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, 
              State=#state{editor=Editor, file_data=#file{filename=Fn, path=Path}}) ->
+    io:format("MODIFIED EVENT~n"),
+               
     %% Update status bar line/col position
     {X,Y} = get_x_y(Editor),
     customStatusBar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
     %% Update margin width if required
     adjust_margin_width(Editor),  
     {noreply, State#state{file_data=#file{modified=true, filename=Fn, path=Path}}};
+
 handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margin = Margin} = _E},
              State = #state{editor=Editor}) ->
     Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
@@ -165,6 +186,7 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margi
       _ -> ok
     end,
     {noreply, State};
+
 handle_event(E,O) ->
   io:format("editor catchall Event: ~p~nObject: ~p~n", [E,O]),
   {noreply, O}.
@@ -265,6 +287,7 @@ adjust_margin_width(Editor) ->
   end,
   ok.  
 
+
 %% =====================================================================
 %% @doc Update the font used in the editor
 
@@ -284,18 +307,18 @@ update_style(Editor, Font) ->
 
 -spec save_status(Editor) -> Result when
   Editor :: pid(),
-  Result :: {'ok', 'unsaved'}
-          | {'ok', 'unmodified'}
-          | {'ok', {unicode:charlist(), unicode:charlist()}}.
+  Result :: {'save_status', 'unmodified'} %% The document has not been modified since the last savepoint.
+          | {'save_status', 'unsaved'}    %% There is no path/filename associated with this editor
+          | {'save_status', {path(), filename()}}. %% The path/filename currently associated to this instance
           
 save_status(Editor) ->
   case wx_object:call(Editor, save_request) of
-    {_, undefined, _} ->
-      {ok, unsaved};
+    {undefined, undefined, _} ->
+      {save_status, unsaved};
     {_,_,false} ->
-      {ok, unmodified};
+      {save_status, unmodified};
     {Path, Fn, _} ->
-      {ok, Path, Fn}
+      {save_status, Path, Fn}
   end.
 
 
