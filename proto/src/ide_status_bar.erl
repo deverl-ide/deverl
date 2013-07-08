@@ -1,4 +1,4 @@
--module(customStatusBar).
+-module(ide_status_bar).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -27,6 +27,10 @@
 -define(SB_ID_HELP, 4).
 
 -define(TIMEOUT, 1000).
+
+-export_type([status_bar/0]).
+
+-type status_bar() :: wxWindow:wxWindow().
 
 new(Config) ->
   start(Config).

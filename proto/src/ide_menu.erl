@@ -63,11 +63,11 @@ init(Config) ->
     ets:insert(TabId,{?wxID_NEW, "New", "Create a new file.", {ide,add_editor,[]}}),
     ets:insert(TabId,{?wxID_OPEN, "Open", "Open an existing file.", {ide,open_file,[Frame]}}),
     ets:insert(TabId,{?wxID_SAVE, "Save", "Save the current file.", {ide,save_current_file,[]}}),
-    ets:insert(TabId,{?wxID_SAVEAS, "Save As", "Save the file with a new name.", {ide,apply_to_all_editors,[]}}),
+    ets:insert(TabId,{?wxID_SAVEAS, "Save As", "Save the file with a new name.", {ide,save_new,[]}}),
     ets:insert(TabId,{?MENU_ID_SAVE_ALL, "Save All", "Save all open files.", {}}),
     ets:insert(TabId,{?wxID_PRINT, "Print", "Print the current file.", {}}),
     ets:insert(TabId,{?wxID_CLOSE, "Close", "Close the current file.", {ide, close_editor, []}}),
-    ets:insert(TabId,{?wxID_CLOSE_ALL, "Close All", "Close all open files.", {}}),
+    ets:insert(TabId,{?wxID_CLOSE_ALL, "Close All", "Close all open files.", {ide, close_all_editors, []}}),
     ets:insert(TabId,{?wxID_EXIT, "Exit", "Quit the application.", {}}),
     
     ets:insert(TabId,{?wxSTC_CMD_UNDO, "Undo", "Undo the last change.", {}}),

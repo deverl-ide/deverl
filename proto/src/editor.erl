@@ -5,7 +5,9 @@
 
 -export([update_style/2,
   save_status/1, 
-  save_complete/3]).
+  save_complete/3,
+  get_text/1,
+  get_id/1]).
 
 -export([start/1,
   init/1, 
@@ -28,21 +30,27 @@
 -define(MARGIN_LINE_NUMBER_WIDTH, "  ").
 -define(MARGIN_LINE_NUMBER_POINT_REDUCTION, 2). %% The size (pts) to reduce margin text by
 
-%% The record containing the state maintained by the server
--record(file, {path, filename, modified}).
--record(state, {win, 
-                editor,
-                file_data
-               }).
-               
 -type path()      :: string().
 -type filename()  :: string().
+-type erlangEditor() :: wxWindow:wxWindow().
+
+-record(file, {path, filename, modified}).
+
+-record(state, {editor_instance    :: erlangEditor(), 
+                text_ctrl          :: wxStyledTextCtrl:wxStyledTextCtrl(),
+                file_data
+               }).
 
 
-%% @doc Create and return a new editor instance
+%% =====================================================================
+%% @doc Start a new editor process
+
 start(Config) ->
   wx_object:start(?MODULE, Config, []).
-  % wx_object:start_link(?MODULE, Config, []).
+
+
+%% =====================================================================
+%% @doc Initialise the editor
 
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
@@ -119,10 +127,12 @@ init(Config) ->
   end,
       
   % process_flag(trap_exit, true),
-  {Panel, #state{win=Panel, editor=Editor, file_data=F}}.
+  {Panel, #state{editor_instance=Panel, text_ctrl=Editor, file_data=F}}.
 
-%%%%%%%%%%%%%%%%%%%%%
-%%%%% Callbacks %%%%%
+
+%% =====================================================================
+%% @doc OTP behaviour callbacks
+
 handle_info({'EXIT',_, wx_deleted}, State) ->
     io:format("Got Info~n"),
     {noreply,State};
@@ -141,12 +151,22 @@ handle_call(save_request, _From, State=#state{file_data=#file{path=Path, filenam
     {reply,{Path,Fn,Mod},State};
 
 handle_call({save_complete,{Path,Filename}}, _From, State) ->
-    wxStyledTextCtrl:setSavePoint(State#state.editor),
+    wxStyledTextCtrl:setSavePoint(State#state.text_ctrl),
     {reply,ok,State#state{file_data=#file{path=Path, filename=Filename}}};
+    
+handle_call(text_content, _From, State) ->
+    Text = wxStyledTextCtrl:getText(State#state.text_ctrl),
+    {reply,Text,State};
+    
+handle_call(text_ctrl, _From, State) ->
+    {reply,State#state.text_ctrl,State};
+    
+handle_call(editor, _From, State) ->
+    {reply,State#state.editor_instance,State};
 
 handle_call(Msg, _From, State) ->
     io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
-    {reply,State#state.editor,State}.
+    {reply,State,State}.
 
 
 handle_cast(Msg, State) ->
@@ -154,21 +174,18 @@ handle_cast(Msg, State) ->
     {noreply,State}.
     
 
-handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{editor=Editor}) ->
-    io:format("CHANGE EVENT~n"),
+handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{text_ctrl=Editor}) ->
     {noreply, State};
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointreached}=_E}, 
             State=#state{file_data=#file{path=Path, filename=Fn}}) ->
     {noreply, State#state{file_data=#file{path=Path,filename=Fn,modified=false}}};
 
-handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointleft}=_E}, State = #state{editor=Editor}) ->
+handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointleft}=_E}, State) ->
     {noreply, State};
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, 
-             State=#state{editor=Editor, file_data=#file{filename=Fn, path=Path}}) ->
-    io:format("MODIFIED EVENT~n"),
-               
+             State=#state{text_ctrl=Editor, file_data=#file{filename=Fn, path=Path}}) ->               
     %% Update status bar line/col position
     {X,Y} = get_x_y(Editor),
     customStatusBar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
@@ -177,7 +194,7 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb},
     {noreply, State#state{file_data=#file{modified=true, filename=Fn, path=Path}}};
 
 handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margin = Margin} = _E},
-             State = #state{editor=Editor}) ->
+             State = #state{text_ctrl=Editor}) ->
     Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
     Fl = wxStyledTextCtrl:getFoldLevel(Editor, Ln),
     case Margin of
@@ -291,11 +308,12 @@ adjust_margin_width(Editor) ->
 %% =====================================================================
 %% @doc Update the font used in the editor
 
--spec update_style(Editor, Font) -> 'ok' when
-  Editor :: wxStyledTextCtrl:wxStyledTextCtrl(),
+-spec update_style(EditorPid, Font) -> 'ok' when
+  EditorPid :: pid(),
   Font :: wxFont:wxFont().
   
-update_style(Editor, Font) ->
+update_style(EditorPid, Font) ->
+  Editor = wx_object:call(EditorPid, text_ctrl),
   wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
   %% Update the margin size
   adjust_margin_width(Editor),
@@ -307,19 +325,45 @@ update_style(Editor, Font) ->
 
 -spec save_status(Editor) -> Result when
   Editor :: pid(),
-  Result :: {'save_status', 'unmodified'} %% The document has not been modified since the last savepoint.
-          | {'save_status', 'unsaved'}    %% There is no path/filename associated with this editor
+  Result :: {'save_status', 'new_file'}            %% New document with no changes
+          | {'save_status', 'unmodified'}          %% The document has not been modified since the last savepoint.
+          | {'save_status', 'no_file'}             %% There is no path/filename associated with this editor
           | {'save_status', {path(), filename()}}. %% The path/filename currently associated to this instance
           
 save_status(Editor) ->
   case wx_object:call(Editor, save_request) of
-    {undefined, undefined, _} ->
-      {save_status, unsaved};
+    {undefined, undefined, false} -> %% Empty, unused document
+      {save_status, new_file};
     {_,_,false} ->
       {save_status, unmodified};
+    {undefined, undefined, _} -> %% New file, yet to be saved
+      {save_status, no_file};
+
     {Path, Fn, _} ->
       {save_status, Path, Fn}
   end.
+  
+  
+%% ===================================================================== 
+%% @doc Get the text from the editor
+
+-spec get_text(EditorPid) -> Result when
+  EditorPid :: pid(),
+  Result :: string().
+
+get_text(EditorPid) ->
+  wx_object:call(EditorPid, text_content).  
+  
+  
+%% ===================================================================== 
+%% @doc Get the Id of the editor
+
+-spec get_id(EditorPid) -> integer() when
+  EditorPid :: pid().
+
+get_id(EditorPid) ->
+  Editor = wx_object:call(EditorPid, editor),
+  wxWindow:getId(Editor).
 
 
 %% ===================================================================== 
