@@ -623,13 +623,15 @@ open_dialog(Parent) ->
   % wxSizer:add(DialogSizer, ButtonSizer, [{flag, ?wxALIGN_RIGHT}]),
   % wxDialog:setSizer(Dialog, DialogSizer),
   % Bs = wxDialog:createButtonSizer(Dialog, ?wx_CANCEL bor ?wx_OK),
+
+  % wxSizer:add(Bs, wxButton:new(Dialog,234,[{label, "BOOM"}])),
+  % wxSizer:add(Bs, wxButton:new(Dialog,235,[{label, "NOBO"}])),
+  
   Bs = wxBoxSizer:new(?wxHORIZONTAL),
   Ba = wxButton:new(Dialog, 1, [{label, "Nibble"}]),
   Bb = wxButton:new(Dialog, 2, [{label, "Nobble"}]),
   wxSizer:add(Bs, Ba),
   wxSizer:add(Bs, Bb),
-  % wxSizer:add(Bs, wxButton:new(Dialog,234,[{label, "BOOM"}])),
-  % wxSizer:add(Bs, wxButton:new(Dialog,235,[{label, "NOBO"}])),
     
   Box  = wxBoxSizer:new(?wxVERTICAL),
   
