@@ -56,99 +56,155 @@ start(Config) ->
 init(Config) ->
     Frame = proplists:get_value(parent, Config),
     Sb = proplists:get_value(sb, Config),
-    
-    File        = wxMenu:new([]),
-    Edit        = wxMenu:new([]),
-    View        = wxMenu:new([]),
-    Document    = wxMenu:new([]),
-    Wrangler    = wxMenu:new([]),
-    Tools       = wxMenu:new([]),
-    Help        = wxMenu:new([]),
-    
-    Font        = wxMenu:new([]),
-	IndentType  = wxMenu:new([]),
-    IndentWidth = wxMenu:new([]),
-    
-    %% Format of table entry:
-    %% (TabId, {ItemId, {Label, AltLabel}, HelpString, Separator, ParentMenu, {Type, Checked}, [{Module, Function, [Args]}]})
    
     %%%%%%%%%%%%%%%%%%%%%
     %%%%% ETS Table %%%%%
     TabId = ets:new(myTable, []),
-  % File Menu
-    ets:insert(TabId,{?wxID_NEW,         {"New",       null}, "Create a new file.",             false, File, {}, [{ide,add_editor,[]}]}),
-    ets:insert(TabId,{?wxID_OPEN,        {"Open",      null}, "Open an existing file.",         true,  File, {}, [{ide,open_file,[Frame]}]}),
-    ets:insert(TabId,{?wxID_SAVE,        {"Save",      null}, "Save the current file.",         false, File, {}, [{ide,save_current_file,[]}]}),
-    ets:insert(TabId,{?wxID_SAVEAS,      {"Save As",   null}, "Save the file with a new name.", false, File, {}, [{ide,apply_to_all_editors,[]}]}),
-    ets:insert(TabId,{?MENU_ID_SAVE_ALL, {"Save All",  null}, "Save all open files.",           true,  File, {}, []}),
-    ets:insert(TabId,{?wxID_PRINT,       {"Print",     null}, "Print the current file.",        true,  File, {}, []}),
-    ets:insert(TabId,{?wxID_CLOSE,       {"Close",     null}, "Close the current file.",        false, File, {}, []}),
-    ets:insert(TabId,{?wxID_CLOSE_ALL,   {"Close All", null}, "Close all open files.",          true,  File, {}, []}),
-    ets:insert(TabId,{?wxID_EXIT,        {"Exit",      null}, "Quit the application.",          false, File, {}, []}),
+    ets:insert(TabId,{?wxID_NEW, "New", "Create a new file.", {ide,add_editor,[]}}),
+    ets:insert(TabId,{?wxID_OPEN, "Open", "Open an existing file.", {ide,open_file,[Frame]}}),
+    ets:insert(TabId,{?wxID_SAVE, "Save", "Save the current file.", {ide,save_current_file,[]}}),
+    ets:insert(TabId,{?wxID_SAVEAS, "Save As", "Save the file with a new name.", {ide,apply_to_all_editors,[]}}),
+    ets:insert(TabId,{?MENU_ID_SAVE_ALL, "Save All", "Save all open files.", {}}),
+    ets:insert(TabId,{?wxID_PRINT, "Print", "Print the current file.", {}}),
+    ets:insert(TabId,{?wxID_CLOSE, "Close", "Close the current file.", {}}),
+    ets:insert(TabId,{?wxID_CLOSE_ALL, "Close All", "Close all open files.", {}}),
+    ets:insert(TabId,{?wxID_EXIT, "Exit", "Quit the application.", {}}),
     
-  % Edit Menu
-    ets:insert(TabId,{?wxSTC_CMD_UNDO,  {"Undo",   null}, "Undo the last change.",                    false, Edit, {}, []}),
-    ets:insert(TabId,{?wxSTC_CMD_REDO,  {"Redo",   null}, "Redo the last change.",                    true,  Edit, {}, []}),
-    ets:insert(TabId,{?wxSTC_CMD_CUT,   {"Cut",    null}, "Cut the selected text.",                   false, Edit, {}, []}),
-    ets:insert(TabId,{?wxSTC_CMD_COPY,  {"Copy",   null}, "Copy the selected text to the clipboard.", false, Edit, {}, []}),
-    ets:insert(TabId,{?wxSTC_CMD_PASTE, {"Paste",  null}, "Paste from clipboard.",                    false, Edit, {}, []}),
-    ets:insert(TabId,{?wxID_DELETE,     {"Delete", null}, "Delete the current selection.",            false, Edit, {}, []}),
+    ets:insert(TabId,{?wxSTC_CMD_UNDO, "Undo", "Undo the last change.", {}}),
+    ets:insert(TabId,{?wxSTC_CMD_REDO, "Redo", "Redo the last change.", {}}),
+    ets:insert(TabId,{?wxSTC_CMD_CUT, "Cut", "Cut the selected text.", {}}),
+    ets:insert(TabId,{?wxSTC_CMD_COPY, "Copy", "Copy the selected text to the clipboard.", {}}),
+    ets:insert(TabId,{?wxSTC_CMD_PASTE, "Paste", "Paste from clipboard.", {}}),
+    ets:insert(TabId,{?wxID_DELETE, "Delete", "Delete the current selection.", {}}),
     
-  % View Menu
-    ets:insert(TabId,{?MENU_ID_FONT,          {"Font",                null},                  "Select font.",                  true,  View,       {},             [{ide,update_styles,[Frame]}]}),
-    ets:insert(TabId,{?MENU_FONT_BIGGER,      {"Bigger",              null},                  "Increase the font size.",       false, Font,       {},             []}),
-    ets:insert(TabId,{?MENU_FONT_SMALLER,     {"Smaller",             null},                  "Decrease the font size.",       false, Font,       {},             []}),
-    ets:insert(TabId,{?MENU_ID_LN_TOGGLE,     {"Toggle line numbers", null},                  "Toggle line numbers on/off.",   true,  View,       {check, true},  []}),
-    ets:insert(TabId,{?MENU_ID_INDENT_TYPE,   {"Indent Type",         null},                  "Indent type: tabs/spaces.",     false, View,       {},             []}),
-    ets:insert(TabId,{?MENU_ID_INDENT_TABS,   {"Tabs",                null},                  "Indent using tabs.",            false, IndentType, {radio, true},  []}),
-    ets:insert(TabId,{?MENU_ID_INDENT_SPACES, {"Spaces",              null},                  "Indent using spaces.",          false, IndentType, {radio, false}, []}),
-    ets:insert(TabId,{?MENU_ID_INDENT_WIDTH,  {"Indent width",        null},                  "Width of indent in spaces.",    true,  View,       {},             []}),
-    ets:insert(TabId,{?MENU_ID_FULLSCREEN,    {"Fullscreen",          null},                  "Toggle fullscreen.",            true,  View,       {check, false}, []}),
-    ets:insert(TabId,{?MENU_ID_HIDE_TEST,     {"Hide Test Pane",      "Show Test Pane"},      "Hide/Show the test pane.",      false, View,       {},             [{ide,toggle_pane,[test]}, {update_label,Frame,2}]}),
-    ets:insert(TabId,{?MENU_ID_HIDE_UTIL,     {"Hide Utilities Pane", "Show Utilities Pane"}, "Hide/Show the utilities pane.", false, View,       {},             [{ide,toggle_pane,[util]}, {update_label,Frame,2}]}),
-    ets:insert(TabId,{?MENU_ID_MAX_EDITOR,    {"Maximise editor",     null},                  "Maximise the editor pane.",     false, View,       {},             [{ide,toggle_pane,[editor]}]}),
-    ets:insert(TabId,{?MENU_ID_MAX_UTIL,      {"Maximise utilities",  null},                  "Maximise the utilities pane.",  false, View,       {},             [{ide,toggle_pane,[maxutil]}]}),
+    ets:insert(TabId,{?MENU_ID_FONT, "Font", "Select font.", {ide,update_styles,[Frame]}}),
+    ets:insert(TabId,{?MENU_FONT_BIGGER, "Bigger", "Increase the font size.", {}}),
+    ets:insert(TabId,{?MENU_FONT_SMALLER, "Smaller", "Decrease the font size.", {}}),
+    ets:insert(TabId,{?MENU_ID_LN_TOGGLE, "Toggle line numbers", "Toggle line numbers on/off.", {}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_TYPE, "Indent Type", "Indent type: tabs/spaces.", {}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_TABS, "Tabs", "Indent using tabs.", {}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_SPACES, "Spaces", "Indent using spaces.", {}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_WIDTH, "Indent width", "Width of indent in spaces.", {}}),
+    ets:insert(TabId,{?MENU_ID_FULLSCREEN, "Fullscreen", "Toggle fullscreen.", {}}),
+    ets:insert(TabId,{?MENU_ID_HIDE_TEST, "Hide Test Pane", "Hide/Show the test pane.",           {ide,toggle_pane,[test]}, {update_label,Frame,2}}),
+    ets:insert(TabId,{?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", "Hide/Show the utilities pane.", {ide,toggle_pane,[util]}, {update_label,Frame,2}}),
+    ets:insert(TabId,{?MENU_ID_MAX_EDITOR, "Maximise editor", "Maximise the editor pane.",        {ide,toggle_pane,[editor]}}),
+    ets:insert(TabId,{?MENU_ID_MAX_UTIL, "Maximise utilities", "Maximise the utilities pane.",    {ide,toggle_pane,[maxutil]}}),
     
-  % Document Menu
-    ets:insert(TabId,{?MENU_ID_LINE_WRAP,         {"Line Wrap",         null}, "Line wrap.",                 false, Document, {check, false}, []}),
-    ets:insert(TabId,{?MENU_ID_AUTO_INDENT,       {"Auto indent",       null}, "Auto indent.",               true,  Document, {check, true},  []}),
-    ets:insert(TabId,{?MENU_ID_INDENT_SELECTION,  {"Indent selection",  null}, "Indent selected text.",      false, Document, {},             []}),
-    ets:insert(TabId,{?MENU_ID_COMMENT_SELECTION, {"Comment selection", null}, "Comment the selected text.", true,  Document, {},             []}),
-    ets:insert(TabId,{?MENU_ID_FOLD_ALL,          {"Fold all",          null}, "Fold all code.",             false, Document, {},             []}),
-    ets:insert(TabId,{?MENU_ID_UNFOLD_ALL,        {"Unfold all",        null}, "Unfold all code.",           false, Document, {},             []}),
     
-  % Wrangler Menu    
-    ets:insert(TabId,{?MENU_ID_WRANGLER, {"Wrangler", null}, "Wrangler.", false, Wrangler, {}, []}),
-    
-  % Tools Menu
-    ets:insert(TabId,{?MENU_ID_COMPILE,  {"Compile",      null}, "Compile the current file.",   true,  Tools, {}, []}),
-    ets:insert(TabId,{?MENU_ID_RUN,      {"Run",          null}, "Run the current file.",       false, Tools, {}, []}),
-    ets:insert(TabId,{?MENU_ID_DIALYZER, {"Dialyzer",     null}, "Run Dialyzer.",               false, Tools, {}, []}),
-    ets:insert(TabId,{?MENU_ID_TESTS,    {"Run tests",    null}, "Run tests for current file.", false, Tools, {}, []}),
-    ets:insert(TabId,{?MENU_ID_DEBUGGER, {"Run debugger", null}, "Run debugger.",               false, Tools, {}, []}),
-    
-  % Help Menu
-    ets:insert(TabId,{?wxID_HELP,          {"Help",               null}, "View Help.",                       false, Help, {}, []}),
-    ets:insert(TabId,{?MENU_ID_SHORTCUTS,  {"Keyboard shortcuts", null}, "View keyboard shortcuts.",         true,  Help, {}, []}),
-    ets:insert(TabId,{?MENU_ID_SEARCH_DOC, {"Search doc",         null}, "Search the Erlang documentation.", false, Help, {}, []}),
-    ets:insert(TabId,{?MENU_ID_MANUAL,     {"Manual",             null}, "View the IDE manual.",             true,  Help, {}, []}),
-    ets:insert(TabId,{?wxID_ABOUT,         {"About",              null}, "About.",                           false, Help, {}, [{about, new, [{parent, Frame}]}]}),
+    ets:insert(TabId,{?MENU_ID_LINE_WRAP, "Line Wrap", "Line wrap.", {}}),
+    ets:insert(TabId,{?MENU_ID_AUTO_INDENT, "Auto indent", "Auto indent.", {}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_SELECTION, "Indent selection", "Indent selected text.", {}}),
+    ets:insert(TabId,{?MENU_ID_COMMENT_SELECTION, "Comment selection", "Comment the selected text.", {}}),
+    ets:insert(TabId,{?MENU_ID_FOLD_ALL, "Fold all", "Fold all code.", {}}),
+    ets:insert(TabId,{?MENU_ID_UNFOLD_ALL, "Unfold all", "Unfold all code.", {}}),
+    ets:insert(TabId,{?MENU_ID_WRANGLER, "Wrangler", "Wrangler.", {}}),
+    ets:insert(TabId,{?MENU_ID_COMPILE, "Compile", "Compile the current file.", {}}),
+    ets:insert(TabId,{?MENU_ID_RUN, "Run", "Run the current file.", {}}),
+    ets:insert(TabId,{?MENU_ID_DIALYZER, "Dialyzer", "Run Dialyzer.", {}}),
+    ets:insert(TabId,{?MENU_ID_TESTS, "Run tests", "Run tests for current file.", {}}),
+    ets:insert(TabId,{?MENU_ID_DEBUGGER, "Run debugger", "Run debugger.", {}}),
+    ets:insert(TabId,{?wxID_HELP, "Help", "View Help.", {}}),
+    ets:insert(TabId,{?MENU_ID_SHORTCUTS, "Keyboard shortcuts", "View keyboard shortcuts.", {}}),
+    ets:insert(TabId,{?MENU_ID_SEARCH_DOC, "Search doc", "Search the Erlang documentation.", {}}),
+    ets:insert(TabId,{?MENU_ID_MANUAL, "Manual", "View the IDE manual.", {}}),
+    ets:insert(TabId,{?wxID_ABOUT, "About", "About.", {about, new, [{parent, Frame}]}}),
     
     %%%%%%%%%%%%%%%%%%%
     %%%%% Menubar %%%%%
-    MenuBar = wxMenuBar:new(),
-    buildMenuBar(MenuBar, TabId, ets:first(TabId)),
+    MenuBar     = wxMenuBar:new(),
+      
+    File        = wxMenu:new([]),
+    wxMenu:append(File, ?wxID_NEW, "New"),
+    wxMenu:append(File, ?wxID_OPEN, "Open"),
+    wxMenu:append(File, ?wxID_SEPARATOR, []),
+    wxMenu:append(File, ?wxID_SAVE, "Save"),
+    wxMenu:append(File, ?wxID_SAVEAS, "Save As"),
+    wxMenu:append(File, ?MENU_ID_SAVE_ALL, "Save All"),
+    wxMenu:append(File, ?wxID_SEPARATOR, []),
+    wxMenu:append(File, ?wxID_PRINT, "Print"),
+    wxMenu:append(File, ?wxID_SEPARATOR, []),
+    wxMenu:append(File, ?wxID_CLOSE, "Close"),
+    wxMenu:append(File, ?wxID_CLOSE_ALL, "Close All"),
+    wxMenu:append(File, ?wxID_SEPARATOR, []),
+    wxMenu:append(File, ?wxID_EXIT, "Exit"),
+  
+    Edit        = wxMenu:new([]),
+    wxMenu:append(Edit, ?wxSTC_CMD_UNDO, "Undo"),
+    wxMenu:append(Edit, ?wxSTC_CMD_REDO, "Redo"),
+    wxMenu:append(Edit, ?wxID_SEPARATOR, []),
+    wxMenu:append(Edit, ?wxSTC_CMD_CUT, "Cut"),
+    wxMenu:append(Edit, ?wxSTC_CMD_COPY, "Copy"),
+    wxMenu:append(Edit, ?wxSTC_CMD_PASTE, "Paste"),
+    wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
+  
+    Font = wxMenu:new([]), %% Sub-menu
+    wxMenu:append(Font, ?MENU_ID_FONT, "Font Picker"),
+    wxMenu:appendSeparator(Font),
+    wxMenu:append(Font, ?MENU_FONT_BIGGER, "&Bigger\tCtrl++"),
+    wxMenu:append(Font, ?MENU_FONT_SMALLER, "Smaller\tCtrl+-"),
+    wxMenu:appendSeparator(Font),
+    
+    View        = wxMenu:new([]),
+    wxMenu:append(View, ?wxID_ANY, "Font", Font),
+    wxMenu:append(View, ?wxID_SEPARATOR, []),
+    wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:check(View, ?MENU_ID_LN_TOGGLE, true),         %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
+    wxMenu:append(View, ?wxID_SEPARATOR, []),
+    IndentType  = wxMenu:new([]),  % Submenu
+    wxMenu:appendRadioItem(IndentType, ?MENU_ID_INDENT_TABS, "Tabs"), 
+    wxMenu:appendRadioItem(IndentType, ?MENU_ID_INDENT_SPACES, "Spaces"), 
+    wxMenu:append(View, ?MENU_ID_INDENT_TYPE, "Indent Type", IndentType),
+    IndentWidth = wxMenu:new([]),  % Submenu
+    add_tab_width_menu(IndentWidth, 1),
+    wxMenu:check(IndentWidth, 7004, true),             %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
+    wxMenu:append(View, ?MENU_ID_INDENT_WIDTH, "Indent Width", IndentWidth),
+    wxMenu:append(View, ?wxID_SEPARATOR, []),
+    wxMenu:append(View, ?MENU_ID_FULLSCREEN, "Fullscreen", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:append(View, ?wxID_SEPARATOR, []),
+    wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Hide Test Pane", []),
+    wxMenu:append(View, ?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", []),
+    wxMenu:append(View, ?MENU_ID_MAX_EDITOR, "Maximise Editor", []),
+    wxMenu:append(View, ?MENU_ID_MAX_UTIL, "Maximise Utilities", []),
+  
+    Document    = wxMenu:new([]),
+    wxMenu:append(Document, ?MENU_ID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:append(Document, ?MENU_ID_AUTO_INDENT, "Auto-Indent", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, true),   %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
+    wxMenu:append(Document, ?wxID_SEPARATOR, []),
+    wxMenu:append(Document, ?MENU_ID_INDENT_SELECTION, "Indent Selection"),
+    wxMenu:append(Document, ?MENU_ID_COMMENT_SELECTION, "Comment Selection"),
+    wxMenu:append(Document, ?wxID_SEPARATOR, []),
+    wxMenu:append(Document, ?MENU_ID_FOLD_ALL, "Fold All"),
+    wxMenu:append(Document, ?MENU_ID_UNFOLD_ALL, "Unfold All"),
+  
+    Wrangler    = wxMenu:new([]),
+    wxMenu:append(Wrangler, ?MENU_ID_WRANGLER, "WRANGLER"),
+  
+    ToolMenu    = wxMenu:new([]),
+    wxMenu:append(ToolMenu, ?MENU_ID_COMPILE, "Compile"),
+    wxMenu:append(ToolMenu, ?wxID_SEPARATOR, []),
+    wxMenu:append(ToolMenu, ?MENU_ID_RUN, "Run Module"),
+    wxMenu:append(ToolMenu, ?MENU_ID_DIALYZER, "Run Dialyzer"),
+    wxMenu:append(ToolMenu, ?MENU_ID_TESTS, "Run Tests"),
+    wxMenu:append(ToolMenu, ?MENU_ID_DEBUGGER, "Run Debugger"),
+  
+    Help        = wxMenu:new([]),
+    wxMenu:append(Help, ?wxID_HELP, "Help"),
+    wxMenu:append(Help, ?MENU_ID_SHORTCUTS, "Keyboard Shortcuts"),
+    wxMenu:append(Help, ?wxID_SEPARATOR, []),
+    wxMenu:append(Help, ?MENU_ID_SEARCH_DOC, "Search Erlang API"),
+    wxMenu:append(Help, ?MENU_ID_MANUAL, "IDE Manual"),
+    wxMenu:append(Help, ?wxID_SEPARATOR, []),
+    wxMenu:append(Help, ?wxID_ABOUT, "About"),
   
     wxMenuBar:append(MenuBar, File, "File"),
     wxMenuBar:append(MenuBar, Edit, "Edit"),
     wxMenuBar:append(MenuBar, View, "View"),
     wxMenuBar:append(MenuBar, Document, "Document"),
     wxMenuBar:append(MenuBar, Wrangler, "Wrangler"),
-    wxMenuBar:append(MenuBar, Tools, "Tools"),
+    wxMenuBar:append(MenuBar, ToolMenu, "Tools"),
     wxMenuBar:append(MenuBar, Help, "Help"),
-    wxMenu:append(View, ?MENU_ID_INDENT_TYPE, "Indent Type", IndentType),
-    add_tab_width_menu(IndentWidth),
-    wxMenu:append(View, ?MENU_ID_INDENT_WIDTH, "Indent Width", IndentWidth),
     
     %%%%%%%%%%%%%%%%%%%
     %%%%% Toolbar %%%%%
@@ -187,63 +243,14 @@ init(Config) ->
     wxFrame:setMenuBar(Frame, MenuBar),
     {Frame, #state{file=File}}.
     
-buildMenuBar(MenuBar, Table, Key) ->
-	case Key of
-		'$end_of_table' ->
-			ok;
-		_ ->
-			{Item, {Label, AltLabel}, _, Separator, ParentMenu, {Type, Checked}, _} = ets:lookup(Table, Key),
-			addItem({Item, Label, Separator, ParentMenu, {Type, Checked}}),
-			buildMenuBar(MenuBar, Table, ets:next(Table, Key))
-	end.
-
-addItem(Item) ->
-	case Item of
-		{Item, Label, true, ParentMenu, {check, true}} ->
-			wxMenu:append(ParentMenu, Item, Label, [{kind, ?wxITEM_CHECK}]),
-			wxMenu:check(ParentMenu, Item, true),
-			wxMenu:appendSeparator(ParentMenu);
-
-		{Item, Label, true, ParentMenu, {check, false}} ->
-			wxMenu:append(ParentMenu, Item, Label, [{kind, ?wxITEM_CHECK}]),
-			wxMenu:appendSeparator(ParentMenu);
-
-		{Item, Label, true, ParentMenu, {radio, true}} ->
-			wxMenu:appendRadioItem(ParentMenu, Item, Label),
-			wxMenu:check(ParentMenu, Item, true),
-			wxMenu:appendSeparator(ParentMenu);
-
-		{Item, Label, true, ParentMenu, {radio, false}} ->
-			wxMenu:appendRadioItem(ParentMenu, Item, Label),
-			wxMenu:appendSeparator(ParentMenu);
-
-		{Item, Label, false, ParentMenu, {check, true}} ->
-			wxMenu:append(ParentMenu, Item, Label, [{kind, ?wxITEM_CHECK}]),
-			wxMenu:check(ParentMenu, Item, true);
-
-		{Item, Label, false, ParentMenu, {check, false}} ->
-			wxMenu:append(ParentMenu, Item, Label, [{kind, ?wxITEM_CHECK}]);
-			
-		{Item, Label, false, ParentMenu, {radio, true}} ->
-			wxMenu:appendRadioItem(ParentMenu, Item, Label),
-			wxMenu:check(ParentMenu, Item, true);
-			
-		{Item, Label, false, ParentMenu, {radio, false}} ->
-			wxMenu:appendRadioItem(ParentMenu, Item, Label);
-			
-		{Item, Label, false, ParentMenu, _} ->
-			wxMenu:append(ParentMenu, Item, Label)
-	end.   
- 
-
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%% Event Handlers %%%%%
-%% Handle menu closed event
+%% Handle menu closed event    
 handle_event(#wx{userData=Sb, event=#wxMenu{type=menu_close}},
 	           State) ->
        customStatusBar:set_text(Sb, {field, help}, ?STATUS_BAR_HELP_DEFAULT),
        {noreply, State};
-%% Handle menu highlight events
+%% Handle menu highlight events    
 handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxMenu{type=menu_highlight}},
 	           State) ->
        Result = ets:lookup(Tab,Id),
@@ -281,13 +288,11 @@ code_change(_, _, State) ->
 terminate(_Reason, _State) ->
     wx:destroy().
 
-add_tab_width_menu(TabMenu) ->
-	add_tab_width(TabMenu, 1).
-add_tab_width(TabMenu, 8) ->
+add_tab_width_menu(TabMenu, 8) ->
     wxMenu:appendRadioItem(TabMenu, 7008, integer_to_list(8));
-add_tab_width(TabMenu, Width) ->
+add_tab_width_menu(TabMenu, Width) ->
     wxMenu:appendRadioItem(TabMenu, 7000 + Width, integer_to_list(Width)),
-    add_tab_width(TabMenu, Width + 1).
+    add_tab_width_menu(TabMenu, Width + 1).
 
 update_label(MenuItem, Menu) ->
 	case wxMenu:getLabel(Menu, MenuItem) of
