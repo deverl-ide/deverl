@@ -98,7 +98,7 @@ init(Options) ->
 
   wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
-  %% Custom status bar %%
+  %% Status bar %%
   StatusBar = ide_status_bar:new([{parent, Frame}]),
   
   %% Menubar %%
@@ -487,13 +487,13 @@ save_file(Index, Pid) ->
       save_new(Index, Workspace, Sb, Pid);
     {save_status, unmodified} ->
       %% Document is unmodified, no need to save
-      customStatusBar:set_text_timeout(Sb, {field, help}, "Document already saved.");
+      ide_status_bar:set_text_timeout(Sb, {field, help}, "Document already saved.");
     {save_status, Path, Fn} ->
       %% Document already exists, overwrite
       Contents = editor:get_text(Pid),
       ide_io:save(Path, Contents),
       editor:save_complete(Path, Fn, Pid),
-      customStatusBar:set_text_timeout(Sb, {field, help}, "Document saved.")
+      ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.")
   end.
 
 
@@ -515,12 +515,12 @@ save_new(Index, Workspace, Sb, Pid) ->
   Contents = editor:get_text(Pid),
   case ide_io:save_as(Workspace, Contents) of
     {cancel} ->
-      customStatusBar:set_text_timeout(Sb, {field, help}, "Document not saved."),
+      ide_status_bar:set_text_timeout(Sb, {field, help}, "Document not saved."),
       {save, cancelled};
     {ok, {Path, Filename}}  ->
       wxAuiNotebook:setPageText(Workspace, Index, Filename),
       editor:save_complete(Path, Filename, Pid),
-      customStatusBar:set_text_timeout(Sb, {field, help}, "Document saved."),
+      ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
       {save, complete}
   end.
   
