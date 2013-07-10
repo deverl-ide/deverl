@@ -45,7 +45,7 @@ init(Config) ->
   SbSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(Sb, SbSizer),
   
-  Separator = wxBitmap:new(wxImage:new("icons/separator.png")),
+  Separator = wxBitmap:new(wxImage:new("../icons/separator.png")),
 
   add_label(Sb, ?wxID_ANY, SbSizer, "Text:"),                                    
   Line = wxStaticText:new(Sb, ?SB_ID_LINE, "1", []),
@@ -84,7 +84,7 @@ init(Config) ->
   L = wxStaticText:new(Sb, ?wxID_ANY, "Functions"),
   set_style(L),
   wxSizer:add(PopupSizer, L, [{proportion, 1},{border, ?PADDING},{flag, ?wxALL}]),
-  Icon = wxStaticBitmap:new(Sb, 345, wxBitmap:new(wxImage:new("icons/sb_menu.png"))),
+  Icon = wxStaticBitmap:new(Sb, 345, wxBitmap:new(wxImage:new("../icons/sb_menu.png"))),
   wxSizer:add(PopupSizer, Icon, [{border,5},{proportion,0},{flag, ?wxALIGN_CENTER_VERTICAL bor ?wxRIGHT}]),
   FunctionPopup = create_menu(),
   wxSizer:add(SbSizer, PopupSizer, [{proportion, 1}]),
