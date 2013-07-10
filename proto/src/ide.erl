@@ -211,7 +211,8 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
     {stop, normal, State};
     
 %% Vertical sash dragged
-handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
+handle_event(_W=#wx{id=?SASH_VERTICAL, 
+             event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
              State) ->
     Pos = wxSplitterWindow:getSashPosition(State#state.sash_v),
     %% Don't save the pos if the sash is dragged to zero, as the sash will revert to the middle when shown again (on mac definitely, probably on all platforms)
@@ -224,7 +225,8 @@ handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_s
     {noreply, State#state{sash_v_pos=NewPos}};
 
 %% Horizontal sash dragged
-handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
+handle_event(_W=#wx{id=?SASH_HORIZONTAL, 
+             event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
              State) ->
      Pos = wxSplitterWindow:getSashPosition(State#state.sash_h),
      if
