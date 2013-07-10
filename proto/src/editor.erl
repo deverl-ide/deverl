@@ -188,7 +188,7 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb},
              State=#state{text_ctrl=Editor, file_data=#file{filename=Fn, path=Path}}) ->               
     %% Update status bar line/col position
     {X,Y} = get_x_y(Editor),
-    customStatusBar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
+    ide_status_bar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
     %% Update margin width if required
     adjust_margin_width(Editor),  
     {noreply, State#state{file_data=#file{modified=true, filename=Fn, path=Path}}};

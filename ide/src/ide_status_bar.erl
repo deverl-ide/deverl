@@ -194,7 +194,7 @@ create_menu() ->
 %% @doc Set the text in the specified field.
 %% @see init Fields for field names.
 
--spec customStatusBar:set_text(Sb, Field, Label) -> Result when
+-spec ide_status_bar:set_text(Sb, Field, Label) -> Result when
       Sb :: wxStatusBar:wxStatusBar(),
       Field :: {field, atom()},
       Label :: unicode:chardata(),

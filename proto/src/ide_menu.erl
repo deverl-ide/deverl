@@ -248,16 +248,16 @@ init(Config) ->
 %% Handle menu closed event    
 handle_event(#wx{userData=Sb, event=#wxMenu{type=menu_close}},
 	           State) ->
-       customStatusBar:set_text(Sb, {field, help}, ?STATUS_BAR_HELP_DEFAULT),
+       ide_status_bar:set_text(Sb, {field, help}, ?STATUS_BAR_HELP_DEFAULT),
        {noreply, State};
 %% Handle menu highlight events    
 handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxMenu{type=menu_highlight}},
 	           State) ->
        Result = ets:lookup(Tab,Id),
        Fun = fun([{_,_,HelpString,_}]) ->
-               customStatusBar:set_text(Sb, {field, help}, HelpString);
+               ide_status_bar:set_text(Sb, {field, help}, HelpString);
              (_) ->
-               customStatusBar:set_text(Sb, {field, help}, "Help not available.")
+               ide_status_bar:set_text(Sb, {field, help}, "Help not available.")
              end,
        Fun(Result),
        {noreply, State};
@@ -274,7 +274,7 @@ handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxCommand{type=command_menu_se
              ([{_,_,_,{Module,Function,Args}}]) ->
                erlang:apply(Module,Function,Args);
              (_) ->
-               customStatusBar:set_text_timeout(Sb, {field, help}, "Not yet implemented.")
+               ide_status_bar:set_text_timeout(Sb, {field, help}, "Not yet implemented.")
              end,
        Fun(Result),
        {noreply, State};
