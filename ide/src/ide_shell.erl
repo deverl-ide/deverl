@@ -93,20 +93,27 @@ code_change(_, _, State) ->
 
 terminate(_Reason, _State) ->
     wx:destroy().
-    
+
+
+%% =====================================================================
+%% @doc
+
 call_parser(Message) ->
-  % io:format("MESSAGE: ~p~n", [Message]),
-  %% Convert the user input to an erlang term
-  {ok, T, _} = erl_scan:string(Message),
-  {ok, Var} = erl_parse:parse_term(T),
-  
-  % parser:parse(Var).
-  port:call_port(Var).
+  io:format("MESSAGE: ~p~n", [Message]),
+  parser:parse_input(Message).
+
+
+%% =====================================================================
+%% @doc
   
 load_response(Response) ->
   Tc = wx_object:call(?MODULE, text_ctrl),
   wxTextCtrl:writeText(Tc, Response).
   % wxTextCtrl:writeText(Tc, get_prompt(PromptCount)).
+
+
+%% =====================================================================
+%% @doc
     
 get_prompt(Count) ->
     I = integer_to_list(Count),

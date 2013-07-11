@@ -2,9 +2,18 @@
 
 -compile(export_all).
 
+
+
+%% =====================================================================
+%% @doc Close the selected editor
+
 start()->
     register(parser, spawn(?MODULE, loop, [])).
-    
+
+
+%% =====================================================================
+%% @doc
+  
 loop() ->
   receive
     Any ->
@@ -14,8 +23,15 @@ loop() ->
   loop().
 
 
+%% =====================================================================
+%% @doc
+
 parse(Message, From) ->
   port:call_port(Message, From).
-  
+
+
+%% =====================================================================
+%% @doc
+
 parse_response(Response) ->
   ide_shell:load_response(Response).
