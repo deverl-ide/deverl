@@ -13,7 +13,7 @@
 -record(state, {win, textctrl, input, lastchar, promptcount}).
 
 new(Config) ->
-	wx_object:start(?MODULE, Config, []).
+	wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
 	
 %% Initialise the server's state
 init(Config) ->
@@ -51,6 +51,8 @@ handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
     {noreply,State}.
 
+handle_call(text_ctrl, _From, State) ->
+    {reply,State#state.textctrl,State};
 handle_call(Msg, _From, State) ->
     io:format("Got Call ~p~n",[Msg]),
     {reply,ok,State}.
@@ -64,15 +66,13 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame, input=Input}) ->
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State};
 
-%% This is executed where char events are handled.
 %% Deal with an ENTER keypress immediately following a period (.)
 handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, 
              State = #state{win=Frame, textctrl = TextCtrl, input = Input, lastchar = 46}) ->  %% Enter & Full stop
     PromptCount = State#state.promptcount + 1,
-    wxTextCtrl:writeText(TextCtrl, "\nDone."),
-    
-  % The collected input is now available in Input, ready to be sent to ERTS
+    wxTextCtrl:writeText(TextCtrl, "\n" ++ Input), %% Input contains all unparsed input
     wxTextCtrl:writeText(TextCtrl, get_prompt(PromptCount)),
+    call_parser(Input),
     {noreply, State#state{input=[], lastchar=13, promptcount=PromptCount}};
     
 %% Deal with ENTER
@@ -82,11 +82,9 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, State = #state{win=Frame,
     
 %% Now just deal with any char
 handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) ->
-  % This currently converts everything as an ascii character (ascii need to be filtered out)
-    Key = io_lib:format("~c", [KeyCode]),
   % Update the state
-    NewInput = Input ++ Key,
-    wxTextCtrl:writeText(TextCtrl, Key),
+    NewInput = Input ++ [KeyCode],
+    wxTextCtrl:writeText(TextCtrl, [KeyCode]),
     wxTextCtrl:setInsertionPoint(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)),
     {noreply, State#state{input=NewInput, lastchar=KeyCode}}.
     
@@ -95,6 +93,20 @@ code_change(_, _, State) ->
 
 terminate(_Reason, _State) ->
     wx:destroy().
+    
+call_parser(Message) ->
+  io:format("MESSAGE: ~p~n", [Message]),
+  %% Convert the user input to an erlang term
+  {ok, T, _} = erl_scan:string(Message),
+  {ok, Var} = erl_parse:parse_term(T),
+  
+  % parser:parse(Var).
+  port:call_port(Var).
+  
+load_response(Response) ->
+  Tc = wx_object:call(?MODULE, text_ctrl),
+  wxTextCtrl:writeText(Tc, Response).
+  % wxTextCtrl:writeText(Tc, get_prompt(PromptCount)).
     
 get_prompt(Count) ->
     I = integer_to_list(Count),

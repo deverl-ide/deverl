@@ -10,7 +10,7 @@ start()->
     register(port, spawn(?MODULE, read, [])).
    
 read() ->
-  Port = open_port({spawn,"/usr/local/lib/erlang/erts-5.10.1/bin/erl"},[]),
+  Port = open_port({spawn,"/usr/local/lib/erlang/erts-5.10.1/bin/erl"},[stream]),
   do_read(Port).
 
 do_read(Port) ->
@@ -23,6 +23,8 @@ do_read(Port) ->
         Port ! {self(), {command, Go}};
     Any ->
       io:format("MESSAGE, ~p~n",[Any])
+      % parser:parse_response(Any)
+      % ide_shell:load_response(Any)
   end,
   do_read(Port).
 

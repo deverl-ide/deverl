@@ -79,6 +79,9 @@ start(Args) ->
 init(Options) ->
   wx:new(Options),
   process_flag(trap_exit, true),
+  
+  %% Start the port
+  port:start(),
 
   Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
   wxFrame:connect(Frame, close_window),
