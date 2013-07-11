@@ -18,7 +18,7 @@
 -define(PROMPT, "> ").
 
 %% The record containing the State.
--record(state, {win, textctrl, input, lastchar, promptcount}).
+-record(state, {win, textctrl, input, lastchar, promptcount, wx_env}).
 
 new(Config) ->
 	wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
@@ -45,7 +45,11 @@ init(Config) ->
 	wxTextCtrl:connect(ShellTextBox, char),
 	
 	
-	{Panel, #state{win=Panel, textctrl=ShellTextBox, input=[], promptcount=1}}. %% Maintained at server
+	{Panel, #state{win=Panel, 
+                 textctrl=ShellTextBox, 
+                 input=[], 
+                 promptcount=1,
+                 wx_env=wx:get_env()}}. %% Maintained at server
 	
 %%%%% Callbacks %%%%%
 %% These are all called from the server %%
@@ -60,7 +64,7 @@ handle_info(Msg, State) ->
     {noreply,State}.
 
 handle_call(text_ctrl, _From, State) ->
-    {reply,State#state.textctrl,State};
+    {reply,{State#state.wx_env,State#state.textctrl},State};
 handle_call(Msg, _From, State) ->
     io:format("Got Call ~p~n",[Msg]),
     {reply,ok,State}.
@@ -78,9 +82,7 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame, input=Input}) ->
 handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, 
              State = #state{win=Frame, textctrl = TextCtrl, input = Input, lastchar = 46}) ->  %% Enter & Full stop
     PromptCount = State#state.promptcount + 1,
-    wxTextCtrl:writeText(TextCtrl, "\n" ++ Input), %% Input contains all unparsed input
-    wxTextCtrl:writeText(TextCtrl, get_prompt(PromptCount)),
-    call_parser(Input),
+    call_parser(Input), %% Input contains all unparsed input
     {noreply, State#state{input=[], lastchar=13, promptcount=PromptCount}};
     
 %% Deal with ENTER
@@ -107,7 +109,6 @@ terminate(_Reason, _State) ->
 %% @doc
 
 call_parser(Message) ->
-  io:format("MESSAGE: ~p~n", [Message]),
   parser:parse_input(Message).
 
 
@@ -115,9 +116,9 @@ call_parser(Message) ->
 %% @doc
   
 load_response(Response) ->
-  Tc = wx_object:call(?MODULE, text_ctrl),
+  {Env, Tc} = wx_object:call(?MODULE, text_ctrl),
+  wx:set_env(Env),
   wxTextCtrl:writeText(Tc, Response).
-  % wxTextCtrl:writeText(Tc, get_prompt(PromptCount)).
 
 
 %% =====================================================================
