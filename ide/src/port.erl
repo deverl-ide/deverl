@@ -1,13 +1,13 @@
 -module(port).
 
--export([call_port/1]).
+-export([start/0, read/0, call_port/1]).
 
 
 %% =====================================================================
 %% @doc 
 
 start()->
-    register(spawn(?MODULE, read, [])).
+    register(?MODULE, spawn(?MODULE, read, [])).
 
 
 %% =====================================================================
@@ -24,7 +24,8 @@ read() ->
 do_read(Port) ->
   receive
     {Port,{data,Data}} ->
-    	io:format("Data: ~p~n",[Data]);
+    	io:format("Data: ~p~n",[Data]),
+      parser:parse_response(Data);
     {call, Msg} ->
       port_command(Port, Msg)
   end,

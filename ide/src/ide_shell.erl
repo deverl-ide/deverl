@@ -1,8 +1,16 @@
 -module(ide_shell).
 -include_lib("wx/include/wx.hrl").
 
--export([new/1, init/1, terminate/2, code_change/3, 
-		 handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+-export([load_response/1]).
+
+-export([new/1,
+  init/1, 
+  terminate/2, 
+  code_change/3, 
+	handle_info/2, 
+  handle_call/3, 
+  handle_cast/2, 
+  handle_event/2]).
 
 -behaviour(wx_object).
 

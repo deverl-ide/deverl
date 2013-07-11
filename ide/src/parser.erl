@@ -13,21 +13,9 @@ start()->
 
 %% =====================================================================
 %% @doc
-  
-loop() ->
-  receive
-    Any ->
-      io:format("MESSAGE, ~p~n",[Any]),
-      parser:parse_response(Any)
-  end,
-  loop().
 
-
-%% =====================================================================
-%% @doc
-
-parse(Message, From) ->
-  port:call_port(Message, From).
+parse_input(Message) ->
+  port:call_port(Message).
 
 
 %% =====================================================================
