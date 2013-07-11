@@ -16,7 +16,6 @@ start()->
 
 parse_input(Message) ->
   M = Message++"\n",
-  io:format("TO_PORT: ~p~n", [M]),
   port:call_port(M).
 
 
@@ -24,6 +23,6 @@ parse_input(Message) ->
 %% @doc
 
 parse_response(Response) ->
-  io:format("RESPONSE: ~p~n", [Response]),
-  ide_shell:load_response(Response).
+  M = Response,
+  ide_shell:load_response(M).
   

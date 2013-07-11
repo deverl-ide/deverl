@@ -32,10 +32,8 @@ init(Config) ->
 	
   % The style of the text box
 	ShellTextBox = wxTextCtrl:new(Panel, ?SHELL_TEXT_BOX, [{style, ?wxDEFAULT bor ?wxTE_MULTILINE}]),
-	wxTextCtrl:writeText(ShellTextBox, "1" ?PROMPT),
+  % wxTextCtrl:writeText(ShellTextBox, "1" ?PROMPT),
 	wxTextCtrl:setInsertionPoint(ShellTextBox, wxTextCtrl:getLastPosition(ShellTextBox)),
-  % wxWindow:setForegroundColour(ShellTextBox, ?wxWHITE),
-  % wxWindow:setBackgroundColour(ShellTextBox, ?wxBLACK),
 	wxWindow:setFont(ShellTextBox, wxFont:new(12, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
 	
 	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
@@ -87,7 +85,7 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=13}},
     
 %% Deal with ENTER
 handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-    wxTextCtrl:writeText(TextCtrl, get_prompt(State#state.promptcount)),
+    % wxTextCtrl:writeText(TextCtrl, get_prompt(State#state.promptcount)),
     {noreply, State#state{input=Input++"\n"}};
     
 %% Now just deal with any char
