@@ -1,32 +1,22 @@
 -module(port).
 
-
-%%     /usr/local/lib/erlang/erts-5.10.1/bin/erl
-%% TESTING GIT 
-
--compile(export_all).
+-export([call_port/1]).
 
 start()->
-    register(port, spawn(?MODULE, read, [])).
+    register(spawn(?MODULE, read, [])).
    
 read() ->
-  Port = open_port({spawn,"/usr/local/lib/erlang/erts-5.10.1/bin/erl"},[stream]),
+  Port = open_port({spawn,"/usr/local/lib/erlang/erts-5.10.1/bin/erl"},[use_stdio]),
   do_read(Port).
 
 do_read(Port) ->
   receive
     {Port,{data,Data}} ->
-        io:format("Data: ~p~n",[Data]);
-    {Port,eof} ->
-      read();
-    {go, Go} ->
-        Port ! {self(), {command, Go}};
-    Any ->
-      io:format("MESSAGE, ~p~n",[Any])
-      % parser:parse_response(Any)
-      % ide_shell:load_response(Any)
+    	io:format("Data: ~p~n",[Data]);
+    {call, Msg} ->
+      port_command(Port, Msg)
   end,
-  do_read(Port).
+  do_read(Port). 
 
 call_port(Message) ->
-  port ! Message. 
+  port ! {call, Message}.

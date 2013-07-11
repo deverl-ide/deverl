@@ -95,7 +95,7 @@ terminate(_Reason, _State) ->
     wx:destroy().
     
 call_parser(Message) ->
-  io:format("MESSAGE: ~p~n", [Message]),
+  % io:format("MESSAGE: ~p~n", [Message]),
   %% Convert the user input to an erlang term
   {ok, T, _} = erl_scan:string(Message),
   {ok, Var} = erl_parse:parse_term(T),
