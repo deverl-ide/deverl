@@ -124,7 +124,6 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_LEFT}}, State=#state{win=F
     
 %% Deal with RIGHT ARROW
 handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-	wxTextCtrl:setInsertionPoint(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)+1),
     {noreply, State};
 
 %% Now just deal with any char
@@ -173,3 +172,26 @@ get_prompt(Count) ->
 get_prompt_length(Count) ->
     I = integer_to_list(Count),
     length(I) + 2.
+
+
+%% =====================================================================
+%% @doc
+
+prompt_length(Line) ->
+	prompt_length(Line, 0).
+prompt_length([Char|String], Count) ->
+	case Char of
+		62 -> % the prompt char
+			Count + 1;
+		_ -> 
+			prompt_length(String, Count + 1)
+	end.
+
+
+
+
+
+
+
+
+
