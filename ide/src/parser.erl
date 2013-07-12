@@ -15,7 +15,7 @@ start()->
 %% @doc
 
 parse_input(Message) ->
-  M = Message++"\n",
+  M = Message ++ io_lib:nl(),
   port:call_port(M).
 
 
