@@ -39,7 +39,10 @@ init(Config) ->
                                           {proportion, 1}]),
 		
   % Connect listener to text box	
-	wxTextCtrl:connect(ShellTextBox, char, []),
+	wxTextCtrl:connect(ShellTextBox, char, [{callback, fun(E,O) ->
+                                                       handle_char_event(E,O)
+                                                     end
+                                                     }]),
 	
 	
 	{Panel, #state{win=Panel, 
@@ -111,6 +114,7 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=127}}, State=#state{win=Frame, 
     
 %% Deal with UP ARROW
 handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_UP}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+    call_parser([?WXK_UP]),
     {noreply, State};
     
 %% Deal with DOWN ARROW
@@ -139,9 +143,34 @@ code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, _State) ->
-  io:format("TERMINATIN SHELL~n"),
+  io:format("TERMINATION SHELL~n"),
   ok.
 
+
+%% =====================================================================
+%% @doc
+
+%% Arrow keys
+handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_UP}},O) ->
+  io:format("Char Event: ~p~n",[O]);
+handle_char_event(#wx{event=#wxKey{type=char, keyCode=?WXK_DOWN}},O) ->
+  io:format("Char Event: ~p~n",[O]);
+handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_LEFT}},O) ->
+  io:format("Left Event: ~p~n",[O]),
+  {_,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
+  case get_prompt_length of
+  io:format("Position: ~p~n", [Pos]),
+  wxEvent:skip(O);
+handle_char_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}},O) ->
+  io:format("Char Event: ~p~n",[O]),
+  wxEvent:skip(O);
+  
+
+handle_char_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}},O) ->
+  io:format("Char Event: ~p~n",[O]),
+  wxEvent:skip(O);
+handle_char_event(E,O) ->
+  io:format("Event: ~p~n Object: ~p~n", [E,O]).
 
 %% =====================================================================
 %% @doc
