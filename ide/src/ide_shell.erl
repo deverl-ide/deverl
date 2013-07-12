@@ -108,27 +108,9 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=8}}, State=#state{textctrl = Te
 			{noreply, State#state{input=NewInput ,lastchar=LastChar}}
 	end;
     
-%% Deal with DELETE
 handle_event(#wx{event=#wxKey{type=char, keyCode=127}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
     {noreply, State};
     
-%% Deal with UP ARROW
-handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_UP}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-    call_parser([?WXK_UP]),
-    {noreply, State};
-    
-%% Deal with DOWN ARROW
-handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_DOWN}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-    {noreply, State};
-    
-%% Deal with LEFT ARROW
-handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_LEFT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-	wxTextCtrl:setInsertionPoint(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)-1),
-    {noreply, State};
-    
-%% Deal with RIGHT ARROW
-handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-    {noreply, State};
 
 %% Now just deal with any char
 handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) ->
@@ -147,7 +129,7 @@ terminate(_Reason, _State) ->
 
 
 %% =====================================================================
-%% @doc
+%% Asynchronous event callbacks
 
 %% Arrow keys
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_UP}},O) ->
@@ -155,21 +137,33 @@ handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_UP}},O) 
 handle_char_event(#wx{event=#wxKey{type=char, keyCode=?WXK_DOWN}},O) ->
   io:format("Char Event: ~p~n",[O]);
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_LEFT}},O) ->
-  io:format("Left Event: ~p~n",[O]),
-  {_,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
-  case get_prompt_length of
-  io:format("Position: ~p~n", [Pos]),
-  wxEvent:skip(O);
+  prompt_limit(O, Console);
 handle_char_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}},O) ->
   io:format("Char Event: ~p~n",[O]),
   wxEvent:skip(O);
   
-
-handle_char_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}},O) ->
+%% Deal with DELETE
+handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=8}},O) -> 
+  prompt_limit(O, Console);
+  
+%% Deal with CHAR
+handle_char_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}},O) -> 
   io:format("Char Event: ~p~n",[O]),
   wxEvent:skip(O);
+  
+%% Catchall  
 handle_char_event(E,O) ->
   io:format("Event: ~p~n Object: ~p~n", [E,O]).
+
+prompt_limit(Event, Console) ->
+  {_,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
+  Limit = X-1,
+  case get_prompt_length(wxTextCtrl:getLineText(Console, Y)) of
+    Limit ->
+      wxEvent:stopPropagation(Event);
+    _ ->
+      wxEvent:skip(Event)
+  end.
 
 %% =====================================================================
 %% @doc
@@ -198,7 +192,7 @@ get_prompt(Count) ->
 %% =====================================================================
 %% @doc
     
-get_prompt_length(Count) ->
+wget_prompt_length(Count) ->
     I = integer_to_list(Count),
     length(I) + 2.
 
@@ -206,7 +200,7 @@ get_prompt_length(Count) ->
 %% =====================================================================
 %% @doc
 
-prompt_length(Line) ->
+get_prompt_length(Line) ->
 	prompt_length(Line, 0).
 prompt_length([Char|String], Count) ->
 	case Char of
