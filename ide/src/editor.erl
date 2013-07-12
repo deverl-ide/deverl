@@ -116,6 +116,7 @@ init(Config) ->
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, stc_change, [{userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, stc_savepointreached, [{userData, Sb}]),
+  wxStyledTextCtrl:connect(Editor, left_down, [{skip, true}, {userData, Sb}]),
   
   %% Load contents if any
   case File of
@@ -174,6 +175,11 @@ handle_cast(Msg, State) ->
     {noreply,State}.
     
 
+handle_event(_A=#wx{event=#wxMouse{type=left_down}, userData=Sb}, 
+             State = #state{text_ctrl=Editor}) ->
+    update_sb_line(Editor, Sb),
+    {noreply, State};
+    
 handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{text_ctrl=Editor}) ->
     {noreply, State};
 
@@ -187,8 +193,7 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointleft}=_E}, State) ->
 handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, 
              State=#state{text_ctrl=Editor, file_data=#file{filename=Fn, path=Path}}) ->               
     %% Update status bar line/col position
-    {X,Y} = get_x_y(Editor),
-    ide_status_bar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
+    update_sb_line(Editor, Sb),
     %% Update margin width if required
     adjust_margin_width(Editor),  
     {noreply, State#state{file_data=#file{modified=true, filename=Fn, path=Path}}};
@@ -262,6 +267,15 @@ update_styles(Editor) ->
 
   [SetStyle(Style) || Style <- Styles],
   ok.
+
+
+%% =====================================================================  
+%% @doc Update status bar line/col position
+%% @private
+
+update_sb_line(Editor, Sb) ->
+  {X,Y} = get_x_y(Editor),
+  ide_status_bar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])).
 
 
 %% =====================================================================  
