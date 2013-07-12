@@ -46,7 +46,7 @@
 %% @doc Start a new editor process
 
 start(Config) ->
-  wx_object:start(?MODULE, Config, []).
+  wx_object:start({local,?MODULE},?MODULE, Config, []).
 
 
 %% =====================================================================

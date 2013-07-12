@@ -80,9 +80,6 @@ init(Options) ->
   wx:new(Options),
   process_flag(trap_exit, true),
   
-  %% Start the port
-  port:start(),
-
   Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
   wxFrame:connect(Frame, close_window),
   wxFrame:setMinSize(Frame, {300,200}),
@@ -298,6 +295,8 @@ create_utils(Parent) ->
   wxPanel:setSizer(UtilPanel, UtilSizer),
   
   Console = ide_shell:new([{parent, Utils}]),
+  %% Start the port that communicates with the external ERTs
+  port:start(),
   wxNotebook:addPage(Utils, Console, "Console", []),
 
   Pman = wxPanel:new(Utils, []),

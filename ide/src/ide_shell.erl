@@ -39,7 +39,7 @@ init(Config) ->
                                           {proportion, 1}]),
 		
   % Connect listener to text box	
-	wxTextCtrl:connect(ShellTextBox, char, [{skip, true}]),
+	wxTextCtrl:connect(ShellTextBox, char, []),
 	
 	
 	{Panel, #state{win=Panel, 
@@ -60,9 +60,6 @@ handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
     {noreply,State}.
 
-handle_call(shutdown, _From, State=#state{win=Panel}) ->
-    wxPanel:destroy(Panel),
-    {stop, normal, ok, State};
 handle_call(text_ctrl, _From, State) ->
     {reply,{State#state.wx_env,State#state.textctrl},State};
 handle_call(Msg, _From, State) ->
@@ -81,28 +78,29 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame, input=Input}) ->
 %% Deal with an ENTER keypress immediately following a period (.)
 handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, 
              State = #state{win=Frame, textctrl = TextCtrl, input = Input, lastchar = 46}) ->  %% Enter & Full stop
-    PromptCount = State#state.promptcount + 1,
-    call_parser(Input), %% Input contains all unparsed input
-    {noreply, State#state{input=[], lastchar=13, promptcount=PromptCount}};
+  PromptCount = State#state.promptcount + 1,
+  call_parser(Input), %% Input contains all unparsed input
+  {noreply, State#state{input=[], lastchar=13, promptcount=PromptCount}};
     
 %% Deal with ENTER
 handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-    wxTextCtrl:writeText(TextCtrl, get_prompt(State#state.promptcount)),
-    {noreply, State#state{input=Input++"\n"}};
+  wxTextCtrl:writeText(TextCtrl, get_prompt(State#state.promptcount)),
+  {noreply, State#state{input=Input++"\n"}};
     
 %% Now just deal with any char
 handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) ->
   % Update the state
-    NewInput = Input ++ [KeyCode],
-    wxTextCtrl:writeText(TextCtrl, [KeyCode]),
-    wxTextCtrl:setInsertionPoint(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)),
-    {noreply, State#state{input=NewInput, lastchar=KeyCode}}.
+  NewInput = Input ++ [KeyCode], %% !!!! REVERSE THIS LIST !!!!!!
+  wxTextCtrl:writeText(TextCtrl, [KeyCode]),  
+  wxTextCtrl:setInsertionPoint(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)),
+  {noreply, State#state{input=NewInput, lastchar=KeyCode}}.
     
 code_change(_, _, State) ->
-    {stop, not_yet_implemented, State}.
+  {stop, not_yet_implemented, State}.
 
 terminate(_Reason, _State) ->
-    wx:destroy().
+  io:format("TERMINATIN SHELL~n"),
+  ok.
 
 
 %% =====================================================================
