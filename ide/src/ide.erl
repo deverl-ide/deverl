@@ -31,7 +31,7 @@
                 env,                                           %% The wx environment
                 workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 utilities,                                     %% The utilities pane
-                test_pane,                                     %% The test pane
+                left_pane,                                     %% The test pane
                 workspace_manager,                             %% Tabbed UI manager for editors
                 sash_v :: wxSpliiterWindow:wxSplitterWindow(), %% The vertical splitter
                 sash_h :: wxSpliiterWindow:wxSplitterWindow(), %% The horizontal splitter
@@ -117,17 +117,13 @@ init(Options) ->
   % wxAuiPaneInfo:name(EditorWindowPaneInfo, "EditorPane"),
   {Workspace, TabId, Font} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
   
-  %% The left (test case) window
-  TestWindow = wxPanel:new(SplitterLeftRight),
-  TestSizer = wxBoxSizer:new(?wxVERTICAL),
-  wxPanel:setSizer(TestWindow, TestSizer),
-  TestT = wxTextCtrl:new(TestWindow, 8001, [{style, ?wxTE_MULTILINE}]), 
-  wxSizer:add(TestSizer, TestT, [{flag, ?wxEXPAND}, {proportion, 1}]),
+  %% The left window
+  LeftWindow = create_left_window(SplitterLeftRight),
   
   %% The bottom pane/utility window
   Utilities = create_utils(SplitterTopBottom),  
                                      
-  wxSplitterWindow:splitVertically(SplitterLeftRight, TestWindow, Workspace,
+  wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, Workspace,
 		         [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
              
   wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
@@ -147,7 +143,7 @@ init(Options) ->
   State = #state{win=Frame},
   {Frame, State#state{workspace=Workspace, 
                       workspace_manager=Manager,
-                      test_pane=TestWindow,
+                      left_pane=LeftWindow,
                       utilities=Utilities,
                       status_bar=StatusBar,
                       sash_v_pos=?SASH_VERT_DEFAULT_POS,
@@ -187,7 +183,7 @@ handle_call(splitter, _From, State) ->
              State#state.sash_v_pos, 
              State#state.sash_h_pos,
              State#state.workspace,
-             State#state.test_pane,
+             State#state.left_pane,
              State#state.utilities}, State};
 %% @doc Return the workspace
 handle_call(workspace, _From, State) ->
@@ -301,8 +297,9 @@ create_utils(Parent) ->
   Console = ide_shell:new([{parent, Utils}]),
   wxNotebook:addPage(Utils, Console, "Console", []),
 
-  Pman = wxPanel:new(Utils, []),
-  wxNotebook:addPage(Utils, Pman, "Process Manager", []),
+  % Pman = wxPanel:new(Utils, []),
+  Pman = observer_pro_wx:start_link(Utils, UtilPanel),
+  wxNotebook:addPage(Utils, Pman, "Processes", []),
 
   Dialyser = wxPanel:new(Utils, []),
   wxNotebook:addPage(Utils, Dialyser, "Dialyser", []),
@@ -735,3 +732,26 @@ toggle_pane(PaneType) ->
 			end
 	end,
 	ok. 
+
+
+%% =====================================================================
+%% @doc 
+
+create_left_window(Parent) ->
+  MainPanel = wxPanel:new(Parent),
+  Sizer = wxBoxSizer:new(?wxVERTICAL),
+  wxPanel:setSizer(MainPanel, Sizer),
+  % 
+  % Tabs = wxPanel:new(MainPanel),
+  % Sb = wxBoxSizer:new(?wxHORIZONTAL),
+  % wxPanel:setSizer(Tabs, Sb),
+  %   
+  % wxSizer:add(Sizer, Tabs),  
+  % 
+  Tree = wxGenericDirCtrl:new(MainPanel, [{dir, "/usr"}, 
+                                % {size, {200, 400}},
+                                {style, ?wxDIRCTRL_SHOW_FILTERS}]),
+  %                               
+  wxSizer:add(Sizer, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
+  MainPanel.
+  
