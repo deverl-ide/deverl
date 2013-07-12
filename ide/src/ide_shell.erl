@@ -4,13 +4,13 @@
 -export([load_response/1]).
 
 -export([new/1,
-  init/1, 
-  terminate/2, 
-  code_change/3, 
-	handle_info/2, 
-  handle_call/3, 
-  handle_cast/2, 
-  handle_event/2]).
+		 init/1, 
+		 terminate/2, 
+		 code_change/3, 
+		 handle_info/2, 
+		 handle_call/3, 
+		 handle_cast/2, 
+		 handle_event/2]).
 
 -behaviour(wx_object).
 
@@ -71,7 +71,7 @@ handle_cast(Msg, State) ->
     {noreply,State}.
 
 %% This is where events are handled %%
-handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame, input=Input}) ->
+handle_event(#wx{event=#wxClose{}}, State=#state{win=Frame, input=Input}) ->
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State};
 
@@ -86,9 +86,47 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=13}},
 handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
   wxTextCtrl:writeText(TextCtrl, get_prompt(State#state.promptcount)),
   {noreply, State#state{input=Input++"\n"}};
+
     
+%% Deal with BACKSPACE
+handle_event(#wx{event=#wxKey{type=char, keyCode=8}}, State=#state{textctrl = TextCtrl, input = Input, promptcount = PromptCount}) ->
+	Prompt = integer_to_list(PromptCount),
+	{_, X, Y} = wxTextCtrl:positionToXY(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)),
+	case length(Prompt)+2 =:= X of
+		true ->
+			{noreply, State};
+		false ->
+			LastPos = wxTextCtrl:getLastPosition(TextCtrl),
+			wxTextCtrl:remove(TextCtrl, LastPos-1, LastPos),
+			wxTextCtrl:setInsertionPointEnd(TextCtrl),
+			LastChar = wxTextCtrl:getLastPosition(TextCtrl),
+			
+			NewInput = lists:delete(lists:last(Input), Input),
+			{noreply, State#state{input=NewInput ,lastchar=LastChar}}
+	end;
+    
+%% Deal with DELETE
+%handle_event(#wx{event=#wxKey{type=char, keyCode=127}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+%    {noreply, State};
+    
+%% Deal with UP ARROW
+%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_UP}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+%    {noreply, State};
+    
+%% Deal with DOWN ARROW
+%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_DOWN}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+%    {noreply, State};
+    
+%% Deal with LEFT ARROW
+%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_LEFT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+%    {noreply, State};
+    
+%% Deal with RIGHT ARROW
+%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+%    {noreply, State};
+
 %% Now just deal with any char
-handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State = #state{win=Frame, textctrl = TextCtrl, input = Input}) ->
+handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) ->
   % Update the state
   NewInput = Input ++ [KeyCode], %% !!!! REVERSE THIS LIST !!!!!!
   wxTextCtrl:writeText(TextCtrl, [KeyCode]),  
@@ -125,3 +163,11 @@ load_response(Response) ->
 get_prompt(Count) ->
     I = integer_to_list(Count),
     "\n"++I++?PROMPT.
+
+
+%% =====================================================================
+%% @doc
+    
+get_prompt_length(Count) ->
+    I = integer_to_list(Count),
+    length(I) + 2.
