@@ -22,7 +22,7 @@
 -record(state, {win, textctrl, input, lastchar, promptcount, wx_env}).
 
 new(Config) ->
-	wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
+	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 	
 %% Initialise the server's state
 init(Config) ->
@@ -40,7 +40,7 @@ init(Config) ->
                                           {proportion, 1}]),
 		
   % Connect listener to text box	
-	wxTextCtrl:connect(ShellTextBox, char),
+	wxTextCtrl:connect(ShellTextBox, char, [{skip, true}]),
 	
 	
 	{Panel, #state{win=Panel, 
@@ -61,6 +61,9 @@ handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
     {noreply,State}.
 
+handle_call(shutdown, _From, State=#state{win=Panel}) ->
+    wxPanel:destroy(Panel),
+    {stop, normal, ok, State};
 handle_call(text_ctrl, _From, State) ->
     {reply,{State#state.wx_env,State#state.textctrl},State};
 handle_call(Msg, _From, State) ->
