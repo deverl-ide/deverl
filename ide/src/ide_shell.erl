@@ -106,31 +106,33 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=8}}, State=#state{textctrl = Te
 	end;
     
 %% Deal with DELETE
-%handle_event(#wx{event=#wxKey{type=char, keyCode=127}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-%    {noreply, State};
+handle_event(#wx{event=#wxKey{type=char, keyCode=127}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+    {noreply, State};
     
 %% Deal with UP ARROW
-%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_UP}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-%    {noreply, State};
+handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_UP}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+    {noreply, State};
     
 %% Deal with DOWN ARROW
-%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_DOWN}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-%    {noreply, State};
+handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_DOWN}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+    {noreply, State};
     
 %% Deal with LEFT ARROW
-%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_LEFT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-%    {noreply, State};
+handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_LEFT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+	wxTextCtrl:setInsertionPoint(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)-1),
+    {noreply, State};
     
 %% Deal with RIGHT ARROW
-%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-%    {noreply, State};
+handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+	wxTextCtrl:setInsertionPoint(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)+1),
+    {noreply, State};
 
 %% Now just deal with any char
 handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) ->
   % Update the state
   NewInput = Input ++ [KeyCode], %% !!!! REVERSE THIS LIST !!!!!!
-  wxTextCtrl:writeText(TextCtrl, [KeyCode]),  
   wxTextCtrl:setInsertionPoint(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)),
+  wxTextCtrl:writeText(TextCtrl, [KeyCode]),  
   {noreply, State#state{input=NewInput, lastchar=KeyCode}}.
     
 code_change(_, _, State) ->
