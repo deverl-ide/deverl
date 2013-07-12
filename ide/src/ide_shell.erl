@@ -3,15 +3,14 @@
 
 -export([load_response/1]).
 
--export([
-	new/1,
-	init/1, 
-	terminate/2, 
-	code_change/3, 
-	handle_info/2, 
-	handle_call/3, 
-	handle_cast/2, 
-	handle_event/2]).
+-export([new/1,
+		 init/1, 
+		 terminate/2, 
+		 code_change/3, 
+		 handle_info/2, 
+		 handle_call/3, 
+		 handle_cast/2, 
+		 handle_event/2]).
 
 -behaviour(wx_object).
 
@@ -40,7 +39,7 @@ init(Config) ->
                                           {proportion, 1}]),
 		
   % Connect listener to text box	
-	wxTextCtrl:connect(ShellTextBox, char, [{skip, true}]),
+	wxTextCtrl:connect(ShellTextBox, char, []),
 	
 	
 	{Panel, #state{win=Panel, 
@@ -93,18 +92,14 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=13}}, State=#state{win=Frame, t
     
 %% Deal with BACKSPACE
 handle_event(#wx{event=#wxKey{type=char, keyCode=8}}, State=#state{textctrl = TextCtrl, input = Input, promptcount = PromptCount}) ->
-
-	% get col of cursor
-	% length of prompt
-	% 
-
 	Prompt = integer_to_list(PromptCount),
-	{_, Pos, _} = wxTextCtrl:positionToXY(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)),
-	case length(Prompt)+3 =:= Pos of
+	{_, X, Y} = wxTextCtrl:positionToXY(TextCtrl, wxTextCtrl:getLastPosition(TextCtrl)),
+	case length(Prompt)+2 =:= X of
 		true ->
 			{noreply, State};
 		false ->
-			wxTextCtrl:remove(TextCtrl, Pos-1, Pos),
+			LastPos = wxTextCtrl:getLastPosition(TextCtrl),
+			wxTextCtrl:remove(TextCtrl, LastPos-1, LastPos),
 			wxTextCtrl:setInsertionPointEnd(TextCtrl),
 			LastChar = wxTextCtrl:getLastPosition(TextCtrl),
 			
@@ -113,24 +108,24 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=8}}, State=#state{textctrl = Te
 	end;
     
 %% Deal with DELETE
-handle_event(#wx{event=#wxKey{type=char, keyCode=127}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-    ok;
+%handle_event(#wx{event=#wxKey{type=char, keyCode=127}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+%    {noreply, State};
     
 %% Deal with UP ARROW
-handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_UP}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-    ok;
+%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_UP}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+%    {noreply, State};
     
 %% Deal with DOWN ARROW
-handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_DOWN}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-    ok;
+%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_DOWN}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+%    {noreply, State};
     
 %% Deal with LEFT ARROW
-handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_LEFT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-    ok;
+%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_LEFT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+%    {noreply, State};
     
 %% Deal with RIGHT ARROW
-handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-    ok;
+%handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
+%    {noreply, State};
 
 %% Now just deal with any char
 handle_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) ->
