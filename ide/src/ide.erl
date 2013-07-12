@@ -272,6 +272,9 @@ code_change(_, _, State) ->
 
 
 terminate(_Reason, _State) ->
+    %% Unregister any pids/ports that dont close automatically
+    %% This is a bit nasty - they should close automatically
+    erlang:unregister(port),
     wx:destroy().
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Internals %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -297,8 +300,7 @@ create_utils(Parent) ->
   Console = ide_shell:new([{parent, Utils}]),
   wxNotebook:addPage(Utils, Console, "Console", []),
 
-  % Pman = wxPanel:new(Utils, []),
-  Pman = observer_pro_wx:start_link(Utils, UtilPanel),
+  Pman = wxPanel:new(Utils, []),
   wxNotebook:addPage(Utils, Pman, "Processes", []),
 
   Dialyser = wxPanel:new(Utils, []),
@@ -741,15 +743,17 @@ create_left_window(Parent) ->
   MainPanel = wxPanel:new(Parent),
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(MainPanel, Sizer),
-  % 
-  % Tabs = wxPanel:new(MainPanel),
-  % Sb = wxBoxSizer:new(?wxHORIZONTAL),
-  % wxPanel:setSizer(Tabs, Sb),
-  %   
-  % wxSizer:add(Sizer, Tabs),  
-  % 
+  
+  
+  Tabs = wxPanel:new(MainPanel, [{size, {-1, 40}}]),
+  Sb = wxBoxSizer:new(?wxHORIZONTAL),
+  wxPanel:setSizer(Tabs, Sb),
+  
+    
+  wxSizer:add(Sizer, Tabs, [{flag, ?wxEXPAND}, {proportion, 0}]),  
+  
+  
   Tree = wxGenericDirCtrl:new(MainPanel, [{dir, "/usr"}, 
-                                % {size, {200, 400}},
                                 {style, ?wxDIRCTRL_SHOW_FILTERS}]),
   %                               
   wxSizer:add(Sizer, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
