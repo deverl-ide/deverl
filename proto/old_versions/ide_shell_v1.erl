@@ -1,3 +1,4 @@
+
 -module(ide_shell).
 -include_lib("wx/include/wx.hrl").
 
@@ -39,10 +40,7 @@ init(Config) ->
                                           {proportion, 1}]),
 		
   % Connect listener to text box	
-	wxTextCtrl:connect(ShellTextBox, char, [{callback, fun(E,O) ->
-                                                       handle_char_event(E,O)
-                                                     end
-                                                     }]),
+	wxTextCtrl:connect(ShellTextBox, char, []),
 	
 	
 	{Panel, #state{win=Panel, 
@@ -114,7 +112,6 @@ handle_event(#wx{event=#wxKey{type=char, keyCode=127}}, State=#state{win=Frame, 
     
 %% Deal with UP ARROW
 handle_event(#wx{event=#wxKey{type=char, keyCode=?WXK_UP}}, State=#state{win=Frame, textctrl = TextCtrl, input = Input}) -> 
-    call_parser([?WXK_UP]),
     {noreply, State};
     
 %% Deal with DOWN ARROW
@@ -142,34 +139,9 @@ code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, _State) ->
-  io:format("TERMINATION SHELL~n"),
+  io:format("TERMINATIN SHELL~n"),
   ok.
 
-
-%% =====================================================================
-%% @doc
-
-%% Arrow keys
-handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_UP}},O) ->
-  io:format("Char Event: ~p~n",[O]);
-handle_char_event(#wx{event=#wxKey{type=char, keyCode=?WXK_DOWN}},O) ->
-  io:format("Char Event: ~p~n",[O]);
-handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_LEFT}},O) ->
-  io:format("Left Event: ~p~n",[O]),
-  {_,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
-  case get_prompt_length of
-  io:format("Position: ~p~n", [Pos]),
-  wxEvent:skip(O);
-handle_char_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}},O) ->
-  io:format("Char Event: ~p~n",[O]),
-  wxEvent:skip(O);
-  
-
-handle_char_event(#wx{event=#wxKey{type=char, keyCode=KeyCode}},O) ->
-  io:format("Char Event: ~p~n",[O]),
-  wxEvent:skip(O);
-handle_char_event(E,O) ->
-  io:format("Event: ~p~n Object: ~p~n", [E,O]).
 
 %% =====================================================================
 %% @doc
@@ -201,26 +173,3 @@ get_prompt(Count) ->
 get_prompt_length(Count) ->
     I = integer_to_list(Count),
     length(I) + 2.
-
-
-%% =====================================================================
-%% @doc
-
-prompt_length(Line) ->
-	prompt_length(Line, 0).
-prompt_length([Char|String], Count) ->
-	case Char of
-		62 -> % the prompt char
-			Count + 1;
-		_ -> 
-			prompt_length(String, Count + 1)
-	end.
-
-
-
-
-
-
-
-
-
