@@ -249,8 +249,10 @@ handle_event(_W = #wx{event = #wxAuiManager{type = aui_render} = _E}, State) ->
     
 handle_event(#wx{obj = _Workspace,
 		 event = #wxAuiNotebook{type = command_auinotebook_page_changed,
-					selection = _Sel}}, State) ->
-    io:format("changed page~n"),
+					selection = Index}}, State) ->
+    %% Make sure editor knows (needs to update sb)
+    io:format("Page changed~n"),
+    editor:selected(get_editor_pid(Index, State#state.workspace, State#state.editor_pids), State#state.status_bar),
     {noreply, State};
     
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
@@ -430,7 +432,7 @@ get_editor_pid(Index, Workspace, PidTable) ->
             
 get_selected_editor() ->
   {Workspace,_,_,_} = wx_object:call(?MODULE, workspace), 
-  Index = wxAuiNotebook:getSelection(Workspace),   %% Get the index of the tab
+  Index = wxAuiNotebook:getSelection(Workspace), %% Get the index of the tab
   Valid = fun(-1) -> %% no editor instance
             {error, no_open_editor};
           (_) ->
@@ -453,7 +455,6 @@ get_all_editors() ->
 	get_all_editors(Workspace, Count - 1, []).
 
 get_all_editors(_, -1, Acc) -> 
-	io:format("LIST: ~p~n", [Acc]),
   Acc;
 
 get_all_editors(Workspace, Count, Acc) ->
@@ -660,6 +661,7 @@ add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
 
 %% =====================================================================
 %% @doc Change the font style across all open editors
+ 
  update_styles(Frame) ->
    {_,_,CurrentFont,_} = wx_object:call(?MODULE, workspace), 
    %% Display the system font picker

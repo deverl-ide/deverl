@@ -51,7 +51,7 @@ new(Frame) ->
     start(Frame).
 
 start(Config) ->
-    wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
+    wx_object:start(?MODULE, Config, []).
 
 init(Config) ->
     Frame = proplists:get_value(parent, Config),

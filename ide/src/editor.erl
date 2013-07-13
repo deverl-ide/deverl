@@ -7,7 +7,8 @@
   save_status/1, 
   save_complete/3,
   get_text/1,
-  get_id/1]).
+  get_id/1,
+  selected/2]).
 
 -export([start/1,
   init/1, 
@@ -46,7 +47,7 @@
 %% @doc Start a new editor process
 
 start(Config) ->
-  wx_object:start({local,?MODULE},?MODULE, Config, []).
+  wx_object:start(?MODULE, Config, []).
 
 
 %% =====================================================================
@@ -267,6 +268,14 @@ update_styles(Editor) ->
 
   [SetStyle(Style) || Style <- Styles],
   ok.
+  
+  
+%% =====================================================================  
+%% @doc Notify the editor it has been selected
+
+selected(EditorPid, Sb) ->
+  Editor = wx_object:call(EditorPid, text_ctrl),
+  update_sb_line(Editor, Sb).
 
 
 %% =====================================================================  

@@ -96,7 +96,8 @@ handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=13}}, O) ->
   case length(Input) of
     0 -> %% single enter key pressed, nothing else
       %% Note we have manually insert the prompt because sending a single newline '\n'
-      %% to the port results in no response we can add.
+      %% to the port results in no response. It is the terminal that redraws the prompt
+      %% and not the ERTS. Same goes with history (up arrow).
       %% The port will only respond through stdout when a '.' is received.
       prompt_2_console(Console, LineText),
       call_parser(Input), %% send anyway, so any error contains the correct position integer
