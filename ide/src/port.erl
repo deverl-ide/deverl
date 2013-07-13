@@ -7,7 +7,7 @@
 %% @doc 
 
 start()->
-    register(port, spawn(?MODULE, read, [])).
+    register(?MODULE, spawn(?MODULE, read, [])).
 
 
 %% =====================================================================
@@ -24,8 +24,8 @@ read() ->
 do_read(Port) ->
   receive
     {Port,{data,Data}} ->
-      % io:format("Data:~p~n",[Data]);
-      parser:parse_response(Data);
+      io:format("Data:~p~n",[Data]);
+      % parser:parse_response(Data);
     {call, Msg} ->
       port_command(Port, Msg)
   end,
@@ -36,4 +36,4 @@ do_read(Port) ->
 %% @doc
 
 call_port(Message) ->
-  port ! {call, Message}.
+  ?MODULE ! {call, Message}.
