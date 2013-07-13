@@ -125,7 +125,15 @@ handle_char_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}},O) ->
   
 %% Backspace
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=8}},O) -> 
-  prompt_limit(O, Console);
+  %prompt_limit(O, Console);
+  {_,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
+  LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
+  PromptLen = get_prompt_length(wxTextCtrl:getLineText(Console, LastLine)),
+  case (X > PromptLen+1) and (Y =:= LastLine) of
+    true -> wxEvent:skip(O);
+    false ->
+      wxTextCtrl:setInsertionPointEnd(Console)
+  end;
   
 %% CHAR
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=KeyCode}},O) -> 
