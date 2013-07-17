@@ -12,18 +12,18 @@
 
 %% API         
 -export([add_editor/0, 
-  add_editor/1, 
-  close_selected_editor/0, 
-  close_all_editors/0,
-  toggle_pane/1, 
-	get_selected_editor/0, 
-  get_all_editors/0, 
-  update_styles/1, 
-  save_current_file/0,
-  save_new/0, 
-  save_all/0,
-  open_file/1,
-	open_dialog/1]).
+		 add_editor/1, 
+		 close_selected_editor/0, 
+		 close_all_editors/0,
+		 toggle_pane/1, 
+		 get_selected_editor/0, 
+		 get_all_editors/0, 
+		 update_styles/1, 
+		 save_current_file/0,
+		 save_new/0, 
+	   	 save_all/0,
+		 open_file/1,
+		 open_dialog/1]).
 
 
 %% The record containing the State.
@@ -53,7 +53,7 @@
 -define(SASH_VERTICAL, 1).
 -define(SASH_HORIZONTAL, 2).
 -define(SASH_VERT_DEFAULT_POS, 200).
--define(SASH_HOR_DEFAULT_POS, -200).
+-define(SASH_HOR_DEFAULT_POS, -250).
 
 -define(ID_DIALOG, 9000).
 -define(ID_DIALOG_TEXT, 9001).
@@ -130,10 +130,10 @@ init(Options) ->
   wxFrame:center(Frame),
   wxFrame:show(Frame),
   
-  wxSplitterWindow:setSashGravity(SplitterTopBottom,   1.0), %% Only the top window grows on resize
-  wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0),   %% Only the right window grows
+  wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
+  wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
   
-  wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed, [{userData, SplitterLeftRight}]),
+  wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
 
@@ -175,8 +175,8 @@ handle_call(shutdown, _From, State=#state{win=Panel, workspace_manager=Manager})
     {stop, normal, ok, State};
 %% @doc Get the frames sash positions
 handle_call(splitter, _From, State) ->
-	  {reply, {State#state.sash_v,
-             State#state.sash_h,
+	{reply, {State#state.sash_v,
+			 State#state.sash_h,
              State#state.sash_v_pos, 
              State#state.sash_h_pos,
              State#state.workspace,
@@ -288,7 +288,6 @@ terminate(_Reason, _State) ->
   Result :: wxPanel:wxPanel().
 
 create_utils(Parent) ->
-    
   UtilPanel = wxPanel:new(Parent, []),
   
   Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
@@ -745,18 +744,15 @@ create_left_window(Parent) ->
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(MainPanel, Sizer),
   
-  
   Tabs = wxPanel:new(MainPanel, [{size, {-1, 40}}]),
   Sb = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(Tabs, Sb),
-  
     
   wxSizer:add(Sizer, Tabs, [{flag, ?wxEXPAND}, {proportion, 0}]),  
   
-  
   Tree = wxGenericDirCtrl:new(MainPanel, [{dir, "/usr"}, 
                                 {style, ?wxDIRCTRL_SHOW_FILTERS}]),
-  %                               
+	
   wxSizer:add(Sizer, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
   MainPanel.
   
