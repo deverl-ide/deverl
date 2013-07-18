@@ -15,14 +15,14 @@ start()->
 %% @doc
 
 parse_input(Message) ->
-  M = Message ++ io_lib:nl(),
-  port:call_port(M).
+	M = Message ++ io_lib:nl(),
+	port:call_port(M).
 
 
 %% =====================================================================
 %% @doc
 
 parse_response(Response) ->
-  M = Response,
-  ide_shell:load_response(M).
+	M = Response,
+	ide_shell:load_response(M).
   

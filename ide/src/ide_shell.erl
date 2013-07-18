@@ -127,67 +127,52 @@ handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=13}},O) ->
 	
 %% Arrow keys
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_UP}},_O) ->
-	LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
-	LineText = wxTextCtrl:getLineText(Console, LastLine),
-	Input = string:substr(LineText, get_prompt_length(LineText) + 2),
+	SuccessFun = fun() -> ok end,
+	FailFun    = fun() -> wxTextCtrl:setInsertionPointEnd(Console) end,
+	check_cursor(Console, SuccessFun, FailFun, 0),
 	case cmd_index() of
 		0 ->
 			ok;
 		_ ->
-			cycle_cmd_text(Console, Input, -1)
+			cycle_cmd_text(Console, -1)
 	end;
+	
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_DOWN}},_O) ->
-	LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
-	LineText = wxTextCtrl:getLineText(Console, LastLine),
-	Input = string:substr(LineText, get_prompt_length(LineText) + 2),
-	Limit = length(cmd_history()) - 1,
+	SuccessFun = fun() -> ok end,
+	FailFun    = fun() -> wxTextCtrl:setInsertionPointEnd(Console) end,
+	check_cursor(Console, SuccessFun, FailFun, 0),
+	LastCmd = length(cmd_history()) - 1,
+	Limit = LastCmd + 1,
 	case cmd_index() of
+		LastCmd ->
+			clear_cmd_text(Console),
+			update_cmd_index(cmd_index()+1);
 		Limit ->
 			ok;
 		_ ->
-			cycle_cmd_text(Console, Input, 1)
+			cycle_cmd_text(Console, 1)
 	end;
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_LEFT}},O) ->
-	{_,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
-	LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
-	PromptLen = get_prompt_length(wxTextCtrl:getLineText(Console, LastLine)),
-	case (X > PromptLen + 1) and (Y =:= LastLine) of
-		true -> 
-			wxEvent:skip(O);
-		false ->
-			ok
-	end;
-handle_char_event(#wx{event=#wxKey{type=char, keyCode=?WXK_RIGHT}},O) ->
-	wxEvent:skip(O);
+	SuccessFun = fun() -> wxEvent:skip(O) end,
+	FailFun    = fun() -> ok end,
+	check_cursor(Console, SuccessFun, FailFun, 1);
+
+handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_RIGHT}},O) ->
+	SuccessFun = fun() -> wxEvent:skip(O) end,
+	FailFun    = fun() -> ok end,
+	check_cursor(Console, SuccessFun, FailFun, 0);
 	
 %% Backspace
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=8}},O) -> 
-	{_,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
-	LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
-	PromptLen = get_prompt_length(wxTextCtrl:getLineText(Console, LastLine)),
-	case (X > PromptLen + 1) and (Y =:= LastLine) of
-		true -> 
-			{CommandList} = wx_object:call(?MODULE, command_history),
-			wx_object:call(?MODULE, {update_cmd_index, length(CommandList)}),
-			wxEvent:skip(O);
-		false ->
-			wxTextCtrl:setInsertionPointEnd(Console)
-	end;
+	SuccessFun = fun() -> wxEvent:skip(O) end,
+	FailFun    = fun() -> ok end,
+	check_cursor(Console, SuccessFun, FailFun, 1);
 	
 %% CHAR
-handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=KeyCode}},O) -> 
-	{_,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
-	LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
-	PromptLen = get_prompt_length(wxTextCtrl:getLineText(Console, LastLine)),
-	case (X > PromptLen) and (Y =:= LastLine) of
-		true -> 
-			ok;
-		false ->
-			wxTextCtrl:setInsertionPointEnd(Console)
-	end,
-	{CommandList} = wx_object:call(?MODULE, command_history),
-	wx_object:call(?MODULE, {update_cmd_index, length(CommandList)}),
-	wxEvent:skip(O);
+handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=_KeyCode}},O) -> 
+	SuccessFun = fun() -> wxEvent:skip(O) end,
+	FailFun    = fun() -> wxTextCtrl:setInsertionPointEnd(Console), wxEvent:skip(O) end,
+	check_cursor(Console, SuccessFun, FailFun, 0);
 	
 %% Catchall  
 handle_char_event(E,O) ->
@@ -216,7 +201,7 @@ prompt_or_not(N,Input,Console,LineText,Ev) when N>1 ->
 		true -> 
 			wxEvent:skip(Ev)
 	end;
-prompt_or_not(_,Input,_,_,Ev) ->
+prompt_or_not(_,_Input,_,_,Ev) ->
 	wxEvent:skip(Ev).
 	
 	
@@ -259,36 +244,51 @@ get_prompt_length([Char|String], Count) ->
 	
 	
 %% =====================================================================
-%% @doc Append to end of list iff last element not same as new element.
+%% @doc Append new command to end of command history iff last element not same as new element.
 
 add_cmd(Command) ->
 	CommandList = cmd_history(),
 	case length(CommandList) of
 		0 ->
 			update_cmd_history(CommandList, Command),
-			update_cmd_index(cmd_index()+1);
+			update_cmd_index(length(CommandList)+1);
 		_ ->
-			case Command =:= get_command(length(CommandList) - 1, CommandList) of
+			case Command =:= get_command(length(CommandList) - 1) of
 				true ->
-					ok;
+					update_cmd_index(length(CommandList));
 				false ->
 					update_cmd_history(CommandList, Command),
-					update_cmd_index(cmd_index()+1)
+					update_cmd_index(length(CommandList)+1)
 			end
 	end.
 	
 	
 %% =====================================================================
-%% @doc 
+%% @doc Cycle through command history by one entry.
 %% param Direction: -1 for prev cmd, +1 for next cmd.
 
-cycle_cmd_text(Console, Input, Direction) ->
+cycle_cmd_text(Console, Direction) ->
+	clear_cmd_text(Console), 
 	update_cmd_index(cmd_index() + Direction),
-	Command = get_command(cmd_index(), cmd_history()),
-	LastPos = wxTextCtrl:getLastPosition(Console),
-	wxTextCtrl:remove(Console, LastPos - length(Input), LastPos),
+	Command = get_command(cmd_index()),
 	wxTextCtrl:writeText(Console, Command).	
 	
+	
+%% =====================================================================
+%% @doc
+
+clear_cmd_text(Console) ->
+	LastPos = wxTextCtrl:getLastPosition(Console),
+	wxTextCtrl:remove(Console, LastPos - length(get_input(Console)), LastPos).
+	
+	
+%% =====================================================================
+%% @doc
+
+get_input(Console) ->
+	LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
+	LineText = wxTextCtrl:getLineText(Console, LastLine),
+	string:substr(LineText, get_prompt_length(LineText) + 2).
 
 %% =====================================================================
 %% @doc
@@ -304,26 +304,27 @@ cmd_index() ->
 cmd_history() ->
 	{CommandList} = wx_object:call(?MODULE, command_history),
 	CommandList.
-
-
+	
+	
 %% =====================================================================
 %% @doc
 
 update_cmd_index(NewIndex) ->
 	wx_object:call(?MODULE, {update_cmd_index, NewIndex}).
-
+	
+	
 %% =====================================================================
 %% @doc
 
 update_cmd_history(CommandList, Command) ->
 	wx_object:call(?MODULE, {update_cmd_history, CommandList ++ [Command]}).
-
-
+	
+	
 %% =====================================================================
-%% @doc 
+%% @doc Retrieve command from history based on indexed position.
 
-get_command(Index, List) ->
-	get_command(Index, List, 0).
+get_command(Index) ->
+	get_command(Index, cmd_history(), 0).
 get_command(Index, [H|T], Count) ->
 	case Index =:= Count of
 		true ->
@@ -331,10 +332,10 @@ get_command(Index, [H|T], Count) ->
 		false ->
 			get_command(Index, T, Count + 1)
 	end.	
-		
-		
+	
+	
 %% =====================================================================
-%% @doc Replace element at given index in a list.
+%% @doc Replace element at given index in a list. (Not yet used)
 
 replace(Index, Elem, List) ->
 	replace(Index, Elem, List, 0, []).
@@ -347,6 +348,20 @@ replace(Index, Elem, [H|T], Count, Acc) ->
 	end.
 	
 	
+%% =====================================================================
+%% @doc Check cursor is in valid position, and execute appropriate function.
+	
+check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
+	{_,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
+	LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
+	PromptLen = get_prompt_length(wxTextCtrl:getLineText(Console, LastLine)),
+	case (X > PromptLen + PromptOffset) and (Y =:= LastLine) of
+		true -> 
+			SuccessFun();
+		false ->
+			FailFun()
+	end.
 	
 	
-
+	
+	

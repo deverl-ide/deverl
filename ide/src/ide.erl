@@ -68,88 +68,88 @@ start() ->
   start([]).
   
 start(Args) ->
-  wx_object:start({local, ?MODULE}, ?MODULE, Args, [{debug, [log]}]).
-  %% Trap the error {error,{already_started,Pid()}} to prevent the app from 
-  %% being opened twice.
+	wx_object:start({local, ?MODULE}, ?MODULE, Args, [{debug, [log]}]).
+	%% Trap the error {error,{already_started,Pid()}} to prevent the app from 
+	%% being opened twice.
   
   
 %% =====================================================================
 %% @doc Initialise the IDE
 
 init(Options) ->
-  wx:new(Options),
-  process_flag(trap_exit, true),
+	wx:new(Options),
+	process_flag(trap_exit, true),
   
-  Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
-  wxFrame:connect(Frame, close_window),
-  wxFrame:setMinSize(Frame, {300,200}),
+	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
+	wxFrame:connect(Frame, close_window),
+	wxFrame:setMinSize(Frame, {300,200}),
   
-  FrameSizer = wxBoxSizer:new(?wxVERTICAL),
-  wxWindow:setSizer(Frame, FrameSizer),  
+	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
+	wxWindow:setSizer(Frame, FrameSizer),  
   
-  SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},{style, ?wxSP_NOBORDER}]),
-  SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, {style, ?wxSP_NOBORDER}]),
+	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},{style, ?wxSP_NOBORDER}]),
+	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, {style, ?wxSP_NOBORDER}]),
 
-  %% Following two lines, see platforms.txt <1> 
-  wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
-  wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
-  wxSplitterWindow:setSashGravity(SplitterTopBottom, 0.5),
-  wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
+	%% Following two lines, see platforms.txt <1> 
+	wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
+	wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
+	wxSplitterWindow:setSashGravity(SplitterTopBottom, 0.5),
+	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
 
-  wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
-  %% Status bar %%
-  StatusBar = ide_status_bar:new([{parent, Frame}]),
+	%% Status bar %%
+	StatusBar = ide_status_bar:new([{parent, Frame}]),
   
-  %% Menubar %%
-  ide_menu:new([{parent, Frame}, {sb, StatusBar}]),
+	%% Menubar %%
+	ide_menu:new([{parent, Frame}, {sb, StatusBar}]),
  
-  wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
+	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                       {proportion, 0}]),      
 
-  %% The workspace/text editors %%
-  Manager = wxAuiManager:new([{managed_wnd, Frame}]),
-  %% The centre pane/editor window
-  EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
-  % wxAuiPaneInfo:name(EditorWindowPaneInfo, "EditorPane"),
-  {Workspace, TabId, Font} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
+	%% The workspace/text editors %%
+	Manager = wxAuiManager:new([{managed_wnd, Frame}]),
+	%% The centre pane/editor window
+	EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
+	% wxAuiPaneInfo:name(EditorWindowPaneInfo, "EditorPane"),
+	{Workspace, TabId, Font} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
   
-  %% The left window
-  LeftWindow = create_left_window(SplitterLeftRight),
+	%% The left window
+	LeftWindow = create_left_window(SplitterLeftRight),
   
-  %% The bottom pane/utility window
-  Utilities = create_utils(SplitterTopBottom),  
+	%% The bottom pane/utility window
+	Utilities = create_utils(SplitterTopBottom),  
                                      
-  wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, Workspace,
-		         [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
+	wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, Workspace,
+									[{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
              
-  wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
-				     [{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
+	wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
+									[{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
              
-  wxSizer:layout(FrameSizer),
-  wxFrame:center(Frame),
-  wxFrame:show(Frame),
+	wxSizer:layout(FrameSizer),
+	wxFrame:center(Frame),
+	wxFrame:show(Frame),
   
-  wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
-  wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
+	wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
+	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
   
-  wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
-  wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
-  wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
+	wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
+	wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
+	wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
 
-  State = #state{win=Frame},
-  {Frame, State#state{workspace=Workspace, 
-                      workspace_manager=Manager,
-                      left_pane=LeftWindow,
-                      utilities=Utilities,
-                      status_bar=StatusBar,
-                      sash_v_pos=?SASH_VERT_DEFAULT_POS,
-                      sash_h_pos=?SASH_HOR_DEFAULT_POS,
-                      sash_v=SplitterLeftRight,
-                      sash_h=SplitterTopBottom,
-                      font=Font,
-                      editor_pids=TabId
-                      }}.
+	State = #state{win=Frame},
+	{Frame, State#state{workspace=Workspace, 
+						workspace_manager=Manager,
+						left_pane=LeftWindow,
+						utilities=Utilities,
+						status_bar=StatusBar,
+						sash_v_pos=?SASH_VERT_DEFAULT_POS,
+						sash_h_pos=?SASH_HOR_DEFAULT_POS,
+						sash_v=SplitterLeftRight,
+						sash_h=SplitterTopBottom,
+						font=Font,
+						editor_pids=TabId
+						}}.
 
 
 %% =====================================================================
@@ -207,38 +207,36 @@ handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
     {stop, normal, State};
     
 %% Vertical sash dragged
-handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
-             State) ->
+handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, State) ->
     Pos = wxSplitterWindow:getSashPosition(State#state.sash_v),
-    %% Don't save the pos if the sash is dragged to zero, as the sash will revert to the middle when shown again (on mac definitely, probably on all platforms)
+    %% Don't save the pos if the sash is dragged to zero, as the sash 
+    %% will revert to the middle when shown again (on mac definitely, 
+	%% probably on all platforms)
     if
-      Pos =:= 0 ->
-        NewPos = State#state.sash_v_pos;
-      true ->
-        NewPos = Pos
+		Pos =:= 0 ->
+			NewPos = State#state.sash_v_pos;
+		true ->
+			NewPos = Pos
     end,
     {noreply, State#state{sash_v_pos=NewPos}};
 
 %% Horizontal sash dragged
-handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, 
-             State) ->
+handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, State) ->
      Pos = wxSplitterWindow:getSashPosition(State#state.sash_h),
      if
-       Pos =:= 0 ->
-         NewPos = State#state.sash_h_pos;
-       true ->
-         NewPos = Pos
+		Pos =:= 0 ->
+			NewPos = State#state.sash_h_pos;
+		true ->
+			NewPos = Pos
      end,
      wxWindow:refresh(State#state.sash_v),
      wxWindow:update(State#state.sash_v),
      {noreply, State#state{sash_h_pos=NewPos}};
      
-handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_sash_pos_changing} = _E}, 
-             State) ->
+handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_sash_pos_changing} = _E}, State) ->
     io:format("Sash position changing ~n"),    
     {noreply, State};
-handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_doubleclicked} = _E}, 
-             State) ->
+handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_doubleclicked} = _E}, State) ->
     io:format("Sash double clicked ~n"),    
     {noreply, State};
     
@@ -247,9 +245,8 @@ handle_event(_W = #wx{event = #wxAuiManager{type = aui_render} = _E}, State) ->
     io:format("render:~n"),   
     {noreply, State};
     
-handle_event(#wx{obj = _Workspace,
-		 event = #wxAuiNotebook{type = command_auinotebook_page_changed,
-					selection = Index}}, State) ->
+handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinotebook_page_changed, 
+			selection = Index}}, State) ->
     %% Make sure editor knows (needs to update sb)
     io:format("Page changed~n"),
     editor:selected(get_editor_pid(Index, State#state.workspace, State#state.editor_pids), State#state.status_bar),
@@ -265,10 +262,8 @@ handle_event(Ev = #wx{}, State) ->
     io:format("aui event catchall: ~p\n", [Ev]),
     {noreply, State}.
 
-
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
-
 
 terminate(_Reason, _State) ->
     %% Unregister any pids/ports that dont close automatically
@@ -284,35 +279,35 @@ terminate(_Reason, _State) ->
 %% @private
 
 -spec create_utils(Parent) -> Result when
-  Parent :: wxWindow:wxWindow(),
-  Result :: wxPanel:wxPanel().
+	Parent :: wxWindow:wxWindow(),
+	Result :: wxPanel:wxPanel().
 
 create_utils(Parent) ->
-  UtilPanel = wxPanel:new(Parent, []),
+	UtilPanel = wxPanel:new(Parent, []),
   
-  Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
+	Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
   
-  UtilSizer = wxBoxSizer:new(?wxVERTICAL),
-  wxPanel:setSizer(UtilPanel, UtilSizer),
+	UtilSizer = wxBoxSizer:new(?wxVERTICAL),
+	wxPanel:setSizer(UtilPanel, UtilSizer),
   
-  Console = ide_shell:new([{parent, Utils}]),
-  %% Start the port that communicates with the external ERTs
-  port:start(),
-  wxNotebook:addPage(Utils, Console, "Console", []),
+	Console = ide_shell:new([{parent, Utils}]),
+	%% Start the port that communicates with the external ERTs
+	port:start(),
+	wxNotebook:addPage(Utils, Console, "Console", []),
 
-  Pman = wxPanel:new(Utils, []),
-  wxNotebook:addPage(Utils, Pman, "Processes", []),
+	Pman = wxPanel:new(Utils, []),
+	wxNotebook:addPage(Utils, Pman, "Processes", []),
 
-  Dialyser = wxPanel:new(Utils, []),
-  wxNotebook:addPage(Utils, Dialyser, "Dialyser", []),
+	Dialyser = wxPanel:new(Utils, []),
+	wxNotebook:addPage(Utils, Dialyser, "Dialyser", []),
   
-  Debugger = wxPanel:new(Utils, []),
-  wxNotebook:addPage(Utils, Debugger, "Debugger", []),
+	Debugger = wxPanel:new(Utils, []),
+	wxNotebook:addPage(Utils, Debugger, "Debugger", []),
   
-  wxSizer:addSpacer(UtilSizer, 1),
-  wxSizer:add(UtilSizer, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	wxSizer:addSpacer(UtilSizer, 1),
+	wxSizer:add(UtilSizer, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-  UtilPanel.
+	UtilPanel.
   
   
 %% =====================================================================
@@ -320,39 +315,38 @@ create_utils(Parent) ->
 %% @private  
 
 create_editor(Parent, Manager, Pane, Sb, Filename) ->
-  Style = (0
-     bor ?wxAUI_NB_TOP
-     bor ?wxAUI_NB_WINDOWLIST_BUTTON
-     bor ?wxAUI_NB_TAB_MOVE
-     bor ?wxAUI_NB_SCROLL_BUTTONS
-     bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
-    ),
+	Style = (0
+			bor ?wxAUI_NB_TOP
+			bor ?wxAUI_NB_WINDOWLIST_BUTTON
+			bor ?wxAUI_NB_TAB_MOVE
+			bor ?wxAUI_NB_SCROLL_BUTTONS
+			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
+			),
     
-  Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
-  Font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
+	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
+	Font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
   
-  Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
-                         {font, Font}]), %% Returns an editor instance inside a wxPanel
+	Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
+                          {font, Font}]), %% Returns an editor instance inside a wxPanel
   
-  TabId = ets:new(editors, [public]),
-  {_,Id,_,Pid} = Editor,
-  ets:insert(TabId,{Id, Pid}),
+	TabId = ets:new(editors, [public]),
+	{_,Id,_,Pid} = Editor,
+	ets:insert(TabId,{Id, Pid}),
 
-  wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
+	wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
   
-  wxAuiManager:addPane(Manager, Workspace, Pane),
+	wxAuiManager:addPane(Manager, Workspace, Pane),
   
-  Close = fun(_,O) ->
-      wxNotifyEvent:veto(O),
-      close_selected_editor()
-    end,
+	Close = fun(_,O) ->
+				wxNotifyEvent:veto(O),
+				close_selected_editor()
+			end,
   
-  wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
-  wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, 
-      [{callback,Close},{userData,TabId}]),
-  wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),   
+	wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
+	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,TabId}]),
+	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),   
     
-  {Workspace, TabId, Font}.
+	{Workspace, TabId, Font}.
   
   
 %% =====================================================================
@@ -372,31 +366,31 @@ add_editor(Workspace, Sb, Font, TabId) ->
 %% @doc Create a new editor instance in the notebook  
 
 add_editor() -> 
-  add_editor(?DEFAULT_TAB_LABEL).
+	add_editor(?DEFAULT_TAB_LABEL).
   
 %% @doc Create a new editor with specified filename
 add_editor(Filename) ->
-  {Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
-  add_editor(Workspace, Filename, Sb, Font, TabId),
-  ok.
+	{Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
+	add_editor(Workspace, Filename, Sb, Font, TabId),
+	ok.
   
 %% @private
 add_editor(Workspace, Filename, Sb, Font, TabId) ->
-  Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}]),
-  wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
-  {_,Id,_,Pid} = Editor,
-  ets:insert_new(TabId,{Id, Pid}),
-  ok.
-  
-%% @doc Create an editor from an existing file
-add_editor(Path, Filename, Contents) -> 
-	{Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
-	Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}, 
-                         {file, {Path, Filename, Contents}}]),
+	Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}]),
 	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
 	{_,Id,_,Pid} = Editor,
 	ets:insert_new(TabId,{Id, Pid}),
 	ok.
+  
+%% @doc Create an editor from an existing file
+add_editor(Path, Filename, Contents) -> 
+		{Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
+		Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}, 
+							   {file, {Path, Filename, Contents}}]),
+		wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
+		{_,Id,_,Pid} = Editor,
+		ets:insert_new(TabId,{Id, Pid}),
+		ok.
 
 	
 %% =====================================================================
@@ -407,37 +401,37 @@ add_editor(Path, Filename, Contents) ->
 	Result :: pid().  
 
 get_editor_pid(Index) ->
-  {Workspace,_,_,PidTable} = wx_object:call(?MODULE, workspace), 
-  get_editor_pid(Index, Workspace, PidTable).
+	{Workspace,_,_,PidTable} = wx_object:call(?MODULE, workspace), 
+	get_editor_pid(Index, Workspace, PidTable).
   
 -spec get_editor_pid(Index, Workspace, PidTable) -> Result when
 	Index :: integer(),
-  Workspace :: wxAuiNotebook:wxAuiNotebook(),
-  PidTable :: term(),
+	Workspace :: wxAuiNotebook:wxAuiNotebook(),
+	PidTable :: term(),
 	Result :: pid().  
 
 get_editor_pid(Index, Workspace, PidTable) ->
 	{_,Key,_,_} = wxAuiNotebook:getPage(Workspace, Index),
-  [{_,Pid}] = ets:lookup(PidTable, Key),
-  Pid.
+	[{_,Pid}] = ets:lookup(PidTable, Key),
+	Pid.
 
 	
 %% =====================================================================
 %% @doc Get the Pid to the currently selected editor.
 	
 -spec get_selected_editor() -> Result when
-  Result :: {'error', 'no_open_editor'} | 
-            {'ok', {integer(), pid()}}.
+	Result :: {'error', 'no_open_editor'} | 
+			  {'ok', {integer(), pid()}}.
             
 get_selected_editor() ->
-  {Workspace,_,_,_} = wx_object:call(?MODULE, workspace), 
-  Index = wxAuiNotebook:getSelection(Workspace), %% Get the index of the tab
-  Valid = fun(-1) -> %% no editor instance
-            {error, no_open_editor};
-          (_) ->
-            {ok, {Index, get_editor_pid(Index)}}
-          end,
-  Valid(Index).   
+	{Workspace,_,_,_} = wx_object:call(?MODULE, workspace), 
+	Index = wxAuiNotebook:getSelection(Workspace), %% Get the index of the tab
+	Valid = fun(-1) -> %% no editor instance
+				{error, no_open_editor};
+			(_) ->
+				{ok, {Index, get_editor_pid(Index)}}
+			end,
+	Valid(Index).   
 
 
 %% =====================================================================
@@ -449,12 +443,12 @@ get_selected_editor() ->
 	Result :: [{integer(), pid()}].
 	
 get_all_editors() ->
-  {Workspace,_,_,_} = wx_object:call(?MODULE, workspace), 
+	{Workspace,_,_,_} = wx_object:call(?MODULE, workspace), 
 	Count = wxAuiNotebook:getPageCount(Workspace),
 	get_all_editors(Workspace, Count - 1, []).
 
 get_all_editors(_, -1, Acc) -> 
-  Acc;
+	Acc;
 
 get_all_editors(Workspace, Count, Acc) ->
 	get_all_editors(Workspace, Count -1, [{Count, get_editor_pid(Count)} | Acc]).
@@ -466,36 +460,36 @@ get_all_editors(Workspace, Count, Acc) ->
 -spec save_current_file() -> 'ok'. %% Not yet done
 
 save_current_file() ->
-  case get_selected_editor() of
-    {error, no_open_editor} ->
-      %% Toolbar/menubar buttons should be disabled to prevent this action
-      io:format("No editor open.~n");
-    {ok, {Index, Pid}} ->
-      save_file(Index, Pid)
-  end.
+	case get_selected_editor() of
+		{error, no_open_editor} ->
+			%% Toolbar/menubar buttons should be disabled to prevent this action
+			io:format("No editor open.~n");
+		{ok, {Index, Pid}} ->
+			save_file(Index, Pid)
+	end.
 
 
 %% =====================================================================
 %% @doc Save the contents of the editor Pid located at index Index.
   
 save_file(Index, Pid) ->  
-  {Workspace,Sb,_,_} = wx_object:call(?MODULE, workspace), 
-  case editor:save_status(Pid) of
-    {save_status, new_file} ->
-      save_new(Index, Workspace, Sb, Pid);
-    {save_status, no_file} ->
-      %% Display save dialog
-      save_new(Index, Workspace, Sb, Pid);
-    {save_status, unmodified} ->
-      %% Document is unmodified, no need to save
-      ide_status_bar:set_text_timeout(Sb, {field, help}, "Document already saved.");
-    {save_status, Path, Fn} ->
-      %% Document already exists, overwrite
-      Contents = editor:get_text(Pid),
-      ide_io:save(Path, Contents),
-      editor:save_complete(Path, Fn, Pid),
-      ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.")
-  end.
+	{Workspace,Sb,_,_} = wx_object:call(?MODULE, workspace), 
+	case editor:save_status(Pid) of
+		{save_status, new_file} ->
+			save_new(Index, Workspace, Sb, Pid);
+		{save_status, no_file} ->
+			%% Display save dialog
+			save_new(Index, Workspace, Sb, Pid);
+		{save_status, unmodified} ->
+			%% Document is unmodified, no need to save
+			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document already saved.");
+		{save_status, Path, Fn} ->
+			%% Document already exists, overwrite
+			Contents = editor:get_text(Pid),
+			ide_io:save(Path, Contents),
+			editor:save_complete(Path, Fn, Pid),
+			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.")
+	end.
 
 
 %% =====================================================================
@@ -505,56 +499,56 @@ save_file(Index, Pid) ->
 %% @private
 
 -spec save_new(Index, Workspace, Sb, Pid) -> Result when
-  Index :: integer(),
-  Workspace :: wxAuiNotebook:wxAuiNotebook(),
-  Sb :: ide_status_bar:status_bar(),
-  Pid :: pid(),
-  Result :: {save, cancelled} %% User cancelled save
-          | {save, complete}. %% Save success 
+	Index :: integer(),
+	Workspace :: wxAuiNotebook:wxAuiNotebook(),
+	Sb :: ide_status_bar:status_bar(),
+	Pid :: pid(),
+	Result :: {save, cancelled} %% User cancelled save
+			| {save, complete}. %% Save success 
 
 save_new(Index, Workspace, Sb, Pid) ->
-  Contents = editor:get_text(Pid),
-  case ide_io:save_as(Workspace, Contents) of
-    {cancel} ->
-      ide_status_bar:set_text_timeout(Sb, {field, help}, "Document not saved."),
-      {save, cancelled};
-    {ok, {Path, Filename}}  ->
-      wxAuiNotebook:setPageText(Workspace, Index, Filename),
-      editor:save_complete(Path, Filename, Pid),
-      ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
-      {save, complete}
-  end.
+	Contents = editor:get_text(Pid),
+	case ide_io:save_as(Workspace, Contents) of
+		{cancel} ->
+			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document not saved."),
+			{save, cancelled};
+		{ok, {Path, Filename}}  ->
+			wxAuiNotebook:setPageText(Workspace, Index, Filename),
+			editor:save_complete(Path, Filename, Pid),
+			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
+			{save, complete}
+	end.
   
 -spec save_new() -> Result when
   Result :: {save, cancelled}
           | {save, complete}.
   
 save_new() ->
-  case get_selected_editor() of
-    {error, no_open_editor} ->
-      %% Toolbar/menubar buttons should be disabled to prevent this action
-      io:format("No editor open.~n");
-    {ok, {Index, Pid}} ->
-      {Workspace,Sb,_,_} = wx_object:call(?MODULE, workspace),
-      save_new(Index, Workspace, Sb, Pid)
-  end.
+	case get_selected_editor() of
+		{error, no_open_editor} ->
+			%% Toolbar/menubar buttons should be disabled to prevent this action
+			io:format("No editor open.~n");
+		{ok, {Index, Pid}} ->
+			{Workspace,Sb,_,_} = wx_object:call(?MODULE, workspace),
+			save_new(Index, Workspace, Sb, Pid)
+	end.
 
 
 %% =====================================================================
 %% @doc Save all open editors.
 
 save_all() ->
-  Fun = fun({Index, Pid}) ->
-    save_file(Index, Pid)
-  end,
-  lists:map(Fun, get_all_editors()).
+	Fun = fun({Index, Pid}) ->
+		      save_file(Index, Pid)
+		  end,
+	lists:map(Fun, get_all_editors()).
 
 
 %% =====================================================================
 %% @doc
 
 -spec open_file(Frame) -> 'ok' when
-  Frame :: wxWindow:wxWindow().
+	Frame :: wxWindow:wxWindow().
 
 open_file(Frame) ->
 	case ide_io:open(Frame) of
@@ -562,7 +556,7 @@ open_file(Frame) ->
 			ok;
 		{Path, Filename, Contents} ->
 			add_editor(Path, Filename, Contents),
-      ok
+			ok
 	end.
 
 
@@ -574,7 +568,7 @@ close_selected_editor() ->
 		{error, _} ->
 			{error, no_open_editor};
 		{ok, {Index, EditorPid}} ->
-      close_editor(EditorPid, Index)
+			close_editor(EditorPid, Index)
 	end.
 
 
@@ -583,27 +577,27 @@ close_selected_editor() ->
 
 close_editor(EditorPid, Index) ->
 	{Workspace,_Sb,_,Tab} = wx_object:call(?MODULE, workspace),
-  case editor:save_status(EditorPid) of
-    {save_status, new_file} ->
-    	ets:delete(Tab, editor:get_id(EditorPid)),
-    	wxAuiNotebook:deletePage(Workspace, Index);
-    {save_status, unmodified} -> %% Go ahead, close the editor
-    	ets:delete(Tab, editor:get_id(EditorPid)),
-    	wxAuiNotebook:deletePage(Workspace, Index);
-    _ -> 
-      io:format("Close dialog needs to be displayed.~n")
-  end.
+	case editor:save_status(EditorPid) of
+		{save_status, new_file} ->
+			ets:delete(Tab, editor:get_id(EditorPid)),
+			wxAuiNotebook:deletePage(Workspace, Index);
+		{save_status, unmodified} -> %% Go ahead, close the editor
+			ets:delete(Tab, editor:get_id(EditorPid)),
+			wxAuiNotebook:deletePage(Workspace, Index);
+		_ -> 
+			io:format("Close dialog needs to be displayed.~n")
+	end.
   
   
 %% =====================================================================
 %% @doc Close all editor instances
 
 close_all_editors() ->
-  Fun = fun({Index,Pid}) ->
-    close_editor(Pid, Index)
-  end,
-  lists:map(Fun, lists:reverse(get_all_editors())),
-  ok.
+	Fun = fun({Index,Pid}) ->
+		      close_editor(Pid, Index)
+		  end,
+	lists:map(Fun, lists:reverse(get_all_editors())),
+	ok.
 
 
 %% =====================================================================
@@ -612,35 +606,35 @@ close_all_editors() ->
 
 open_dialog(Parent) ->
 	Dialog = wxDialog:new(Parent, ?ID_DIALOG, "Title"),
-  % DialogSizer = wxBoxSizer:new(?wxVERTICAL),
-  % ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  % add_buttons(ButtonSizer, Dialog, Buttons),
-  % 
-  % Text = wxStaticText:new(Dialog, ?ID_DIALOG_TEXT, Message),
-  % 
-  % wxBoxSizer:addSpacer(DialogSizer, 20),
-  % wxSizer:add(DialogSizer, Text, [{border, 10}, {proportion, 0},{flag, ?wxALIGN_CENTER}]),
-  % wxBoxSizer:addSpacer(DialogSizer, 20),
-  % wxSizer:add(DialogSizer, ButtonSizer, [{flag, ?wxALIGN_RIGHT}]),
-  % wxDialog:setSizer(Dialog, DialogSizer),
-  % Bs = wxDialog:createButtonSizer(Dialog, ?wx_CANCEL bor ?wx_OK),
+	% DialogSizer = wxBoxSizer:new(?wxVERTICAL),
+	% ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	% add_buttons(ButtonSizer, Dialog, Buttons),
+	%	 
+	% Text = wxStaticText:new(Dialog, ?ID_DIALOG_TEXT, Message),
+	% 
+	% wxBoxSizer:addSpacer(DialogSizer, 20),
+	% wxSizer:add(DialogSizer, Text, [{border, 10}, {proportion, 0},{flag, ?wxALIGN_CENTER}]),
+	% wxBoxSizer:addSpacer(DialogSizer, 20),
+	% wxSizer:add(DialogSizer, ButtonSizer, [{flag, ?wxALIGN_RIGHT}]),
+	% wxDialog:setSizer(Dialog, DialogSizer),
+	% Bs = wxDialog:createButtonSizer(Dialog, ?wx_CANCEL bor ?wx_OK),
 
-  % wxSizer:add(Bs, wxButton:new(Dialog,234,[{label, "BOOM"}])),
-  % wxSizer:add(Bs, wxButton:new(Dialog,235,[{label, "NOBO"}])),
+	% wxSizer:add(Bs, wxButton:new(Dialog,234,[{label, "BOOM"}])),
+	% wxSizer:add(Bs, wxButton:new(Dialog,235,[{label, "NOBO"}])),
   
-  Bs = wxBoxSizer:new(?wxHORIZONTAL),
-  Ba = wxButton:new(Dialog, 1, [{label, "Nibble"}]),
-  Bb = wxButton:new(Dialog, 2, [{label, "Nobble"}]),
-  wxSizer:add(Bs, Ba),
-  wxSizer:add(Bs, Bb),
+	Bs = wxBoxSizer:new(?wxHORIZONTAL),
+	Ba = wxButton:new(Dialog, 1, [{label, "Nibble"}]),
+	Bb = wxButton:new(Dialog, 2, [{label, "Nobble"}]),
+	wxSizer:add(Bs, Ba),
+	wxSizer:add(Bs, Bb),
     
-  Box  = wxBoxSizer:new(?wxVERTICAL),
+	Box  = wxBoxSizer:new(?wxVERTICAL),
   
-  % wxSizer:add(Box, Top,  [{border, 2}, {flag, ?wxALL bor ?wxEXPAND}]),
-  wxSizer:add(Box, Bs,  [{border, 2}, {flag, ?wxALL bor ?wxEXPAND}]),    
-  wxWindow:setSizer(Dialog, Box),
-  wxSizer:fit(Box, Dialog),
-  wxSizer:setSizeHints(Box,Dialog),
+	% wxSizer:add(Box, Top,  [{border, 2}, {flag, ?wxALL bor ?wxEXPAND}]),
+	wxSizer:add(Box, Bs,  [{border, 2}, {flag, ?wxALL bor ?wxEXPAND}]),    
+	wxWindow:setSizer(Dialog, Box),
+	wxSizer:fit(Box, Dialog),
+	wxSizer:setSizeHints(Box,Dialog),
   
 	wxDialog:showModal(Dialog).
 	
@@ -662,20 +656,41 @@ add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
 %% @doc Change the font style across all open editors
  
  update_styles(Frame) ->
-   {_,_,CurrentFont,_} = wx_object:call(?MODULE, workspace), 
-   %% Display the system font picker
-   FD = wxFontData:new(),
-   wxFontData:setInitialFont(FD, CurrentFont),
-   Dialog = wxFontDialog:new(Frame, FD),
-   wxDialog:showModal(Dialog),
-   %% Get the user selected font, and update the editors
-   Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
-   wx_object:call(?MODULE, {update_font, Font}),
-   Fun = fun({_, Pid}) ->
-         editor:update_style(Pid, Font)
-         end,
-   lists:map(Fun, get_all_editors()),
-   ok.
+	{_,_,CurrentFont,_} = wx_object:call(?MODULE, workspace), 
+	%% Display the system font picker
+	FD = wxFontData:new(),
+	wxFontData:setInitialFont(FD, CurrentFont),
+	Dialog = wxFontDialog:new(Frame, FD),
+	wxDialog:showModal(Dialog),
+	%% Get the user selected font, and update the editors
+	Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
+	wx_object:call(?MODULE, {update_font, Font}),
+	Fun = fun({_, Pid}) ->
+		      editor:update_style(Pid, Font)
+		  end,
+	lists:map(Fun, get_all_editors()),
+	ok.
+  
+
+%% =====================================================================
+%% @doc 
+
+create_left_window(Parent) ->
+	MainPanel = wxPanel:new(Parent),
+	Sizer = wxBoxSizer:new(?wxVERTICAL),
+	wxPanel:setSizer(MainPanel, Sizer),
+  
+	Tabs = wxPanel:new(MainPanel, [{size, {-1, 40}}]),
+	Sb = wxBoxSizer:new(?wxHORIZONTAL),
+	wxPanel:setSizer(Tabs, Sb),
+    
+	wxSizer:add(Sizer, Tabs, [{flag, ?wxEXPAND}, {proportion, 0}]),  
+  
+	Tree = wxGenericDirCtrl:new(MainPanel, [{dir, "/usr"}, 
+                                {style, ?wxDIRCTRL_SHOW_FILTERS}]),
+	
+	wxSizer:add(Sizer, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	MainPanel.
   
   
 %% =====================================================================
@@ -735,24 +750,3 @@ toggle_pane(PaneType) ->
 	end,
 	ok. 
 
-
-%% =====================================================================
-%% @doc 
-
-create_left_window(Parent) ->
-  MainPanel = wxPanel:new(Parent),
-  Sizer = wxBoxSizer:new(?wxVERTICAL),
-  wxPanel:setSizer(MainPanel, Sizer),
-  
-  Tabs = wxPanel:new(MainPanel, [{size, {-1, 40}}]),
-  Sb = wxBoxSizer:new(?wxHORIZONTAL),
-  wxPanel:setSizer(Tabs, Sb),
-    
-  wxSizer:add(Sizer, Tabs, [{flag, ?wxEXPAND}, {proportion, 0}]),  
-  
-  Tree = wxGenericDirCtrl:new(MainPanel, [{dir, "/usr"}, 
-                                {style, ?wxDIRCTRL_SHOW_FILTERS}]),
-	
-  wxSizer:add(Sizer, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
-  MainPanel.
-  

@@ -43,11 +43,12 @@ open(Parent) ->
     
 save_as(Parent, Contents) ->
 	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_SAVE bor 
-           ?wxFD_OVERWRITE_PROMPT bor ?wxFD_CHANGE_DIR}]),
+											   ?wxFD_OVERWRITE_PROMPT bor 
+											   ?wxFD_CHANGE_DIR}]),
 	case wxFileDialog:showModal(Dialog) of
 		?wxID_OK ->
 			Path = wxFileDialog:getPath(Dialog),
-      save(Path, Contents),
+			save(Path, Contents),
 			{ok, {Path, wxFileDialog:getFilename(Dialog)}};
 		?wxID_CANCEL -> 
 			{cancel}
@@ -58,8 +59,8 @@ save_as(Parent, Contents) ->
 %% @doc Write the data to disk.
 
 -spec save(Path, Contents) -> 'ok' when
-  Path :: string(),
-  Contents :: string().
+	Path :: string(),
+	Contents :: string().
 
 save(Path, Contents) ->
 	{ok, Fd} = file:open(Path, [read, write, raw]),
