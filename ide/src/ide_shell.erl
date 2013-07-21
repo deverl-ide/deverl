@@ -1,3 +1,4 @@
+<<<<<<< Local Changes
 -module(ide_shell).
 -include_lib("wx/include/wx.hrl").
 
@@ -95,8 +96,8 @@ handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=13}}, O) ->
   Input = string:substr(LineText, get_prompt_length(LineText)+2),
   case length(Input) of
     0 -> %% single enter key pressed, nothing else
-      %% Note we have manually insert the prompt because sending a single newline '\n'
-      %% to the port results in no response. It is the terminal that redraws the prompt
+      %% Note we have to manually insert the prompt because sending a single newline '\n'
+      %% to the port results in no response. It's the terminal that redraws the prompt
       %% and not the ERTS. Same goes with history (up arrow).
       %% The port will only respond through stdout when a '.' is received.
       prompt_2_console(Console, LineText),

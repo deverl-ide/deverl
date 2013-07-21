@@ -24,8 +24,8 @@ read() ->
 do_read(Port) ->
   receive
     {Port,{data,Data}} ->
-      io:format("Data:~p~n",[Data]);
-      % parser:parse_response(Data);
+      % io:format("Data:~p~n",[Data]);
+      parser:parse_response(Data);
     {call, Msg} ->
       port_command(Port, Msg)
   end,
