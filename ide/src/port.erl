@@ -14,8 +14,8 @@ start()->
 %% @doc 
    
 read() ->
-  Port = open_port({spawn,"/usr/local/lib/erlang/erts-5.10.1/bin/erl"},[use_stdio]),
-  do_read(Port).
+	Port = open_port({spawn,"/usr/local/lib/erlang/erts-5.10.1/bin/erl"},[use_stdio]),
+	do_read(Port).
 
 
 %% =====================================================================
@@ -36,4 +36,4 @@ do_read(Port) ->
 %% @doc
 
 call_port(Message) ->
-  ?MODULE ! {call, Message}.
+	?MODULE ! {call, Message}.
