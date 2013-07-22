@@ -34,8 +34,8 @@ init(Config) ->
 	wxWindow:setFont(ShellTextBox, wxFont:new(12, ?wxFONTFAMILY_TELETYPE, 
                                                ?wxNORMAL, 
                                                 ?wxNORMAL,[])),
-	wxWindow:setBackgroundColour(ShellTextBox, ?wxBLACK),
-	wxWindow:setForegroundColour(ShellTextBox, ?wxWHITE),
+  % wxWindow:setBackgroundColour(ShellTextBox, ?wxBLACK),
+  % wxWindow:setForegroundColour(ShellTextBox, ?wxWHITE),
                                                 	
 	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
                                           {proportion, 1}]),
@@ -99,31 +99,6 @@ terminate(_Reason, _State) ->
 %% Asynchronous event callbacks
 
 % %% ENTER
-% <<<<<<< HEAD
-% handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=13}}, O) -> 
-%   LineText = wxTextCtrl:getLineText(Console, wxTextCtrl:getNumberOfLines(Console) - 1),
-%   Input = string:substr(LineText, get_prompt_length(LineText)+2),
-%   case length(Input) of
-%     0 -> %% single enter key pressed, nothing else
-%       %% Note we have to manually insert the prompt because sending a single newline '\n'
-%       %% to the port results in no response. It's the terminal that redraws the prompt
-%       %% and not the ERTS. Same goes with history (up arrow).
-%       %% The port will only respond through stdout when a '.' is received.
-%       prompt_2_console(Console, LineText),
-%       call_parser(Input), %% send anyway, so any error contains the correct position integer
-%       wxEvent:stopPropagation(O);
-%     _ ->
-%       Last = fun(46) -> %% keycode 46 = '.'
-%                   %% Deal with the case where several '.'s are entered, '...'
-%                    prompt_or_not(length(Input), Input, Console, LineText, O);
-%                  (_) -> %% write the newline and prompt to the console
-%                    prompt_2_console(Console, LineText)
-%               end,
-%       Last(lists:last(Input)),     
-%       call_parser(Input)
-%   end;
-% 
-% =======
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=13}},O) -> 
 	LineText = wxTextCtrl:getLineText(Console, wxTextCtrl:getNumberOfLines(Console) - 1),
 	Input = string:substr(LineText, get_prompt_length(LineText) + 2),
@@ -150,7 +125,6 @@ handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=13}},O) ->
 			call_parser(Input)
 	end;
 	
-% >>>>>>> c33c703e89634d5faff3066a3524aadf3d4b335b
 %% Arrow keys
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_UP}},_O) ->
 	SuccessFun = fun() -> ok end,
