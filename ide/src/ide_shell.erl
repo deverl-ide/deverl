@@ -152,7 +152,9 @@ handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_DOWN}},_
 		_ ->
 			cycle_cmd_text(Console, 1)
 	end;
+  
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_LEFT}},O) ->
+  io:format("LEFT ARROW KEY PRESS~n"),
 	SuccessFun = fun() -> wxEvent:skip(O) end,
 	FailFun    = fun() -> ok end,
 	check_cursor(Console, SuccessFun, FailFun, 1);
@@ -164,6 +166,7 @@ handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_RIGHT}},
 	
 %% Backspace
 handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=8}},O) -> 
+  io:format("BACKSPACE~n"),
 	SuccessFun = fun() -> wxEvent:skip(O) end,
 	FailFun    = fun() -> ok end,
 	check_cursor(Console, SuccessFun, FailFun, 1);
@@ -353,11 +356,16 @@ replace(Index, Elem, [H|T], Count, Acc) ->
 	
 check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
 	{_,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
-	LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
+	io:format("X: ~p~n", [X]),
+	io:format("Y: ~p~n", [Y]),
+  io:format("In. Point: ~p~n", [wxTextCtrl:getInsertionPoint(Console)]),
+  LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
 	PromptLen = get_prompt_length(wxTextCtrl:getLineText(Console, LastLine)),
 	case (X > PromptLen + PromptOffset) and (Y =:= LastLine) of
 		true -> 
+      io:format("TRUE FUN~n"),
 			SuccessFun();
 		false ->
+      io:format("FALSE FUN~n"),
 			FailFun()
 	end.
