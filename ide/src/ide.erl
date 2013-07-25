@@ -105,7 +105,7 @@ init(Options) ->
 
 	%% Status bar %%
   StatusBar = ide_status_bar:new([{parent, Frame}]),
-  
+    
 	%% Menubar %%
   ide_menu:new([{parent, Frame}, {sb, StatusBar}]),
  
