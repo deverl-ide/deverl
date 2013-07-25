@@ -78,7 +78,7 @@ start(Args) ->
 
 init(Options) ->
 	wx:new(Options),
-	process_flag(trap_exit, true),
+  process_flag(trap_exit, true),
   
 	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
 	wxFrame:connect(Frame, close_window),
@@ -87,92 +87,91 @@ init(Options) ->
 	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Frame, FrameSizer),  
   
-	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},{style, ?wxSP_NOBORDER}]),
-	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, {style, ?wxSP_NOBORDER}]),
+	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},
+                                                   {style, ?wxSP_NOBORDER bor 
+                                                           ?wxSP_LIVE_UPDATE}]),
+	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, 
+                                                               {style, ?wxSP_NOBORDER bor 
+                                                                       ?wxSP_LIVE_UPDATE}]),
 
 	%% Following two lines, see platforms.txt <1> 
-	wxSplitterWindow:setSashSize(SplitterTopBottom, 8),
-	wxSplitterWindow:setSashSize(SplitterLeftRight, 8),
+  %% After upgrading to 2.9.4 these have no effect on mac
+  % wxSplitterWindow:setSashSize(SplitterTopBottom, 10),
+  % wxSplitterWindow:setSashSize(SplitterLeftRight, 10),
 	wxSplitterWindow:setSashGravity(SplitterTopBottom, 0.5),
 	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
 
 	wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
 	%% Status bar %%
-	StatusBar = ide_status_bar:new([{parent, Frame}]),
+  StatusBar = ide_status_bar:new([{parent, Frame}]),
   
 	%% Menubar %%
-	ide_menu:new([{parent, Frame}, {sb, StatusBar}]),
+  ide_menu:new([{parent, Frame}, {sb, StatusBar}]),
  
-	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
-                                      {proportion, 0}]),      
+  wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
+                                        {proportion, 0}]),      
 
 	%% The workspace/text editors %%
-	Manager = wxAuiManager:new([{managed_wnd, Frame}]),
-	%% The centre pane/editor window
-	EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
-	% wxAuiPaneInfo:name(EditorWindowPaneInfo, "EditorPane"),
-	{Workspace, TabId, Font} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
+  Manager = wxAuiManager:new([{managed_wnd, Frame}]),
+  EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
+  {Workspace, TabId, Font} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
   
 	%% The left window
-	LeftWindow = create_left_window(SplitterLeftRight),
+  LeftWindow = create_left_window(SplitterLeftRight),
   
 	%% The bottom pane/utility window
-	Utilities = create_utils(SplitterTopBottom),  
+  Utilities = create_utils(SplitterTopBottom),  
                                      
-	wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, Workspace,
-									[{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
+  wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, Workspace,
+                  [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),  
+  wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, wxPanel:new(),
+                  [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
              
-	wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
-									[{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
+  wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
+                  [{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
              
-	wxSizer:layout(FrameSizer),
-	wxFrame:center(Frame),
-	wxFrame:show(Frame),
+  wxSizer:layout(FrameSizer),
+  wxFrame:center(Frame),
+  wxFrame:show(Frame),
+    
+  wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
+  wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
+    
+  wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
+  wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
+  wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
   
-	wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
-	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
-  
-	wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
-	wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
-	wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
-
-	State = #state{win=Frame},
-	{Frame, State#state{workspace=Workspace, 
-						workspace_manager=Manager,
-						left_pane=LeftWindow,
-						utilities=Utilities,
-						status_bar=StatusBar,
-						sash_v_pos=?SASH_VERT_DEFAULT_POS,
-						sash_h_pos=?SASH_HOR_DEFAULT_POS,
-						sash_v=SplitterLeftRight,
-						sash_h=SplitterTopBottom,
-						font=Font,
-						editor_pids=TabId
-						}}.
-
+  State = #state{win=Frame},
+  {Frame, State#state{workspace=Workspace, 
+            workspace_manager=Manager,
+            left_pane=LeftWindow,
+            utilities=Utilities,
+            status_bar=StatusBar,
+            sash_v_pos=?SASH_VERT_DEFAULT_POS,
+            sash_h_pos=?SASH_HOR_DEFAULT_POS,
+            sash_v=SplitterLeftRight,
+            sash_h=SplitterTopBottom,
+            font=Font,
+            editor_pids=TabId
+            }}.
 
 %% =====================================================================
 %% @doc OTP behaviour callbacks
 
 handle_info({'EXIT',_, wx_deleted}, State) ->
-    io:format("Got Info 1~n"),
-    {noreply,State};
+  io:format("Got Info 1~n"),
+  {noreply,State};
 handle_info({'EXIT',_, shutdown}, State) ->
-    io:format("Got Info 2~n"),
-    {noreply,State};
+  io:format("Got Info 2~n"),
+  {noreply,State};
 handle_info({'EXIT',A, normal}, State) ->
-    io:format("Got Info 3~n~p~n", [A]),
-    {noreply,State};
+  io:format("Got Info 3~n~p~n", [A]),
+  {noreply,State};
 handle_info(Msg, State) ->
-    io:format("Got Info ~p~n",[Msg]),
-    {noreply,State}.
+  io:format("Got Info ~p~n",[Msg]),
+  {noreply,State}.
 
-handle_call(shutdown, _From, State=#state{win=Panel, workspace_manager=Manager}) ->
-    wxAuiManager:unInit(Manager),
-    wxAuiManager:destroy(Manager),
-    wxPanel:destroy(Panel),
-    {stop, normal, ok, State};
 %% @doc Get the frames sash positions
 handle_call(splitter, _From, State) ->
 	{reply, {State#state.sash_v,
@@ -184,92 +183,100 @@ handle_call(splitter, _From, State) ->
              State#state.utilities}, State};
 %% @doc Return the workspace
 handle_call(workspace, _From, State) ->
-    {reply, {State#state.workspace, 
-             State#state.status_bar,
-             State#state.font,
-             State#state.editor_pids}, State};
+  {reply, {State#state.workspace, 
+           State#state.status_bar,
+           State#state.font,
+           State#state.editor_pids}, State};
 handle_call({update_font, Font}, _From, State) ->
-    {reply, ok, State#state{font=Font}};
+  {reply, ok, State#state{font=Font}};
 handle_call(Msg, _From, State) ->
-    demo:format(State#state{}, "Got Call ~p\n", [Msg]),
-    {reply,{error, nyi}, State}.
+  demo:format(State#state{}, "Got Call ~p\n", [Msg]),
+  {reply,{error, nyi}, State}.
     
 handle_cast(Msg, State) ->
-    io:format("Got cast ~p~n",[Msg]),
-    {noreply,State}.
+  io:format("Got cast ~p~n",[Msg]),
+  {noreply,State}.
 
 
 %% =====================================================================
 %% Window close event 
 handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
-    io:format("~p Closing window ~n",[self()]),
-    ok = wxFrame:setStatusText(Frame, "Closing...",[]),
-    {stop, normal, State};
+  io:format("~p Closing window ~n",[self()]),
+  {stop, normal, State};
     
 %% Vertical sash dragged
 handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, State) ->
-    Pos = wxSplitterWindow:getSashPosition(State#state.sash_v),
-    %% Don't save the pos if the sash is dragged to zero, as the sash 
-    %% will revert to the middle when shown again (on mac definitely, 
-	%% probably on all platforms)
-    if
-		Pos =:= 0 ->
-			NewPos = State#state.sash_v_pos;
-		true ->
-			NewPos = Pos
+  Pos = wxSplitterWindow:getSashPosition(State#state.sash_v),
+  %% Don't save the pos if the sash is dragged to zero, as the sash 
+  %% will revert to the middle when shown again (on mac definitely, 
+	%% probably on all platforms, THIS SHOULD BE CHECKED AGAIN on R16B01 and wxWidgets 2.9.4)
+  if
+    Pos =:= 0 ->
+    	NewPos = State#state.sash_v_pos;
+    true ->
+    	NewPos = Pos
     end,
-    {noreply, State#state{sash_v_pos=NewPos}};
+  {noreply, State#state{sash_v_pos=NewPos}};
 
 %% Horizontal sash dragged
 handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, State) ->
-     Pos = wxSplitterWindow:getSashPosition(State#state.sash_h),
-     if
-		Pos =:= 0 ->
-			NewPos = State#state.sash_h_pos;
-		true ->
-			NewPos = Pos
-     end,
-     wxWindow:refresh(State#state.sash_v),
-     wxWindow:update(State#state.sash_v),
-     {noreply, State#state{sash_h_pos=NewPos}};
-     
+  Pos = wxSplitterWindow:getSashPosition(State#state.sash_h),
+  if
+    Pos =:= 0 ->
+    	NewPos = State#state.sash_h_pos;
+    true ->
+    	NewPos = Pos
+  end,
+  wxWindow:refresh(State#state.sash_v),
+  wxWindow:update(State#state.sash_v),
+  {noreply, State#state{sash_h_pos=NewPos}};
+ 
 handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_sash_pos_changing} = _E}, State) ->
-    io:format("Sash position changing ~n"),    
-    {noreply, State};
+  io:format("Sash position changing ~n"),    
+  {noreply, State};
+  
 handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_doubleclicked} = _E}, State) ->
-    io:format("Sash double clicked ~n"),    
-    {noreply, State};
+  io:format("Sash double clicked ~n"),    
+  {noreply, State};
     
 %% AuiManager events
 handle_event(_W = #wx{event = #wxAuiManager{type = aui_render} = _E}, State) ->
-    io:format("render:~n"),   
-    {noreply, State};
+  io:format("render:~n"),   
+  {noreply, State};
     
 handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinotebook_page_changed, 
 			selection = Index}}, State) ->
-    %% Make sure editor knows (needs to update sb)
-    io:format("Page changed~n"),
-    editor:selected(get_editor_pid(Index, State#state.workspace, State#state.editor_pids), State#state.status_bar),
-    {noreply, State};
+  %% Make sure editor knows (needs to update sb)
+  io:format("Page changed~n"),
+  editor:selected(get_editor_pid(Index, State#state.workspace, State#state.editor_pids), State#state.status_bar),
+  {noreply, State};
     
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
-    add_editor(State#state.workspace, State#state.status_bar, State#state.font, 
-               State#state.editor_pids),
-    {noreply, State};
+  add_editor(State#state.workspace, State#state.status_bar, State#state.font, 
+             State#state.editor_pids),
+  {noreply, State};
     
 %% Event catchall for testing
 handle_event(Ev = #wx{}, State) ->
-    io:format("aui event catchall: ~p\n", [Ev]),
-    {noreply, State}.
+  io:format("IDE event catchall: ~p\n", [Ev]),
+  {noreply, State}.
 
 code_change(_, _, State) ->
-    {stop, not_yet_implemented, State}.
+  {stop, not_yet_implemented, State}.
 
-terminate(_Reason, _State) ->
-    %% Unregister any pids/ports that dont close automatically
-    %% This is a bit nasty - they should close automatically
-    erlang:unregister(port),
-    wx:destroy().
+terminate(_Reason, #state{win=Frame, workspace_manager=Manager}) ->
+  %% Unregister any pids/ports that dont close automatically
+  %% This is a bit nasty - an OTP Application which allows
+  %% components that can be started and stopped as a unit might
+  %% be a better choice.
+  port:close_port(),
+  erlang:unregister(port),
+  %% Below is the necessary cleanup
+  io:format("TERMINATE IDE~n"),
+  wxAuiManager:unInit(Manager),
+  wxAuiManager:destroy(Manager),
+  wxFrame:destroy(Frame),
+  wx:destroy().
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Internals %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -580,10 +587,10 @@ close_editor(EditorPid, Index) ->
 	case editor:save_status(EditorPid) of
 		{save_status, new_file} ->
 			ets:delete(Tab, editor:get_id(EditorPid)),
-			wxAuiNotebook:deletePage(Workspace, Index);
+      wxAuiNotebook:deletePage(Workspace, Index);
 		{save_status, unmodified} -> %% Go ahead, close the editor
 			ets:delete(Tab, editor:get_id(EditorPid)),
-			wxAuiNotebook:deletePage(Workspace, Index);
+      wxAuiNotebook:deletePage(Workspace, Index);
 		_ -> 
 			io:format("Close dialog needs to be displayed.~n")
 	end.

@@ -149,6 +149,10 @@ handle_info(Msg, State) ->
     {noreply,State}.
 
 
+handle_call(shutdown, _From, State=#state{editor_instance=Panel}) ->
+    wxPanel:destroy(Panel),
+    {stop, normal, ok, State};
+
 handle_call(save_request, _From, State=#state{file_data=#file{path=Path, filename=Fn, modified=Mod}}) ->
     {reply,{Path,Fn,Mod},State};
 
@@ -217,8 +221,9 @@ handle_event(E,O) ->
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
 
-terminate(_Reason, _State) ->
-  io:format("editor callback: terminate: stop~n").
+terminate(_Reason, State=#state{editor_instance=Panel}) ->
+  io:format("TERMINATE EDITOR~n"),
+  wxPanel:destroy(Panel).
     
 
 %% =====================================================================

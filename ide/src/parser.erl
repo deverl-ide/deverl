@@ -8,7 +8,7 @@
 %% @doc Close the selected editor
 
 start()->
-    register(parser, spawn(?MODULE, loop, [])).
+    register(?MODULE, spawn(?MODULE, loop, [])).
 
 
 %% =====================================================================

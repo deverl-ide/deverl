@@ -45,7 +45,7 @@
 -define(MENU_ID_MAX_UTIL,          6025).
 
 
--record(state, {file, edit, view, document, wrangler, tools, help}).
+-record(state, {ets_tab}).
 
 new(Frame) ->
     start(Frame).
@@ -69,6 +69,7 @@ init(Config) ->
     ets:insert(TabId,{?wxID_CLOSE, "Close", "Close the current file.", {ide, close_selected_editor, []}}),
     ets:insert(TabId,{?wxID_CLOSE_ALL, "Close All", "Close all open files.", {ide, close_all_editors, []}}),
     ets:insert(TabId,{?wxID_EXIT, "Exit", "Quit the application.", {}}),
+    ets:insert(TabId,{?wxID_PREFERENCES, "Preferences", "Application preferences.", {ide_prefs, start, []}}),
     
     ets:insert(TabId,{?wxSTC_CMD_UNDO, "Undo", "Undo the last change.", {}}),
     ets:insert(TabId,{?wxSTC_CMD_REDO, "Redo", "Redo the last change.", {}}),
@@ -128,6 +129,7 @@ init(Config) ->
     wxMenu:append(File, ?wxID_CLOSE_ALL, "Close All"),
     wxMenu:append(File, ?wxID_SEPARATOR, []),
     wxMenu:append(File, ?wxID_EXIT, "Exit"),
+    wxMenu:append(File, ?wxID_PREFERENCES, "Preferences"),
   
     Edit        = wxMenu:new([]),
     wxMenu:append(Edit, ?wxSTC_CMD_UNDO, "Undo"),
@@ -209,7 +211,7 @@ init(Config) ->
     %%%%%%%%%%%%%%%%%%%
     %%%%% Toolbar %%%%%
   	ToolBar = wxFrame:createToolBar(Frame, []),
-    wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
+    wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
 	%% Id, StatusBar help, filename, args, add seperator
     Tools = [{?wxID_NEW,           "ToolTip", "../icons/document-new.png",    [{shortHelp, "Create a new file"}],        		   false},
              {?wxID_OPEN,          "ToolTip", "../icons/document-open.png",   [{shortHelp, "Open existing document"}],   		   false},
@@ -241,58 +243,61 @@ init(Config) ->
     wxFrame:connect(Frame, command_menu_selected, [{userData, {Sb,TabId}}]),
     
     wxFrame:setMenuBar(Frame, MenuBar),
-    {Frame, #state{file=File}}.
+    {Frame, #state{ets_tab=TabId}}.
     
-%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%% Event Handlers %%%%%
+    
 %% Handle menu closed event    
 handle_event(#wx{userData=Sb, event=#wxMenu{type=menu_close}},
 	           State) ->
-       ide_status_bar:set_text(Sb, {field, help}, ?STATUS_BAR_HELP_DEFAULT),
-       {noreply, State};
+  ide_status_bar:set_text_timeout(Sb, {field, help}, ?STATUS_BAR_HELP_DEFAULT),
+  {noreply, State};
+       
 %% Handle menu highlight events    
 handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxMenu{type=menu_highlight}},
 	           State) ->
-       Result = ets:lookup(Tab,Id),
-       Fun = fun([{_,_,HelpString,_}]) ->
-               ide_status_bar:set_text(Sb, {field, help}, HelpString);
-             (_) ->
-               ide_status_bar:set_text(Sb, {field, help}, "Help not available.")
-             end,
-       Fun(Result),
-       {noreply, State};
+  Result = ets:lookup(Tab,Id),
+  Fun = fun([{_,_,HelpString,_}]) ->
+         ide_status_bar:set_text(Sb, {field, help}, HelpString);
+       (_) ->
+         ide_status_bar:set_text(Sb, {field, help}, "Help not available.")
+       end,
+  Fun(Result),
+  {noreply, State};
+       
 handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxCommand{type=command_menu_selected}},
              State) ->
-       Result = ets:lookup(Tab,Id),
-       Fun = fun([{MenuItem,_,_,{Module, Function, Args},{update_label, Frame, Pos}}]) ->
-			   erlang:apply(Module,Function,Args),
-			   MenuBar = wxFrame:getMenuBar(Frame),
-			   Menu = wxMenuBar:getMenu(MenuBar, Pos),
-			   update_label(MenuItem, Menu);
-			 ([{_,_,_,{Module,Function,[]}}]) ->
-               Module:Function();
-             ([{_,_,_,{Module,Function,Args}}]) ->
-               erlang:apply(Module,Function,Args);
-             (_) ->
-               ide_status_bar:set_text_timeout(Sb, {field, help}, "Not yet implemented.")
-             end,
-       Fun(Result),
-       {noreply, State};
+  Result = ets:lookup(Tab,Id),
+  Fun = fun([{MenuItem,_,_,{Module, Function, Args},{update_label, Frame, Pos}}]) ->
+  		   erlang:apply(Module,Function,Args),
+  		   MenuBar = wxFrame:getMenuBar(Frame),
+  		   Menu = wxMenuBar:getMenu(MenuBar, Pos),
+  		   update_label(MenuItem, Menu);
+  		 ([{_,_,_,{Module,Function,[]}}]) ->
+         Module:Function();
+       ([{_,_,_,{Module,Function,Args}}]) ->
+         erlang:apply(Module,Function,Args);
+       (_) ->
+         ide_status_bar:set_text_timeout(Sb, {field, help}, "Not yet implemented.")
+       end,
+  Fun(Result),
+  {noreply, State};
+       
 handle_event(E,O) ->
 	io:format("TRACE: In menubar handle_event ~p~n~p~n", [E,O]),
 	{noreply, O}.
 
 code_change(_, _, State) ->
-    {stop, not_yet_implemented, State}.
+  {stop, not_yet_implemented, State}.
 
-terminate(_Reason, _State) ->
-    wx:destroy().
+terminate(_Reason, #state{ets_tab=Tab}) ->
+  ets:delete(Tab),
+  ok.
 
 add_tab_width_menu(TabMenu, 8) ->
-    wxMenu:appendRadioItem(TabMenu, 7008, integer_to_list(8));
+  wxMenu:appendRadioItem(TabMenu, 7008, integer_to_list(8));
 add_tab_width_menu(TabMenu, Width) ->
-    wxMenu:appendRadioItem(TabMenu, 7000 + Width, integer_to_list(Width)),
-    add_tab_width_menu(TabMenu, Width + 1).
+  wxMenu:appendRadioItem(TabMenu, 7000 + Width, integer_to_list(Width)),
+  add_tab_width_menu(TabMenu, Width + 1).
 
 update_label(MenuItem, Menu) ->
 	case wxMenu:getLabel(Menu, MenuItem) of

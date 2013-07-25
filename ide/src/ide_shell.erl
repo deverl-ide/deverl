@@ -26,9 +26,9 @@ new(Config) ->
 %% Initialise the server's state
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
-	ScrollWin = wxScrolledWindow:new(Parent, []),
+  ScrollWin = wxPanel:new(Parent, []),
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxWindow:setSizer(ScrollWin, MainSizer),
+  wxWindow:setSizer(ScrollWin, MainSizer),
 	
 	ShellTextBox = wxTextCtrl:new(ScrollWin, ?SHELL_TEXT_BOX, [{style, ?wxTE_MULTILINE}]),
 	wxWindow:setFont(ShellTextBox, wxFont:new(12, ?wxFONTFAMILY_TELETYPE, 
@@ -82,7 +82,6 @@ handle_cast(Msg, State) ->
     io:format("Got cast ~p~n",[Msg]),
     {noreply,State}.
 
-%% This is where events are handled %%
 handle_event(#wx{event=#wxClose{}}, State=#state{win=Frame}) ->
     ok = wxFrame:setStatusText(Frame, "Closing...",[]),
     {stop, normal, State}.
@@ -90,9 +89,9 @@ handle_event(#wx{event=#wxClose{}}, State=#state{win=Frame}) ->
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
 
-terminate(_Reason, _State) ->
+terminate(_Reason, #state{win=Frame}) ->
 	io:format("TERMINATE SHELL~n"),
-	ok.
+	wxPanel:destroy(Frame).
 
 
 %% =====================================================================
@@ -355,7 +354,9 @@ replace(Index, Elem, [H|T], Count, Acc) ->
 %% @doc Check cursor is in valid position, and execute appropriate function.
 	
 check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
-	{_,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
+  io:format("Point: ~p~n", [wxTextCtrl:getInsertionPoint(Console)]),
+	{Bool,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
+  io:format("BOOL: ~p~n", [Bool]),
 	io:format("X: ~p~n", [X]),
 	io:format("Y: ~p~n", [Y]),
   io:format("In. Point: ~p~n", [wxTextCtrl:getInsertionPoint(Console)]),

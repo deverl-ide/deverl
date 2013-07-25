@@ -41,7 +41,7 @@ start(Config) ->
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
   
-	Sb = wxPanel:new(Parent, []), %% {size,{-1,35}}
+	Sb = wxPanel:new(Parent, []),
 	SbSizer = wxBoxSizer:new(?wxHORIZONTAL),
 	wxPanel:setSizer(Sb, SbSizer),
   
@@ -141,9 +141,9 @@ handle_event(Event, State) ->
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
 
-terminate(_Reason, _State) ->
-    io:format("aui callback: terminate~n"),
-    wx:destroy().
+terminate(_Reason, #state{sb=Sb}) ->
+    io:format("TERMINATE STATUS BAR~n"),
+    wxPanel:destroy(Sb).
 
 
 %% =====================================================================
