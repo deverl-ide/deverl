@@ -3,9 +3,9 @@
 %% Client API
 -export([new/1]). 
 
-%% Callbacks
--export([start/1, init/1, handle_event/2, code_change/3,
-         terminate/2]).
+%% wx_objects callbacks
+-export([init/1, terminate/2,  code_change/3,
+         handle_info/2, handle_cast/2, handle_call/3, handle_event/2]).
          
 -include_lib("wx/include/wx.hrl").
 
@@ -47,11 +47,19 @@
 
 -record(state, {ets_tab}).
 
-new(Frame) ->
-    start(Frame).
+
+%% =====================================================================
+%% @doc Start/add a new menubar/toolbar to the frame
+
+new(Config) ->
+    start(Config).
 
 start(Config) ->
     wx_object:start(?MODULE, Config, []).
+    
+    
+%% =====================================================================
+%% @doc Initialise the menubar/toolbar
 
 init(Config) ->
     Frame = proplists:get_value(parent, Config),
@@ -243,8 +251,25 @@ init(Config) ->
     wxFrame:connect(Frame, command_menu_selected, [{userData, {Sb,TabId}}]),
     
     wxFrame:setMenuBar(Frame, MenuBar),
-    {Frame, #state{ets_tab=TabId}}.
     
+    {MenuBar, #state{ets_tab=TabId}}.
+
+
+%% =====================================================================
+%% @doc OTP behaviour callbacks
+
+handle_info(Msg, State) ->
+    io:format("Got Info ~p~n",[Msg]),
+    {noreply,State}.
+
+handle_call(Msg, _From, State) ->
+    io:format("ide_menu handle call~p~n",[Msg]),
+    {reply,State,State}.
+
+handle_cast(Msg, State) ->
+    io:format("Got cast ~p~n",[Msg]),
+    {noreply,State}.
+  
     
 %% Handle menu closed event    
 handle_event(#wx{userData=Sb, event=#wxMenu{type=menu_close}},
@@ -290,6 +315,7 @@ code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{ets_tab=Tab}) ->
+  io:format("TERMINATE MENU~n"),
   ets:delete(Tab),
   ok.
 
