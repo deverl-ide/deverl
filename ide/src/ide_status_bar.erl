@@ -104,17 +104,10 @@ init(Config) ->
 	Fields = [{line, Line} | [{selection, Selection} | [{help, Help} | []]]],   
 	{Sb, #state{parent=Parent, sb=Sb, func_menu=FunctionPopup, fields=Fields}}.
   
-%%%%%%%%%%%%%%%%%%%%%
-%%%%% Callbacks %%%%%
-handle_info({'EXIT',_, wx_deleted}, State) ->
-    io:format("Got Info 1~n"),
-    {noreply,State};
-handle_info({'EXIT',_, shutdown}, State) ->
-    io:format("Got Info 2~n"),
-    {noreply,State};
-handle_info({'EXIT',A, normal}, State) ->
-    io:format("Got Info 3~n~p~n", [A]),
-    {noreply,State};
+
+%% =====================================================================
+%% @doc OTP behaviour callbacks
+
 handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
     {noreply,State}.

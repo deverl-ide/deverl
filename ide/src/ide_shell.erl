@@ -52,18 +52,18 @@ init(Config) ->
 					   current_cmd=0,
 					   wx_env=wx:get_env()}}. %% Maintained at server
 	
-%%%%% Callbacks %%%%%
-%% These are all called from the server %%
-handle_info({'EXIT',_, wx_deleted}, State) ->
-    {noreply,State};
-handle_info({'EXIT',_, shutdown}, State) ->
-    {noreply,State};
-handle_info({'EXIT',_, normal}, State) ->
-    {noreply,State};
+
+%% =====================================================================
+%% @doc OTP behaviour callbacks
+
 handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
     {noreply,State}.
 
+handle_cast(Msg, State) ->
+    io:format("Got cast ~p~n",[Msg]),
+    {noreply,State}.
+    
 handle_call(text_ctrl, _From, State) ->
     {reply,{State#state.wx_env,State#state.textctrl}, State};
 handle_call(command_history, _From, State) ->
@@ -77,14 +77,10 @@ handle_call({update_cmd_index, Index}, _From, State) ->
 handle_call(Msg, _From, State) ->
     io:format("Got Call ~p~n",[Msg]),
     {reply,ok,State}.
-
-handle_cast(Msg, State) ->
-    io:format("Got cast ~p~n",[Msg]),
-    {noreply,State}.
-
-handle_event(#wx{event=#wxClose{}}, State=#state{win=Frame}) ->
-    ok = wxFrame:setStatusText(Frame, "Closing...",[]),
-    {stop, normal, State}.
+    
+handle_event(_Event, State) ->
+    io:format("SHELL EVENT CA~n"),
+    {noreply, State}.
     
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
@@ -121,6 +117,7 @@ handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=13}},O) ->
 					end,
 			add_cmd(Input),
 			Last(lists:last(Input)),
+      io:format("IN ENTER~n"),
 			call_parser(Input)
 	end;
 	
@@ -201,7 +198,7 @@ prompt_or_not(N,Input,Console,LineText,Ev) when N>1 ->
 			prompt_2_console(Console, LineText),
 			wxEvent:stopPropagation(Ev);
 		true -> 
-			wxEvent:skip(Ev)
+			ok%wxEvent:skip(Ev)
 	end;
 prompt_or_not(_,_Input,_,_,Ev) ->
 	wxEvent:skip(Ev).
@@ -211,6 +208,8 @@ prompt_or_not(_,_Input,_,_,Ev) ->
 %% @doc
 	
 call_parser(Message) ->
+  io:format("Send message~n"),
+  io:format("Message~p~n", [Message]),
 	parser:parse_input(Message).
 	
 	
@@ -218,6 +217,8 @@ call_parser(Message) ->
 %% @doc
 	
 load_response(Response) ->
+  io:format("Load response~n"),
+  io:format("Response~p~n", [Response]),
 	{Env, Tc} = wx_object:call(?MODULE, text_ctrl),
 	wx:set_env(Env),
 	wxTextCtrl:writeText(Tc, Response).

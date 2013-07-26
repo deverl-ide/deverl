@@ -200,7 +200,7 @@ handle_cast(Msg, State) ->
 
 %% =====================================================================
 %% Window close event 
-handle_event(#wx{event=#wxClose{}}, State = #state{win=Frame}) ->
+handle_event(#wx{event=#wxClose{}}, State) ->
   io:format("~p Closing window ~n",[self()]),
   {stop, normal, State};
     
@@ -683,21 +683,64 @@ add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
 %% @doc 
 
 create_left_window(Parent) ->
-	MainPanel = wxPanel:new(Parent),
-	Sizer = wxBoxSizer:new(?wxVERTICAL),
-	wxPanel:setSizer(MainPanel, Sizer),
+  % MainPanel = wxPanel:new(Parent),
+  % Sizer = wxBoxSizer:new(?wxVERTICAL),
+  % wxPanel:setSizer(MainPanel, Sizer),
+  %   
+  % Tabs = wxPanel:new(MainPanel, [{size, {-1, 40}}]),
+  % Sb = wxBoxSizer:new(?wxHORIZONTAL),
+  % wxPanel:setSizer(Tabs, Sb),
+  %     
+  % wxSizer:add(Sizer, Tabs, [{flag, ?wxEXPAND}, {proportion, 0}]),  
+  %   
+  % Tree = wxGenericDirCtrl:new(MainPanel, [{dir, "/usr"}, 
+  %                                 {style, ?wxDIRCTRL_SHOW_FILTERS}]),
+  % 
+  % wxSizer:add(Sizer, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
+  % MainPanel.
   
-	Tabs = wxPanel:new(MainPanel, [{size, {-1, 40}}]),
-	Sb = wxBoxSizer:new(?wxHORIZONTAL),
-	wxPanel:setSizer(Tabs, Sb),
-    
-	wxSizer:add(Sizer, Tabs, [{flag, ?wxEXPAND}, {proportion, 0}]),  
+  ImgList = wxImageList:new(24,24),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-open.png"))),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
   
-	Tree = wxGenericDirCtrl:new(MainPanel, [{dir, "/usr"}, 
-                                {style, ?wxDIRCTRL_SHOW_FILTERS}]),
-	
-	wxSizer:add(Sizer, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
-	MainPanel.
+  io:format("Image count: ~p~n", [wxImageList:getImageCount(ImgList)]),
+  
+  Toolbook = wxToolbook:new(Parent, ?wxID_ANY),
+  wxToolbook:assignImageList(Toolbook, ImgList),
+  
+  P1 = wxPanel:new(Toolbook),
+  Sz = wxBoxSizer:new(?wxVERTICAL),
+  wxPanel:setSizer(P1, Sz),    
+  Tree = wxGenericDirCtrl:new(P1, [{dir, "/usr"}, 
+                                  {style, ?wxDIRCTRL_SHOW_FILTERS}]),
+  wxSizer:add(Sz, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
+  wxToolbook:addPage(Toolbook, P1, "Files", [{bSelect, true}, {imageId, 1}]),
+  
+  P2 = wxPanel:new(Toolbook),
+  Sz2 = wxBoxSizer:new(?wxVERTICAL),
+  W1 = wxWindow:new(P2, 987),
+  wxWindow:setBackgroundColour(W1, {123,34,1}),
+  wxPanel:setSizer(P2, Sz2),    
+  wxSizer:add(Sz2, W1, [{flag, ?wxEXPAND}, {proportion, 1}]),
+  wxToolbook:addPage(Toolbook, P2, "Next", [{bSelect, true}, {imageId, 2}]),
+  
+  % P3 = wxPanel:new(Toolbook),
+  % Sz3 = wxBoxSizer:new(?wxVERTICAL),
+  % W2 = wxWindow:new(P3, 987),
+  % wxWindow:setBackgroundColour(W2, {0,255,0}),
+  % wxPanel:setSizer(P3, Sz3),    
+  % wxSizer:add(Sz3, W2, [{flag, ?wxEXPAND}, {proportion, 1}]),
+  % wxToolbook:setPageSize(Toolbook, {50,50}),
+  % wxToolbook:addPage(Toolbook, P3, "Next"),
+  
+  wxToolbook:advanceSelection(Toolbook),
+  
+  io:format("Page: ~p~n", [wxToolbook:getCurrentPage(Toolbook)]),
+  
+  io:format("Image: ~p~n", [wxToolbook:getPageImage(Toolbook, 0)]),
+  
+  Toolbook.
   
   
 %% =====================================================================
