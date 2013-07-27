@@ -73,10 +73,8 @@ init(Options) ->
   
   wxSizer:add(PanelSz, PrefPane, [{proportion,1}, {flag, ?wxEXPAND}]),
   wxSizer:layout(PanelSz),
-
-  FrameSizer = wxBoxSizer:new(?wxVERTICAL),
-  wxSizer:add(FrameSizer, Panel),
-  wxWindow:setSizerAndFit(Frame, FrameSizer),
+	wxSizer:fit(PanelSz, Frame),
+	wxSizer:setSizeHints(PanelSz, Frame),
   
   {Frame, State#state{pref=PrefPane}}.
   
@@ -97,13 +95,15 @@ handle_cast(Msg, State) ->
     
 %% Catch menu clicks
 handle_event(Ev = #wx{id=Id, event=#wxCommand{type=command_menu_selected}, userData=Tb}, 
-             State = #state{pref_panel={Panel,Sz}, pref=Pref}) ->
+             State = #state{frame=Frame, pref_panel={Panel,Sz}, pref=Pref}) ->
   {_,Str,_,_,_} = proplists:lookup(Id,Tb),
   wxSizer:detach(Sz, Pref),
   wx_object:call(Pref, shutdown),
   NewPref = load_pref(Str, State),
   wxSizer:add(Sz, NewPref, [{proportion,1}, {flag, ?wxEXPAND}]),
   wxSizer:layout(Sz),  
+	wxSizer:fit(Sz, Frame),
+	wxSizer:setSizeHints(Sz, Frame),
   {noreply, State#state{pref=NewPref}};
     
 %% Event catchall for testing

@@ -85,6 +85,7 @@ init(Config) ->
     ets:insert(TabId,{?wxSTC_CMD_COPY, "Copy", "Copy the selected text to the clipboard.", {}}),
     ets:insert(TabId,{?wxSTC_CMD_PASTE, "Paste", "Paste from clipboard.", {}}),
     ets:insert(TabId,{?wxID_DELETE, "Delete", "Delete the current selection.", {}}),
+    ets:insert(TabId,{?wxID_FIND, "Find", "Find and replace.", {ide,find_replace,[Frame]}}),
     
     ets:insert(TabId,{?MENU_ID_FONT, "Font", "Select font.", {ide,update_styles,[Frame]}}),
     ets:insert(TabId,{?MENU_FONT_BIGGER, "Bigger", "Increase the font size.", {}}),
@@ -147,6 +148,8 @@ init(Config) ->
     wxMenu:append(Edit, ?wxSTC_CMD_COPY, "Copy"),
     wxMenu:append(Edit, ?wxSTC_CMD_PASTE, "Paste"),
     wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
+    wxMenu:appendSeparator(Edit),
+    wxMenu:append(Edit, ?wxID_FIND, "Find"),
   
     Font = wxMenu:new([]), %% Sub-menu
     wxMenu:append(Font, ?MENU_ID_FONT, "Font Picker"),

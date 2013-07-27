@@ -40,13 +40,13 @@ do_init(Config) ->
   ThemeSizer = wxFlexGridSizer:new(2, 3, 10, 10),
   wxSizer:add(ThemeSizer, wxStaticText:new(Panel, ?wxID_ANY, "Theme:"), []),
   % wxSizer:add(ThemeSizer, wxStaticText:new(Panel, ?wxID_ANY, "Light"), [{proportion, 0}]),
-	wxSizer:add(ThemeSizer, wxRadioButton:new(Panel, ?wxID_ANY, "Light", [{style, ?wxRB_GROUP}])),
+	wxSizer:add(ThemeSizer, wxRadioButton:new(Panel, ?wxID_ANY, "Dark", [{style, ?wxRB_GROUP}])),
 
   wxSizer:add(ThemeSizer, ThemeEx(?wxWHITE, ?wxBLACK), [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   wxSizer:add(ThemeSizer, 0, 0, []),
   % wxSizer:add(ThemeSizer, wxStaticText:new(Panel, ?wxID_ANY, "Dark"), [{proportion, 0}]),
-  wxSizer:add(ThemeSizer, wxRadioButton:new(Panel, ?wxID_ANY, "Dark", [])),
+  wxSizer:add(ThemeSizer, wxRadioButton:new(Panel, ?wxID_ANY, "Light", [])),
   wxSizer:add(ThemeSizer, ThemeEx(?wxBLACK, ?wxWHITE), [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   wxFlexGridSizer:addGrowableCol(ThemeSizer, 2),

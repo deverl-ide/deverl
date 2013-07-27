@@ -198,7 +198,10 @@ prompt_or_not(N,Input,Console,LineText,Ev) when N>1 ->
 			prompt_2_console(Console, LineText),
 			wxEvent:stopPropagation(Ev);
 		true -> 
-			ok%wxEvent:skip(Ev)
+      %% BUG R16B01 - wx 2.9.4
+      %% Skipping this event causes the default behaviour to occur
+      %% which calls our event handler a second time, which effectively duplicates the user's input.
+			wxEvent:skip(Ev)
 	end;
 prompt_or_not(_,_Input,_,_,Ev) ->
 	wxEvent:skip(Ev).

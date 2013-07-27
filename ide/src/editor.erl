@@ -8,7 +8,10 @@
   save_complete/3,
   get_text/1,
   get_id/1,
-  selected/2]).
+  selected/2,
+  find/2,
+  find_all/2,
+  replace_all/2]).
 
 -export([start/1,
   init/1, 
@@ -37,7 +40,7 @@
 
 -record(file, {path, filename, modified}).
 
--record(state, {editor_instance    :: erlangEditor(), 
+-record(state, {editor_parent    :: erlangEditor(), 
                 text_ctrl          :: wxStyledTextCtrl:wxStyledTextCtrl(),
                 file_data
                }).
@@ -83,6 +86,12 @@ init(Config) ->
   wxStyledTextCtrl:setMarginWidth(Editor, 0, Mw),
   wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER,
         (wxFont:getPointSize(Font) - ?MARGIN_LINE_NUMBER_POINT_REDUCTION)),
+        
+  %% Indicators
+  wxStyledTextCtrl:indicatorSetStyle(Editor,0,?wxSTC_INDIC_ROUNDBOX),
+  wxStyledTextCtrl:indicatorSetForeground(Editor, 0, ?wxBLUE),
+  wxStyledTextCtrl:indicatorSetStyle(Editor,1,?wxSTC_INDIC_BOX),
+  wxStyledTextCtrl:indicatorSetStyle(Editor,2,?wxSTC_INDIC_PLAIN), %% underline
   
   %% Add the keywords
   wxStyledTextCtrl:setKeyWords(Editor, 0, keywords()),
@@ -129,7 +138,7 @@ init(Config) ->
   end,
       
   % process_flag(trap_exit, true),
-  {Panel, #state{editor_instance=Panel, text_ctrl=Editor, file_data=F}}.
+  {Panel, #state{editor_parent=Panel, text_ctrl=Editor, file_data=F}}.
 
 
 %% =====================================================================
@@ -149,7 +158,7 @@ handle_info(Msg, State) ->
     {noreply,State}.
 
 
-handle_call(shutdown, _From, State=#state{editor_instance=Panel}) ->
+handle_call(shutdown, _From, State=#state{editor_parent=Panel}) ->
     wxPanel:destroy(Panel),
     {stop, normal, ok, State};
 
@@ -168,7 +177,7 @@ handle_call(text_ctrl, _From, State) ->
     {reply,State#state.text_ctrl,State};
     
 handle_call(editor, _From, State) ->
-    {reply,State#state.editor_instance,State};
+    {reply,State#state.editor_parent,State};
 
 handle_call(Msg, _From, State) ->
     io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
@@ -221,7 +230,7 @@ handle_event(E,O) ->
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
 
-terminate(_Reason, State=#state{editor_instance=Panel}) ->
+terminate(_Reason, State=#state{editor_parent=Panel}) ->
   io:format("TERMINATE EDITOR~n"),
   wxPanel:destroy(Panel).
     
@@ -404,3 +413,56 @@ get_id(EditorPid) ->
   
 save_complete(Path,Filename,Server) ->
   wx_object:call(Server, {save_complete,{Path,Filename}}).
+  
+
+%% ===================================================================== 
+%% @doc Search/replace with next/prev
+
+find(EditorPid, Str) ->
+  TextCtrl = wx_object:call(EditorPid, text_ctrl),
+  Pos = wxStyledTextCtrl:findText(TextCtrl, 0, wxStyledTextCtrl:getLength(TextCtrl), Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]),
+  wxStyledTextCtrl:startStyling(TextCtrl, Pos, ?wxSTC_INDICS_MASK),
+  wxStyledTextCtrl:setStyling(TextCtrl, length(Str), ?wxSTC_INDIC0_MASK).
+  %% Bookmark line and add indicator to word
+  
+
+find(Editor, Str, Start, End) ->
+  case wxStyledTextCtrl:findText(Editor, Start, End, Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]) of
+    -1 ->
+      {no_match};
+    Pos ->
+      wxStyledTextCtrl:startStyling(Editor, Pos, ?wxSTC_INDICS_MASK),
+      wxStyledTextCtrl:setStyling(Editor, length(Str), ?wxSTC_INDIC0_MASK),
+      % {last_pos, Pos + length(Str)}
+      find(Editor, Str, Pos + length(Str), End)
+  end.
+  
+  
+%% ===================================================================== 
+%% @doc Find all
+
+find_all(EditorPid, Str) ->
+  Editor = wx_object:call(EditorPid, text_ctrl),
+  find(Editor, Str, 0, wxStyledTextCtrl:getLength(Editor)).
+  
+replace(EditorPid, Str, Start, End) ->
+  Editor = wx_object:call(EditorPid, text_ctrl),
+  wxStyledTextCtrl:setTargetStart(Editor, Start),
+  wxStyledTextCtrl:setTargetEnd(Editor, End),
+  wxStyledTextCtrl:replaceTarget(Editor, Str).
+  
+replace_all(EditorPid, Str) ->
+    Editor = wx_object:call(EditorPid, text_ctrl),
+    replace_all(Editor, Str, 0, wxStyledTextCtrl:getLength(Editor)).
+  
+replace_all(Editor, Str, Start, End) ->
+  wxStyledTextCtrl:setTargetStart(Editor, Start),
+  wxStyledTextCtrl:setTargetEnd(Editor, End),
+  case wxStyledTextCtrl:searchInTarget(Editor, Str) of
+    -1 ->
+      {no_match};
+    Pos ->
+      wxStyledTextCtrl:replaceTarget(Editor, "REPLACED"),
+      replace_all(Editor, Str, Pos+length(Str), End)
+      % Boob
+  end.

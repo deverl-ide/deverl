@@ -23,7 +23,8 @@
 		 save_new/0, 
 	   save_all/0,
 		 open_file/1,
-		 open_dialog/1]).
+		 open_dialog/1,
+     find_replace/1]).
 
 
 %% The record containing the State.
@@ -257,7 +258,7 @@ handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, Stat
   {noreply, State};
     
 %% Event catchall for testing
-handle_event(Ev = #wx{}, State) ->
+handle_event(Ev, State) ->
   io:format("IDE event catchall: ~p\n", [Ev]),
   {noreply, State}.
 
@@ -723,16 +724,7 @@ create_left_window(Parent) ->
   wxWindow:setBackgroundColour(W1, {123,34,1}),
   wxPanel:setSizer(P2, Sz2),    
   wxSizer:add(Sz2, W1, [{flag, ?wxEXPAND}, {proportion, 1}]),
-  wxToolbook:addPage(Toolbook, P2, "Next", [{bSelect, true}, {imageId, 2}]),
-  
-  % P3 = wxPanel:new(Toolbook),
-  % Sz3 = wxBoxSizer:new(?wxVERTICAL),
-  % W2 = wxWindow:new(P3, 987),
-  % wxWindow:setBackgroundColour(W2, {0,255,0}),
-  % wxPanel:setSizer(P3, Sz3),    
-  % wxSizer:add(Sz3, W2, [{flag, ?wxEXPAND}, {proportion, 1}]),
-  % wxToolbook:setPageSize(Toolbook, {50,50}),
-  % wxToolbook:addPage(Toolbook, P3, "Next"),
+  wxToolbook:addPage(Toolbook, P2, "Tests", [{bSelect, true}, {imageId, 2}]),
   
   wxToolbook:advanceSelection(Toolbook),
   
@@ -800,3 +792,21 @@ toggle_pane(PaneType) ->
 	end,
 	ok. 
 
+  
+%% =====================================================================
+%% @doc Show the find/replace dialog
+%% Might be better in editor.erl
+
+find_replace(Parent) ->
+  find_replace_dialog:start([{parent, Parent}]).
+
+% find_replace(Parent) ->
+%   Data = wxFindReplaceData:new(),
+%   {ok,{_,Pid}} = get_selected_editor(),
+%   editor:find_all(Pid, "Boob").
+  
+% find_replace(Parent) ->
+%   Data = wxFindReplaceData:new(),
+%   {ok,{_,Pid}} = get_selected_editor(),
+%   editor:replace_all(Pid, "wxStyledTextCtrl").
+  
