@@ -72,9 +72,8 @@ init(Config) ->
   PrefPane = load_pref("general", State),
   
   wxSizer:add(PanelSz, PrefPane, [{proportion,1}, {flag, ?wxEXPAND}]),
-  wxSizer:layout(PanelSz),
-	wxSizer:fit(PanelSz, Frame),
 	wxSizer:setSizeHints(PanelSz, Frame),
+  wxSizer:layout(PanelSz),
   
   wxFrame:show(Frame),
   
@@ -101,11 +100,12 @@ handle_event(Ev = #wx{id=Id, event=#wxCommand{type=command_menu_selected}, userD
   {_,Str,_,_,_} = proplists:lookup(Id,Tb),
   wxSizer:detach(Sz, Pref),
   wx_object:call(Pref, shutdown),
+  wxPanel:hide(Panel), %% Hide whilst loading, and show when complete to stop flicker
   NewPref = load_pref(Str, State),
   wxSizer:add(Sz, NewPref, [{proportion,1}, {flag, ?wxEXPAND}]),
+  wxSizer:fit(Sz, Frame),
   wxSizer:layout(Sz),  
-	wxSizer:fit(Sz, Frame),
-	wxSizer:setSizeHints(Sz, Frame),
+  wxPanel:show(Panel),
   {noreply, State#state{pref=NewPref}};
     
 %% Event catchall for testing
