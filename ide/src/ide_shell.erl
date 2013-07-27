@@ -1,8 +1,7 @@
 -module(ide_shell).
 -include_lib("wx/include/wx.hrl").
 
--export([load_response/1]).
-
+-behaviour(wx_object).
 -export([new/1,
 		 init/1, 
 		 terminate/2, 
@@ -11,10 +10,11 @@
 		 handle_call/3, 
 		 handle_cast/2, 
 		 handle_event/2]).
+     
+-export([load_response/1,
+         set_theme/2]).
 
--behaviour(wx_object).
-
--define(SHELL_TEXT_BOX, 001).
+-define(SHELL_TEXT_BOX, 1).
 -define(PROMPT, "> ").
 
 %% The record containing the State.
@@ -30,12 +30,10 @@ init(Config) ->
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
   wxWindow:setSizer(ScrollWin, MainSizer),
 	
-	ShellTextBox = wxTextCtrl:new(ScrollWin, ?SHELL_TEXT_BOX, [{style, ?wxTE_MULTILINE}]),
-	wxWindow:setFont(ShellTextBox, wxFont:new(12, ?wxFONTFAMILY_TELETYPE, 
+	ShellTextBox = wxTextCtrl:new(ScrollWin, ?SHELL_TEXT_BOX, [{style, ?wxTE_MULTILINE bor ?wxTE_RICH}]),
+  wxWindow:setFont(ShellTextBox, wxFont:new(12, ?wxFONTFAMILY_TELETYPE, 
                                                ?wxNORMAL, 
                                                 ?wxNORMAL,[])),
-  % wxWindow:setBackgroundColour(ShellTextBox, ?wxBLACK),
-  % wxWindow:setForegroundColour(ShellTextBox, ?wxWHITE),
                                                 	
 	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
                                           {proportion, 1}]),
@@ -211,8 +209,8 @@ prompt_or_not(_,_Input,_,_,Ev) ->
 %% @doc
 	
 call_parser(Message) ->
-  io:format("Send message~n"),
-  io:format("Message~p~n", [Message]),
+  % io:format("Send message~n"),
+  % io:format("Message~p~n", [Message]),
 	parser:parse_input(Message).
 	
 	
@@ -220,8 +218,8 @@ call_parser(Message) ->
 %% @doc
 	
 load_response(Response) ->
-  io:format("Load response~n"),
-  io:format("Response~p~n", [Response]),
+  % io:format("Load response~n"),
+  % io:format("Response~p~n", [Response]),
 	{Env, Tc} = wx_object:call(?MODULE, text_ctrl),
 	wx:set_env(Env),
 	wxTextCtrl:writeText(Tc, Response).
@@ -358,19 +356,34 @@ replace(Index, Elem, [H|T], Count, Acc) ->
 %% @doc Check cursor is in valid position, and execute appropriate function.
 	
 check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
-  io:format("Point: ~p~n", [wxTextCtrl:getInsertionPoint(Console)]),
+  % io:format("Point: ~p~n", [wxTextCtrl:getInsertionPoint(Console)]),
+  %% NOTE positionToXY is NOT implemented on wxMac, and will always return false.
 	{Bool,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
-  io:format("BOOL: ~p~n", [Bool]),
-	io:format("X: ~p~n", [X]),
-	io:format("Y: ~p~n", [Y]),
-  io:format("In. Point: ~p~n", [wxTextCtrl:getInsertionPoint(Console)]),
+  % io:format("BOOL: ~p~n", [Bool]),
+  % io:format("X: ~p~n", [X]),
+  % io:format("Y: ~p~n", [Y]),
+  % io:format("In. Point: ~p~n", [wxTextCtrl:getInsertionPoint(Console)]),
   LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
 	PromptLen = get_prompt_length(wxTextCtrl:getLineText(Console, LastLine)),
 	case (X > PromptLen + PromptOffset) and (Y =:= LastLine) of
 		true -> 
-      io:format("TRUE FUN~n"),
+      % io:format("TRUE FUN~n"),
 			SuccessFun();
 		false ->
-      io:format("FALSE FUN~n"),
+      % io:format("FALSE FUN~n"),
 			FailFun()
 	end.
+	
+	
+  %% =====================================================================
+  %% @doc Update the shell's theme
+  
+set_theme(Fg, Bg) ->
+  {_, Tc} = wx_object:call(?MODULE, text_ctrl),
+  wxTextCtrl:setBackgroundColour(Tc, Bg),
+  wxTextCtrl:setStyle(Tc, 0, wxTextCtrl:getLastPosition(Tc), wxTextAttr:new(Fg)),
+  %% setDefaultStyle() not working on wxMac 2.9.4
+  %% We cannot update the text colour as a result
+  %% Another good reason to switch to wxStyledTextCtrl
+  wxTextCtrl:setDefaultStyle(Tc, wxTextAttr:new(Fg)).
+    

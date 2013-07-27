@@ -7,8 +7,14 @@
 -behaviour(wx_object).
 
 %% wx_objects callbacks
--export([start/0, init/1, terminate/2,  code_change/3,
-         handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+-export([start/1, 
+         init/1, 
+         terminate/2,  
+         code_change/3,
+         handle_info/2, 
+         handle_call/3, 
+         handle_cast/2, 
+         handle_event/2]).
          
 -record(state, {frame, pref_panel, pref}).        
          
@@ -20,21 +26,17 @@
 
 %% =====================================================================
 %% @doc Start a preference pane instance.
-
-start() ->
-  start([]).
   
-start(Args) ->
-	wx_object:start_link(?MODULE, Args, []).
+start(Config) ->
+	wx_object:start_link(?MODULE, Config, []).
   
   
 %% =====================================================================
 %% @doc Initialise the preference pane.
 
-init(Options) ->
-	wx:new(Options), %% For testing independently
-  
-	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Preferences", 
+init(Config) ->
+  Parent = proplists:get_value(parent, Config),
+	Frame = wxFrame:new(Parent, ?wxID_ANY, "Preferences", 
 													 [{size,{-1,-1}},
                             {style, ?wxSYSTEM_MENU bor
                                                    ?wxFRAME_NO_TASKBAR bor
@@ -63,9 +65,7 @@ init(Options) ->
   Panel = wxPanel:new(Frame),
   PanelSz = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, PanelSz),
-  
-  wxFrame:show(Frame),
-  
+    
   State = #state{frame=Frame, pref_panel={Panel, PanelSz}},
   
   %% Load the first preference pane
@@ -75,6 +75,8 @@ init(Options) ->
   wxSizer:layout(PanelSz),
 	wxSizer:fit(PanelSz, Frame),
 	wxSizer:setSizeHints(PanelSz, Frame),
+  
+  wxFrame:show(Frame),
   
   {Frame, State#state{pref=PrefPane}}.
   
@@ -114,8 +116,9 @@ handle_event(Ev = #wx{}, State) ->
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
-terminate(_Reason, _State) ->
-  ok.
+terminate(_Reason, #state{frame=Frame}) ->
+  io:format("TERMINATE PREFS~n"),
+  wxFrame:destroy(Frame).
     
 
 %% =====================================================================
