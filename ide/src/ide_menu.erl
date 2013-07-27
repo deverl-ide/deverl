@@ -77,7 +77,7 @@ init(Config) ->
     ets:insert(TabId,{?wxID_CLOSE, "Close", "Close the current file.", {ide, close_selected_editor, []}}),
     ets:insert(TabId,{?wxID_CLOSE_ALL, "Close All", "Close all open files.", {ide, close_all_editors, []}}),
     ets:insert(TabId,{?wxID_EXIT, "Exit", "Quit the application.", {}}),
-    ets:insert(TabId,{?wxID_PREFERENCES, "Preferences", "Application preferences.", {ide_prefs, start, []}}),
+    ets:insert(TabId,{?wxID_PREFERENCES, "Preferences", "Application preferences.", {ide_prefs, start, [[{parent,Frame}]]}}),
     
     ets:insert(TabId,{?wxSTC_CMD_UNDO, "Undo", "Undo the last change.", {}}),
     ets:insert(TabId,{?wxSTC_CMD_REDO, "Redo", "Redo the last change.", {}}),
@@ -149,7 +149,7 @@ init(Config) ->
     wxMenu:append(Edit, ?wxSTC_CMD_PASTE, "Paste"),
     wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
     wxMenu:appendSeparator(Edit),
-    wxMenu:append(Edit, ?wxID_FIND, "Find"),
+    wxMenu:append(Edit, ?wxID_FIND, "Find\tCtrl+F"),
   
     Font = wxMenu:new([]), %% Sub-menu
     wxMenu:append(Font, ?MENU_ID_FONT, "Font Picker"),
@@ -303,6 +303,8 @@ handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxCommand{type=command_menu_se
   		 ([{_,_,_,{Module,Function,[]}}]) ->
          Module:Function();
        ([{_,_,_,{Module,Function,Args}}]) ->
+         io:format("ARGS: ~p~n", [Args]),
+         
          erlang:apply(Module,Function,Args);
        (_) ->
          ide_status_bar:set_text_timeout(Sb, {field, help}, "Not yet implemented.")

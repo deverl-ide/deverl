@@ -106,7 +106,7 @@ init(Options) ->
 
 	%% Status bar %%
   StatusBar = ide_status_bar:new([{parent, Frame}]),
-    
+      
 	%% Menubar %%
   ide_menu:new([{parent, Frame}, {sb, StatusBar}]),
  
@@ -683,30 +683,12 @@ add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
 %% =====================================================================
 %% @doc 
 
-create_left_window(Parent) ->
-  % MainPanel = wxPanel:new(Parent),
-  % Sizer = wxBoxSizer:new(?wxVERTICAL),
-  % wxPanel:setSizer(MainPanel, Sizer),
-  %   
-  % Tabs = wxPanel:new(MainPanel, [{size, {-1, 40}}]),
-  % Sb = wxBoxSizer:new(?wxHORIZONTAL),
-  % wxPanel:setSizer(Tabs, Sb),
-  %     
-  % wxSizer:add(Sizer, Tabs, [{flag, ?wxEXPAND}, {proportion, 0}]),  
-  %   
-  % Tree = wxGenericDirCtrl:new(MainPanel, [{dir, "/usr"}, 
-  %                                 {style, ?wxDIRCTRL_SHOW_FILTERS}]),
-  % 
-  % wxSizer:add(Sizer, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
-  % MainPanel.
-  
+create_left_window(Parent) ->  
   ImgList = wxImageList:new(24,24),
   wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
   wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-open.png"))),
   wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
-  
-  io:format("Image count: ~p~n", [wxImageList:getImageCount(ImgList)]),
-  
+    
   Toolbook = wxToolbook:new(Parent, ?wxID_ANY),
   wxToolbook:assignImageList(Toolbook, ImgList),
   
@@ -727,10 +709,6 @@ create_left_window(Parent) ->
   wxToolbook:addPage(Toolbook, P2, "Tests", [{bSelect, true}, {imageId, 2}]),
   
   wxToolbook:advanceSelection(Toolbook),
-  
-  io:format("Page: ~p~n", [wxToolbook:getCurrentPage(Toolbook)]),
-  
-  io:format("Image: ~p~n", [wxToolbook:getPageImage(Toolbook, 0)]),
   
   Toolbook.
   
