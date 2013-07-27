@@ -42,28 +42,27 @@ do_init(Config) ->
 %% =====================================================================
 %% @doc OTP behaviour callbacks
 handle_event(Ev = #wx{}, State = #state{}) ->
-    demo:format(State#state.config,"Got Event ~p~n",[Ev]),
-    {noreply,State}.
+  io:format("Got Event ~p~n",[Ev]),
+  {noreply,State}.
 
-%% Callbacks handled as normal gen_server callbacks
 handle_info(Msg, State) ->
-    demo:format(State#state.config, "Got Info ~p~n",[Msg]),
-    {noreply,State}.
+  io:format( "Got Info ~p~n",[Msg]),
+  {noreply,State}.
 
 handle_call(shutdown, _From, State=#state{parent=Panel}) ->
-    wxWindow:destroy(Panel),
-    {stop, normal, ok, State};
+  wxWindow:destroy(Panel),
+  {stop, normal, ok, State};
 
 handle_call(Msg, _From, State) ->
-    demo:format(State#state.config,"Got Call ~p~n",[Msg]),
-    {reply,ok,State}.
+  io:format("Got Call ~p~n",[Msg]),
+  {reply,ok,State}.
 
 handle_cast(Msg, State) ->
-    io:format("Got cast ~p~n",[Msg]),
-    {noreply,State}.
+  io:format("Got cast ~p~n",[Msg]),
+  {noreply,State}.
 
 code_change(_, _, State) ->
-    {stop, ignore, State}.
+  {stop, ignore, State}.
 
 terminate(_Reason, _) ->
-    ok.
+  ok.
