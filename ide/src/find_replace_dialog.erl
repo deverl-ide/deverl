@@ -88,7 +88,7 @@ do_init(Config) ->
 
 init_data(Parent, Data) ->
   Dl = find_replace_data:get_data(Data),
-  F=fun({T,undefined}) -> ok;
+  F=fun({_,undefined}) -> ok;
        ({find_str, D}) -> 
         wxTextCtrl:setValue(get_window_as(?FIND_INPUT, Parent, wxTextCtrl), D);
        ({replace_str, D}) ->
@@ -124,9 +124,9 @@ get_window_as(Id, Parent, Type) ->
 %% =====================================================================
 %% @doc OTP behaviour callbacks
 
-handle_event(Ev=#wx{obj=Dialog, event=#wxKey{type=key_down, keyCode=27}}, State) ->
+handle_event(#wx{event=#wxKey{type=key_down, keyCode=27}}, State) ->
   {stop, shutdown, State};
-handle_event(Ev = #wx{}, State) ->
+handle_event(Ev, State) ->
   io:format("Got Event ~p~n",[Ev]),
   {noreply,State}.
 
