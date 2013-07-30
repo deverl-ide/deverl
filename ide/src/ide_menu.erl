@@ -303,8 +303,6 @@ handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxCommand{type=command_menu_se
   		 ([{_,_,_,{Module,Function,[]}}]) ->
          Module:Function();
        ([{_,_,_,{Module,Function,Args}}]) ->
-         io:format("ARGS: ~p~n", [Args]),
-         
          erlang:apply(Module,Function,Args);
        (_) ->
          ide_status_bar:set_text_timeout(Sb, {field, help}, "Not yet implemented.")

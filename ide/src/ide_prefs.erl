@@ -129,7 +129,3 @@ load_pref(Pref, #state{frame=Frame, pref_panel={Panel,Sz}}) ->
   Mod = list_to_atom(ModStr),
   ModFile = ModStr ++ ".erl",
   Mod:start([{parent, Panel}]).
-  
-
-%% =====================================================================
-%% @doc OTP behaviour callbacks

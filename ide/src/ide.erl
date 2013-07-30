@@ -4,8 +4,9 @@
 -module(ide).
 
 -include_lib("wx/include/wx.hrl").
--behaviour(wx_object).
+-include("../include/ide.hrl").
 
+-behaviour(wx_object).
 %% wx_objects callbacks
 -export([start/0, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
@@ -776,7 +777,15 @@ toggle_pane(PaneType) ->
 %% Might be better in editor.erl
 
 find_replace(Parent) ->
-  find_replace_dialog:start([{parent, Parent}]).
+  FindData = find_replace_data:new(),
+  
+  %% This data will eventually be loaded from transient/permanent storage
+  find_replace_data:set_find_string(FindData, "example"),
+  find_replace_data:set_options(FindData, ?IGNORE_CASE bor ?WHOLE_WORD bor ?START_WORD),
+  find_replace_data:set_search_location(FindData, ?FIND_LOC_PROJ),
+
+  find_replace_dialog:new(Parent, FindData),
+  find_replace_data:stop(FindData).
 
 % find_replace(Parent) ->
 %   Data = wxFindReplaceData:new(),
