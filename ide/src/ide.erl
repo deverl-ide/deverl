@@ -109,7 +109,12 @@ init(Options) ->
   StatusBar = ide_status_bar:new([{parent, Frame}]),
       
 	%% Menubar %%
-  ide_menu:new([{parent, Frame}, {sb, StatusBar}]),
+  {Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
+  wxFrame:setMenuBar(Frame, Menu),
+  
+  wxFrame:connect(Frame, menu_highlight,  [{userData, MenuTab}]),
+  wxFrame:connect(Frame, menu_close,  []),
+  wxFrame:connect(Frame, command_menu_selected, [{userData,MenuTab}]),
  
   wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),      
@@ -143,7 +148,7 @@ init(Options) ->
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
-  
+      
   State = #state{win=Frame},
   {Frame, State#state{workspace=Workspace, 
             workspace_manager=Manager,
@@ -161,6 +166,7 @@ init(Options) ->
 %% =====================================================================
 %% @doc OTP behaviour callbacks
 
+%% Deal with trapped exit signals
 handle_info({'EXIT',_, wx_deleted}, State) ->
   io:format("Got Info 1~n"),
   {noreply,State};
@@ -233,36 +239,97 @@ handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter
   wxWindow:update(State#state.sash_v),
   {noreply, State#state{sash_h_pos=NewPos}};
  
-handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_sash_pos_changing} = _E}, State) ->
+handle_event(#wx{event = #wxSplitter{type = command_splitter_sash_pos_changing} = _E}, State) ->
   io:format("Sash position changing ~n"),    
   {noreply, State};
   
-handle_event(_W = #wx{event = #wxSplitter{type = command_splitter_doubleclicked} = _E}, State) ->
+handle_event(#wx{event = #wxSplitter{type = command_splitter_doubleclicked} = _E}, State) ->
   io:format("Sash double clicked ~n"),    
   {noreply, State};
     
 %% AuiManager events
-handle_event(_W = #wx{event = #wxAuiManager{type = aui_render} = _E}, State) ->
+%% Not connected currently
+handle_event(#wx{event = #wxAuiManager{type = aui_render} = _E}, State) ->
   io:format("render:~n"),   
   {noreply, State};
     
 handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinotebook_page_changed, 
 			selection = Index}}, State) ->
   %% Make sure editor knows (needs to update sb)
-  io:format("Page changed~n"),
   editor:selected(get_editor_pid(Index, State#state.workspace, State#state.editor_pids), State#state.status_bar),
   {noreply, State};
+    
+%% Find/replace events
+% handle_event()    
     
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
   add_editor(State#state.workspace, State#state.status_bar, State#state.font, 
              State#state.editor_pids),
   {noreply, State};
     
+%% Handle menu highlight events   
+%% See ticket #5 
+%% Although a temporary fix has been implemented for ticket #5, using this handler
+%% would be the preferred option
+handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}},
+           State=#state{status_bar=Sb}) ->
+  ide_status_bar:set_text(Sb, {field, help}, ?STATUS_BAR_HELP_DEFAULT),
+{noreply, State};
+  
+%% Handle menu highlight events    
+handle_event(#wx{id=Id, userData=TabId, event=#wxMenu{type=menu_highlight}},
+             State=#state{status_bar=Sb}) ->
+  Result = ets:lookup(TabId,Id),
+  Fun = fun([{_,_,HelpString,_}]) ->
+         Env = wx:get_env(),
+         spawn(fun() -> wx:set_env(Env),
+                        ide_status_bar:set_text_timeout(Sb, {field, help}, HelpString)
+               end);
+       (_) ->
+         Env = wx:get_env(),
+         spawn(fun() -> wx:set_env(Env),
+                        ide_status_bar:set_text_timeout(Sb, {field, help}, "Help not available.")
+               end)
+       end,
+  Fun(Result),
+  {noreply, State};
+  
+%% Handle menu clicks      
+handle_event(#wx{id=Id, userData=TabId, event=#wxCommand{type=command_menu_selected}},
+             State=#state{status_bar=Sb}) ->
+  Result = ets:lookup(TabId,Id),
+  Fun = fun([{MenuItem,_,_,{Module, Function, Args},{update_label, Frame, Pos}}]) ->
+         Env = wx:get_env(),
+         spawn(fun() -> wx:set_env(Env),
+                        erlang:apply(Module,Function,Args)
+               end),
+         menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos));
+       ([{_,_,_,{Module,Function,[]}}]) ->
+         Env = wx:get_env(),
+         spawn(fun() -> wx:set_env(Env), 
+                        Module:Function()
+               end);
+       ([{_,_,_,{Module,Function,Args}}]) ->
+         Env = wx:get_env(),
+         spawn(fun() -> wx:set_env(Env),
+                        erlang:apply(Module, Function, Args)
+               end);
+       (_) ->
+         %% The status bar updated inside a temporary process for true concurrency,
+         %% otherwise the main event loop waits for this function to return (inc. timeout)
+         Env = wx:get_env(),
+         spawn(fun() -> wx:set_env(Env), 
+                        ide_status_bar:set_text_timeout(Sb, {field, help}, "Not yet implemented.") 
+               end)
+       end,
+  Fun(Result),
+  {noreply, State};  
+   
 %% Event catchall for testing
 handle_event(Ev, State) ->
   io:format("IDE event catchall: ~p\n", [Ev]),
   {noreply, State}.
-
+  
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
@@ -615,21 +682,6 @@ close_all_editors() ->
 
 open_dialog(Parent) ->
 	Dialog = wxDialog:new(Parent, ?ID_DIALOG, "Title"),
-	% DialogSizer = wxBoxSizer:new(?wxVERTICAL),
-	% ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
-	% add_buttons(ButtonSizer, Dialog, Buttons),
-	%	 
-	% Text = wxStaticText:new(Dialog, ?ID_DIALOG_TEXT, Message),
-	% 
-	% wxBoxSizer:addSpacer(DialogSizer, 20),
-	% wxSizer:add(DialogSizer, Text, [{border, 10}, {proportion, 0},{flag, ?wxALIGN_CENTER}]),
-	% wxBoxSizer:addSpacer(DialogSizer, 20),
-	% wxSizer:add(DialogSizer, ButtonSizer, [{flag, ?wxALIGN_RIGHT}]),
-	% wxDialog:setSizer(Dialog, DialogSizer),
-	% Bs = wxDialog:createButtonSizer(Dialog, ?wx_CANCEL bor ?wx_OK),
-
-	% wxSizer:add(Bs, wxButton:new(Dialog,234,[{label, "BOOM"}])),
-	% wxSizer:add(Bs, wxButton:new(Dialog,235,[{label, "NOBO"}])),
   
 	Bs = wxBoxSizer:new(?wxHORIZONTAL),
 	Ba = wxButton:new(Dialog, 1, [{label, "Nibble"}]),
@@ -638,8 +690,7 @@ open_dialog(Parent) ->
 	wxSizer:add(Bs, Bb),
     
 	Box  = wxBoxSizer:new(?wxVERTICAL),
-  
-	% wxSizer:add(Box, Top,  [{border, 2}, {flag, ?wxALL bor ?wxEXPAND}]),
+
 	wxSizer:add(Box, Bs,  [{border, 2}, {flag, ?wxALL bor ?wxEXPAND}]),    
 	wxWindow:setSizer(Dialog, Box),
 	wxSizer:fit(Box, Dialog),
@@ -709,7 +760,7 @@ create_left_window(Parent) ->
   wxSizer:add(Sz2, W1, [{flag, ?wxEXPAND}, {proportion, 1}]),
   wxToolbook:addPage(Toolbook, P2, "Tests", [{bSelect, true}, {imageId, 2}]),
   
-  wxToolbook:advanceSelection(Toolbook),
+  wxToolbook:setSelection(Toolbook, 0),
   
   Toolbook.
   
@@ -780,12 +831,12 @@ find_replace(Parent) ->
   FindData = find_replace_data:new(),
   
   %% This data will eventually be loaded from transient/permanent storage
-  find_replace_data:set_find_string(FindData, "example"),
   find_replace_data:set_options(FindData, ?IGNORE_CASE bor ?WHOLE_WORD bor ?START_WORD),
-  find_replace_data:set_search_location(FindData, ?FIND_LOC_PROJ),
-
-  find_replace_dialog:new(Parent, FindData),
-  find_replace_data:stop(FindData).
+  find_replace_data:set_search_location(FindData, ?FIND_LOC_DOC),
+  
+  Dialog = find_replace_dialog:new(Parent, FindData),  
+  wxEvtHandler:connect(Dialog, command_button_clicked, []),
+  wxDialog:show(Dialog).
 
 % find_replace(Parent) ->
 %   Data = wxFindReplaceData:new(),

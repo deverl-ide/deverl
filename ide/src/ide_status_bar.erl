@@ -1,6 +1,7 @@
 -module(ide_status_bar).
 
 -include_lib("wx/include/wx.hrl").
+-include("../include/ide.hrl").
 
 -behaviour(wx_object).
 
@@ -21,10 +22,10 @@
 -define(FONT_SIZE, 11).
 -define(PADDING, 4).
 
--define(SB_ID_LINE, 1).
--define(SB_ID_SELECTION, 2).
--define(SB_ID_FUNCTION, 3).
--define(SB_ID_HELP, 4).
+% -define(SB_ID_LINE, 1).
+% -define(SB_ID_SELECTION, 2).
+% -define(SB_ID_FUNCTION, 3).
+% -define(SB_ID_HELP, 4).
 
 -define(TIMEOUT, 1000).
 
@@ -93,8 +94,6 @@ init(Config) ->
 
 	add_separator(Sb, SbSizer, Separator),
   
-
-	add_label(Sb, ?wxID_ANY, SbSizer, "Help:"), 
 	Help = wxStaticText:new(Sb, ?SB_ID_HELP, "", []),
 	set_style(Help), 
 	wxSizer:add(SbSizer, Help, [{proportion, 1}, {border, ?PADDING}, {flag, ?wxEXPAND bor ?wxALL bor ?wxALIGN_RIGHT}]),  

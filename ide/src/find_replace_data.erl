@@ -50,7 +50,6 @@ loop(State) ->
       {set_search_loc, Loc} ->
         State#state{search_loc=Loc};
       {From, {get, data}} ->
-        % From ! {result, State},
         From ! {result,[{find_str, State#state.find_str}, 
                 {replace_str, State#state.replace_str},
                 {options, State#state.options},

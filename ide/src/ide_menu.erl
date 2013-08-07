@@ -1,19 +1,11 @@
 -module(ide_menu).
 
 %% Client API
--export([new/1]). 
-
-%% wx_objects callbacks
--export([init/1, terminate/2,  code_change/3,
-         handle_info/2, handle_cast/2, handle_call/3, handle_event/2]).
+-export([create/1, update_label/2]). 
          
 -include_lib("wx/include/wx.hrl").
+-include("../include/ide.hrl").
 
--behaviour(wx_object).
-
--define(STATUS_BAR_HELP_DEFAULT, "").
-
-%% Menubar/toolbar macros   
 -define(MENU_ID_SAVE_ALL,          4001).          
 -define(MENU_ID_FONT,              6000).
 -define(MENU_FONT_BIGGER,          4002).
@@ -44,29 +36,21 @@
 -define(MENU_ID_MAX_EDITOR,        6024).
 -define(MENU_ID_MAX_UTIL,          6025).
 
-
--record(state, {ets_tab}).
-
-
 %% =====================================================================
 %% @doc Start/add a new menubar/toolbar to the frame
 
-new(Config) ->
-    start(Config).
+create(Config) ->
+    init(Config).
 
-start(Config) ->
-    wx_object:start(?MODULE, Config, []).
-    
     
 %% =====================================================================
 %% @doc Initialise the menubar/toolbar
 
 init(Config) ->
     Frame = proplists:get_value(parent, Config),
-    Sb = proplists:get_value(sb, Config),
    
-    %%%%%%%%%%%%%%%%%%%%%
-    %%%%% ETS Table %%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%% ETS Table %%%%%%%%%%%%%%%%%%%%%%%%%%
     TabId = ets:new(myTable, []),
     ets:insert(TabId,{?wxID_NEW, "New", "Create a new file.", {ide,add_editor,[]}}),
     ets:insert(TabId,{?wxID_OPEN, "Open", "Open an existing file.", {ide,open_file,[Frame]}}),
@@ -120,8 +104,8 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_MANUAL, "Manual", "View the IDE manual.", {}}),
     ets:insert(TabId,{?wxID_ABOUT, "About", "About.", {about, new, [{parent, Frame}]}}),
     
-    %%%%%%%%%%%%%%%%%%%
-    %%%%% Menubar %%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%% Menubar %%%%%%%%%%%%%%%%%%%%%%%%%%
     MenuBar     = wxMenuBar:new(),
       
     File        = wxMenu:new([]),
@@ -219,114 +203,51 @@ init(Config) ->
     wxMenuBar:append(MenuBar, ToolMenu, "Tools"),
     wxMenuBar:append(MenuBar, Help, "Help"),
     
-    %%%%%%%%%%%%%%%%%%%
-    %%%%% Toolbar %%%%%
-  	ToolBar = wxFrame:createToolBar(Frame, []),
-    wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
-	%% Id, StatusBar help, filename, args, add seperator
-    Tools = [{?wxID_NEW,           "ToolTip", "../icons/document-new.png",    [{shortHelp, "Create a new file"}],        		   false},
-             {?wxID_OPEN,          "ToolTip", "../icons/document-open.png",   [{shortHelp, "Open existing document"}],   		   false},
-             {?wxID_SAVE,          "ToolTip", "../icons/document-save.png",   [{shortHelp, "Save the current file"}],    		   true}, 
-             {?wxID_CLOSE,         "ToolTip", "../icons/document-close.png",  [{shortHelp, "Close the current file"}],   		   true},
-             {?MENU_ID_COMPILE,    "ToolTip", "../icons/module-compile.png",  [{shortHelp, "Compile the current file"}], 		   false},
-             {?MENU_ID_RUN,        "ToolTip", "../icons/module-run.png",      [{shortHelp, "Run the current file"}],     		   true},
-             {?MENU_ID_HIDE_TEST,  "ToolTip", "../icons/hide-test.png",       [{shortHelp, "Hide the test pane"}],       		   false},
-             {?MENU_ID_HIDE_UTIL,  "ToolTip", "../icons/hide-util.png",       [{shortHelp, "Hide the utilities pane"}],  		   false},
-             {?MENU_ID_MAX_EDITOR, "ToolTip", "../icons/maximise-editor.png", [{shortHelp, "Maximise/minimise the text editor"}], false},
-             {?MENU_ID_MAX_UTIL,   "ToolTip", "../icons/maximise-util.png",   [{shortHelp, "Maximise/minimise the utilities"}],   false}],
-
-    AddTool = fun({Id, Tooltip, Filename, Args, true}) ->
-		          wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args),
-		          wxToolBar:addSeparator(ToolBar);
-		         ({Id, Tooltip, Filename, Args, _}) ->
-		          wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args)
-              end,       
-
-    [AddTool(Tool) || Tool <- Tools],
-
-    wxToolBar:realize(ToolBar),
-
-    Fun = fun (E,O) -> 
-             handle_event(E, O)
-           end,
-    wxFrame:connect(Frame, menu_highlight,  [{callback, Fun},{userData, {Sb,TabId}}]),
-    wxFrame:connect(Frame, menu_close,  [{userData, Sb}]),
-    wxFrame:connect(Frame, command_menu_selected, [{userData, {Sb,TabId}}]),
-    
-    wxFrame:setMenuBar(Frame, MenuBar),
-    
-    {MenuBar, #state{ets_tab=TabId}}.
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %%%%%%%%%%%%%%%%%%%%%%%%%% Toolbar %%%%%%%%%%%%%%%%%%%%%%%%%%
+      ToolBar = wxFrame:createToolBar(Frame, []),
+      wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
+  %% Id, StatusBar help, filename, args, add seperator
+      Tools = [{?wxID_NEW,           "ToolTip", "../icons/document-new.png",    [{shortHelp, "Create a new file"}],               false},
+               {?wxID_OPEN,          "ToolTip", "../icons/document-open.png",   [{shortHelp, "Open existing document"}],          false},
+               {?wxID_SAVE,          "ToolTip", "../icons/document-save.png",   [{shortHelp, "Save the current file"}],           true}, 
+               {?wxID_CLOSE,         "ToolTip", "../icons/document-close.png",  [{shortHelp, "Close the current file"}],          true},
+               {?MENU_ID_COMPILE,    "ToolTip", "../icons/module-compile.png",  [{shortHelp, "Compile the current file"}],        false},
+               {?MENU_ID_RUN,        "ToolTip", "../icons/module-run.png",      [{shortHelp, "Run the current file"}],            true},
+               {?MENU_ID_HIDE_TEST,  "ToolTip", "../icons/hide-test.png",       [{shortHelp, "Hide the test pane"}],              false},
+               {?MENU_ID_HIDE_UTIL,  "ToolTip", "../icons/hide-util.png",       [{shortHelp, "Hide the utilities pane"}],         false},
+               {?MENU_ID_MAX_EDITOR, "ToolTip", "../icons/maximise-editor.png", [{shortHelp, "Maximise/minimise the text editor"}], false},
+               {?MENU_ID_MAX_UTIL,   "ToolTip", "../icons/maximise-util.png",   [{shortHelp, "Maximise/minimise the utilities"}],   false}],
+  
+      AddTool = fun({Id, Tooltip, Filename, Args, true}) ->
+              wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args),
+              wxToolBar:addSeparator(ToolBar);
+             ({Id, Tooltip, Filename, Args, _}) ->
+              wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args)
+                end,       
+  
+      [AddTool(Tool) || Tool <- Tools],
+  
+      wxToolBar:realize(ToolBar),
+        
+    {MenuBar, TabId}.
 
 
 %% =====================================================================
-%% @doc OTP behaviour callbacks
-
-handle_info(Msg, State) ->
-    io:format("Got Info ~p~n",[Msg]),
-    {noreply,State}.
-
-handle_call(Msg, _From, State) ->
-    io:format("ide_menu handle call~p~n",[Msg]),
-    {reply,State,State}.
-
-handle_cast(Msg, State) ->
-    io:format("Got cast ~p~n",[Msg]),
-    {noreply,State}.
-  
-    
-%% Handle menu closed event    
-handle_event(#wx{userData=Sb, event=#wxMenu{type=menu_close}},
-	           State) ->
-  ide_status_bar:set_text_timeout(Sb, {field, help}, ?STATUS_BAR_HELP_DEFAULT),
-  {noreply, State};
-       
-%% Handle menu highlight events    
-handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxMenu{type=menu_highlight}},
-	           State) ->
-  Result = ets:lookup(Tab,Id),
-  Fun = fun([{_,_,HelpString,_}]) ->
-         ide_status_bar:set_text(Sb, {field, help}, HelpString);
-       (_) ->
-         ide_status_bar:set_text(Sb, {field, help}, "Help not available.")
-       end,
-  Fun(Result),
-  {noreply, State};
-       
-handle_event(#wx{id=Id, userData={Sb,Tab}, event=#wxCommand{type=command_menu_selected}},
-             State) ->
-  Result = ets:lookup(Tab,Id),
-  Fun = fun([{MenuItem,_,_,{Module, Function, Args},{update_label, Frame, Pos}}]) ->
-  		   erlang:apply(Module,Function,Args),
-  		   MenuBar = wxFrame:getMenuBar(Frame),
-  		   Menu = wxMenuBar:getMenu(MenuBar, Pos),
-  		   update_label(MenuItem, Menu);
-  		 ([{_,_,_,{Module,Function,[]}}]) ->
-         Module:Function();
-       ([{_,_,_,{Module,Function,Args}}]) ->
-         erlang:apply(Module,Function,Args);
-       (_) ->
-         ide_status_bar:set_text_timeout(Sb, {field, help}, "Not yet implemented.")
-       end,
-  Fun(Result),
-  {noreply, State};
-       
-handle_event(E,O) ->
-	io:format("TRACE: In menubar handle_event ~p~n~p~n", [E,O]),
-	{noreply, O}.
-
-code_change(_, _, State) ->
-  {stop, not_yet_implemented, State}.
-
-terminate(_Reason, #state{ets_tab=Tab}) ->
-  io:format("TERMINATE MENU~n"),
-  ets:delete(Tab),
-  ok.
+%% @doc Add all tab width options to menu
+%%
+%% @private
 
 add_tab_width_menu(TabMenu, 8) ->
   wxMenu:appendRadioItem(TabMenu, 7008, integer_to_list(8));
 add_tab_width_menu(TabMenu, Width) ->
   wxMenu:appendRadioItem(TabMenu, 7000 + Width, integer_to_list(Width)),
   add_tab_width_menu(TabMenu, Width + 1).
+  
+  
+%% =====================================================================
+%% @doc Update the label of a menu item
+%%
 
 update_label(MenuItem, Menu) ->
 	case wxMenu:getLabel(Menu, MenuItem) of

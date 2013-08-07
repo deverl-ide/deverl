@@ -10,7 +10,7 @@
 -export([new/1, new/2]).
 
 -record(state, {frame,
-            	  config
+            	  data
             	 }).
 
 new(Parent) ->
@@ -74,12 +74,14 @@ do_init(Config) ->
     [] -> ok;
     _ -> init_data(Panel, Data)
   end,  
-    
-  wxDialog:show(Dialog),
+      
+  wxPanel:connect(Panel, key_down, [{skip, true}]),
+  wxPanel:connect(Panel, command_checkbox_clicked, []),
+  wxPanel:connect(Panel, command_choice_selected, []),
+  wxPanel:connect(Panel, command_text_updated, []),
+  wxPanel:connect(Panel, command_button_clicked, [{skip, true}]),  
   
-  wxPanel:connect(Panel, key_down, []),
-  
-  {Dialog, #state{frame=Dialog}}.
+  {Dialog, #state{frame=Dialog, data=Data}}.
  
  
 %% =====================================================================
@@ -126,8 +128,28 @@ get_window_as(Id, Parent, Type) ->
 
 handle_event(#wx{event=#wxKey{type=key_down, keyCode=27}}, State) ->
   {stop, shutdown, State};
-handle_event(Ev, State) ->
-  io:format("Got Event ~p~n",[Ev]),
+handle_event(#wx{id=Cb, event=#wxCommand{type=command_checkbox_clicked, commandInt=Checked}}, 
+             State=#state{data=Data}) ->
+  Options = find_replace_data:get_options(Data),
+  NewOptions = case Checked of
+    0 -> Options - Cb;
+    1 -> Options + Cb
+  end,
+  find_replace_data:set_options(Data, NewOptions),
+  {noreply,State};
+handle_event(#wx{event=#wxCommand{type=command_choice_selected, commandInt=Choice}}, 
+             State=#state{data=Data}) ->
+  find_replace_data:set_search_location(Data, Choice),
+  {noreply,State};
+handle_event(#wx{id=Id, event=#wxCommand{type=command_text_updated, cmdString=Str}}, 
+             State=#state{data=Data}) ->
+  case Id of
+    ?FIND_INPUT -> find_replace_data:set_find_string(Data, Str);
+    ?REPLACE_INPUT -> find_replace_data:set_replace_string(Data, Str)
+  end,
+  {noreply,State};
+handle_event(Ev, State=#state{}) ->
+  io:format("Got Event (find_replace_dialog) ~p~n",[Ev]),
   {noreply,State}.
 
 handle_info(Msg, State) ->
