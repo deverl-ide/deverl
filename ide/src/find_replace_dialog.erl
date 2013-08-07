@@ -79,7 +79,8 @@ do_init(Config) ->
   wxPanel:connect(Panel, command_checkbox_clicked, []),
   wxPanel:connect(Panel, command_choice_selected, []),
   wxPanel:connect(Panel, command_text_updated, []),
-  wxPanel:connect(Panel, command_button_clicked, [{skip, true}]),  
+  wxPanel:connect(Panel, command_button_clicked, [{skip, true}]), 
+  % wxPanel:connect(Panel, command_button_clicked, [{callback, fun(E,O) -> io:format("E: ~p~nO:~p~n", [E,O]),wxEvent:skip(O) end}]),  
   
   {Dialog, #state{frame=Dialog, data=Data}}.
  

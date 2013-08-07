@@ -147,7 +147,7 @@ init(Options) ->
     
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
-  wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
+  wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
       
   State = #state{win=Frame},
   {Frame, State#state{workspace=Workspace, 
@@ -247,7 +247,8 @@ handle_event(#wx{event = #wxSplitter{type = command_splitter_doubleclicked} = _E
   io:format("Sash double clicked ~n"),    
   {noreply, State};
     
-%% AuiManager events
+%% --- AuiManager events
+
 %% Not connected currently
 handle_event(#wx{event = #wxAuiManager{type = aui_render} = _E}, State) ->
   io:format("render:~n"),   
@@ -257,17 +258,15 @@ handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinote
 			selection = Index}}, State) ->
   %% Make sure editor knows (needs to update sb)
   editor:selected(get_editor_pid(Index, State#state.workspace, State#state.editor_pids), State#state.status_bar),
-  {noreply, State};
-    
-%% Find/replace events
-% handle_event()    
+  {noreply, State}; 
     
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
   add_editor(State#state.workspace, State#state.status_bar, State#state.font, 
              State#state.editor_pids),
   {noreply, State};
-    
-%% Handle menu highlight events   
+
+%% --- Menu events    
+
 %% See ticket #5 
 %% Although a temporary fix has been implemented for ticket #5, using this handler
 %% would be the preferred option
@@ -305,15 +304,17 @@ handle_event(#wx{id=Id, userData=TabId, event=#wxCommand{type=command_menu_selec
                end),
          menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos));
        ([{_,_,_,{Module,Function,[]}}]) ->
+         % Module:Function(); %% Called from this process
          Env = wx:get_env(),
          spawn(fun() -> wx:set_env(Env), 
                         Module:Function()
                end);
        ([{_,_,_,{Module,Function,Args}}]) ->
-         Env = wx:get_env(),
-         spawn(fun() -> wx:set_env(Env),
-                        erlang:apply(Module, Function, Args)
-               end);
+         erlang:apply(Module, Function, Args); %% Called from this process
+         % Env = wx:get_env(),
+         % spawn(fun() -> wx:set_env(Env),
+         %                erlang:apply(Module, Function, Args)
+         %       end);
        (_) ->
          %% The status bar updated inside a temporary process for true concurrency,
          %% otherwise the main event loop waits for this function to return (inc. timeout)
@@ -323,7 +324,14 @@ handle_event(#wx{id=Id, userData=TabId, event=#wxCommand{type=command_menu_selec
                end)
        end,
   Fun(Result),
-  {noreply, State};  
+  {noreply, State};
+  
+    
+%% --- Find/replace events
+handle_event(#wx{id=Id, event=#wxCommand{type=command_button_clicked}},
+             State) ->
+  io:format("Find replace clicked"),
+  {noreply, State};
    
 %% Event catchall for testing
 handle_event(Ev, State) ->
@@ -836,6 +844,9 @@ find_replace(Parent) ->
   
   Dialog = find_replace_dialog:new(Parent, FindData),  
   wxEvtHandler:connect(Dialog, command_button_clicked, []),
+  %% Right now, these menu functions are called from a temporary process, so this evtHandler
+  %% is destroyed prior to be usefull :( FFS this is clearly no good.
+  %% Those functions such as this that need to persist can't be called from a temp process.
   wxDialog:show(Dialog).
 
 % find_replace(Parent) ->

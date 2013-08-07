@@ -26,13 +26,13 @@ new(Config) ->
 %% Initialise the server's state
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
-  ScrollWin = wxPanel:new(Parent, []),
+  Panel = wxPanel:new(Parent, []),
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
-  wxWindow:setSizer(ScrollWin, MainSizer),
+  wxWindow:setSizer(Panel, MainSizer),
 	
-	ShellTextBox = wxTextCtrl:new(ScrollWin, ?SHELL_TEXT_BOX, [{style, ?wxTE_MULTILINE bor ?wxTE_RICH}]),
+	ShellTextBox = wxTextCtrl:new(Panel, ?SHELL_TEXT_BOX, [{style, ?wxTE_MULTILINE bor ?wxTE_RICH}]),
   wxWindow:setFont(ShellTextBox, wxFont:new(12, ?wxFONTFAMILY_TELETYPE, 
-                                               ?wxNORMAL, 
+                                                ?wxNORMAL, 
                                                 ?wxNORMAL,[])),
                                                 	
 	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
@@ -44,7 +44,7 @@ init(Config) ->
 													   end
                                            }]),
 		
-	{ScrollWin, #state{win=ScrollWin, 
+	{Panel, #state{win=Panel, 
 					   textctrl=ShellTextBox, 
 					   cmd_history=[],
 					   current_cmd=0,
@@ -199,7 +199,8 @@ prompt_or_not(N,Input,Console,LineText,Ev) when N>1 ->
       %% BUG R16B01 - wx 2.9.4
       %% Skipping this event causes the default behaviour to occur
       %% which calls our event handler a second time, which effectively duplicates the user's input.
-			wxEvent:skip(Ev)
+      wxEvent:skip(Ev)
+      ok
 	end;
 prompt_or_not(_,_Input,_,_,Ev) ->
 	wxEvent:skip(Ev).
