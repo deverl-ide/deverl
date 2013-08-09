@@ -310,11 +310,12 @@ handle_event(#wx{id=Id, userData=TabId, event=#wxCommand{type=command_menu_selec
                         Module:Function()
                end);
        ([{_,_,_,{Module,Function,Args}}]) ->
-         erlang:apply(Module, Function, Args); %% Called from this process
-         % Env = wx:get_env(),
-         % spawn(fun() -> wx:set_env(Env),
-         %                erlang:apply(Module, Function, Args)
-         %       end);
+         io:format("Mod:Func:Args~n"),
+         % erlang:apply(Module, Function, Args); %% Called from this process
+         Env = wx:get_env(),
+         spawn(fun() -> wx:set_env(Env),
+                        erlang:apply(Module, Function, Args)
+               end);
        (_) ->
          %% The status bar updated inside a temporary process for true concurrency,
          %% otherwise the main event loop waits for this function to return (inc. timeout)

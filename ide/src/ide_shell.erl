@@ -39,9 +39,6 @@ init(Config) ->
   ?stc:setMarginLeft(ShellTextBox, 2),
   ?stc:setLexer(ShellTextBox, ?wxSTC_LEX_NULL),
   
-  Font = wxFont:new(13, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL,  ?wxNORMAL,[]),
-  io:format("Family: ~p~nFace: ~p~n", [wxFont:getFamily(Font), wxFont:getFaceName(Font)]),
-  
   ?stc:styleSetFont(ShellTextBox, ?wxSTC_STYLE_DEFAULT, 
                     wxFont:new(13, ?wxFONTFAMILY_TELETYPE, 
                                   ?wxNORMAL, 
