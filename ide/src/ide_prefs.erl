@@ -84,7 +84,7 @@ init(Config) ->
 %% @doc OTP behaviour callbacks
 
 handle_info(Msg, State) ->
-  io:format("Got Info ~p~n",[Msg]),
+  io:format("Got Info (prefs) ~p~n",[Msg]),
   {noreply,State}.
     
 handle_call(Msg, _From, State) ->

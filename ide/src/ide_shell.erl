@@ -369,7 +369,6 @@ check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
     get_cur_prompt_length(Console),
   case (?stc:getCurrentPos(Console) > Limit + PromptOffset)  of
     true -> 
-      io:format("SUCCESS"),
       SuccessFun();
     false ->
       FailFun()

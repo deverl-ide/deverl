@@ -302,7 +302,7 @@ handle_event(#wx{id=Id, userData=TabId, event=#wxCommand{type=command_menu_selec
          spawn(fun() -> wx:set_env(Env),
                         erlang:apply(Module,Function,Args)
                end),
-         menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos));
+         ide_menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos));
        ([{_,_,_,{Module,Function,[]}}]) ->
          % Module:Function(); %% Called from this process
          Env = wx:get_env(),
