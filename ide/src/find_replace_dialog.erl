@@ -7,7 +7,9 @@
 -export([init/1, terminate/2,  code_change/3,
 	       handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
--export([new/1, new/2]).
+-export([new/1, 
+         new/2,
+         get_ref/1]).
 
 -record(state, {frame,
             	  data
@@ -17,7 +19,7 @@ new(Parent) ->
   new(Parent, []).
 
 new(Parent, Data) ->
-  wx_object:start(?MODULE, {Parent, Data}, []).
+  wx_object:start({local, ?MODULE}, ?MODULE, {Parent, Data}, []).
 
 init(Config) ->
   wx:batch(fun() -> do_init(Config) end).
@@ -75,16 +77,23 @@ do_init(Config) ->
     _ -> init_data(Panel, Data)
   end,  
       
+  wxDialog:connect(Dialog, close_window),
+      
   wxPanel:connect(Panel, key_down, [{skip, true}]),
   wxPanel:connect(Panel, command_checkbox_clicked, []),
   wxPanel:connect(Panel, command_choice_selected, []),
   wxPanel:connect(Panel, command_text_updated, []),
-  % wxPanel:connect(Panel, command_button_clicked, [{skip, true}]), 
+  wxPanel:connect(Panel, command_button_clicked, [{skip, true}]), 
   % wxPanel:connect(Panel, command_button_clicked, [{callback, fun(E,O) -> io:format("E: ~p~nO:~p~n", [E,O]),wxEvent:skip(O) end}]),  
   
   {Dialog, #state{frame=Dialog, data=Data}}.
  
- 
+%% =====================================================================
+%% @doc Get the reference to a living dialog.
+
+get_ref(This) ->
+  wx_object:call(This, ref).
+
 %% =====================================================================
 %% @doc Initialise the dialog
 %% @private
@@ -126,9 +135,12 @@ get_window_as(Id, Parent, Type) ->
   
 %% =====================================================================
 %% @doc OTP behaviour callbacks
-
+handle_event(#wx{event=#wxClose{}}, State) ->
+  {stop, normal, State};
+  
 handle_event(#wx{event=#wxKey{type=key_down, keyCode=27}}, State) ->
   {stop, shutdown, State};
+  
 handle_event(#wx{id=Cb, event=#wxCommand{type=command_checkbox_clicked, commandInt=Checked}}, 
              State=#state{data=Data}) ->
   Options = find_replace_data:get_options(Data),
@@ -138,10 +150,12 @@ handle_event(#wx{id=Cb, event=#wxCommand{type=command_checkbox_clicked, commandI
   end,
   find_replace_data:set_options(Data, NewOptions),
   {noreply,State};
+  
 handle_event(#wx{event=#wxCommand{type=command_choice_selected, commandInt=Choice}}, 
              State=#state{data=Data}) ->
   find_replace_data:set_search_location(Data, Choice),
   {noreply,State};
+  
 handle_event(#wx{id=Id, event=#wxCommand{type=command_text_updated, cmdString=Str}}, 
              State=#state{data=Data}) ->
   case Id of
@@ -149,9 +163,33 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_text_updated, cmdString=St
     ?REPLACE_INPUT -> find_replace_data:set_replace_string(Data, Str)
   end,
   {noreply,State};
+  
+handle_event(E=#wx{id=Id, event=#wxCommand{type=command_button_clicked}}, 
+             State=#state{data=Data}) ->
+  io:format("E: ~p~n", [E]),
+  case Id of
+    ?FIND_ALL ->
+      {ok, {_Index,Pid}} = ide:get_selected_editor(),
+      editor:find_all(Pid, find_replace_data:get_find_string(Data)),
+      ok;
+    ?REPLACE_ALL ->
+      {ok, {_Index,Pid}} = ide:get_selected_editor(),
+      editor:replace_all(Pid, find_replace_data:get_find_string(Data),
+        find_replace_data:get_replace_string(Data)),
+      ok;  
+    ?REPLACE_FIND ->
+      ok;
+    ?FIND_NEXT ->
+      ok;
+    ?FIND_PREV ->
+      ok
+  end,  
+  {noreply,State};
+               
 handle_event(Ev, State=#state{}) ->
   io:format("Got Event (find_replace_dialog) ~p~n",[Ev]),
   {noreply,State}.
+
 
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
@@ -161,6 +199,9 @@ handle_call(shutdown, _From, State=#state{frame=Dialog}) ->
   io:format("FIND SHUTDOWN~n"),
   wxWindow:destroy(Dialog),
   {stop, normal, ok, State};
+
+handle_call(ref, _From, State=#state{frame=Dialog}) ->
+  {reply,Dialog,State};
 
 handle_call(Msg, _From, State) ->
   io:format("Got Call ~p~n",[Msg]),
@@ -175,4 +216,5 @@ code_change(_, _, State) ->
 
 terminate(_Reason, #state{frame=Dialog}) ->
   io:format("TERMINATE FIND/REPLACE~n"),
+  erlang:unregister(?MODULE),
   wxDialog:destroy(Dialog).

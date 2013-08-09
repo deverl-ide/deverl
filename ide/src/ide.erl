@@ -310,7 +310,7 @@ handle_event(#wx{id=Id, userData=TabId, event=#wxCommand{type=command_menu_selec
                         Module:Function()
                end);
        ([{_,_,_,{Module,Function,Args}}]) ->
-         io:format("Mod:Func:Args~n"),
+         % io:format("Mod:Func:Args~n"),
          % erlang:apply(Module, Function, Args); %% Called from this process
          Env = wx:get_env(),
          spawn(fun() -> wx:set_env(Env),
@@ -327,12 +327,6 @@ handle_event(#wx{id=Id, userData=TabId, event=#wxCommand{type=command_menu_selec
   Fun(Result),
   {noreply, State};
   
-    
-%% --- Find/replace events
-handle_event(#wx{id=Id, event=#wxCommand{type=command_button_clicked}},
-             State) ->
-  io:format("Find replace clicked"),
-  {noreply, State};
    
 %% Event catchall for testing
 handle_event(Ev, State) ->
@@ -502,7 +496,7 @@ get_editor_pid(Index, Workspace, PidTable) ->
 
 	
 %% =====================================================================
-%% @doc Get the Pid to the currently selected editor.
+%% @doc Get the Pid of the currently selected editor.
 	
 -spec get_selected_editor() -> Result when
 	Result :: {'error', 'no_open_editor'} | 
@@ -843,20 +837,10 @@ find_replace(Parent) ->
   find_replace_data:set_options(FindData, ?IGNORE_CASE bor ?WHOLE_WORD bor ?START_WORD),
   find_replace_data:set_search_location(FindData, ?FIND_LOC_DOC),
   
-  Dialog = find_replace_dialog:new(Parent, FindData),  
-  wxEvtHandler:connect(Dialog, command_button_clicked, []),
-  %% Right now, these menu functions are called from a temporary process, so this evtHandler
-  %% is destroyed prior to be usefull :( FFS this is clearly no good.
-  %% Those functions such as this that need to persist can't be called from a temp process.
-  wxDialog:show(Dialog).
-
-% find_replace(Parent) ->
-%   Data = wxFindReplaceData:new(),
-%   {ok,{_,Pid}} = get_selected_editor(),
-%   editor:find_all(Pid, "Boob").
-  
-% find_replace(Parent) ->
-%   Data = wxFindReplaceData:new(),
-%   {ok,{_,Pid}} = get_selected_editor(),
-%   editor:replace_all(Pid, "wxStyledTextCtrl").
+	case erlang:whereis(find_replace_dialog) of
+		undefined ->
+			wxDialog:show(find_replace_dialog:new(Parent, FindData));
+		Pid ->
+			wxDialog:raise(find_replace_dialog:get_ref(Pid))
+	end.
   

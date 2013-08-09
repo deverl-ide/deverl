@@ -11,7 +11,7 @@
   selected/2,
   find/2,
   find_all/2,
-  replace_all/2]).
+  replace_all/3]).
 
 -export([start/1,
   init/1, 
@@ -26,7 +26,7 @@
 -behaviour(wx_object).
 
 -define(GREY, {25,0,0}).
--define(SELECTION_COLOUR, {200,255,255}).
+-define(SELECTION_COLOUR, {100,255,255}).
 
 -define(LEFT_MARGIN_WIDTH, 6).
 -define(RIGHT_MARGIN_WIDTH, 6).
@@ -89,7 +89,7 @@ init(Config) ->
         
   %% Indicators
   wxStyledTextCtrl:indicatorSetStyle(Editor,0,?wxSTC_INDIC_ROUNDBOX),
-  wxStyledTextCtrl:indicatorSetForeground(Editor, 0, ?wxBLUE),
+  wxStyledTextCtrl:indicatorSetForeground(Editor, 0, {100,255,255,255}),
   wxStyledTextCtrl:indicatorSetStyle(Editor,1,?wxSTC_INDIC_BOX),
   wxStyledTextCtrl:indicatorSetStyle(Editor,2,?wxSTC_INDIC_PLAIN), %% underline
   
@@ -439,30 +439,43 @@ find(Editor, Str, Start, End) ->
   
   
 %% ===================================================================== 
-%% @doc Find all
+%% @doc Find all occurrences of Str.
 
 find_all(EditorPid, Str) ->
   Editor = wx_object:call(EditorPid, text_ctrl),
   find(Editor, Str, 0, wxStyledTextCtrl:getLength(Editor)).
-  
-replace(EditorPid, Str, Start, End) ->
-  Editor = wx_object:call(EditorPid, text_ctrl),
-  wxStyledTextCtrl:setTargetStart(Editor, Start),
-  wxStyledTextCtrl:setTargetEnd(Editor, End),
-  wxStyledTextCtrl:replaceTarget(Editor, Str).
-  
-replace_all(EditorPid, Str) ->
+	
+	
+%% ===================================================================== 
+%% @doc Replace all occurrences of str with RepStr.
+
+replace_all(EditorPid, Str, RepStr) ->
     Editor = wx_object:call(EditorPid, text_ctrl),
-    replace_all(Editor, Str, 0, wxStyledTextCtrl:getLength(Editor)).
-  
-replace_all(Editor, Str, Start, End) ->
+    replace_all(Editor, Str, RepStr, 0, wxStyledTextCtrl:getLength(Editor)).
+
+
+	%% ===================================================================== 
+	%% @doc Replace all occurrences of str with RepStr.
+	
+replace_all(Editor, Str, RepStr, Start, End) ->
   wxStyledTextCtrl:setTargetStart(Editor, Start),
   wxStyledTextCtrl:setTargetEnd(Editor, End),
   case wxStyledTextCtrl:searchInTarget(Editor, Str) of
     -1 ->
       {no_match};
     Pos ->
-      wxStyledTextCtrl:replaceTarget(Editor, "REPLACED"),
-      replace_all(Editor, Str, Pos+length(Str), End)
+      wxStyledTextCtrl:replaceTarget(Editor, RepStr),
+      replace_all(Editor, Str, RepStr, Pos+length(Str), End)
       % Boob
   end.
+	
+				
+%% ===================================================================== 
+%% @doc Replace all occurrences of Str within the range Start -> End. 
+
+replace(EditorPid, Str, Start, End) ->
+  Editor = wx_object:call(EditorPid, text_ctrl),
+  wxStyledTextCtrl:setTargetStart(Editor, Start),
+  wxStyledTextCtrl:setTargetEnd(Editor, End),
+  wxStyledTextCtrl:replaceTarget(Editor, Str).
+
