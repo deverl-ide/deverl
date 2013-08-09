@@ -14,8 +14,10 @@
 -export([load_response/1,
          set_theme/2]).
 
--define(SHELL_TEXT_BOX, 1).
+-define(ID_SHELL_TEXT_BOX, 1).
 -define(PROMPT, "> ").
+
+-define(stc, wxStyledTextCtrl).
 
 %% The record containing the State.
 -record(state, {win, textctrl, cmd_history, current_cmd, wx_env}).
@@ -29,27 +31,38 @@ init(Config) ->
   Panel = wxPanel:new(Parent, []),
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
   wxWindow:setSizer(Panel, MainSizer),
-	
-	ShellTextBox = wxTextCtrl:new(Panel, ?SHELL_TEXT_BOX, [{style, ?wxTE_MULTILINE bor ?wxTE_RICH}]),
-  wxWindow:setFont(ShellTextBox, wxFont:new(12, ?wxFONTFAMILY_TELETYPE, 
-                                                ?wxNORMAL, 
-                                                ?wxNORMAL,[])),
+
+  ShellTextBox = ?stc:new(Panel, [{id, ?ID_SHELL_TEXT_BOX}]),
+  ?stc:setMarginWidth(ShellTextBox, 0, 0),
+  ?stc:setMarginWidth(ShellTextBox, 1, 0),
+  ?stc:setMarginWidth(ShellTextBox, 2, 0),
+  ?stc:setMarginLeft(ShellTextBox, 2),
+  ?stc:setLexer(ShellTextBox, ?wxSTC_LEX_NULL),
+  
+  Font = wxFont:new(13, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL,  ?wxNORMAL,[]),
+  io:format("Family: ~p~nFace: ~p~n", [wxFont:getFamily(Font), wxFont:getFaceName(Font)]),
+  
+  ?stc:styleSetFont(ShellTextBox, ?wxSTC_STYLE_DEFAULT, 
+                    wxFont:new(13, ?wxFONTFAMILY_TELETYPE, 
+                                  ?wxNORMAL, 
+                                  ?wxNORMAL,[])),
+  ?stc:setCaretWidth(ShellTextBox, 1),
+  
+  ?stc:cmdKeyClear(ShellTextBox, ?wxSTC_KEY_UP, 0),
+
                                                 	
 	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
                                           {proportion, 1}]),
                                           
-	% Connect listener to text box	
-	wxTextCtrl:connect(ShellTextBox, char, [{callback, fun(E,O) ->
-													       handle_char_event(E,O)
-													   end
-                                           }]),
-		
+  % ?stc:connect(ShellTextBox, stc_change, [{callback, fun(E,O) -> io:format("EVENT~p~n", [O]) end}]),
+  ?stc:connect(ShellTextBox, key_down, [{callback, fun(E,O) -> handle_key_event(E,O) end}]),
+
 	{Panel, #state{win=Panel, 
 					   textctrl=ShellTextBox, 
 					   cmd_history=[],
 					   current_cmd=0,
 					   wx_env=wx:get_env()}}. %% Maintained at server
-	
+
 
 %% =====================================================================
 %% @doc OTP behaviour callbacks
@@ -91,126 +104,112 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 %% Asynchronous event callbacks
 
-% %% ENTER
-handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=13}},O) -> 
-	LineText = wxTextCtrl:getLineText(Console, wxTextCtrl:getNumberOfLines(Console) - 1),
-	Input = string:substr(LineText, get_prompt_length(LineText) + 2),
-	wxTextCtrl:setInsertionPointEnd(Console),
-	case length(Input) of
-		0 -> 
-			%% Single enter key pressed with no other input.
-			%% Note we have manually insert the prompt because sending a single newline '\n'
-			%% to the port results in no response. It is the terminal that redraws the prompt
-			%% and not the ERTS. Same goes with history (up arrow/down arrow).
-			%% The port will only respond through stdout when a '.' is received.
-			prompt_2_console(Console, LineText),
-			call_parser(Input), %% send anyway, so any error contains the correct position integer
-			wxEvent:stopPropagation(O);
-		_ ->
-			Last = 	fun(46) -> %% keycode 46 = '.'
-						%% Deal with the case where several '.'s are entered, '...'
-						prompt_or_not(length(Input), Input, Console, LineText, O);
-					(_) -> %% write the newline and prompt to the console
-						prompt_2_console(Console, LineText)
-					end,
-			add_cmd(Input),
-			Last(lists:last(Input)),
-      io:format("IN ENTER~n"),
-			call_parser(Input)
-	end;
+%%--- Enter
+handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}},O) -> 
+  {Prompt,Input} = split_line_at_prompt(Console),
+  ?stc:gotoPos(Console, ?stc:getLength(Console)),
+  case length(Input) of
+    0 -> 
+      %% Single enter key pressed with no other input.
+      %% Note we have manually insert the prompt because sending a single newline '\n'
+      %% to the port results in no response. It is the terminal that redraws the prompt
+      %% and not the ERTS. Same goes with history (up arrow/down arrow).
+      %% The port will only respond through stdout when a '.' is received.
+      prompt_2_console(Console, Prompt),
+      call_parser(Input), %% send anyway, so any error contains the correct position integer
+      ok;
+    _ ->      
+      Last =   fun(46) -> %% keycode 46 = '.'
+            %% Deal with the case where several '.'s are entered, '...'
+            prompt_or_not(Console, Input, Prompt, O);
+          (_) -> %% write the newline and prompt to the console
+            prompt_2_console(Console, Prompt),
+            ok
+          end,
+      add_cmd(Input),
+      Last(lists:last(Input)),
+      call_parser(Input),
+      ok
+  end;
 	
-%% Arrow keys
-handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_UP}},_O) ->
-	SuccessFun = fun() -> ok end,
-	FailFun    = fun() -> wxTextCtrl:setInsertionPointEnd(Console) end,
-	check_cursor(Console, SuccessFun, FailFun, 0),
-	case cmd_index() of
-		0 ->
-			ok;
-		_ ->
-			cycle_cmd_text(Console, -1)
-	end;
-	
-handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_DOWN}},_O) ->
-	SuccessFun = fun() -> ok end,
-	FailFun    = fun() -> wxTextCtrl:setInsertionPointEnd(Console) end,
-	check_cursor(Console, SuccessFun, FailFun, 0),
-	LastCmd = length(cmd_history()) - 1,
-	Limit = LastCmd + 1,
-	case cmd_index() of
-		LastCmd ->
-			clear_cmd_text(Console),
-			update_cmd_index(cmd_index()+1);
-		Limit ->
-			ok;
-		_ ->
-			cycle_cmd_text(Console, 1)
-	end;
+%%--- Arrow keys
+handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}},_O) ->
+  SuccessFun = fun() -> ok end,
+  FailFun    = fun() -> ?stc:gotoPos(Console, ?stc:getLength(Console)) end,
+  check_cursor(Console, SuccessFun, FailFun, -1),
+  case cmd_index() of
+    0 ->
+      ok;
+    _ ->
+      cycle_cmd_text(Console, -1)
+  end;
   
-handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_LEFT}},O) ->
-  io:format("LEFT ARROW KEY PRESS~n"),
-	SuccessFun = fun() -> wxEvent:skip(O) end,
-	FailFun    = fun() -> ok end,
-	check_cursor(Console, SuccessFun, FailFun, 1);
+handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_DOWN}},_O) ->
+  SuccessFun = fun() -> ok end,
+  FailFun    = fun() -> ?stc:gotoPos(Console, ?stc:getLength(Console)) end,
+  check_cursor(Console, SuccessFun, FailFun, -1),
+  LastCmd = length(cmd_history()) - 1,
+  Limit = LastCmd + 1,
+  case cmd_index() of
+    LastCmd ->
+      replace_cmd_text(Console, ""),
+      update_cmd_index(cmd_index()+1);
+    Limit ->
+      ok;
+    _ ->
+      cycle_cmd_text(Console, 1)
+  end;
+  
+handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_LEFT}}, O) ->
+  check_cursor(Console, fun() -> wxEvent:skip(O) end, fun() -> ok end, 0);
 
-handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=?WXK_RIGHT}},O) ->
-	SuccessFun = fun() -> wxEvent:skip(O) end,
-	FailFun    = fun() -> ok end,
-	check_cursor(Console, SuccessFun, FailFun, 0);
+handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_RIGHT}}, O) ->
+  check_cursor(Console, fun() -> wxEvent:skip(O) end, fun() -> ok end, -1);
 	
-%% Backspace
-handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=8}},O) -> 
-  io:format("BACKSPACE~n"),
-	SuccessFun = fun() -> wxEvent:skip(O) end,
-	FailFun    = fun() -> ok end,
-	check_cursor(Console, SuccessFun, FailFun, 1);
+handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=8}}, O) -> 
+  check_cursor(Console, fun() -> wxEvent:skip(O) end, fun() -> ok end, 0);
 	
-%% CHAR
-handle_char_event(#wx{obj=Console, event=#wxKey{type=char, keyCode=_KeyCode}},O) -> 
-	SuccessFun = fun() -> wxEvent:skip(O) end,
-	FailFun    = fun() -> wxTextCtrl:setInsertionPointEnd(Console), wxEvent:skip(O) end,
-	check_cursor(Console, SuccessFun, FailFun, 0);
+handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down}}, O) -> 
+  SuccessFun = fun() -> wxEvent:skip(O) end,
+  FailFun    = fun() -> ?stc:gotoPos(Console, ?stc:getLength(Console)), wxEvent:skip(O) end,
+  check_cursor(Console, SuccessFun, FailFun, -1);
 	
-%% Catchall  
-handle_char_event(E,O) ->
-	io:format("Event: ~p~n Object: ~p~n", [E,O]).
+%% For testing:
+handle_key_event(E,O) ->
+  io:format("Event: ~p~n Object: ~p~n", [E,O]),
+  ok.
 	
 	
 %% =====================================================================
 %% @doc Write a newline plus the repeated prompt to the console.
 	
-prompt_2_console(Console, LineText) ->
-	wxTextCtrl:writeText(Console, io_lib:nl()),
-	wxTextCtrl:writeText(Console, get_current_prompt(LineText)).
+prompt_2_console(Console, Prompt) ->
+  ?stc:addText(Console, io_lib:nl()),
+	?stc:addText(Console, Prompt).
 	
 	
 %% =====================================================================
-%% @doc Determine whether we need to manually prompt_2_console()
-%%
+%% @doc Determine whether we need to manually prompt_2_console().
 %% @private
-	
-prompt_or_not(N,Input,Console,LineText,Ev) when N>1 ->
-	Penult = lists:nth(length(Input)-1, Input),
+
+prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
+  Penult = lists:nth(length(Input)-1, Input),
 	if 
 		Penult =:= 46 ->
-			prompt_2_console(Console, LineText),
-			wxEvent:stopPropagation(Ev);
+			prompt_2_console(Console, Prompt),
+			wxEvent:stopPropagation(EvObj);
 		true -> 
-      %% BUG R16B01 - wx 2.9.4
-      %% Skipping this event causes the default behaviour to occur
-      %% which calls our event handler a second time, which effectively duplicates the user's input.
-      wxEvent:skip(Ev)
-      ok
+      wxEvent:skip(EvObj)
 	end;
-prompt_or_not(_,_Input,_,_,Ev) ->
-	wxEvent:skip(Ev).
+  
+prompt_or_not(_,_,_,EvObj) ->
+	wxEvent:skip(EvObj).
 	
 	
 %% =====================================================================
 %% @doc
 	
 call_parser(Message) ->
-  % io:format("Send message~n"),
   % io:format("Message~p~n", [Message]),
 	parser:parse_input(Message).
 	
@@ -219,20 +218,27 @@ call_parser(Message) ->
 %% @doc
 	
 load_response(Response) ->
-  % io:format("Load response~n"),
   % io:format("Response~p~n", [Response]),
 	{Env, Tc} = wx_object:call(?MODULE, text_ctrl),
 	wx:set_env(Env),
-	wxTextCtrl:writeText(Tc, Response).
-	
-	
+	?stc:addText(Tc, Response).
+
+
 %% =====================================================================
-%% @doc Get the prompt i.e. '2> ' from the given line.
+%% @doc Separate the prompt and command on the most recent line.
+
+split_line_at_prompt(Console) ->
+  lists:split(get_cur_prompt_length(Console), 
+    ?stc:getLine(Console, ?stc:getLineCount(Console) - 1)).	
 	
-get_current_prompt(Line) ->
-	string:substr(Line, 1, get_prompt_length(Line) + 1).
+
+%% =====================================================================
+%% @doc Get the length of the current prompt.
 	
+get_cur_prompt_length(Console) ->
+  get_prompt_length(?stc:getLine(Console, ?stc:getLineCount(Console) - 1)).
 	
+  
 %% =====================================================================
 %% @doc Get the length of the prompt.
 	
@@ -242,12 +248,20 @@ get_prompt_length(Line) ->
 get_prompt_length([Char|String], Count) ->
 	case Char of
 		62 -> % the prompt char '>'
-			Count;
+			Count + 1; %% 
 		_ -> 
 			get_prompt_length(String, Count + 1)
 	end.
 	
+
+%% =====================================================================
+%% @doc
+%% @private
+
+get_line_start_pos(Console, Pos) ->
+  ?stc:positionFromLine(Console, ?stc:lineFromPosition(Console, Pos)).
 	
+  
 %% =====================================================================
 %% @doc Append new command to end of command history iff last element not same as new element.
 
@@ -273,27 +287,21 @@ add_cmd(Command) ->
 %% param Direction: -1 for prev cmd, +1 for next cmd.
 
 cycle_cmd_text(Console, Direction) ->
-	clear_cmd_text(Console), 
 	update_cmd_index(cmd_index() + Direction),
-	Command = get_command(cmd_index()),
-	wxTextCtrl:writeText(Console, Command).	
+	Cmd = get_command(cmd_index()),
+  replace_cmd_text(Console, Cmd).
 	
 	
 %% =====================================================================
-%% @doc
+%% @doc Replace the current command with the updated command Cmd.
+%% The replacement will always take place on the most recent line.
 
-clear_cmd_text(Console) ->
-	LastPos = wxTextCtrl:getLastPosition(Console),
-	wxTextCtrl:remove(Console, LastPos - length(get_input(Console)), LastPos).
-	
-	
-%% =====================================================================
-%% @doc
+replace_cmd_text(Console, Cmd) ->
+  ?stc:setSelection(Console, get_cur_prompt_length(Console) +
+      get_line_start_pos(Console, ?stc:getLength(Console)),
+    ?stc:getLength(Console)),
+  ?stc:replaceSelection(Console, Cmd).
 
-get_input(Console) ->
-	LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
-	LineText = wxTextCtrl:getLineText(Console, LastLine),
-	string:substr(LineText, get_prompt_length(LineText) + 2).
 
 %% =====================================================================
 %% @doc
@@ -357,34 +365,26 @@ replace(Index, Elem, [H|T], Count, Acc) ->
 %% @doc Check cursor is in valid position, and execute appropriate function.
 	
 check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
-  % io:format("Point: ~p~n", [wxTextCtrl:getInsertionPoint(Console)]),
-  %% NOTE positionToXY is NOT implemented on wxMac, and will always return false.
-	{Bool,X,Y} = wxTextCtrl:positionToXY(Console, wxTextCtrl:getInsertionPoint(Console)),
-  % io:format("BOOL: ~p~n", [Bool]),
-  % io:format("X: ~p~n", [X]),
-  % io:format("Y: ~p~n", [Y]),
-  % io:format("In. Point: ~p~n", [wxTextCtrl:getInsertionPoint(Console)]),
-  LastLine = wxTextCtrl:getNumberOfLines(Console) - 1,
-	PromptLen = get_prompt_length(wxTextCtrl:getLineText(Console, LastLine)),
-	case (X > PromptLen + PromptOffset) and (Y =:= LastLine) of
-		true -> 
-      % io:format("TRUE FUN~n"),
-			SuccessFun();
-		false ->
-      % io:format("FALSE FUN~n"),
-			FailFun()
-	end.
+  Limit = get_line_start_pos(Console, ?stc:getLength(Console)) + 
+    get_cur_prompt_length(Console),
+  case (?stc:getCurrentPos(Console) > Limit + PromptOffset)  of
+    true -> 
+      io:format("SUCCESS"),
+      SuccessFun();
+    false ->
+      FailFun()
+  end,
+  ok.
 	
 	
-  %% =====================================================================
-  %% @doc Update the shell's theme
+%% =====================================================================
+%% @doc Update the shell's theme
   
 set_theme(Fg, Bg) ->
   {_, Tc} = wx_object:call(?MODULE, text_ctrl),
-  wxTextCtrl:setBackgroundColour(Tc, Bg),
-  wxTextCtrl:setStyle(Tc, 0, wxTextCtrl:getLastPosition(Tc), wxTextAttr:new(Fg)),
-  %% setDefaultStyle() not working on wxMac 2.9.4
-  %% We cannot update the text colour as a result
-  %% Another good reason to switch to wxStyledTextCtrl
-  wxTextCtrl:setDefaultStyle(Tc, wxTextAttr:new(Fg)).
+  ?stc:styleSetBackground(Tc, ?wxSTC_STYLE_DEFAULT, Bg),
+  ?stc:styleSetForeground(Tc, ?wxSTC_STYLE_DEFAULT, Fg),
+  ?stc:setCaretForeground(Tc, Fg),
+  ?stc:styleClearAll(Tc),
+  ok.
     
