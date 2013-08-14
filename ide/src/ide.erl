@@ -878,7 +878,7 @@ set_theme(ThemeMenu) ->
 		      editor:set_theme(Pid, wxMenuItem:getLabel(Ckd), user_prefs:get_user_pref({pref, font}))
 		  end,
 	lists:map(Fun, get_all_editors()),
-	user_prefs:set_user_pref({theme, wxMenuItem:getLabel(Ckd)}).
+	user_prefs:set_user_pref(theme, wxMenuItem:getLabel(Ckd)).
 
 get_current_theme_name() ->
 	Frame = wx_object:call(?MODULE, frame),
