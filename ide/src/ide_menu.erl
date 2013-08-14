@@ -65,17 +65,19 @@ init(Config) ->
     wxMenu:append(View, ?wxID_ANY, "Font", Font),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers", [{kind, ?wxITEM_CHECK}]),
-    wxMenu:check(View, ?MENU_ID_LN_TOGGLE, true),         %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
+    wxMenu:check(View, ?MENU_ID_LN_TOGGLE, user_prefs:get_user_pref({pref, show_line_no})),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
-    IndentType  = wxMenu:new([]),  % Submenu
-    wxMenu:appendRadioItem(IndentType, ?MENU_ID_INDENT_TABS, "Tabs"), 
-    wxMenu:appendRadioItem(IndentType, ?MENU_ID_INDENT_SPACES, "Spaces"), 
-    wxMenu:append(View, ?MENU_ID_INDENT_TYPE, "Indent Type", IndentType),
-    IndentWidth = wxMenu:new([]),  % Submenu
-    add_tab_width_menu(IndentWidth, 1),
-    wxMenu:check(IndentWidth, 7004, true),             %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
+
+		{IndentType, _} = generate_radio_submenu(wxMenu:new([]), ["Tabs", "Spaces"],
+			user_prefs:get_user_pref({pref, indent_type}), ?MENU_ID_INDENT_TABS),
 		
-		{Theme, LastId} = generate_radio_submenu(wxMenu:new([]),
+    wxMenu:append(View, ?MENU_ID_INDENT_TYPE, "Indent Type", IndentType),
+		
+		{IndentWidth, IndentMax} = generate_radio_submenu(wxMenu:new([]),
+			[integer_to_list(Width) || Width <- lists:seq(2, 8)], 
+			user_prefs:get_user_pref({pref, indent_width}), ?MENU_ID_INDENT_WIDTH_LOWEST),
+		
+		{Theme, ThemeMax} = generate_radio_submenu(wxMenu:new([]),
 			theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), ?MENU_ID_THEME_LOWEST),
 		
     wxMenu:append(View, ?MENU_ID_INDENT_WIDTH, "Indent Width", IndentWidth),
@@ -91,8 +93,9 @@ init(Config) ->
   
     Document    = wxMenu:new([]),
     wxMenu:append(Document, ?MENU_ID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:check(Document, ?MENU_ID_LINE_WRAP, user_prefs:get_user_pref({pref, line_wrap})),		
     wxMenu:append(Document, ?MENU_ID_AUTO_INDENT, "Auto-Indent", [{kind, ?wxITEM_CHECK}]),
-    wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, true),   %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
+    wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, user_prefs:get_user_pref({pref, auto_indent})),
     wxMenu:append(Document, ?wxID_SEPARATOR, []),
     wxMenu:append(Document, ?MENU_ID_INDENT_SELECTION, "Indent Selection"),
     wxMenu:append(Document, ?MENU_ID_COMMENT_SELECTION, "Comment Selection"),
@@ -118,7 +121,7 @@ init(Config) ->
     wxMenu:append(Help, ?MENU_ID_SEARCH_DOC, "Search Erlang API"),
     wxMenu:append(Help, ?MENU_ID_MANUAL, "IDE Manual"),
     wxMenu:append(Help, ?wxID_SEPARATOR, []),
-    wxMenu:append(Help, ?wxID_ABOUT, "About"), % 5014
+    wxMenu:append(Help, ?wxID_ABOUT, "About"),
   
     wxMenuBar:append(MenuBar, File, "File"),
     wxMenuBar:append(MenuBar, Edit, "Edit"),
@@ -129,14 +132,6 @@ init(Config) ->
     wxMenuBar:append(MenuBar, Help, "Help"),
 		
 	  wxFrame:setMenuBar(Frame, MenuBar),
-		
-		% Go = fun(ID) ->
-		% 	io:format("CONNECT: ~p~n", [ID]),
-		% 	wxEvtHandler:connect(Theme, command_menu_selected, [{id, ID},{callback, fun(_,O) -> wxEvent:skip(O), io:format("~n~n~nOK~n~n~n")end}])
-		% end,
-		% [ Go(Id) || Id <- lists:seq(9000, 9001)],
-	
-
     
 		%% =====================================================================
 		%% Toolbar
@@ -245,10 +240,13 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_MANUAL, "Manual", "View the IDE manual.", {}}),
     ets:insert(TabId,{?wxID_ABOUT, "About", "About.", {about, new, [{parent, Frame}]}}),
 		
-	  wxFrame:connect(Frame, menu_highlight,  [{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+	  wxFrame:connect(Frame, menu_highlight,  
+			[{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
 	  wxFrame:connect(Frame, menu_close,  [{id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
-	  wxFrame:connect(Frame, command_menu_selected, [{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
-	  wxFrame:connect(Frame, command_menu_selected,  [{userData, {theme_menu,Theme}}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),
+	  wxFrame:connect(Frame, command_menu_selected, 
+			[{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+	  wxFrame:connect(Frame, command_menu_selected,  
+			[{userData, {theme_menu,Theme}}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),
 		
         
     {MenuBar, TabId}.
@@ -256,8 +254,9 @@ init(Config) ->
 
 %% =====================================================================
 %% @doc Generate a radio menu given a list of labels.
-%% The menu item Ids will be automatically generated, starting from
-%% StartId. The menu item whose label = ToCheck will be checked.
+%% The menu item ids are automatically generated (within their reserved
+%% range @see ide.hrl), starting from StartId.
+%% The menu item whose label == ToCheck will be checked on.
 %% @private
 
 -spec generate_radio_submenu(Menu, Items, ToCheck, StartId) -> Result when
@@ -278,22 +277,10 @@ generate_radio_submenu(Menu, [Label|T], Label, StartId) ->
 generate_radio_submenu(Menu, [Label|T], ToCheck, StartId) ->
 	wxMenu:appendRadioItem(Menu, StartId, Label),
 	generate_radio_submenu(Menu, T, ToCheck, StartId+1).
-
-%% =====================================================================
-%% @doc Add all tab width options to menu
-%%
-%% @private
-
-add_tab_width_menu(TabMenu, 8) ->
-  wxMenu:appendRadioItem(TabMenu, 7008, integer_to_list(8));
-add_tab_width_menu(TabMenu, Width) ->
-  wxMenu:appendRadioItem(TabMenu, 7000 + Width, integer_to_list(Width)),
-  add_tab_width_menu(TabMenu, Width + 1).
   
   
 %% =====================================================================
 %% @doc Update the label of a menu item
-
 
 update_label(MenuItem, Menu) ->
 	case wxMenu:getLabel(Menu, MenuItem) of
