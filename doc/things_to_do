@@ -1,0 +1,122 @@
+-----
+Shell
+-----
+
+- Ctrl G, Arrow Keys, etc. - Send to shell
+  ncurses library using C.
+  
+- Change directory in shell to correspond with current file location.
+
+
+------
+Editor
+------
+
+- Fix Undo/Redo
+
+- File extension check. If .erl, syntax highlighting, etc.
+
+
+-------
+MenuBar
+-------
+
+- Hide/Show in View menu not updating correctly.
+
+- New items to add: New File
+                    New Project
+                    (more?)
+                    
+
+---------------
+Toolbar/MenuBar
+---------------
+
+- Grey out inactive or irrelevant buttons.
+
+
+-------
+SideBar
+-------
+
+- Tabs: Projects, Files, Tests, Functions
+
+- Projects tab:  Each project has own directory tree. Each directory is
+                 structured as Erlang project, i.e. ebin, src, include, 
+                 Emakefile, etc.
+                
+- Files tab:     General system directories. Text-based files can be 
+                 opened directly from here. (Any other features?)
+             
+- Tests tab:     List of tests that can be executed on the current file. 
+                 Has an icon to denote whether test passed or failed. 
+                 This tab must be refreshed when editor tab is changed 
+                 in order to correspond with current file.
+                
+- Functions tab: List of functions that is in current file. Clicking on
+                 function scrolls editor to view function in file. This 
+                 tab must be resfrshed on editor tab change to 
+                 correspond with current file.
+                 
+------------------
+Preference Loading
+------------------
+
+- DETS/Mnesia?
+- XML format?
+
+
+-------------
+Save Function
+-------------
+
+- Make robust, i.e. protect against missing/corrupted files and other
+  failures.
+  
+  
+------------------
+Keyboard Shortcuts
+------------------
+
+- Implement.
+
+- Dialog to customise shortcuts?
+
+
+----
+Bugs
+----
+
+- When hiding util, then maximising editor, should maximise editor but
+  instead restores util.
+  
+  
+-------------
+Project
+-------------
+
+- Implement logging/tests for project code and program behaviour.
+
+- Figure out how to make directory structure in src folder.
+
+- What to use for building projects: Rebar
+                                     Make
+                                     Other options?
+                                     
+- Find methods for overriding standard erlang functions in order to 
+  change undesired functionality.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
