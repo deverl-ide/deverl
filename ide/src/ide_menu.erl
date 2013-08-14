@@ -77,13 +77,13 @@ init(Config) ->
 		
 		{Theme, LastId} = generate_radio_submenu(wxMenu:new([]),
 			theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), 9000),
-		wxMenu:connect(Theme, command_menu_selected, 
-			[{callback,fun(E,O) -> 
-				io:format("~n~n~nWORKINGGGGGG~n~n~n"),
-				io:format("E:~p~nO:~p~n",[E,O]),
-				wxEvent:stopPropagation(O),
-				ide:set_theme(E#wx.obj)
-			end}]),
+		% wxMenu:connect(Theme, command_menu_selected, 
+		% 	[{callback,fun(E,O) -> 
+		% 		io:format("~n~n~nWORKINGGGGGG~n~n~n"),
+		% 		io:format("E:~p~nO:~p~n",[E,O]),
+		% 		wxEvent:stopPropagation(O),
+		% 		ide:set_theme(E#wx.obj)
+		% 	end}]),
 		
     wxMenu:append(View, ?MENU_ID_INDENT_WIDTH, "Indent Width", IndentWidth),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
@@ -134,6 +134,16 @@ init(Config) ->
     wxMenuBar:append(MenuBar, Wrangler, "Wrangler"),
     wxMenuBar:append(MenuBar, ToolMenu, "Tools"),
     wxMenuBar:append(MenuBar, Help, "Help"),
+		
+	  wxFrame:setMenuBar(Frame, MenuBar),
+		
+		Go = fun(ID) ->
+			io:format("CONNECT: ~p~n", [ID]),
+			wxEvtHandler:connect(Theme, command_menu_selected, [{id, ID},{callback, fun(_,O) -> wxEvent:skip(O), io:format("~n~n~nOK~n~n~n")end}])
+		end,
+		[ Go(Id) || Id <- lists:seq(9000, 9001)],
+	
+		
     
 		%% =====================================================================
 		%% Toolbar

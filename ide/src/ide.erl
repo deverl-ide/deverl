@@ -113,7 +113,8 @@ init(Options) ->
       
 	%% Menubar %%
   {Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
-  wxFrame:setMenuBar(Frame, Menu),
+  % wxFrame:setMenuBar(Frame, Menu),
+
   
   wxFrame:connect(Frame, menu_highlight,  [{userData, {ets_table,MenuTab}}]),
   wxFrame:connect(Frame, menu_close,  []),
@@ -313,7 +314,6 @@ handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_hig
 %% First handle the anonymous sub-menus
 handle_event(E=#wx{id=Id, obj=Menu, userData=theme, event=#wxCommand{type=command_menu_selected}},
              State=#state{status_bar=Sb}) -> 
-	io:format("ide l.316~n"),
 	Env = wx:get_env(),
 	spawn(fun() -> wx:set_env(Env),
 		set_theme(Menu)
