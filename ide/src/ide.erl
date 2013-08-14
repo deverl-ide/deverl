@@ -313,6 +313,7 @@ handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_hig
 %% First handle the anonymous sub-menus
 handle_event(E=#wx{id=Id, obj=Menu, userData=theme, event=#wxCommand{type=command_menu_selected}},
              State=#state{status_bar=Sb}) -> 
+	io:format("ide l.316~n"),
 	Env = wx:get_env(),
 	spawn(fun() -> wx:set_env(Env),
 		set_theme(Menu)
@@ -479,7 +480,7 @@ add_editor(Filename) ->
   
 %% @private
 add_editor(Workspace, Filename, Sb, TabId) ->
-	Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_pref({pref, font})}]),
+	Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
 	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
 	{_,Id,_,Pid} = Editor,
 	ets:insert_new(TabId,{Id, Pid}),
@@ -488,7 +489,7 @@ add_editor(Workspace, Filename, Sb, TabId) ->
 %% @doc Create an editor from an existing file
 add_editor_with_contents(Path, Filename, Contents) -> 
 		{Workspace, Sb, TabId} = wx_object:call(?MODULE, workspace), 
-		Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_pref({pref, font})}, 
+		Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}, 
 							   {file, {Path, Filename, Contents}}]),
 		wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
 		{_,Id,_,Pid} = Editor,

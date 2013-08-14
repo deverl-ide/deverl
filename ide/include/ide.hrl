@@ -1,4 +1,4 @@
-%% Global Variables
+%% Global constants
 -define(FIND_ALL, 3).
 -define(REPLACE_ALL, 5).
 -define(REPLACE_FIND, 6).

@@ -78,7 +78,11 @@ init(Config) ->
 		{Theme, LastId} = generate_radio_submenu(wxMenu:new([]),
 			theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), 9000),
 		wxMenu:connect(Theme, command_menu_selected, 
-			[{id, 9000}, {lastId, LastId}, {userData, theme}, {skip,false}]),
+			[{id, 9000}, {lastId, LastId}, {userData, theme}, 
+			{callback,fun(E,O) -> 
+				io:format("E:~p~nO:~p~n",[E,O]),
+				ide:set_theme(E#wx.obj)
+			end}]),
 		
     wxMenu:append(View, ?MENU_ID_INDENT_WIDTH, "Indent Width", IndentWidth),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
