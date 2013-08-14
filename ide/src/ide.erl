@@ -116,9 +116,9 @@ init(Options) ->
   % wxFrame:setMenuBar(Frame, Menu),
 
   
-  wxFrame:connect(Frame, menu_highlight,  [{userData, {ets_table,MenuTab}}]),
-  wxFrame:connect(Frame, menu_close,  []),
-  wxFrame:connect(Frame, command_menu_selected, [{userData,{ets_table,MenuTab}}]),
+  % wxFrame:connect(Frame, menu_highlight,  [{userData, {ets_table,MenuTab}}]),
+  % wxFrame:connect(Frame, menu_close,  []),
+  % wxFrame:connect(Frame, command_menu_selected, [{userData,{ets_table,MenuTab}}]),
  
   wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),      
@@ -312,7 +312,7 @@ handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_hig
   {noreply, State};
 
 %% First handle the anonymous sub-menus
-handle_event(E=#wx{id=Id, obj=Menu, userData=theme, event=#wxCommand{type=command_menu_selected}},
+handle_event(E=#wx{id=Id, userData={theme_menu,Menu}, event=#wxCommand{type=command_menu_selected}},
              State=#state{status_bar=Sb}) -> 
 	Env = wx:get_env(),
 	spawn(fun() -> wx:set_env(Env),

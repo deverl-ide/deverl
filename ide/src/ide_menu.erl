@@ -44,12 +44,12 @@ init(Config) ->
     wxMenu:append(File, ?wxID_PREFERENCES, "Preferences"),
   
     Edit        = wxMenu:new([]),
-    wxMenu:append(Edit, ?wxSTC_CMD_UNDO, "Undo"),
-    wxMenu:append(Edit, ?wxSTC_CMD_REDO, "Redo"),
+    wxMenu:append(Edit, ?wxID_UNDO, "Undo"),
+    wxMenu:append(Edit, ?wxID_REDO, "Redo"),
     wxMenu:append(Edit, ?wxID_SEPARATOR, []),
-    wxMenu:append(Edit, ?wxSTC_CMD_CUT, "Cut"),
-    wxMenu:append(Edit, ?wxSTC_CMD_COPY, "Copy"),
-    wxMenu:append(Edit, ?wxSTC_CMD_PASTE, "Paste"),
+    wxMenu:append(Edit, ?wxID_CUT, "Cut"),
+    wxMenu:append(Edit, ?wxID_COPY, "Copy"), 
+    wxMenu:append(Edit, ?wxID_PASTE, "Paste"),
     wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
     wxMenu:appendSeparator(Edit),
     wxMenu:append(Edit, ?wxID_FIND, "Find\tCtrl+F"),
@@ -57,8 +57,8 @@ init(Config) ->
     Font = wxMenu:new([]), %% Sub-menu
     wxMenu:append(Font, ?MENU_ID_FONT, "Font Picker"),
     wxMenu:appendSeparator(Font),
-    wxMenu:append(Font, ?MENU_FONT_BIGGER, "&Bigger\tCtrl++"),
-    wxMenu:append(Font, ?MENU_FONT_SMALLER, "Smaller\tCtrl+-"),
+    wxMenu:append(Font, ?MENU_ID_FONT_BIGGER, "&Bigger\tCtrl++"),
+    wxMenu:append(Font, ?MENU_ID_FONT_SMALLER, "Smaller\tCtrl+-"),
     wxMenu:appendSeparator(Font),
     
     View        = wxMenu:new([]),
@@ -76,14 +76,7 @@ init(Config) ->
     wxMenu:check(IndentWidth, 7004, true),             %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
 		
 		{Theme, LastId} = generate_radio_submenu(wxMenu:new([]),
-			theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), 9000),
-		% wxMenu:connect(Theme, command_menu_selected, 
-		% 	[{callback,fun(E,O) -> 
-		% 		io:format("~n~n~nWORKINGGGGGG~n~n~n"),
-		% 		io:format("E:~p~nO:~p~n",[E,O]),
-		% 		wxEvent:stopPropagation(O),
-		% 		ide:set_theme(E#wx.obj)
-		% 	end}]),
+			theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), ?MENU_ID_THEME_LOWEST),
 		
     wxMenu:append(View, ?MENU_ID_INDENT_WIDTH, "Indent Width", IndentWidth),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
@@ -125,7 +118,7 @@ init(Config) ->
     wxMenu:append(Help, ?MENU_ID_SEARCH_DOC, "Search Erlang API"),
     wxMenu:append(Help, ?MENU_ID_MANUAL, "IDE Manual"),
     wxMenu:append(Help, ?wxID_SEPARATOR, []),
-    wxMenu:append(Help, ?wxID_ABOUT, "About"),
+    wxMenu:append(Help, ?wxID_ABOUT, "About"), % 5014
   
     wxMenuBar:append(MenuBar, File, "File"),
     wxMenuBar:append(MenuBar, Edit, "Edit"),
@@ -137,13 +130,13 @@ init(Config) ->
 		
 	  wxFrame:setMenuBar(Frame, MenuBar),
 		
-		Go = fun(ID) ->
-			io:format("CONNECT: ~p~n", [ID]),
-			wxEvtHandler:connect(Theme, command_menu_selected, [{id, ID},{callback, fun(_,O) -> wxEvent:skip(O), io:format("~n~n~nOK~n~n~n")end}])
-		end,
-		[ Go(Id) || Id <- lists:seq(9000, 9001)],
+		% Go = fun(ID) ->
+		% 	io:format("CONNECT: ~p~n", [ID]),
+		% 	wxEvtHandler:connect(Theme, command_menu_selected, [{id, ID},{callback, fun(_,O) -> wxEvent:skip(O), io:format("~n~n~nOK~n~n~n")end}])
+		% end,
+		% [ Go(Id) || Id <- lists:seq(9000, 9001)],
 	
-		
+
     
 		%% =====================================================================
 		%% Toolbar
@@ -211,17 +204,17 @@ init(Config) ->
     ets:insert(TabId,{?wxID_EXIT, "Exit", "Quit the application.", {}}),
     ets:insert(TabId,{?wxID_PREFERENCES, "Preferences", "Application preferences.", {ide_prefs, start, [[{parent,Frame}]]}}),
     
-    ets:insert(TabId,{?wxSTC_CMD_UNDO, "Undo", "Undo the last change.", {}}),
-    ets:insert(TabId,{?wxSTC_CMD_REDO, "Redo", "Redo the last change.", {}}),
-    ets:insert(TabId,{?wxSTC_CMD_CUT, "Cut", "Cut the selected text.", {}}),
-    ets:insert(TabId,{?wxSTC_CMD_COPY, "Copy", "Copy the selected text to the clipboard.", {}}),
-    ets:insert(TabId,{?wxSTC_CMD_PASTE, "Paste", "Paste from clipboard.", {}}),
+    ets:insert(TabId,{?wxID_UNDO, "Undo", "Undo the last change.", {}}),
+    ets:insert(TabId,{?wxID_REDO, "Redo", "Redo the last change.", {}}),
+    ets:insert(TabId,{?wxID_CUT, "Cut", "Cut the selected text.", {}}),
+    ets:insert(TabId,{?wxID_COPY, "Copy", "Copy the selected text to the clipboard.", {}}),
+    ets:insert(TabId,{?wxID_PASTE, "Paste", "Paste from clipboard.", {}}),
     ets:insert(TabId,{?wxID_DELETE, "Delete", "Delete the current selection.", {}}),
     ets:insert(TabId,{?wxID_FIND, "Find", "Find and replace.", {ide,find_replace,[Frame]}}),
     
     ets:insert(TabId,{?MENU_ID_FONT, "Font", "Select font.", {ide,update_styles,[Frame]}}),
-    ets:insert(TabId,{?MENU_FONT_BIGGER, "Bigger", "Increase the font size.", {}}),
-    ets:insert(TabId,{?MENU_FONT_SMALLER, "Smaller", "Decrease the font size.", {}}),
+    ets:insert(TabId,{?MENU_ID_FONT_BIGGER, "Bigger", "Increase the font size.", {}}),
+    ets:insert(TabId,{?MENU_ID_FONT_SMALLER, "Smaller", "Decrease the font size.", {}}),
     ets:insert(TabId,{?MENU_ID_LN_TOGGLE, "Toggle line numbers", "Toggle line numbers on/off.", {}}),
     ets:insert(TabId,{?MENU_ID_INDENT_TYPE, "Indent Type", "Indent type: tabs/spaces.", {}}),
     ets:insert(TabId,{?MENU_ID_INDENT_TABS, "Tabs", "Indent using tabs.", {}}),
@@ -251,6 +244,12 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_SEARCH_DOC, "Search doc", "Search the Erlang documentation.", {}}),
     ets:insert(TabId,{?MENU_ID_MANUAL, "Manual", "View the IDE manual.", {}}),
     ets:insert(TabId,{?wxID_ABOUT, "About", "About.", {about, new, [{parent, Frame}]}}),
+		
+	  wxFrame:connect(Frame, menu_highlight,  [{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+	  wxFrame:connect(Frame, menu_close,  [{id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+	  wxFrame:connect(Frame, command_menu_selected, [{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+	  wxFrame:connect(Frame, command_menu_selected,  [{userData, {theme_menu,Theme}}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),
+		
         
     {MenuBar, TabId}.
 

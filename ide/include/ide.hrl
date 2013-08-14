@@ -25,10 +25,12 @@
 
 -define(THEME_DIRECTORY, "../priv/themes").
 
--define(MENU_ID_SAVE_ALL,          4001).          
--define(MENU_ID_FONT,              6000).
--define(MENU_FONT_BIGGER,          4002).
--define(MENU_FONT_SMALLER,         4003).
+%% Reserved range for menu items starts 
+%% MENU_ID_LOWEST -> MENU_ID_HIGHEST
+-define(MENU_ID_LOWEST,						 6000).
+-define(MENU_ID_FONT,              6040).
+-define(MENU_ID_FONT_BIGGER,       6042).
+-define(MENU_ID_FONT_SMALLER,      6043).
 -define(MENU_ID_LN_TOGGLE,         6001).
 -define(MENU_ID_INDENT_TYPE,       6002).
 -define(MENU_ID_INDENT_WIDTH,      6003).
@@ -56,3 +58,10 @@
 -define(MENU_ID_MAX_UTIL,          6025).
 -define(MENU_ID_THEME_SELECT, 		 6030).
 -define(MENU_ID_THEME,						 6031).
+-define(MENU_ID_SAVE_ALL,          6041).
+-define(MENU_ID_HIGHEST,					 6999).
+
+%% Reserved range for theme sub-menu
+%% MENU_ID_THEME_LOWEST -> MENU_ID_THEME_HIGHEST
+-define(MENU_ID_THEME_LOWEST,			 7000).
+-define(MENU_ID_THEME_HIGHEST,		 7200).     
