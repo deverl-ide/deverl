@@ -6,35 +6,6 @@
 -include_lib("wx/include/wx.hrl").
 -include("../include/ide.hrl").
 
--define(MENU_ID_SAVE_ALL,          4001).          
--define(MENU_ID_FONT,              6000).
--define(MENU_FONT_BIGGER,          4002).
--define(MENU_FONT_SMALLER,         4003).
--define(MENU_ID_LN_TOGGLE,         6001).
--define(MENU_ID_INDENT_TYPE,       6002).
--define(MENU_ID_INDENT_WIDTH,      6003).
--define(MENU_ID_FULLSCREEN,        6004).
--define(MENU_ID_HIDE_TEST,         6005).
--define(MENU_ID_HIDE_UTIL,         6006).
--define(MENU_ID_LINE_WRAP,         6007).
--define(MENU_ID_AUTO_INDENT,       6008).
--define(MENU_ID_INDENT_SELECTION,  6009).
--define(MENU_ID_COMMENT_SELECTION, 6010).
--define(MENU_ID_FOLD_ALL,          6011).
--define(MENU_ID_UNFOLD_ALL,        6012).
--define(MENU_ID_WRANGLER,          6013).
--define(MENU_ID_COMPILE,           6014).
--define(MENU_ID_RUN,               6015).
--define(MENU_ID_DIALYZER,          6016).
--define(MENU_ID_TESTS,             6017).
--define(MENU_ID_DEBUGGER,          6018).
--define(MENU_ID_SHORTCUTS,         6019).
--define(MENU_ID_SEARCH_DOC,        6020).
--define(MENU_ID_MANUAL,            6021).
--define(MENU_ID_INDENT_TABS,       6022).
--define(MENU_ID_INDENT_SPACES,     6023).
--define(MENU_ID_MAX_EDITOR,        6024).
--define(MENU_ID_MAX_UTIL,          6025).
 
 %% =====================================================================
 %% @doc Start/add a new menubar/toolbar to the frame
@@ -48,9 +19,171 @@ create(Config) ->
 
 init(Config) ->
     Frame = proplists:get_value(parent, Config),
-   
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%% ETS Table %%%%%%%%%%%%%%%%%%%%%%%%%%
+    
+		%% =====================================================================
+		%% Menubar
+		%% 
+		%% =====================================================================
+
+    MenuBar     = wxMenuBar:new(),
+      
+    File        = wxMenu:new([]),
+    wxMenu:append(File, ?wxID_NEW, "New"),
+    wxMenu:append(File, ?wxID_OPEN, "Open"),
+    wxMenu:append(File, ?wxID_SEPARATOR, []),
+    wxMenu:append(File, ?wxID_SAVE, "Save"),
+    wxMenu:append(File, ?wxID_SAVEAS, "Save As"),
+    wxMenu:append(File, ?MENU_ID_SAVE_ALL, "Save All"),
+    wxMenu:append(File, ?wxID_SEPARATOR, []),
+    wxMenu:append(File, ?wxID_PRINT, "Print"),
+    wxMenu:append(File, ?wxID_SEPARATOR, []),
+    wxMenu:append(File, ?wxID_CLOSE, "Close"),
+    wxMenu:append(File, ?wxID_CLOSE_ALL, "Close All"),
+    wxMenu:append(File, ?wxID_SEPARATOR, []),
+    wxMenu:append(File, ?wxID_EXIT, "Exit"),
+    wxMenu:append(File, ?wxID_PREFERENCES, "Preferences"),
+  
+    Edit        = wxMenu:new([]),
+    wxMenu:append(Edit, ?wxSTC_CMD_UNDO, "Undo"),
+    wxMenu:append(Edit, ?wxSTC_CMD_REDO, "Redo"),
+    wxMenu:append(Edit, ?wxID_SEPARATOR, []),
+    wxMenu:append(Edit, ?wxSTC_CMD_CUT, "Cut"),
+    wxMenu:append(Edit, ?wxSTC_CMD_COPY, "Copy"),
+    wxMenu:append(Edit, ?wxSTC_CMD_PASTE, "Paste"),
+    wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
+    wxMenu:appendSeparator(Edit),
+    wxMenu:append(Edit, ?wxID_FIND, "Find\tCtrl+F"),
+  
+    Font = wxMenu:new([]), %% Sub-menu
+    wxMenu:append(Font, ?MENU_ID_FONT, "Font Picker"),
+    wxMenu:appendSeparator(Font),
+    wxMenu:append(Font, ?MENU_FONT_BIGGER, "&Bigger\tCtrl++"),
+    wxMenu:append(Font, ?MENU_FONT_SMALLER, "Smaller\tCtrl+-"),
+    wxMenu:appendSeparator(Font),
+    
+    View        = wxMenu:new([]),
+    wxMenu:append(View, ?wxID_ANY, "Font", Font),
+    wxMenu:append(View, ?wxID_SEPARATOR, []),
+    wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:check(View, ?MENU_ID_LN_TOGGLE, true),         %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
+    wxMenu:append(View, ?wxID_SEPARATOR, []),
+    IndentType  = wxMenu:new([]),  % Submenu
+    wxMenu:appendRadioItem(IndentType, ?MENU_ID_INDENT_TABS, "Tabs"), 
+    wxMenu:appendRadioItem(IndentType, ?MENU_ID_INDENT_SPACES, "Spaces"), 
+    wxMenu:append(View, ?MENU_ID_INDENT_TYPE, "Indent Type", IndentType),
+    IndentWidth = wxMenu:new([]),  % Submenu
+    add_tab_width_menu(IndentWidth, 1),
+    wxMenu:check(IndentWidth, 7004, true),             %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
+		
+		{Theme, LastId} = generate_radio_submenu(wxMenu:new([]),
+			theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), 9000),
+		wxMenu:connect(Theme, command_menu_selected, 
+			[{id, 9000}, {lastId, LastId}, {userData, theme}, {skip,false}]),
+		
+    wxMenu:append(View, ?MENU_ID_INDENT_WIDTH, "Indent Width", IndentWidth),
+    wxMenu:append(View, ?wxID_SEPARATOR, []),
+    wxMenu:append(View, ?MENU_ID_THEME_SELECT, "Theme", Theme),
+    wxMenu:append(View, ?wxID_SEPARATOR, []),
+    wxMenu:append(View, ?MENU_ID_FULLSCREEN, "Fullscreen", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:append(View, ?wxID_SEPARATOR, []),
+    wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Hide Test Pane", []),
+    wxMenu:append(View, ?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", []),
+    wxMenu:append(View, ?MENU_ID_MAX_EDITOR, "Maximise Editor", []),
+    wxMenu:append(View, ?MENU_ID_MAX_UTIL, "Maximise Utilities", []),
+  
+    Document    = wxMenu:new([]),
+    wxMenu:append(Document, ?MENU_ID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:append(Document, ?MENU_ID_AUTO_INDENT, "Auto-Indent", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, true),   %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
+    wxMenu:append(Document, ?wxID_SEPARATOR, []),
+    wxMenu:append(Document, ?MENU_ID_INDENT_SELECTION, "Indent Selection"),
+    wxMenu:append(Document, ?MENU_ID_COMMENT_SELECTION, "Comment Selection"),
+    wxMenu:append(Document, ?wxID_SEPARATOR, []),
+    wxMenu:append(Document, ?MENU_ID_FOLD_ALL, "Fold All"),
+    wxMenu:append(Document, ?MENU_ID_UNFOLD_ALL, "Unfold All"),
+  
+    Wrangler    = wxMenu:new([]),
+    wxMenu:append(Wrangler, ?MENU_ID_WRANGLER, "WRANGLER"),
+  
+    ToolMenu    = wxMenu:new([]),
+    wxMenu:append(ToolMenu, ?MENU_ID_COMPILE, "Compile"),
+    wxMenu:append(ToolMenu, ?wxID_SEPARATOR, []),
+    wxMenu:append(ToolMenu, ?MENU_ID_RUN, "Run Module"),
+    wxMenu:append(ToolMenu, ?MENU_ID_DIALYZER, "Run Dialyzer"),
+    wxMenu:append(ToolMenu, ?MENU_ID_TESTS, "Run Tests"),
+    wxMenu:append(ToolMenu, ?MENU_ID_DEBUGGER, "Run Debugger"),
+  
+    Help        = wxMenu:new([]),
+    wxMenu:append(Help, ?wxID_HELP, "Help"),
+    wxMenu:append(Help, ?MENU_ID_SHORTCUTS, "Keyboard Shortcuts"),
+    wxMenu:append(Help, ?wxID_SEPARATOR, []),
+    wxMenu:append(Help, ?MENU_ID_SEARCH_DOC, "Search Erlang API"),
+    wxMenu:append(Help, ?MENU_ID_MANUAL, "IDE Manual"),
+    wxMenu:append(Help, ?wxID_SEPARATOR, []),
+    wxMenu:append(Help, ?wxID_ABOUT, "About"),
+  
+    wxMenuBar:append(MenuBar, File, "File"),
+    wxMenuBar:append(MenuBar, Edit, "Edit"),
+    wxMenuBar:append(MenuBar, View, "View"),
+    wxMenuBar:append(MenuBar, Document, "Document"),
+    wxMenuBar:append(MenuBar, Wrangler, "Wrangler"),
+    wxMenuBar:append(MenuBar, ToolMenu, "Tools"),
+    wxMenuBar:append(MenuBar, Help, "Help"),
+    
+		%% =====================================================================
+		%% Toolbar
+		%% 
+		%% =====================================================================
+
+		ToolBar = wxFrame:createToolBar(Frame, []),
+		wxToolBar:setMargins(ToolBar, 10, 10),
+		wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
+		%% Id, StatusBar help, filename/art id, args, add seperator
+		Tools = [
+			{?wxID_NEW,           "ToolTip", {default, "wxART_NEW"},    
+				[{shortHelp, "Create a new file"}],               false},
+			{?wxID_OPEN,          "ToolTip", {default, "wxART_FILE_OPEN"},   
+				[{shortHelp, "Open existing document"}],          false},
+			{?wxID_SAVE,          "ToolTip", {default, "wxART_FILE_SAVE"},   
+				[{shortHelp, "Save the current file"}],           false}, 
+			{?wxID_CLOSE,         "ToolTip", {default, "wxART_CLOSE"},  
+				[{shortHelp, "Close the current file"}],          true},
+			{?MENU_ID_COMPILE,    "ToolTip", {custom, "../icons/module-compile.png"},  
+				[{shortHelp, "Compile the current file"}],        false},
+			{?MENU_ID_RUN,        "ToolTip", {custom, "../icons/module-run.png"},      
+				[{shortHelp, "Run the current file"}],            true},
+			{?MENU_ID_HIDE_TEST,  "ToolTip", {custom, "../icons/hide-test.png"},       
+				[{shortHelp, "Hide the test pane"}],              false},
+			{?MENU_ID_HIDE_UTIL,  "ToolTip", {custom, "../icons/hide-util.png"},       
+				[{shortHelp, "Hide the utilities pane"}],         false},
+			{?MENU_ID_MAX_EDITOR, "ToolTip", {custom, "../icons/maximise-editor.png"}, 
+				[{shortHelp, "Maximise/minimise the text editor"}], false},
+			{?MENU_ID_MAX_UTIL,   "ToolTip", {custom, "../icons/maximise-util.png"},   
+				[{shortHelp, "Maximise/minimise the utilities"}],   false}],
+
+		AddTool = fun({Id, Tooltip, {custom, Path}, Args, true}) ->
+		        		wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Path)), Args),
+		        		wxToolBar:addSeparator(ToolBar);
+							({Id, Tooltip, {custom, Path}, Args, false}) ->
+								wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Path)), Args);
+							({Id, Tooltip, {default, Art}, Args, true}) ->
+								wxToolBar:addTool(ToolBar, Id, Tooltip, wxArtProvider:getBitmap(Art), Args),
+								wxToolBar:addSeparator(ToolBar);
+							({Id, Tooltip, {default, Art}, Args, false}) ->
+								wxToolBar:addTool(ToolBar, Id, Tooltip, wxArtProvider:getBitmap(Art), Args)
+		          end,       
+
+		[AddTool(Tool) || Tool <- Tools],
+
+		wxToolBar:realize(ToolBar),
+		
+		%% =====================================================================
+		%% ETS table used to store the function called when a menu item is 
+		%% clicked.
+		%% Record format: {Menu item Id, Tooltip, Statusbar halp string, 
+		%%								{Module, Function, Args}}
+		%% =====================================================================
+    
     TabId = ets:new(myTable, []),
     ets:insert(TabId,{?wxID_NEW, "New", "Create a new file.", {ide,add_editor,[]}}),
     ets:insert(TabId,{?wxID_OPEN, "Open", "Open an existing file.", {ide,open_file,[Frame]}}),
@@ -103,135 +236,34 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_SEARCH_DOC, "Search doc", "Search the Erlang documentation.", {}}),
     ets:insert(TabId,{?MENU_ID_MANUAL, "Manual", "View the IDE manual.", {}}),
     ets:insert(TabId,{?wxID_ABOUT, "About", "About.", {about, new, [{parent, Frame}]}}),
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%% Menubar %%%%%%%%%%%%%%%%%%%%%%%%%%
-    MenuBar     = wxMenuBar:new(),
-      
-    File        = wxMenu:new([]),
-    wxMenu:append(File, ?wxID_NEW, "New"),
-    wxMenu:append(File, ?wxID_OPEN, "Open"),
-    wxMenu:append(File, ?wxID_SEPARATOR, []),
-    wxMenu:append(File, ?wxID_SAVE, "Save"),
-    wxMenu:append(File, ?wxID_SAVEAS, "Save As"),
-    wxMenu:append(File, ?MENU_ID_SAVE_ALL, "Save All"),
-    wxMenu:append(File, ?wxID_SEPARATOR, []),
-    wxMenu:append(File, ?wxID_PRINT, "Print"),
-    wxMenu:append(File, ?wxID_SEPARATOR, []),
-    wxMenu:append(File, ?wxID_CLOSE, "Close"),
-    wxMenu:append(File, ?wxID_CLOSE_ALL, "Close All"),
-    wxMenu:append(File, ?wxID_SEPARATOR, []),
-    wxMenu:append(File, ?wxID_EXIT, "Exit"),
-    wxMenu:append(File, ?wxID_PREFERENCES, "Preferences"),
-  
-    Edit        = wxMenu:new([]),
-    wxMenu:append(Edit, ?wxSTC_CMD_UNDO, "Undo"),
-    wxMenu:append(Edit, ?wxSTC_CMD_REDO, "Redo"),
-    wxMenu:append(Edit, ?wxID_SEPARATOR, []),
-    wxMenu:append(Edit, ?wxSTC_CMD_CUT, "Cut"),
-    wxMenu:append(Edit, ?wxSTC_CMD_COPY, "Copy"),
-    wxMenu:append(Edit, ?wxSTC_CMD_PASTE, "Paste"),
-    wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
-    wxMenu:appendSeparator(Edit),
-    wxMenu:append(Edit, ?wxID_FIND, "Find\tCtrl+F"),
-  
-    Font = wxMenu:new([]), %% Sub-menu
-    wxMenu:append(Font, ?MENU_ID_FONT, "Font Picker"),
-    wxMenu:appendSeparator(Font),
-    wxMenu:append(Font, ?MENU_FONT_BIGGER, "&Bigger\tCtrl++"),
-    wxMenu:append(Font, ?MENU_FONT_SMALLER, "Smaller\tCtrl+-"),
-    wxMenu:appendSeparator(Font),
-    
-    View        = wxMenu:new([]),
-    wxMenu:append(View, ?wxID_ANY, "Font", Font),
-    wxMenu:append(View, ?wxID_SEPARATOR, []),
-    wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers", [{kind, ?wxITEM_CHECK}]),
-    wxMenu:check(View, ?MENU_ID_LN_TOGGLE, true),         %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
-    wxMenu:append(View, ?wxID_SEPARATOR, []),
-    IndentType  = wxMenu:new([]),  % Submenu
-    wxMenu:appendRadioItem(IndentType, ?MENU_ID_INDENT_TABS, "Tabs"), 
-    wxMenu:appendRadioItem(IndentType, ?MENU_ID_INDENT_SPACES, "Spaces"), 
-    wxMenu:append(View, ?MENU_ID_INDENT_TYPE, "Indent Type", IndentType),
-    IndentWidth = wxMenu:new([]),  % Submenu
-    add_tab_width_menu(IndentWidth, 1),
-    wxMenu:check(IndentWidth, 7004, true),             %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
-    wxMenu:append(View, ?MENU_ID_INDENT_WIDTH, "Indent Width", IndentWidth),
-    wxMenu:append(View, ?wxID_SEPARATOR, []),
-    wxMenu:append(View, ?MENU_ID_FULLSCREEN, "Fullscreen", [{kind, ?wxITEM_CHECK}]),
-    wxMenu:append(View, ?wxID_SEPARATOR, []),
-    wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Hide Test Pane", []),
-    wxMenu:append(View, ?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", []),
-    wxMenu:append(View, ?MENU_ID_MAX_EDITOR, "Maximise Editor", []),
-    wxMenu:append(View, ?MENU_ID_MAX_UTIL, "Maximise Utilities", []),
-  
-    Document    = wxMenu:new([]),
-    wxMenu:append(Document, ?MENU_ID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
-    wxMenu:append(Document, ?MENU_ID_AUTO_INDENT, "Auto-Indent", [{kind, ?wxITEM_CHECK}]),
-    wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, true),   %% REPLACE WITH DEFAULT SETTINGS (OVERRIDDEN BY USER SETTINGS)
-    wxMenu:append(Document, ?wxID_SEPARATOR, []),
-    wxMenu:append(Document, ?MENU_ID_INDENT_SELECTION, "Indent Selection"),
-    wxMenu:append(Document, ?MENU_ID_COMMENT_SELECTION, "Comment Selection"),
-    wxMenu:append(Document, ?wxID_SEPARATOR, []),
-    wxMenu:append(Document, ?MENU_ID_FOLD_ALL, "Fold All"),
-    wxMenu:append(Document, ?MENU_ID_UNFOLD_ALL, "Unfold All"),
-  
-    Wrangler    = wxMenu:new([]),
-    wxMenu:append(Wrangler, ?MENU_ID_WRANGLER, "WRANGLER"),
-  
-    ToolMenu    = wxMenu:new([]),
-    wxMenu:append(ToolMenu, ?MENU_ID_COMPILE, "Compile"),
-    wxMenu:append(ToolMenu, ?wxID_SEPARATOR, []),
-    wxMenu:append(ToolMenu, ?MENU_ID_RUN, "Run Module"),
-    wxMenu:append(ToolMenu, ?MENU_ID_DIALYZER, "Run Dialyzer"),
-    wxMenu:append(ToolMenu, ?MENU_ID_TESTS, "Run Tests"),
-    wxMenu:append(ToolMenu, ?MENU_ID_DEBUGGER, "Run Debugger"),
-  
-    Help        = wxMenu:new([]),
-    wxMenu:append(Help, ?wxID_HELP, "Help"),
-    wxMenu:append(Help, ?MENU_ID_SHORTCUTS, "Keyboard Shortcuts"),
-    wxMenu:append(Help, ?wxID_SEPARATOR, []),
-    wxMenu:append(Help, ?MENU_ID_SEARCH_DOC, "Search Erlang API"),
-    wxMenu:append(Help, ?MENU_ID_MANUAL, "IDE Manual"),
-    wxMenu:append(Help, ?wxID_SEPARATOR, []),
-    wxMenu:append(Help, ?wxID_ABOUT, "About"),
-  
-    wxMenuBar:append(MenuBar, File, "File"),
-    wxMenuBar:append(MenuBar, Edit, "Edit"),
-    wxMenuBar:append(MenuBar, View, "View"),
-    wxMenuBar:append(MenuBar, Document, "Document"),
-    wxMenuBar:append(MenuBar, Wrangler, "Wrangler"),
-    wxMenuBar:append(MenuBar, ToolMenu, "Tools"),
-    wxMenuBar:append(MenuBar, Help, "Help"),
-    
-    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    %%%%%%%%%%%%%%%%%%%%%%%%%% Toolbar %%%%%%%%%%%%%%%%%%%%%%%%%%
-      ToolBar = wxFrame:createToolBar(Frame, []),
-      wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
-  %% Id, StatusBar help, filename, args, add seperator
-      Tools = [{?wxID_NEW,           "ToolTip", "../icons/document-new.png",    [{shortHelp, "Create a new file"}],               false},
-               {?wxID_OPEN,          "ToolTip", "../icons/document-open.png",   [{shortHelp, "Open existing document"}],          false},
-               {?wxID_SAVE,          "ToolTip", "../icons/document-save.png",   [{shortHelp, "Save the current file"}],           true}, 
-               {?wxID_CLOSE,         "ToolTip", "../icons/document-close.png",  [{shortHelp, "Close the current file"}],          true},
-               {?MENU_ID_COMPILE,    "ToolTip", "../icons/module-compile.png",  [{shortHelp, "Compile the current file"}],        false},
-               {?MENU_ID_RUN,        "ToolTip", "../icons/module-run.png",      [{shortHelp, "Run the current file"}],            true},
-               {?MENU_ID_HIDE_TEST,  "ToolTip", "../icons/hide-test.png",       [{shortHelp, "Hide the test pane"}],              false},
-               {?MENU_ID_HIDE_UTIL,  "ToolTip", "../icons/hide-util.png",       [{shortHelp, "Hide the utilities pane"}],         false},
-               {?MENU_ID_MAX_EDITOR, "ToolTip", "../icons/maximise-editor.png", [{shortHelp, "Maximise/minimise the text editor"}], false},
-               {?MENU_ID_MAX_UTIL,   "ToolTip", "../icons/maximise-util.png",   [{shortHelp, "Maximise/minimise the utilities"}],   false}],
-  
-      AddTool = fun({Id, Tooltip, Filename, Args, true}) ->
-              wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args),
-              wxToolBar:addSeparator(ToolBar);
-             ({Id, Tooltip, Filename, Args, _}) ->
-              wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args)
-                end,       
-  
-      [AddTool(Tool) || Tool <- Tools],
-  
-      wxToolBar:realize(ToolBar),
         
     {MenuBar, TabId}.
 
+
+%% =====================================================================
+%% @doc Generate a radio menu given a list of labels.
+%% The menu item Ids will be automatically generated, starting from
+%% StartId. The menu item whose label = ToCheck will be checked.
+%% @private
+
+-spec generate_radio_submenu(Menu, Items, ToCheck, StartId) -> Result when
+	Menu :: wxMenu:wxMenu(),
+	Items :: [string()],
+	ToCheck :: string(),
+	StartId :: integer(),
+	Result :: {wxMenu:wxMenu(), integer()}. %% The complete menu and id of the last item added
+
+generate_radio_submenu(Menu, [], _, Id) -> 
+	{Menu, Id -1};
+	
+generate_radio_submenu(Menu, [Label|T], Label, StartId) ->
+	wxMenu:appendRadioItem(Menu, StartId, Label),
+	wxMenu:check(Menu, StartId, true),
+	generate_radio_submenu(Menu, T, Label, StartId+1);
+	
+generate_radio_submenu(Menu, [Label|T], ToCheck, StartId) ->
+	wxMenu:appendRadioItem(Menu, StartId, Label),
+	generate_radio_submenu(Menu, T, ToCheck, StartId+1).
 
 %% =====================================================================
 %% @doc Add all tab width options to menu
@@ -247,7 +279,7 @@ add_tab_width_menu(TabMenu, Width) ->
   
 %% =====================================================================
 %% @doc Update the label of a menu item
-%%
+
 
 update_label(MenuItem, Menu) ->
 	case wxMenu:getLabel(Menu, MenuItem) of

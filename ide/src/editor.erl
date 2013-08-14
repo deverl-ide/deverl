@@ -1,9 +1,8 @@
 %% editor.erl
 %% Creates an instance of an editor in a wxPanel().
-
 -module(editor).
 
--export([update_style/2,
+-export([update_font/2,
   save_status/1, 
   save_complete/3,
   get_text/1,
@@ -11,7 +10,8 @@
   selected/2,
   find/2,
   find_all/2,
-  replace_all/3]).
+  replace_all/3,
+	set_theme/3]).
 
 -export([start/1,
   init/1, 
@@ -25,14 +25,29 @@
 -include_lib("wx/include/wx.hrl").
 -behaviour(wx_object).
 
+%% For wx-2.9 usage
+-ifndef(wxSTC_ERLANG_COMMENT_FUNCTION).
+-define(wxSTC_ERLANG_COMMENT_FUNCTION, 14).
+-define(wxSTC_ERLANG_COMMENT_MODULE, 15).
+-define(wxSTC_ERLANG_COMMENT_DOC, 16).
+-define(wxSTC_ERLANG_COMMENT_DOC_MACRO, 17).
+-define(wxSTC_ERLANG_ATOM_QUOTED, 18).
+-define(wxSTC_ERLANG_MACRO_QUOTED, 19).
+-define(wxSTC_ERLANG_RECORD_QUOTED, 20).
+-define(wxSTC_ERLANG_NODE_NAME_QUOTED, 21).
+-define(wxSTC_ERLANG_BIFS, 22).
+-define(wxSTC_ERLANG_MODULES, 23).
+-define(wxSTC_ERLANG_MODULES_ATT, 24).
+-endif.
+
 -define(GREY, {25,0,0}).
--define(SELECTION_COLOUR, {100,255,255}).
+-define(SELECTION_COLOUR, {90,100,126,224}).
 
 -define(LEFT_MARGIN_WIDTH, 6).
 -define(RIGHT_MARGIN_WIDTH, 6).
--define(MARGIN_LINE_NUMBER_PADDING, " ").
--define(MARGIN_LINE_NUMBER_WIDTH, "  ").
--define(MARGIN_LINE_NUMBER_POINT_REDUCTION, 2). %% The size (pts) to reduce margin text by
+-define(MARGIN_L_PADDING, " ").
+-define(MARGIN_L_WIDTH, "  ").
+-define(MARGIN_LN_PT_OFFSET, 0). %% The size (pts) to reduce margin text by
 
 -type path()      :: string().
 -type filename()  :: string().
@@ -69,59 +84,40 @@ init(Config) ->
   Editor = wxStyledTextCtrl:new(Panel), 
   wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND},
                               {proportion, 1}]),              
-                                                                                             
-  %% Editor styles  
-  wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
   
-  % wxStyledTextCtrl:styleClearAll(Editor),
-  
+	%% Static editor styles
   wxStyledTextCtrl:setLexer(Editor, ?wxSTC_LEX_ERLANG),
-  wxStyledTextCtrl:setSelBackground(Editor, true, ?SELECTION_COLOUR),
+	wxStyledTextCtrl:setKeyWords(Editor, 0, keywords()),
   wxStyledTextCtrl:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
-  wxStyledTextCtrl:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text
-
-  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),   
-  Mw = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, 
-        ?MARGIN_LINE_NUMBER_PADDING ++ ?MARGIN_LINE_NUMBER_WIDTH),
-  wxStyledTextCtrl:setMarginWidth(Editor, 0, Mw),
-  wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER,
-        (wxFont:getPointSize(Font) - ?MARGIN_LINE_NUMBER_POINT_REDUCTION)),
-        
-  %% Indicators
+	wxStyledTextCtrl:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text         							
+  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),   		     
+  
+	%% Folding
+  wxStyledTextCtrl:setMarginType(Editor, 1, ?wxSTC_MARGIN_SYMBOL),
+  wxStyledTextCtrl:setMarginWidth(Editor, 1, 9),
+  wxStyledTextCtrl:setMarginMask(Editor, 1, ?wxSTC_MASK_FOLDERS),
+  wxStyledTextCtrl:setMarginSensitive(Editor, 1, true), %% Makes margin sensitive to mouse clicks
+  wxStyledTextCtrl:setProperty(Editor, "fold", "1"),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDER, ?wxSTC_MARK_ARROW,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDEROPEN, ?wxSTC_MARK_ARROWDOWN,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDERSUB, ?wxSTC_MARK_EMPTY,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDEREND, ?wxSTC_MARK_ARROW,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDEROPENMID, ?wxSTC_MARK_ARROWDOWN,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDERMIDTAIL, ?wxSTC_MARK_EMPTY,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDERTAIL, ?wxSTC_MARK_EMPTY,[]),					     
+  
+	%% Indicators
   wxStyledTextCtrl:indicatorSetStyle(Editor,0,?wxSTC_INDIC_ROUNDBOX),
-  wxStyledTextCtrl:indicatorSetForeground(Editor, 0, {100,255,255,255}),
+  wxStyledTextCtrl:indicatorSetForeground(Editor, 0, {255,255,0,255}),
   wxStyledTextCtrl:indicatorSetStyle(Editor,1,?wxSTC_INDIC_BOX),
   wxStyledTextCtrl:indicatorSetStyle(Editor,2,?wxSTC_INDIC_PLAIN), %% underline
-  
-  %% Add the keywords
-  wxStyledTextCtrl:setKeyWords(Editor, 0, keywords()),
-  
-  update_styles(Editor),
-  
-  %% Folding
-  wxStyledTextCtrl:setMarginType (Editor, 1, ?wxSTC_MARGIN_SYMBOL),
-  wxStyledTextCtrl:setMarginWidth(Editor, 1, 4),
-  wxStyledTextCtrl:setMarginMask (Editor, 1, ?wxSTC_MASK_FOLDERS),
-  wxStyledTextCtrl:setMarginSensitive(Editor, 1, true), %% Makes margin sensitive to mouse clicks
-  
-  wxStyledTextCtrl:setProperty(Editor, "fold", "1"),
-  
-  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDER, ?wxSTC_MARK_ARROW, 
-    [{foreground, ?GREY}, {background, ?GREY}]),
-  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEROPEN, ?wxSTC_MARK_ARROWDOWN, 
-    [{foreground, ?GREY}, {background, ?GREY}]),
-  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERSUB, ?wxSTC_MARK_EMPTY, 
-    [{foreground, ?GREY}, {background, ?GREY}]),
-  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEREND, ?wxSTC_MARK_ARROW, 
-    [{foreground, ?GREY}, {background, ?GREY}]),
-  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDEROPENMID, ?wxSTC_MARK_ARROWDOWN, 
-    [{foreground, ?GREY}, {background, ?GREY}]),        
-  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERMIDTAIL, ?wxSTC_MARK_EMPTY, 
-    [{foreground, ?GREY}, {background, ?GREY}]),
-  wxStyledTextCtrl:markerDefine (Editor, ?wxSTC_MARKNUM_FOLDERTAIL, ?wxSTC_MARK_EMPTY, 
-    [{foreground, ?GREY}, {background, ?GREY}]),
-  
-  %% Attach events
+	
+	case theme:load_theme(user_prefs:get_user_pref({pref, theme})) of
+		{error, load_theme} -> ok;
+		Theme -> setup_theme(Editor, Theme, Font)
+	end,
+    
+	%% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, stc_change, [{userData, Sb}]),
@@ -137,26 +133,85 @@ init(Config) ->
       F = #file{modified=false}
   end,
       
-  % process_flag(trap_exit, true),
   {Panel, #state{editor_parent=Panel, text_ctrl=Editor, file_data=F}}.
 
 
 %% =====================================================================
+%% @doc Sets all styles to have the same attributes as STYLE_DEFAULT.
+%% Must be called before setting any theme styles, as they will be reset.
+
+set_default_styles(Editor, Fg, Bg, Font) ->
+	wxStyledTextCtrl:styleSetBackground(Editor, ?wxSTC_STYLE_DEFAULT, Bg),
+	wxStyledTextCtrl:styleSetForeground(Editor, ?wxSTC_STYLE_DEFAULT, Fg),
+	wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
+	wxStyledTextCtrl:styleClearAll(Editor).
+
+
+%% =====================================================================
+%% @doc Update the line number margin font and width.
+
+set_linenumber_default(Editor, Font) ->
+	LnFont = wxFont:new(wxFont:getPointSize(Font), ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
+  wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_LINENUMBER, LnFont),
+	wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER, (wxFont:getPointSize(Font) - ?MARGIN_LN_PT_OFFSET)),
+  Mw = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, ?MARGIN_L_PADDING ++ ?MARGIN_L_WIDTH),
+	wxStyledTextCtrl:setMarginWidth(Editor, 0, Mw).
+	
+	
+%% =====================================================================
+%% @doc Update all styles relating to a theme.
+
+set_theme_styles(Editor, Font) ->
+  wxStyledTextCtrl:setCaretForeground(Editor, {255,255,255}),
+  wxStyledTextCtrl:setSelBackground(Editor, true, ?SELECTION_COLOUR),
+	wxStyledTextCtrl:styleSetBackground(Editor, ?wxSTC_STYLE_LINENUMBER, {51,51,50}),
+	set_linenumber_default(Editor, Font),
+  update_styles(Editor),
+ 	set_font_style(Editor, Font),
+  set_marker_colour(Editor, {{36,35,34}, {36,35,34}}).
+
+set_theme_styles(Editor, Styles, Font) ->
+  wxStyledTextCtrl:setCaretForeground(Editor, 
+		theme:hexstr_to_rgb(proplists:get_value(caret, Styles))),
+  wxStyledTextCtrl:setSelBackground(Editor, true, 
+		theme:hexstr_to_rgb(proplists:get_value(selection, Styles))),
+	wxStyledTextCtrl:styleSetBackground(Editor, ?wxSTC_STYLE_LINENUMBER, 
+		theme:hexstr_to_rgb(proplists:get_value(marginBg, Styles))),
+	wxStyledTextCtrl:styleSetForeground(Editor, ?wxSTC_STYLE_LINENUMBER, 
+		theme:hexstr_to_rgb(proplists:get_value(marginFg, Styles))),
+	set_linenumber_default(Editor, Font),
+  % update_styles(Editor),
+ 	set_font_style(Editor, Font),
+  set_marker_colour(Editor, {theme:hexstr_to_rgb(proplists:get_value(markers, Styles)), 
+		theme:hexstr_to_rgb(proplists:get_value(markers, Styles))}).
+	
+	
+%% =====================================================================
+%% @doc Set the font across the lexer.
+	
+set_font_style(Editor, Font) ->
+	Update = fun(Id) -> 
+		wxStyledTextCtrl:styleSetFont(Editor, Id, Font)
+		end,
+	[ Update(Id) || Id <- lists:seq(?wxSTC_ERLANG_DEFAULT, ?wxSTC_ERLANG_MODULES_ATT)],
+	wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font).
+
+%% =====================================================================
+%% @doc Update the colour of the markers used in the fold margin.
+
+set_marker_colour(Editor, {Fg, Bg}) ->
+	Update = fun(Id) -> 
+		wxStyledTextCtrl:markerSetForeground(Editor, Id, Fg),
+		wxStyledTextCtrl:markerSetBackground(Editor, Id, Bg)
+		end,
+	[ Update(Id) || Id <- lists:seq(?wxSTC_MARKNUM_FOLDEREND, ?wxSTC_MARKNUM_FOLDEROPEN)].
+
+%% =====================================================================
 %% @doc OTP behaviour callbacks
 
-handle_info({'EXIT',_, wx_deleted}, State) ->
-    io:format("Got Info~n"),
-    {noreply,State};
-handle_info({'EXIT',_, shutdown}, State) ->
-    io:format("Got Info~n"),
-    {noreply,State};
-handle_info({'EXIT',_, normal}, State) ->
-    io:format("Got Info~n"),
-    {noreply,State};
 handle_info(Msg, State) ->
-    io:format("Got Info ~p~n",[Msg]),
+    io:format("Got Info(Editor) ~p~n",[Msg]),
     {noreply,State}.
-
 
 handle_call(shutdown, _From, State=#state{editor_parent=Panel}) ->
     wxPanel:destroy(Panel),
@@ -233,20 +288,20 @@ code_change(_, _, State) ->
 terminate(_Reason, State=#state{editor_parent=Panel}) ->
   io:format("TERMINATE EDITOR~n"),
   wxPanel:destroy(Panel).
-    
 
+	
 %% =====================================================================
 %% @doc Defines the keywords in the Erlang language
 %%
 %% @private
 
 keywords() ->
-  KWS = ["after" "and" "andalso" "band" "begin" "bnot" 
-  "bor" "bsl" "bsr" "bxor" "case" "catch" "cond" "div" 
-  "end" "fun" "if" "let" "not" "of" "or" "orelse" 
-  "receive" "rem" "try" "when" "xor"],
-  lists:flatten([KW ++ " " || KW <- KWS]).
-
+  KWS = ["after", "and", "andalso", "band", "begin", "bnot", 
+  "bor", "bsl", "bsr", "bxor", "case", "catch", "cond", "div", 
+  "end", "fun", "if", "let", "not", "of", "or", "orelse", 
+  "receive", "rem", "try", "when", "xor"],
+  L = lists:flatten([KW ++ " " || KW <- KWS]).
+	
 
 %% =====================================================================
 %% @doc Updates the styles for individual elements in the lexer
@@ -258,21 +313,34 @@ keywords() ->
   
 update_styles(Editor) ->
   %% {Style, Colour}
-  Styles =  [{?wxSTC_ERLANG_DEFAULT,  {0,0,0}},
-       {?wxSTC_ERLANG_COMMENT,  {160,53,35}},
-       {?wxSTC_ERLANG_VARIABLE, {150,100,40}},
-       {?wxSTC_ERLANG_NUMBER,   {5,5,100}},
-       {?wxSTC_ERLANG_KEYWORD,  {130,40,172}},
-       {?wxSTC_ERLANG_STRING,   {170,45,132}},
-       {?wxSTC_ERLANG_OPERATOR, {30,0,0}},
-       {?wxSTC_ERLANG_ATOM,     {0,0,0}},
-       {?wxSTC_ERLANG_FUNCTION_NAME, {64,102,244}},
+  Styles = [
+			 {?wxSTC_ERLANG_DEFAULT,  {229,225,220}}, %
+       {?wxSTC_ERLANG_COMMENT,  {116,118,118}}, %
+       {?wxSTC_ERLANG_VARIABLE, {120,184,215}}, %
+       {?wxSTC_ERLANG_NUMBER,   {253,163,94}}, %
+       {?wxSTC_ERLANG_KEYWORD,  {233,238,194}}, %
+       {?wxSTC_ERLANG_STRING,   {122,184,215}}, %
+       {?wxSTC_ERLANG_OPERATOR, {229,225,220}}, %
+       {?wxSTC_ERLANG_ATOM,     {255,0,0}},
+       {?wxSTC_ERLANG_FUNCTION_NAME, {213,88,75}}, %
        {?wxSTC_ERLANG_CHARACTER,{236,155,172}},
-       {?wxSTC_ERLANG_MACRO,    {40,144,170}},
-       {?wxSTC_ERLANG_RECORD,   {40,100,20}},
+       {?wxSTC_ERLANG_MACRO,    {120,184,215}}, %
+       {?wxSTC_ERLANG_RECORD,   {60,179,120}},
        {?wxSTC_ERLANG_SEPARATOR,{0,0,0}},
        {?wxSTC_ERLANG_NODE_NAME,{0,0,0}},
-       {?wxSTC_STYLE_LINENUMBER,{100,100,100}}
+       {?wxSTC_STYLE_LINENUMBER,{200,200,200}},
+       %% > wx2.9
+       {?wxSTC_ERLANG_COMMENT_FUNCTION, {116,118,118}}, %
+       {?wxSTC_ERLANG_COMMENT_MODULE, {116,118,118}}, %
+       {?wxSTC_ERLANG_COMMENT_DOC, {116,118,118}}, %
+       {?wxSTC_ERLANG_COMMENT_DOC_MACRO, {116,118,118}}, %
+       {?wxSTC_ERLANG_ATOM_QUOTED, {0,0,0}},
+       {?wxSTC_ERLANG_MACRO_QUOTED, {40,144,170}},
+       {?wxSTC_ERLANG_RECORD_QUOTED, {40,100,20}},
+       {?wxSTC_ERLANG_NODE_NAME_QUOTED, {0,0,0}},
+       {?wxSTC_ERLANG_BIFS, {255,255,255}}, %
+       {?wxSTC_ERLANG_MODULES, {255,255,255}},
+       {?wxSTC_ERLANG_MODULES_ATT, {64,102,244}}
       ],
     
   %% Set the font and style
@@ -345,16 +413,14 @@ adjust_margin_width(Editor) ->
 %% =====================================================================
 %% @doc Update the font used in the editor
 
--spec update_style(EditorPid, Font) -> 'ok' when
+-spec update_font(EditorPid, Font) -> 'ok' when
   EditorPid :: pid(),
   Font :: wxFont:wxFont().
   
-update_style(EditorPid, Font) ->
+update_font(EditorPid, Font) ->
   Editor = wx_object:call(EditorPid, text_ctrl),
-  wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
-  %% Update the margin size
-  adjust_margin_width(Editor),
-  ok.
+  set_font_style(Editor, Font),
+	ok.
   
   
 %% =====================================================================
@@ -478,4 +544,31 @@ replace(EditorPid, Str, Start, End) ->
   wxStyledTextCtrl:setTargetStart(Editor, Start),
   wxStyledTextCtrl:setTargetEnd(Editor, End),
   wxStyledTextCtrl:replaceTarget(Editor, Str).
+	
+setup_theme(Editor, [Def | Lex]=L, Font) ->
+	Fg = theme:hexstr_to_rgb(proplists:get_value(fgColour, Def)),
+	set_default_styles(Editor, Fg,
+		theme:hexstr_to_rgb(proplists:get_value(bgColour, Def)), Font),
+	set_theme_styles(Editor, Def, Font),
+	apply_lexer_styles(Editor, Lex, Fg),
+	ok.
+	
+set_theme(Editor, Theme, Font) ->
+	case theme:load_theme(Theme) of
+		{error, load_theme} -> ok;
+		NewTheme -> setup_theme(wx_object:call(Editor, text_ctrl), NewTheme, Font)
+	end,
+	ok.
 
+apply_lexer_styles(Editor, Styles, Fg) ->
+	SetFg = fun wxStyledTextCtrl:styleSetForeground/3,
+	SetFg(Editor, ?wxSTC_ERLANG_DEFAULT, Fg),
+	[ SetFg(Editor, Id, Rgb) || {Id, Rgb} <- proplists:get_value(fgColour, Styles)],
+	SetBg = fun wxStyledTextCtrl:styleSetBackground/3,
+	[ SetBg(Editor, Id, Rgb) || {Id, Rgb} <- proplists:get_value(bgColour, Styles)],
+	adjust_margin_width(Editor),
+	ok.
+	
+reset_styles_to_default(Editor, Styles) ->
+	%% switch lexer to null
+	ok.

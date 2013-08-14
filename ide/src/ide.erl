@@ -25,7 +25,9 @@
 	   save_all/0,
 		 open_file/1,
 		 open_dialog/1,
-     find_replace/1]).
+     find_replace/1,
+		 get_current_theme_name/0,
+		 set_theme/1]).
 
 
 %% The record containing the State.
@@ -40,7 +42,6 @@
                 sash_v_pos :: integer(),
                 sash_h_pos :: integer(),
                 status_bar :: wxPanel:wxPanel(),
-                font :: wxFont:wxFont(),                        %% The initial font used in the editors
                 editor_pids :: {integer(), pid()}               %% A table containing the Id returned when an editor is created, and the associated pid
                 }).
 
@@ -48,7 +49,6 @@
 -define(DEFAULT_FRAME_HEIGHT, 731).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
--define(DEFAULT_FONT_SIZE,    12).
 
 -define(DEFAULT_TAB_LABEL, "untitled").
 
@@ -81,6 +81,9 @@ start(Args) ->
 init(Options) ->
 	wx:new(Options),
   process_flag(trap_exit, true),
+	
+	%% Load user prefs - should be started by OTP Application and not here
+	user_prefs:new([{wxe_server, wx:get_env()}]),
   
 	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
 	wxFrame:connect(Frame, close_window),
@@ -112,9 +115,9 @@ init(Options) ->
   {Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
   wxFrame:setMenuBar(Frame, Menu),
   
-  wxFrame:connect(Frame, menu_highlight,  [{userData, MenuTab}]),
+  wxFrame:connect(Frame, menu_highlight,  [{userData, {ets_table,MenuTab}}]),
   wxFrame:connect(Frame, menu_close,  []),
-  wxFrame:connect(Frame, command_menu_selected, [{userData,MenuTab}]),
+  wxFrame:connect(Frame, command_menu_selected, [{userData,{ets_table,MenuTab}}]),
  
   wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),      
@@ -122,7 +125,7 @@ init(Options) ->
 	%% The workspace/text editors %%
   Manager = wxAuiManager:new([{managed_wnd, Frame}]),
   EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
-  {Workspace, TabId, Font} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
+  {Workspace, TabId} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
   
 	%% The left window
   LeftWindow = create_left_window(SplitterLeftRight),
@@ -159,12 +162,13 @@ init(Options) ->
             sash_h_pos=?SASH_HOR_DEFAULT_POS,
             sash_v=SplitterLeftRight,
             sash_h=SplitterTopBottom,
-            font=Font,
             editor_pids=TabId
             }}.
 
 %% =====================================================================
-%% @doc OTP behaviour callbacks
+%% OTP callbacks
+%% 
+%% =====================================================================
 
 %% Deal with trapped exit signals
 handle_info({'EXIT',_, wx_deleted}, State) ->
@@ -193,10 +197,9 @@ handle_call(splitter, _From, State) ->
 handle_call(workspace, _From, State) ->
   {reply, {State#state.workspace, 
            State#state.status_bar,
-           State#state.font,
            State#state.editor_pids}, State};
-handle_call({update_font, Font}, _From, State) ->
-  {reply, ok, State#state{font=Font}};
+handle_call(frame, _From, State) ->
+	{reply, State#state.win, State};
 handle_call(Msg, _From, State) ->
   demo:format(State#state{}, "Got Call ~p\n", [Msg]),
   {reply,{error, nyi}, State}.
@@ -205,13 +208,21 @@ handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
 
-
 %% =====================================================================
+%% Event handlers
+%% 
+%% =====================================================================
+
 %% Window close event 
 handle_event(#wx{event=#wxClose{}}, State) ->
   io:format("~p Closing window ~n",[self()]),
   {stop, normal, State};
-    
+	
+%% =====================================================================
+%% Sash drag handlers
+%% 
+%% =====================================================================   
+ 
 %% Vertical sash dragged
 handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, State) ->
   Pos = wxSplitterWindow:getSashPosition(State#state.sash_v),
@@ -247,7 +258,10 @@ handle_event(#wx{event = #wxSplitter{type = command_splitter_doubleclicked} = _E
   io:format("Sash double clicked ~n"),    
   {noreply, State};
     
-%% --- AuiManager events
+%% =====================================================================
+%% AUI handlers
+%% 
+%% =====================================================================
 
 %% Not connected currently
 handle_event(#wx{event = #wxAuiManager{type = aui_render} = _E}, State) ->
@@ -261,11 +275,14 @@ handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinote
   {noreply, State}; 
     
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
-  add_editor(State#state.workspace, State#state.status_bar, State#state.font, 
+  add_editor(State#state.workspace, State#state.status_bar, 
              State#state.editor_pids),
   {noreply, State};
 
-%% --- Menu events    
+%% =====================================================================
+%% Menu handlers
+%% 
+%% =====================================================================
 
 %% See ticket #5 
 %% Although a temporary fix has been implemented for ticket #5, using this handler
@@ -276,7 +293,7 @@ handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}},
 {noreply, State};
   
 %% Handle menu highlight events    
-handle_event(#wx{id=Id, userData=TabId, event=#wxMenu{type=menu_highlight}},
+handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}},
              State=#state{status_bar=Sb}) ->
   Result = ets:lookup(TabId,Id),
   Fun = fun([{_,_,HelpString,_}]) ->
@@ -292,38 +309,47 @@ handle_event(#wx{id=Id, userData=TabId, event=#wxMenu{type=menu_highlight}},
        end,
   Fun(Result),
   {noreply, State};
-  
-%% Handle menu clicks      
-handle_event(#wx{id=Id, userData=TabId, event=#wxCommand{type=command_menu_selected}},
+
+%% First handle the anonymous sub-menus
+handle_event(E=#wx{id=Id, obj=Menu, userData=theme, event=#wxCommand{type=command_menu_selected}},
+             State=#state{status_bar=Sb}) -> 
+	Env = wx:get_env(),
+	spawn(fun() -> wx:set_env(Env),
+		set_theme(Menu)
+	end),
+	{noreply, State};
+
+%% The menu items from the ETS table					 
+handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=command_menu_selected}},
              State=#state{status_bar=Sb}) ->
   Result = ets:lookup(TabId,Id),
   Fun = fun([{MenuItem,_,_,{Module, Function, Args},{update_label, Frame, Pos}}]) ->
-         Env = wx:get_env(),
-         spawn(fun() -> wx:set_env(Env),
-                        erlang:apply(Module,Function,Args)
-               end),
-         ide_menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos));
-       ([{_,_,_,{Module,Function,[]}}]) ->
-         % Module:Function(); %% Called from this process
-         Env = wx:get_env(),
-         spawn(fun() -> wx:set_env(Env), 
-                        Module:Function()
-               end);
-       ([{_,_,_,{Module,Function,Args}}]) ->
-         % io:format("Mod:Func:Args~n"),
-         % erlang:apply(Module, Function, Args); %% Called from this process
-         Env = wx:get_env(),
-         spawn(fun() -> wx:set_env(Env),
-                        erlang:apply(Module, Function, Args)
-               end);
-       (_) ->
-         %% The status bar updated inside a temporary process for true concurrency,
-         %% otherwise the main event loop waits for this function to return (inc. timeout)
-         Env = wx:get_env(),
-         spawn(fun() -> wx:set_env(Env), 
-                        ide_status_bar:set_text_timeout(Sb, {field, help}, "Not yet implemented.") 
-               end)
-       end,
+			Env = wx:get_env(),
+			spawn(fun() -> wx:set_env(Env),
+			              erlang:apply(Module,Function,Args)
+			     end),
+			ide_menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos));
+		([{_,_,_,{Module,Function,[]}}]) ->
+			% Module:Function(); %% Called from this process
+			Env = wx:get_env(),
+			spawn(fun() -> wx:set_env(Env), 
+			              Module:Function()
+			     end);
+		([{_,_,_,{Module,Function,Args}}]) ->
+			% io:format("Mod:Func:Args~n"),
+			% erlang:apply(Module, Function, Args); %% Called from this process
+			Env = wx:get_env(),
+			spawn(fun() -> wx:set_env(Env),
+			              erlang:apply(Module, Function, Args)
+			     end);
+		(_) ->
+			%% The status bar updated inside a temporary process for true concurrency,
+			%% otherwise the main event loop waits for this function to return (inc. timeout)
+			Env = wx:get_env(),
+			spawn(fun() -> wx:set_env(Env), 
+			              ide_status_bar:set_text_timeout(Sb, {field, help}, "Not yet implemented.") 
+			     end)
+		end,
   Fun(Result),
   {noreply, State};
   
@@ -343,6 +369,7 @@ terminate(_Reason, #state{win=Frame, workspace_manager=Manager}) ->
   %% be a better choice.
   port:close_port(),
   erlang:unregister(port),
+	user_prefs:stop(),
   %% Below is the necessary cleanup
   io:format("TERMINATE IDE~n"),
   wxAuiManager:unInit(Manager),
@@ -350,7 +377,6 @@ terminate(_Reason, #state{win=Frame, workspace_manager=Manager}) ->
   wxFrame:destroy(Frame),
   wx:destroy().
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Internals %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %% =====================================================================
 %% @doc Create the utilities panel
@@ -402,11 +428,9 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
 			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
 			),
     
-	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
-	Font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
-  
+	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),  
 	Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
-                          {font, Font}]), %% Returns an editor instance inside a wxPanel
+                          {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
   
 	TabId = ets:new(editors, [public]),
 	{_,Id,_,Pid} = Editor,
@@ -425,7 +449,7 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,TabId}]),
 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),   
     
-	{Workspace, TabId, Font}.
+	{Workspace, TabId}.
   
   
 %% =====================================================================
@@ -433,8 +457,8 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
 %%
 %% @private
 
-add_editor(Workspace, Sb, Font, TabId) ->
-	add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb, Font, TabId),
+add_editor(Workspace, Sb, TabId) ->
+	add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb, TabId),
 	Workspace.
   
 
@@ -449,22 +473,22 @@ add_editor() ->
   
 %% @doc Create a new editor with specified filename
 add_editor(Filename) ->
-	{Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
-	add_editor(Workspace, Filename, Sb, Font, TabId),
+	{Workspace, Sb, TabId} = wx_object:call(?MODULE, workspace), 
+	add_editor(Workspace, Filename, Sb, TabId),
 	ok.
   
 %% @private
-add_editor(Workspace, Filename, Sb, Font, TabId) ->
-	Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}]),
+add_editor(Workspace, Filename, Sb, TabId) ->
+	Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_pref({pref, font})}]),
 	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
 	{_,Id,_,Pid} = Editor,
 	ets:insert_new(TabId,{Id, Pid}),
 	ok.
   
 %% @doc Create an editor from an existing file
-add_editor(Path, Filename, Contents) -> 
-		{Workspace, Sb, Font, TabId} = wx_object:call(?MODULE, workspace), 
-		Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,Font}, 
+add_editor_with_contents(Path, Filename, Contents) -> 
+		{Workspace, Sb, TabId} = wx_object:call(?MODULE, workspace), 
+		Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_pref({pref, font})}, 
 							   {file, {Path, Filename, Contents}}]),
 		wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
 		{_,Id,_,Pid} = Editor,
@@ -480,7 +504,7 @@ add_editor(Path, Filename, Contents) ->
 	Result :: pid().  
 
 get_editor_pid(Index) ->
-	{Workspace,_,_,PidTable} = wx_object:call(?MODULE, workspace), 
+	{Workspace,_,PidTable} = wx_object:call(?MODULE, workspace), 
 	get_editor_pid(Index, Workspace, PidTable).
   
 -spec get_editor_pid(Index, Workspace, PidTable) -> Result when
@@ -503,7 +527,7 @@ get_editor_pid(Index, Workspace, PidTable) ->
 			  {'ok', {integer(), pid()}}.
             
 get_selected_editor() ->
-	{Workspace,_,_,_} = wx_object:call(?MODULE, workspace), 
+	{Workspace,_,_} = wx_object:call(?MODULE, workspace), 
 	Index = wxAuiNotebook:getSelection(Workspace), %% Get the index of the tab
 	Valid = fun(-1) -> %% no editor instance
 				{error, no_open_editor};
@@ -522,7 +546,7 @@ get_selected_editor() ->
 	Result :: [{integer(), pid()}].
 	
 get_all_editors() ->
-	{Workspace,_,_,_} = wx_object:call(?MODULE, workspace), 
+	{Workspace,_,_} = wx_object:call(?MODULE, workspace), 
 	Count = wxAuiNotebook:getPageCount(Workspace),
 	get_all_editors(Workspace, Count - 1, []).
 
@@ -634,7 +658,7 @@ open_file(Frame) ->
 		{cancel} ->
 			ok;
 		{Path, Filename, Contents} ->
-			add_editor(Path, Filename, Contents),
+			add_editor_with_contents(Path, Filename, Contents),
 			ok
 	end.
 
@@ -655,7 +679,7 @@ close_selected_editor() ->
 %% @doc Close the selected editor
 
 close_editor(EditorPid, Index) ->
-	{Workspace,_Sb,_,Tab} = wx_object:call(?MODULE, workspace),
+	{Workspace,_Sb,Tab} = wx_object:call(?MODULE, workspace),
 	case editor:save_status(EditorPid) of
 		{save_status, new_file} ->
 			ets:delete(Tab, editor:get_id(EditorPid)),
@@ -719,21 +743,24 @@ add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
 %% @doc Change the font style across all open editors
  
  update_styles(Frame) ->
-	{_,_,CurrentFont,_} = wx_object:call(?MODULE, workspace), 
 	%% Display the system font picker
 	FD = wxFontData:new(),
-	wxFontData:setInitialFont(FD, CurrentFont),
+	wxFontData:setInitialFont(FD, user_prefs:get_user_pref({pref, font})),
 	Dialog = wxFontDialog:new(Frame, FD),
-	wxDialog:showModal(Dialog),
-	%% Get the user selected font, and update the editors
-	Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
-	wx_object:call(?MODULE, {update_font, Font}),
-	Fun = fun({_, Pid}) ->
-		      editor:update_style(Pid, Font)
-		  end,
-	lists:map(Fun, get_all_editors()),
-	ok.
-  
+	case wxDialog:showModal(Dialog) of
+		?wxID_OK ->
+			%% Get the user selected font, and update the editors
+			Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
+			user_prefs:set_user_pref(font, Font),
+			Fun = fun({_, Pid}) ->
+				      editor:update_font(Pid, Font)
+				  end,
+			lists:map(Fun, get_all_editors()),
+			ok;
+		?wxID_CANCEL ->
+			ok
+	end.
+
 
 %% =====================================================================
 %% @doc 
@@ -833,7 +860,7 @@ toggle_pane(PaneType) ->
 find_replace(Parent) ->
   FindData = find_replace_data:new(),
   
-  %% This data will eventually be loaded from transient/permanent storage
+  %% This data will eventually be loaded from transient/permanent storage PREFS!!
   find_replace_data:set_options(FindData, ?IGNORE_CASE bor ?WHOLE_WORD bor ?START_WORD),
   find_replace_data:set_search_location(FindData, ?FIND_LOC_DOC),
   
@@ -843,4 +870,31 @@ find_replace(Parent) ->
 		Pid ->
 			wxDialog:raise(find_replace_dialog:get_ref(Pid))
 	end.
-  
+
+		
+set_theme(ThemeMenu) ->
+	{ok, Ckd} = get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
+	Fun = fun({_, Pid}) ->
+		      editor:set_theme(Pid, wxMenuItem:getLabel(Ckd), user_prefs:get_user_pref({pref, font}))
+		  end,
+	lists:map(Fun, get_all_editors()),
+	user_prefs:set_user_pref({theme, wxMenuItem:getLabel(Ckd)}).
+
+get_current_theme_name() ->
+	Frame = wx_object:call(?MODULE, frame),
+	Mb = wxFrame:getMenuBar(Frame),
+	Menu = wxMenuBar:findMenu(Mb, "View"),
+	Item = wxMenu:findItem(wxMenuBar:getMenu(Mb, Menu), ?MENU_ID_THEME_SELECT),
+	Itms = wxMenu:getMenuItems(wxMenuItem:getSubMenu(Item)),
+	{ok, Ckd} = get_checked_menu_item(Itms),
+	wxMenuItem:getLabel(Ckd).
+	
+get_checked_menu_item([]) ->
+	{error, nomatch};
+get_checked_menu_item([H|T]) ->
+	case wxMenuItem:isChecked(H) of
+		true ->
+			{ok, H};
+		_ ->
+			get_checked_menu_item(T)
+	end.

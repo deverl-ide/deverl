@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!-- Credits: Based on theme "tomorrow" by Chris Kempson, http://chriskempson.com.
+	 https://github.com/chriskempson/tomorrow-themeBased --> 
+<Theme name="Tomorrow">
+	<DefaultStyles>
+		<Style name="Default" id="32" fgColour="#8959a8" bgColour="#FFFFFF" caret="#AEAFAD" selection="#D6D6D6" marginBg="#e4e4e4" marginFg="#b5b5b5" markers="#242322" />
+	</DefaultStyles>
+	<LexerStyles>
+		<Style name="Comments" id="1" fgColour="#8e908c" bgColour="" fontStyle="" fontSize="" />
+		<Style name="Variable" id="2" fgColour="#C82829" bgColour="" fontStyle="" fontSize="" />
+		<Style name="Number" id="3" fgColour="#F5871F" bgColour="" fontStyle="" fontSize="" />	
+		<Style name="Keyword" id="4" fgColour="#8959a8" bgColour="" fontStyle="" fontSize="" />
+		<Style name="String" id="5" fgColour="#718c00" bgColour="" fontStyle="" fontSize="" />
+		<Style name="Operator" id="6" fgColour="#3e999f" bgColour="" fontStyle="" fontSize="" />
+		<Style name="Atom" id="7" fgColour="#718c00" bgColour="" fontStyle="" fontSize="" />	
+		<Style name="Function" id="8" fgColour="#4271ae" bgColour="" fontStyle="" fontSize="" />		
+		<Style name="Macro" id="10" fgColour="#4271ae" bgColour="" fontStyle="" fontSize="" />
+		<Style name="Record" id="11" fgColour="#8742ae" bgColour="" fontStyle="" fontSize="" />
+		<Style name="Node" id="13" fgColour="#8742ae" bgColour="" fontStyle="" fontSize="" />
+		<Style name="CommentFunction" id="14" fgColour="#8e908c" bgColour="" fontStyle="" fontSize="" />
+		<Style name="CommentModule" id="15" fgColour="#8e908c" bgColour="" fontStyle="" fontSize="" />
+		<Style name="CommentDoc" id="16" fgColour="#8e908c" bgColour="" fontStyle="" fontSize="" />
+		<Style name="CommentMacro" id="17" fgColour="#8e908c" bgColour="" fontStyle="" fontSize="" />
+		<Style name="Modules" id="23" fgColour="#C99E00" bgColour="" fontStyle="" fontSize="" />		
+	</LexerStyles>
+</Theme>
