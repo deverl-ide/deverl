@@ -21,10 +21,11 @@
 -record(state, {theme,
 								font,
 								show_line_no,
-								line_wrap,
+								line_wrap				:: integer(), %% 0/1
 								auto_indent,
-								indent_type,
-								indent_width
+								use_tabs,
+								indent_width,
+								indent_guides
 								}).
 
 
@@ -45,10 +46,11 @@ init(Config) ->
 	State = #state{font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
 								 theme = "Putty",
 								 show_line_no = false,
-								 line_wrap = true,
+								 line_wrap = 1,
 								 auto_indent = false,
-								 indent_type = "Spaces",
-								 indent_width = "7" %% String
+								 use_tabs = false,
+								 indent_width = "7", %% String
+								 indent_guides = false
 								 },
 	{ok, State}.
 
@@ -64,10 +66,12 @@ handle_cast({line_wrap,Pref}, State) ->
 	{noreply, State#state{line_wrap=Pref}};
 handle_cast({auto_indent,Pref}, State) ->
 	{noreply, State#state{auto_indent=Pref}};
-handle_cast({indent_type,Pref}, State) ->
-	{noreply, State#state{indent_type=Pref}};
+handle_cast({use_tabs,Pref}, State) ->
+	{noreply, State#state{use_tabs=Pref}};
 handle_cast({indent_width,Pref}, State) ->
 	{noreply, State#state{indent_width=Pref}};
+handle_cast({indent_guides,Pref}, State) ->
+	{noreply, State#state{indent_guides=Pref}};
 handle_cast(_Req, State) ->
 	io:format("handle_cast: user_prefs"),
 	{noreply, State}.
@@ -88,9 +92,11 @@ handle_call(line_wrap, _From, State=#state{line_wrap=Bool}) ->
 	{reply, Bool, State};
 handle_call(auto_indent, _From, State=#state{auto_indent=Bool}) ->
 	{reply, Bool, State};
-handle_call(indent_type, _From, State=#state{indent_type=Res}) ->
+handle_call(use_tabs, _From, State=#state{use_tabs=Res}) ->
 	{reply, Res, State};
 handle_call(indent_width, _From, State=#state{indent_width=Width}) ->
+	{reply, Width, State};
+handle_call(indent_guides, _From, State=#state{indent_guides=Width}) ->
 	{reply, Width, State};
 handle_call(_Req, _From, State) ->
 	io:format("handle_call/2: user_prefs"),

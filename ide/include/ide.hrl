@@ -59,9 +59,13 @@
 -define(MENU_ID_THEME_SELECT, 		 6030).
 -define(MENU_ID_THEME,						 6031).
 -define(MENU_ID_SAVE_ALL,          6041).
+-define(MENU_ID_INDENT_GUIDES,		 6044).
 -define(MENU_ID_HIGHEST,					 6999).
 
 %% Reserved range for theme sub-menu
 %% MENU_ID_THEME_LOWEST -> MENU_ID_THEME_HIGHEST
 -define(MENU_ID_THEME_LOWEST,			 7000).
 -define(MENU_ID_THEME_HIGHEST,		 7200).     
+
+-define(MENU_ID_INDENT_WIDTH_LOWEST,	7201).
+-define(MENU_ID_INDENT_WIDTH_HIGHEST,	7210).

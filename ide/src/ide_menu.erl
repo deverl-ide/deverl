@@ -64,23 +64,33 @@ init(Config) ->
     View        = wxMenu:new([]),
     wxMenu:append(View, ?wxID_ANY, "Font", Font),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
+    wxMenu:append(View, ?MENU_ID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
+		Pref = case user_prefs:get_user_pref({pref, line_wrap}) of
+			0 -> false;
+			_ -> true
+		end,
+    wxMenu:check(View, ?MENU_ID_LINE_WRAP, Pref),
+    wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers", [{kind, ?wxITEM_CHECK}]),
     wxMenu:check(View, ?MENU_ID_LN_TOGGLE, user_prefs:get_user_pref({pref, show_line_no})),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
 
 		{IndentType, _} = generate_radio_submenu(wxMenu:new([]), ["Tabs", "Spaces"],
-			user_prefs:get_user_pref({pref, indent_type}), ?MENU_ID_INDENT_TABS),
+			user_prefs:get_user_pref({pref, use_tabs}), ?MENU_ID_INDENT_TABS),
 		
     wxMenu:append(View, ?MENU_ID_INDENT_TYPE, "Indent Type", IndentType),
 		
 		{IndentWidth, IndentMax} = generate_radio_submenu(wxMenu:new([]),
 			[integer_to_list(Width) || Width <- lists:seq(2, 8)], 
 			user_prefs:get_user_pref({pref, indent_width}), ?MENU_ID_INDENT_WIDTH_LOWEST),
+			
+    wxMenu:append(View, ?MENU_ID_INDENT_WIDTH, "Indent Width", IndentWidth),
 		
 		{Theme, ThemeMax} = generate_radio_submenu(wxMenu:new([]),
 			theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), ?MENU_ID_THEME_LOWEST),
 		
-    wxMenu:append(View, ?MENU_ID_INDENT_WIDTH, "Indent Width", IndentWidth),
+    wxMenu:append(View, ?MENU_ID_INDENT_GUIDES, "Indent Guides", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:check(View, ?MENU_ID_INDENT_GUIDES, user_prefs:get_user_pref({pref, indent_guides})),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_THEME_SELECT, "Theme", Theme),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
@@ -91,9 +101,7 @@ init(Config) ->
     wxMenu:append(View, ?MENU_ID_MAX_EDITOR, "Maximise Editor", []),
     wxMenu:append(View, ?MENU_ID_MAX_UTIL, "Maximise Utilities", []),
   
-    Document    = wxMenu:new([]),
-    wxMenu:append(Document, ?MENU_ID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
-    wxMenu:check(Document, ?MENU_ID_LINE_WRAP, user_prefs:get_user_pref({pref, line_wrap})),		
+    Document    = wxMenu:new([]),	
     wxMenu:append(Document, ?MENU_ID_AUTO_INDENT, "Auto-Indent", [{kind, ?wxITEM_CHECK}]),
     wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, user_prefs:get_user_pref({pref, auto_indent})),
     wxMenu:append(Document, ?wxID_SEPARATOR, []),
@@ -181,75 +189,75 @@ init(Config) ->
 		wxToolBar:realize(ToolBar),
 		
 		%% =====================================================================
-		%% ETS table used to store the function called when a menu item is 
-		%% clicked.
-		%% Record format: {Menu item Id, Tooltip, Statusbar halp string, 
-		%%								{Module, Function, Args}}
+		%% ETS menu events table.
+		%% Record format: {Id, {Module, Function, Args}}
 		%% =====================================================================
     
     TabId = ets:new(myTable, []),
-    ets:insert(TabId,{?wxID_NEW, "New", "Create a new file.", {ide,add_editor,[]}}),
-    ets:insert(TabId,{?wxID_OPEN, "Open", "Open an existing file.", {ide,open_file,[Frame]}}),
-    ets:insert(TabId,{?wxID_SAVE, "Save", "Save the current file.", {ide,save_current_file,[]}}),
-    ets:insert(TabId,{?wxID_SAVEAS, "Save As", "Save the file with a new name.", {ide,save_new,[]}}),
-    ets:insert(TabId,{?MENU_ID_SAVE_ALL, "Save All", "Save all open files.", {}}),
-    ets:insert(TabId,{?wxID_PRINT, "Print", "Print the current file.", {}}),
-    ets:insert(TabId,{?wxID_CLOSE, "Close", "Close the current file.", {ide, close_selected_editor, []}}),
-    ets:insert(TabId,{?wxID_CLOSE_ALL, "Close All", "Close all open files.", {ide, close_all_editors, []}}),
-    ets:insert(TabId,{?wxID_EXIT, "Exit", "Quit the application.", {}}),
-    ets:insert(TabId,{?wxID_PREFERENCES, "Preferences", "Application preferences.", {ide_prefs, start, [[{parent,Frame}]]}}),
+    ets:insert(TabId,{?wxID_NEW,{ide,add_editor,[]}}),
+    ets:insert(TabId,{?wxID_OPEN, {ide,open_file,[Frame]}}),
+    ets:insert(TabId,{?wxID_SAVE, {ide,save_current_file,[]}}),
+    ets:insert(TabId,{?wxID_SAVEAS, {ide,save_new,[]}}),
+    ets:insert(TabId,{?MENU_ID_SAVE_ALL, {}}),
+    ets:insert(TabId,{?wxID_PRINT, {}}),
+    ets:insert(TabId,{?wxID_CLOSE, {ide, close_selected_editor, []}}),
+    ets:insert(TabId,{?wxID_CLOSE_ALL, {ide, close_all_editors, []}}),
+    ets:insert(TabId,{?wxID_EXIT, {}}),
+    ets:insert(TabId,{?wxID_PREFERENCES, {ide_prefs, start, [[{parent,Frame}]]}}),
     
-    ets:insert(TabId,{?wxID_UNDO, "Undo", "Undo the last change.", {}}),
-    ets:insert(TabId,{?wxID_REDO, "Redo", "Redo the last change.", {}}),
-    ets:insert(TabId,{?wxID_CUT, "Cut", "Cut the selected text.", {}}),
-    ets:insert(TabId,{?wxID_COPY, "Copy", "Copy the selected text to the clipboard.", {}}),
-    ets:insert(TabId,{?wxID_PASTE, "Paste", "Paste from clipboard.", {}}),
-    ets:insert(TabId,{?wxID_DELETE, "Delete", "Delete the current selection.", {}}),
-    ets:insert(TabId,{?wxID_FIND, "Find", "Find and replace.", {ide,find_replace,[Frame]}}),
+    ets:insert(TabId,{?wxID_UNDO, {}}),
+    ets:insert(TabId,{?wxID_REDO, {}}),
+    ets:insert(TabId,{?wxID_CUT, {}}),
+    ets:insert(TabId,{?wxID_COPY, {}}),
+    ets:insert(TabId,{?wxID_PASTE, {}}),
+    ets:insert(TabId,{?wxID_DELETE, {}}),
+    ets:insert(TabId,{?wxID_FIND, {ide,find_replace,[Frame]}}),
     
-    ets:insert(TabId,{?MENU_ID_FONT, "Font", "Select font.", {ide,update_styles,[Frame]}}),
-    ets:insert(TabId,{?MENU_ID_FONT_BIGGER, "Bigger", "Increase the font size.", {}}),
-    ets:insert(TabId,{?MENU_ID_FONT_SMALLER, "Smaller", "Decrease the font size.", {}}),
-    ets:insert(TabId,{?MENU_ID_LN_TOGGLE, "Toggle line numbers", "Toggle line numbers on/off.", {}}),
-    ets:insert(TabId,{?MENU_ID_INDENT_TYPE, "Indent Type", "Indent type: tabs/spaces.", {}}),
-    ets:insert(TabId,{?MENU_ID_INDENT_TABS, "Tabs", "Indent using tabs.", {}}),
-    ets:insert(TabId,{?MENU_ID_INDENT_SPACES, "Spaces", "Indent using spaces.", {}}),
-    ets:insert(TabId,{?MENU_ID_INDENT_WIDTH, "Indent width", "Width of indent in spaces.", {}}),
-    ets:insert(TabId,{?MENU_ID_FULLSCREEN, "Fullscreen", "Toggle fullscreen.", {}}),
-    ets:insert(TabId,{?MENU_ID_HIDE_TEST, "Hide Test Pane", "Hide/Show the test pane.",           {ide,toggle_pane,[test]}, {update_label,Frame,2}}),
-    ets:insert(TabId,{?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", "Hide/Show the utilities pane.", {ide,toggle_pane,[util]}, {update_label,Frame,2}}),
-    ets:insert(TabId,{?MENU_ID_MAX_EDITOR, "Maximise editor", "Maximise the editor pane.",        {ide,toggle_pane,[editor]}}),
-    ets:insert(TabId,{?MENU_ID_MAX_UTIL, "Maximise utilities", "Maximise the utilities pane.",    {ide,toggle_pane,[maxutil]}}),
-    
-    
-    ets:insert(TabId,{?MENU_ID_LINE_WRAP, "Line Wrap", "Line wrap.", {}}),
-    ets:insert(TabId,{?MENU_ID_AUTO_INDENT, "Auto indent", "Auto indent.", {}}),
-    ets:insert(TabId,{?MENU_ID_INDENT_SELECTION, "Indent selection", "Indent selected text.", {}}),
-    ets:insert(TabId,{?MENU_ID_COMMENT_SELECTION, "Comment selection", "Comment the selected text.", {}}),
-    ets:insert(TabId,{?MENU_ID_FOLD_ALL, "Fold all", "Fold all code.", {}}),
-    ets:insert(TabId,{?MENU_ID_UNFOLD_ALL, "Unfold all", "Unfold all code.", {}}),
-    ets:insert(TabId,{?MENU_ID_WRANGLER, "Wrangler", "Wrangler.", {}}),
-    ets:insert(TabId,{?MENU_ID_COMPILE, "Compile", "Compile the current file.", {ide, open_dialog, [Frame]}}),
-    ets:insert(TabId,{?MENU_ID_RUN, "Run", "Run the current file.", {}}),
-    ets:insert(TabId,{?MENU_ID_DIALYZER, "Dialyzer", "Run Dialyzer.", {}}),
-    ets:insert(TabId,{?MENU_ID_TESTS, "Run tests", "Run tests for current file.", {}}),
-    ets:insert(TabId,{?MENU_ID_DEBUGGER, "Run debugger", "Run debugger.", {}}),
-    ets:insert(TabId,{?wxID_HELP, "Help", "View Help.", {}}),
-    ets:insert(TabId,{?MENU_ID_SHORTCUTS, "Keyboard shortcuts", "View keyboard shortcuts.", {}}),
-    ets:insert(TabId,{?MENU_ID_SEARCH_DOC, "Search doc", "Search the Erlang documentation.", {}}),
-    ets:insert(TabId,{?MENU_ID_MANUAL, "Manual", "View the IDE manual.", {}}),
-    ets:insert(TabId,{?wxID_ABOUT, "About", "About.", {about, new, [{parent, Frame}]}}),
+    ets:insert(TabId,{?MENU_ID_FONT, {ide,update_styles,[Frame]}}),
+    ets:insert(TabId,{?MENU_ID_FONT_BIGGER, {}}),
+    ets:insert(TabId,{?MENU_ID_FONT_SMALLER, {}}),
+    ets:insert(TabId,{?MENU_ID_LINE_WRAP, {ide,set_line_wrap,[View]}}),
+    ets:insert(TabId,{?MENU_ID_LN_TOGGLE, {ide,set_line_margin_visible,[View]}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_TABS, {ide,set_indent_tabs,[View]}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_SPACES, {ide,set_indent_tabs,[View]}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_GUIDES, {ide,set_indent_guides,[View]}}),		
+    ets:insert(TabId,{?MENU_ID_FULLSCREEN, {}}),
+    ets:insert(TabId,{?MENU_ID_HIDE_TEST, {ide,toggle_pane,[test]}, {update_label,Frame,2}}),
+    ets:insert(TabId,{?MENU_ID_HIDE_UTIL, {ide,toggle_pane,[util]}, {update_label,Frame,2}}),
+    ets:insert(TabId,{?MENU_ID_MAX_EDITOR, {ide,toggle_pane,[editor]}}),
+    ets:insert(TabId,{?MENU_ID_MAX_UTIL, {ide,toggle_pane,[maxutil]}}),
+      
+    ets:insert(TabId,{?MENU_ID_AUTO_INDENT, {}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_SELECTION, {}}),
+    ets:insert(TabId,{?MENU_ID_COMMENT_SELECTION, {}}),
+    ets:insert(TabId,{?MENU_ID_FOLD_ALL, {}}),
+    ets:insert(TabId,{?MENU_ID_UNFOLD_ALL, {}}),
+    ets:insert(TabId,{?MENU_ID_WRANGLER, {}}),
+    ets:insert(TabId,{?MENU_ID_COMPILE, {ide, open_dialog, [Frame]}}),
+    ets:insert(TabId,{?MENU_ID_RUN, {}}),
+    ets:insert(TabId,{?MENU_ID_DIALYZER, {}}),
+    ets:insert(TabId,{?MENU_ID_TESTS, {}}),
+    ets:insert(TabId,{?MENU_ID_DEBUGGER, {}}),
+    ets:insert(TabId,{?wxID_HELP, {}}),
+    ets:insert(TabId,{?MENU_ID_SHORTCUTS, {}}),
+    ets:insert(TabId,{?MENU_ID_SEARCH_DOC, {}}),
+    ets:insert(TabId,{?MENU_ID_MANUAL, {}}),
+    ets:insert(TabId,{?wxID_ABOUT, {about, new, [{parent, Frame}]}}),
 		
 	  wxFrame:connect(Frame, menu_highlight,  
 			[{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
 	  wxFrame:connect(Frame, menu_close,  [{id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
 	  wxFrame:connect(Frame, command_menu_selected, 
 			[{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+		%% Submenus
 	  wxFrame:connect(Frame, command_menu_selected,  
 			[{userData, {theme_menu,Theme}}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),
-		
-        
-    {MenuBar, TabId}.
+	  % wxFrame:connect(Frame, command_menu_selected,  
+	  % 			[{userData, {use_tabs,Theme}}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),		
+	  wxFrame:connect(Frame, command_menu_selected,  
+			[{userData, IndentWidth}, {id,?MENU_ID_INDENT_WIDTH_LOWEST}, {lastId, ?MENU_ID_INDENT_WIDTH_HIGHEST}]),        
+  
+	  {MenuBar, TabId}.
 
 
 %% =====================================================================
