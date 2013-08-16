@@ -65,6 +65,21 @@ make_toolbook(Config) ->
     
 	Toolbook = wxToolbook:new(Config, ?wxID_ANY),
 	wxToolbook:assignImageList(Toolbook, ImgList),
+	
+	ProjectsPanel = wxPanel:new(Toolbook),
+	ProjectsSizer = wxBoxSizer:new(?wxVERTICAL),
+	wxPanel:setSizer(ProjectsPanel, ProjectsSizer),   
+    ProjectTree = make_tree(ProjectsPanel),
+	wxSizer:add(ProjectsSizer, ProjectTree, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	wxToolbook:addPage(Toolbook, ProjectsPanel, "Projects", [{imageId, 2}]),
+	
+	TestPanel = wxPanel:new(Toolbook),
+	TestSizer = wxBoxSizer:new(?wxVERTICAL),
+	TestWindow = wxWindow:new(TestPanel, 2222),
+	%wxWindow:setBackgroundColour(W1, {123,34,1}),
+	wxPanel:setSizer(TestPanel, TestSizer),    
+	wxSizer:add(TestSizer, TestWindow, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	wxToolbook:addPage(Toolbook, TestPanel, "Tests", [{imageId, 2}]),
   
 	FilesPanel = wxPanel:new(Toolbook),
 	FilesSizer = wxBoxSizer:new(?wxVERTICAL),
@@ -73,22 +88,7 @@ make_toolbook(Config) ->
 	wxSizer:add(FilesSizer, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
 	wxToolbook:addPage(Toolbook, FilesPanel, "Files", [{imageId, 1}]), % {bSelect, true} taking this option out fixed the files window bug. I don't know what this option is supposed to do!
   
-	TestPanel = wxPanel:new(Toolbook),
-	TestSizer = wxBoxSizer:new(?wxVERTICAL),
-	TestWindow = wxWindow:new(TestPanel, 2222),
-	%wxWindow:setBackgroundColour(W1, {123,34,1}),
-	wxPanel:setSizer(TestPanel, TestSizer),    
-	wxSizer:add(TestSizer, TestWindow, [{flag, ?wxEXPAND}, {proportion, 1}]),
-	wxToolbook:addPage(Toolbook, TestPanel, "Tests", [{imageId, 2}]),
-	
-	ProjectsPanel = wxPanel:new(Toolbook),
-	ProjectsSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxPanel:setSizer(ProjectsPanel, ProjectsSizer),   
-    ProjectTree = make_tree(ProjectsPanel),
-	wxSizer:add(ProjectsSizer, ProjectTree, [{flag, ?wxEXPAND}, {proportion, 1}]),
-	wxToolbook:addPage(Toolbook, ProjectsPanel, "Projects", [{imageId, 2}]),
-  
-	wxToolbook:setSelection(Toolbook, 2), %% Default to projects
+	wxToolbook:setSelection(Toolbook, 0), %% Default to projects
 	
 	Toolbook.
 	
