@@ -980,5 +980,5 @@ go_to_line(Parent) ->
 	wxSizer:fit(MainSz, Dialog),
 	wxSizer:setSizeHints(MainSz, Dialog),
   wxDialog:show(Dialog),
-	wxWindow:setFocusFromKbd(Input),
+	% wxWindow:setFocusFromKbd(Input),
 	ok.
