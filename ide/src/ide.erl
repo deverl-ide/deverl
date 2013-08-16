@@ -957,23 +957,22 @@ indent_line_left() ->
 go_to_line(Parent) ->
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, "Go to Line"),
 	%% Force events to propagate beyond this dialog
-	% wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
+	wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
 	
 	Panel = wxWindow:new(Dialog, ?wxID_ANY),     
 	MainSz = wxBoxSizer:new(?wxVERTICAL),
-
+	wxWindow:setSizer(Panel, MainSz),
 	wxSizer:addSpacer(MainSz, 10),
 	
-	wxSizer:add(MainSz, wxStaticText:new(Panel, ?wxID_ANY, "Enter line:"), 
+	Sz = wxBoxSizer:new(?wxVERTICAL),
+	wxSizer:add(Sz, wxStaticText:new(Panel, ?wxID_ANY, "Enter line:"), 
 		[{border,10}, {flag, ?wxEXPAND bor ?wxLEFT}]),
-	
-	wxSizer:addSpacer(MainSz, 7),
-	
+	wxSizer:addSpacer(Sz, 7),
 	Input = wxTextCtrl:new(Panel, ?wxID_ANY, []),
-	wxSizer:add(MainSz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
+	wxSizer:add(Sz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
+	wxSizer:addSpacer(Sz, 15),
 	
-	wxSizer:addSpacer(MainSz, 15),
-	
+	wxSizer:add(MainSz, Sz),
 	% ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
 	% wxSizer:addSpacer(ButtonSz, 10),	
 	% wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, [{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
@@ -983,7 +982,6 @@ go_to_line(Parent) ->
 	% wxSizer:addSpacer(ButtonSz, 10),	
 	% wxSizer:add(MainSz, ButtonSz),
 	
-	wxWindow:setSizer(Panel, MainSz),
 	wxSizer:layout(MainSz),
 	% wxSizer:fit(MainSz, Dialog),
 	wxSizer:setSizeHints(MainSz, Dialog),
