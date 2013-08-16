@@ -961,32 +961,27 @@ go_to_line(Parent) ->
 	
 	Panel = wxPanel:new(Dialog),     
 	Sz = wxBoxSizer:new(?wxVERTICAL),
-	wxPanel:setSizer(Panel, Sz),
 	wxSizer:addSpacer(Sz, 10),
 	
-	% Sz = wxBoxSizer:new(?wxVERTICAL),
 	wxSizer:add(Sz, wxStaticText:new(Panel, ?wxID_ANY, "Enter line:"), 
 		[{border,10}, {flag, ?wxEXPAND bor ?wxLEFT}]),
 	wxSizer:addSpacer(Sz, 7),
 	Input = wxTextCtrl:new(Panel, ?wxID_ANY, []),
 	wxSizer:add(Sz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
 	wxSizer:addSpacer(Sz, 15),	
-	% wxSizer:add(MainSz, Sz),
 	
-	% ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
-	% wxSizer:addSpacer(ButtonSz, 10),	
-	% wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, [{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
-	% DefButton = wxButton:new(Panel, 100001, [{label,"Go"}]),
-	% wxButton:setDefault(DefButton),
-	% wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
-	% wxSizer:addSpacer(ButtonSz, 10),	
-	% wxSizer:add(MainSz, ButtonSz),
+	ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
+	wxSizer:addSpacer(ButtonSz, 10),	
+	wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, 
+		[{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
+	DefButton = wxButton:new(Panel, 100001, [{label,"Go"}]),
+	wxButton:setDefault(DefButton),
+	wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
+	wxSizer:addSpacer(ButtonSz, 10),	
+	wxSizer:add(Sz, ButtonSz),
 	
+	wxPanel:setSizer(Panel, Sz),	
 	wxSizer:layout(Sz),
-	% wxSizer:fit(MainSz, Dialog),
 	wxSizer:setSizeHints(Sz, Dialog),
-	
 	wxDialog:show(Dialog),
-	% wxWindow:setFocusFromKbd(Input),
-
-	ok.
+	wxWindow:setFocusFromKbd(Input).
