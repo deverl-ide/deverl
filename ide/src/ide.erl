@@ -957,7 +957,7 @@ indent_line_left() ->
 go_to_line(Parent) ->
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, "Go to Line"),
 	%% Force events to propagate beyond this dialog
-	wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
+	% wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
 	
 	Panel = wxWindow:new(Dialog, ?wxID_ANY),     
 	MainSz = wxBoxSizer:new(?wxVERTICAL),
