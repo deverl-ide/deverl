@@ -984,7 +984,8 @@ go_to_line(Parent) ->
 	% wxSizer:fit(MainSz, Dialog),
 	% wxSizer:setSizeHints(MainSz, Dialog),
 	
-	wxButton:new(Dialog, 100001, [{label,"Go"}]),
+	D = Panel = wxPanel:new(Dialog),
+	wxButton:new(D, 100001, [{label,"Go"}]),
 	
 	wxDialog:show(Dialog),
 	% wxWindow:setFocusFromKbd(Input),
