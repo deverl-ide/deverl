@@ -156,7 +156,7 @@ init(Options) ->
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
 	
 	wxFrame:connect(Frame, command_button_clicked, []),
-      
+	      
   State = #state{win=Frame},
   {Frame, State#state{workspace=Workspace, 
             workspace_manager=Manager,
@@ -282,6 +282,7 @@ handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinote
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
   add_editor(State#state.workspace, State#state.status_bar, 
              State#state.editor_pids),
+	go_to_line(State#state.win),
   {noreply, State};
 
 %% =====================================================================
@@ -955,7 +956,7 @@ indent_line_left() ->
 	
 go_to_line(Parent) ->
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, "Go to Line"),
-	%% Force events to propagate beyond this dialog
+	% Force events to propagate beyond this dialog
 	wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
 	Panel = wxWindow:new(Dialog, ?wxID_ANY),     
 	MainSz = wxBoxSizer:new(?wxVERTICAL),
@@ -967,21 +968,21 @@ go_to_line(Parent) ->
 	Input = wxTextCtrl:new(Panel,?wxID_ANY, []),
 	wxSizer:add(MainSz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
 	wxSizer:addSpacer(MainSz, 15),
-	% ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
-	% wxSizer:addSpacer(ButtonSz, 10),	
-	% wxSizer:add(ButtonSz, wxButton:new(Panel, 100000, 
-	% 	[{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
-	% DefButton = wxButton:new(Panel, 100001, [{label,"Go"}]),
-	% wxButton:setDefault(DefButton),
-	% wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
-	% wxSizer:addSpacer(ButtonSz, 10),	
-	% wxSizer:add(MainSz, ButtonSz),
+	ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
+	wxSizer:addSpacer(ButtonSz, 10),	
+	wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, 
+		[{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
+	DefButton = wxButton:new(Panel, 100001, [{label,"Go"}]),
+	wxButton:setDefault(DefButton),
+	wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
+	wxSizer:addSpacer(ButtonSz, 10),	
+	wxSizer:add(MainSz, ButtonSz),
 	% wxSizer:layout(MainSz),
 	% wxSizer:fit(MainSz, Dialog),
 	% wxSizer:setSizeHints(MainSz, Dialog),
-  wxWindow:setSizer(Panel, MainSz),
-  wxSizer:layout(MainSz),
-  wxWindow:refresh(Panel),
-  wxDialog:show(Dialog),
+	  wxWindow:setSizer(Panel, MainSz),
+	  wxSizer:layout(MainSz),
+	  wxWindow:refresh(Panel),
+	  wxDialog:show(Dialog),
 	wxWindow:setFocusFromKbd(Input),
 	ok.
