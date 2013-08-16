@@ -82,9 +82,9 @@ init(Config) ->
 		
 		{IndentWidth, IndentMax} = generate_radio_submenu(wxMenu:new([]),
 			[integer_to_list(Width) || Width <- lists:seq(2, 8)], 
-			user_prefs:get_user_pref({pref, indent_width}), ?MENU_ID_INDENT_WIDTH_LOWEST),
+			user_prefs:get_user_pref({pref, tab_width}), ?MENU_ID_TAB_WIDTH_LOWEST),
 			
-    wxMenu:append(View, ?MENU_ID_INDENT_WIDTH, "Indent Width", IndentWidth),
+    wxMenu:append(View, ?MENU_ID_TAB_WIDTH, "Indent Width", IndentWidth),
 		
 		{Theme, ThemeMax} = generate_radio_submenu(wxMenu:new([]),
 			theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), ?MENU_ID_THEME_LOWEST),
@@ -105,11 +105,16 @@ init(Config) ->
     wxMenu:append(Document, ?MENU_ID_AUTO_INDENT, "Auto-Indent", [{kind, ?wxITEM_CHECK}]),
     wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, user_prefs:get_user_pref({pref, auto_indent})),
     wxMenu:append(Document, ?wxID_SEPARATOR, []),
-    wxMenu:append(Document, ?MENU_ID_INDENT_SELECTION, "Indent Selection"),
-    wxMenu:append(Document, ?MENU_ID_COMMENT_SELECTION, "Comment Selection"),
+    wxMenu:append(Document, ?MENU_ID_INDENT_RIGHT, "Indent Right"),
+    wxMenu:append(Document, ?MENU_ID_INDENT_LEFT, "Indent Left"),
+    wxMenu:append(Document, ?wxID_SEPARATOR, []),
+    wxMenu:append(Document, ?MENU_ID_COMMENT, "Comment"),
+    wxMenu:append(Document, ?MENU_ID_UNCOMMENT, "Un-comment"),
     wxMenu:append(Document, ?wxID_SEPARATOR, []),
     wxMenu:append(Document, ?MENU_ID_FOLD_ALL, "Fold All"),
     wxMenu:append(Document, ?MENU_ID_UNFOLD_ALL, "Unfold All"),
+    wxMenu:append(Document, ?wxID_SEPARATOR, []),	
+    wxMenu:append(Document, ?MENU_ID_GOTO_LINE, "Go to Line.."),
   
     Wrangler    = wxMenu:new([]),
     wxMenu:append(Wrangler, ?MENU_ID_WRANGLER, "WRANGLER"),
@@ -227,17 +232,22 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_MAX_EDITOR, {ide,toggle_pane,[editor]}}),
     ets:insert(TabId,{?MENU_ID_MAX_UTIL, {ide,toggle_pane,[maxutil]}}),
       
-    ets:insert(TabId,{?MENU_ID_AUTO_INDENT, {}}),
-    ets:insert(TabId,{?MENU_ID_INDENT_SELECTION, {}}),
-    ets:insert(TabId,{?MENU_ID_COMMENT_SELECTION, {}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_RIGHT, {}}),
+    ets:insert(TabId,{?MENU_ID_INDENT_LEFT, {ide, indent_line_left,[]}}),
+    ets:insert(TabId,{?MENU_ID_COMMENT, {}}),
+    ets:insert(TabId,{?MENU_ID_UNCOMMENT, {}}),
+    ets:insert(TabId,{?MENU_ID_GOTO_LINE, {ide,go_to_line,[Frame]}}),
     ets:insert(TabId,{?MENU_ID_FOLD_ALL, {}}),
     ets:insert(TabId,{?MENU_ID_UNFOLD_ALL, {}}),
+		
     ets:insert(TabId,{?MENU_ID_WRANGLER, {}}),
+		
     ets:insert(TabId,{?MENU_ID_COMPILE, {ide, open_dialog, [Frame]}}),
     ets:insert(TabId,{?MENU_ID_RUN, {}}),
     ets:insert(TabId,{?MENU_ID_DIALYZER, {}}),
     ets:insert(TabId,{?MENU_ID_TESTS, {}}),
     ets:insert(TabId,{?MENU_ID_DEBUGGER, {}}),
+		
     ets:insert(TabId,{?wxID_HELP, {}}),
     ets:insert(TabId,{?MENU_ID_SHORTCUTS, {}}),
     ets:insert(TabId,{?MENU_ID_SEARCH_DOC, {}}),
@@ -255,7 +265,7 @@ init(Config) ->
 	  % wxFrame:connect(Frame, command_menu_selected,  
 	  % 			[{userData, {use_tabs,Theme}}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),		
 	  wxFrame:connect(Frame, command_menu_selected,  
-			[{userData, IndentWidth}, {id,?MENU_ID_INDENT_WIDTH_LOWEST}, {lastId, ?MENU_ID_INDENT_WIDTH_HIGHEST}]),        
+			[{userData, IndentWidth}, {id,?MENU_ID_TAB_WIDTH_LOWEST}, {lastId, ?MENU_ID_TAB_WIDTH_HIGHEST}]),        
   
 	  {MenuBar, TabId}.
 

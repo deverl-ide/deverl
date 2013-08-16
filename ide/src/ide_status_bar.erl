@@ -218,11 +218,11 @@ set_text_timeout(Sb, {field,Field}, Label) ->
 		after ?TIMEOUT ->
 			set_text(Sb, {field,Field}, "")
 	end.
+	
 
 
 %% =====================================================================
 %% @doc Set the text
-%%
 %% @private
 
 set_text(Field, Label) ->
