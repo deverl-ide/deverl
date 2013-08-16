@@ -959,20 +959,20 @@ go_to_line(Parent) ->
 	%% Force events to propagate beyond this dialog
 	wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
 	
-	Panel = wxWindow:new(Dialog, ?wxID_ANY),     
-	MainSz = wxBoxSizer:new(?wxVERTICAL),
-	wxWindow:setSizer(Panel, MainSz),
-	wxSizer:addSpacer(MainSz, 10),
-	
+	Panel = wxPanel:new(Dialog),     
 	Sz = wxBoxSizer:new(?wxVERTICAL),
+	wxPanel:setSizer(Panel, Sz),
+	wxSizer:addSpacer(Sz, 10),
+	
+	% Sz = wxBoxSizer:new(?wxVERTICAL),
 	wxSizer:add(Sz, wxStaticText:new(Panel, ?wxID_ANY, "Enter line:"), 
 		[{border,10}, {flag, ?wxEXPAND bor ?wxLEFT}]),
 	wxSizer:addSpacer(Sz, 7),
 	Input = wxTextCtrl:new(Panel, ?wxID_ANY, []),
 	wxSizer:add(Sz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
-	wxSizer:addSpacer(Sz, 15),
+	wxSizer:addSpacer(Sz, 15),	
+	% wxSizer:add(MainSz, Sz),
 	
-	wxSizer:add(MainSz, Sz),
 	% ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
 	% wxSizer:addSpacer(ButtonSz, 10),	
 	% wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, [{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
@@ -982,9 +982,9 @@ go_to_line(Parent) ->
 	% wxSizer:addSpacer(ButtonSz, 10),	
 	% wxSizer:add(MainSz, ButtonSz),
 	
-	wxSizer:layout(MainSz),
+	wxSizer:layout(Sz),
 	% wxSizer:fit(MainSz, Dialog),
-	wxSizer:setSizeHints(MainSz, Dialog),
+	wxSizer:setSizeHints(Sz, Dialog),
 	
 	wxDialog:show(Dialog),
 	% wxWindow:setFocusFromKbd(Input),
