@@ -28,37 +28,37 @@ new(Config) ->
 %% Initialise the server's state
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
-  Panel = wxPanel:new(Parent, []),
+	Panel = wxPanel:new(Parent, []),
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
-  wxWindow:setSizer(Panel, MainSizer),
+	wxWindow:setSizer(Panel, MainSizer),
 
-  ShellTextBox = ?stc:new(Panel, [{id, ?ID_SHELL_TEXT_BOX}]),
-  ?stc:setMarginWidth(ShellTextBox, 0, 0),
-  ?stc:setMarginWidth(ShellTextBox, 1, 0),
-  ?stc:setMarginWidth(ShellTextBox, 2, 0),
-  ?stc:setMarginLeft(ShellTextBox, 2),
-  ?stc:setLexer(ShellTextBox, ?wxSTC_LEX_NULL),
+	ShellTextBox = ?stc:new(Panel, [{id, ?ID_SHELL_TEXT_BOX}]),
+	?stc:setMarginWidth(ShellTextBox, 0, 0),
+	?stc:setMarginWidth(ShellTextBox, 1, 0),
+	?stc:setMarginWidth(ShellTextBox, 2, 0),
+	?stc:setMarginLeft(ShellTextBox, 2),
+	?stc:setLexer(ShellTextBox, ?wxSTC_LEX_NULL),
   
-  ?stc:styleSetFont(ShellTextBox, ?wxSTC_STYLE_DEFAULT, 
-                    wxFont:new(13, ?wxFONTFAMILY_TELETYPE, 
-                                  ?wxNORMAL, 
-                                  ?wxNORMAL,[])),
-  ?stc:setCaretWidth(ShellTextBox, 1),
+	?stc:styleSetFont(ShellTextBox, ?wxSTC_STYLE_DEFAULT, 
+					  wxFont:new(13, ?wxFONTFAMILY_TELETYPE, 
+                                     ?wxNORMAL, 
+                                     ?wxNORMAL,[])),
+	?stc:setCaretWidth(ShellTextBox, 1),
   
-  ?stc:cmdKeyClear(ShellTextBox, ?wxSTC_KEY_UP, 0),
+	?stc:cmdKeyClear(ShellTextBox, ?wxSTC_KEY_UP, 0),
 
                                                 	
 	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
                                           {proportion, 1}]),
                                           
-  % ?stc:connect(ShellTextBox, stc_change, [{callback, fun(E,O) -> io:format("EVENT~p~n", [O]) end}]),
-  ?stc:connect(ShellTextBox, key_down, [{callback, fun(E,O) -> handle_key_event(E,O) end}]),
+	% ?stc:connect(ShellTextBox, stc_change, [{callback, fun(E,O) -> io:format("EVENT~p~n", [O]) end}]),
+	?stc:connect(ShellTextBox, key_down, [{callback, fun(E,O) -> handle_key_event(E,O) end}]),
 
 	{Panel, #state{win=Panel, 
-					   textctrl=ShellTextBox, 
-					   cmd_history=[],
-					   current_cmd=0,
-					   wx_env=wx:get_env()}}. %% Maintained at server
+				   textctrl=ShellTextBox, 
+				   cmd_history=[],
+				   current_cmd=0,
+				   wx_env=wx:get_env()}}. %% Maintained at server
 
 
 %% =====================================================================

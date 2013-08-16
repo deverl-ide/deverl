@@ -89,7 +89,7 @@ start(Args) ->
 
 init(Options) ->
 	wx:new(Options),
-  process_flag(trap_exit, true),
+	process_flag(trap_exit, true),
 	
 	%% Load user prefs - should be started by OTP Application and not here
 	user_prefs:new([{wxe_server, wx:get_env()}]),
@@ -99,59 +99,78 @@ init(Options) ->
 	wxFrame:setMinSize(Frame, {300,200}),
   
 	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxWindow:setSizer(Frame, FrameSizer),  
+	wxWindow:setSizer(Frame, FrameSizer),
   
-	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},
-                                                   {style, ?wxSP_NOBORDER bor 
-                                                           ?wxSP_LIVE_UPDATE}]),
-	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, 
-                                                               {style, ?wxSP_NOBORDER bor 
-                                                                       ?wxSP_LIVE_UPDATE}]),
+	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id,    ?SASH_HORIZONTAL},
+                                                     {style, ?wxSP_NOBORDER bor
+                                                             ?wxSP_LIVE_UPDATE}]),
+	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id,    ?SASH_VERTICAL}, 
+															     {style, ?wxSP_NOBORDER bor 
+                                                                         ?wxSP_LIVE_UPDATE}]),
 
-	%% Following two lines, see platforms.txt <1> 
-  %% After upgrading to 2.9.4 these have no effect on mac
-  % wxSplitterWindow:setSashSize(SplitterTopBottom, 10),
-  % wxSplitterWindow:setSashSize(SplitterLeftRight, 10),
+	% Following two lines, see platforms.txt <1> 
+	% After upgrading to 2.9.4 these have no effect on mac
+	% wxSplitterWindow:setSashSize(SplitterTopBottom, 10),
+	% wxSplitterWindow:setSashSize(SplitterLeftRight, 10),
 	wxSplitterWindow:setSashGravity(SplitterTopBottom, 0.5),
 	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
 
 	wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
 	%% Status bar %%
-  StatusBar = ide_status_bar:new([{parent, Frame}]),
+	StatusBar = ide_status_bar:new([{parent, Frame}]),
       
 	%% Menubar %%
+<<<<<<< HEAD
+	{Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
+	% wxFrame:setMenuBar(Frame, Menu),
+
+  
+	% wxFrame:connect(Frame, menu_highlight,  [{userData, {ets_table,MenuTab}}]),
+	% wxFrame:connect(Frame, menu_close,  []),
+	% wxFrame:connect(Frame, command_menu_selected, [{userData,{ets_table,MenuTab}}]),
+=======
   {Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
+>>>>>>> 962848890862a3b8232a91357af25aa1c977ed8c
  
-  wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
+	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),      
 
 	%% The workspace/text editors %%
-  Manager = wxAuiManager:new([{managed_wnd, Frame}]),
-  EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
-  {Workspace, TabId} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
+	Manager = wxAuiManager:new([{managed_wnd, Frame}]),
+	EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
+	{Workspace, TabId} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
   
 	%% The left window
-  LeftWindow = create_left_window(SplitterLeftRight),
+	LeftWindow = create_left_window(SplitterLeftRight),
   
 	%% The bottom pane/utility window
-  Utilities = create_utils(SplitterTopBottom),  
+	Utilities = create_utils(SplitterTopBottom),  
                                      
-  wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, Workspace,
+	wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, Workspace,
                   [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),  
-  wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, wxPanel:new(),
+	wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, wxPanel:new(),
                   [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
              
-  wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
+	wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
                   [{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
              
-  wxSizer:layout(FrameSizer),
-  wxFrame:center(Frame),
-  wxFrame:show(Frame),
+	wxSizer:layout(FrameSizer),
+	wxFrame:center(Frame),
+	wxFrame:show(Frame),
     
-  wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
-  wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
+	wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
+	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
     
+<<<<<<< HEAD
+	wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
+	wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
+	wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
+      
+	State = #state{win=Frame},
+	{Frame, State#state{workspace=Workspace, 
+			workspace_manager=Manager,
+=======
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
@@ -161,6 +180,7 @@ init(Options) ->
   State = #state{win=Frame},
   {Frame, State#state{workspace=Workspace, 
             workspace_manager=Manager,
+>>>>>>> 962848890862a3b8232a91357af25aa1c977ed8c
             left_pane=LeftWindow,
             utilities=Utilities,
             status_bar=StatusBar,
@@ -427,6 +447,13 @@ create_utils(Parent) ->
 
 	UtilPanel.
   
+%% =====================================================================
+%% @doc 
+
+create_left_window(Parent) ->  
+	SideBar = ide_side_bar:new(Parent).
+	
+  
   
 %% =====================================================================
 %% @doc Create the workspace with the initial editor
@@ -443,7 +470,7 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
     
 	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),  
 	Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
-                          {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
+                           {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
   
 	TabId = ets:new(editors, [public]),
 	{_,Id,_,Pid} = Editor,
@@ -813,6 +840,30 @@ add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
   
 
 %% =====================================================================
+<<<<<<< HEAD
+%% @doc Change the font style across all open editors
+ 
+ update_styles(Frame) ->
+	%% Display the system font picker
+	FD = wxFontData:new(),
+	wxFontData:setInitialFont(FD, user_prefs:get_user_pref({pref, font})),
+	Dialog = wxFontDialog:new(Frame, FD),
+	case wxDialog:showModal(Dialog) of
+		?wxID_OK ->
+			%% Get the user selected font, and update the editors
+			Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
+			user_prefs:set_user_pref(font, Font),
+			Fun = fun({_, Pid}) ->
+				      editor:update_font(Pid, Font)
+				  end,
+			lists:map(Fun, get_all_editors()),
+			ok;
+		?wxID_CANCEL ->
+			ok
+	end.
+  
+  
+=======
 %% @doc 
 
 create_left_window(Parent) ->  
@@ -848,6 +899,7 @@ create_left_window(Parent) ->
 %% =====================================================================
 %% 
 %% 
+>>>>>>> 962848890862a3b8232a91357af25aa1c977ed8c
 %% =====================================================================
 
 
