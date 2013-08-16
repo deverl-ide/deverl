@@ -3,7 +3,7 @@
 	 https://github.com/chriskempson/tomorrow-themeBased --> 
 <Theme name="Tomorrow">
 	<DefaultStyles>
-		<Style name="Default" id="32" fgColour="#8959a8" bgColour="#FFFFFF" caret="#AEAFAD" selection="#D6D6D6" marginBg="#e4e4e4" marginFg="#b5b5b5" markers="#242322" />
+		<Style name="Default" id="32" fgColour="#8959a8" bgColour="#FFFFFF" caret="#AEAFAD" selection="#D6D6D6" marginBg="#e4e4e4" marginFg="#959595" markers="#242322" />
 	</DefaultStyles>
 	<LexerStyles>
 		<Style name="Comments" id="1" fgColour="#8e908c" bgColour="" fontStyle="" fontSize="" />

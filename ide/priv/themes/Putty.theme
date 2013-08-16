@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<!-- Based on: https://github.com/bryanjswift/tmthemes/blob/master/Putty.tmTheme E5E1DC-->
+<!-- Based on: https://github.com/bryanjswift/tmthemes/blob/master/Putty.tmTheme -->
 <Theme name="Putty">
 	<DefaultStyles>
 		<Style name="Default" id="32" fgColour="#E9EEC2" bgColour="#242322" caret="#FFFFFF" selection="#5A647EE0" marginBg="#525150" marginFg="#EEEEEE" markers="#3e3c3b" />
 	</DefaultStyles>
 	<LexerStyles>
-		<Style name="Comments" id="1" fgColour="#747676" bgColour="" fontStyle="" fontSize="" />
+		<Style name="Comments" id="1" fgColour="#747676" bgColour="" fontStyle="italic" fontSize="" />
 		<Style name="Variable" id="2" fgColour="#7AB8D7" bgColour="" fontStyle="" fontSize="" />
 		<Style name="Number" id="3" fgColour="#fda35e" bgColour="" fontStyle="" fontSize="" />
 		<Style name="Keyword" id="4" fgColour="#E9EEC2" bgColour="" fontStyle="" fontSize="" />
@@ -18,10 +18,10 @@
 		<Style name="Record" id="11" fgColour="#41b962" bgColour="" fontStyle="" fontSize="" />
 		<Style name="Separator" id="12" fgColour="#000000" bgColour="" fontStyle="" fontSize="" />
 		<Style name="Node" id="13" fgColour="#d5584b" bgColour="" fontStyle="" fontSize="" />
-		<Style name="CommentFunction" id="14" fgColour="#747676" bgColour="" fontStyle="" fontSize="" />
-		<Style name="CommentModule" id="15" fgColour="#747676" bgColour="" fontStyle="" fontSize="" />
-		<Style name="CommentDoc" id="16" fgColour="#747676" bgColour="" fontStyle="" fontSize="" />
-		<Style name="CommentMacro" id="17" fgColour="#747676" bgColour="" fontStyle="" fontSize="" />
+		<Style name="CommentFunction" id="14" fgColour="#747676" bgColour="" fontStyle="italic" fontSize="" />
+		<Style name="CommentModule" id="15" fgColour="#747676" bgColour="" fontStyle="italic" fontSize="" />
+		<Style name="CommentDoc" id="16" fgColour="#747676" bgColour="" fontStyle="italic" fontSize="" />
+		<Style name="CommentMacro" id="17" fgColour="#747676" bgColour="" fontStyle="italic" fontSize="" />
 		<Style name="AtomQuoted" id="18" fgColour="#000000" bgColour="" fontStyle="" fontSize="" />
 		<Style name="MacroQuoted" id="19" fgColour="#000000" bgColour="" fontStyle="" fontSize="" />
 		<Style name="RecordQuoted" id="20" fgColour="#000000" bgColour="" fontStyle="" fontSize="" />

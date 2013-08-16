@@ -33,14 +33,17 @@
 -define(MENU_ID_FONT_SMALLER,      6043).
 -define(MENU_ID_LN_TOGGLE,         6001).
 -define(MENU_ID_INDENT_TYPE,       6002).
--define(MENU_ID_INDENT_WIDTH,      6003).
+-define(MENU_ID_TAB_WIDTH,      6003).
 -define(MENU_ID_FULLSCREEN,        6004).
 -define(MENU_ID_HIDE_TEST,         6005).
 -define(MENU_ID_HIDE_UTIL,         6006).
 -define(MENU_ID_LINE_WRAP,         6007).
 -define(MENU_ID_AUTO_INDENT,       6008).
--define(MENU_ID_INDENT_SELECTION,  6009).
--define(MENU_ID_COMMENT_SELECTION, 6010).
+-define(MENU_ID_INDENT_RIGHT,  		 6009).
+-define(MENU_ID_INDENT_LEFT,  	 	 6009).
+-define(MENU_ID_COMMENT, 					 6010).
+-define(MENU_ID_UNCOMMENT, 				 6010).
+-define(MENU_ID_GOTO_LINE, 				 6010).
 -define(MENU_ID_FOLD_ALL,          6011).
 -define(MENU_ID_UNFOLD_ALL,        6012).
 -define(MENU_ID_WRANGLER,          6013).
@@ -67,5 +70,5 @@
 -define(MENU_ID_THEME_LOWEST,			 7000).
 -define(MENU_ID_THEME_HIGHEST,		 7200).     
 
--define(MENU_ID_INDENT_WIDTH_LOWEST,	7201).
--define(MENU_ID_INDENT_WIDTH_HIGHEST,	7210).
+-define(MENU_ID_TAB_WIDTH_LOWEST,	7201).
+-define(MENU_ID_TAB_WIDTH_HIGHEST,	7210).

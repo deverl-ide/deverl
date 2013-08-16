@@ -24,7 +24,7 @@
 								line_wrap				:: integer(), %% 0/1
 								auto_indent,
 								use_tabs,
-								indent_width,
+								tab_width,
 								indent_guides
 								}).
 
@@ -49,7 +49,7 @@ init(Config) ->
 								 line_wrap = 1,
 								 auto_indent = false,
 								 use_tabs = false,
-								 indent_width = "7", %% String
+								 tab_width = "7", %% String
 								 indent_guides = false
 								 },
 	{ok, State}.
@@ -63,13 +63,17 @@ handle_cast({font,Pref}, State) ->
 handle_cast({show_line_no,Pref}, State) ->
 	{noreply, State#state{show_line_no=Pref}};
 handle_cast({line_wrap,Pref}, State) ->
-	{noreply, State#state{line_wrap=Pref}};
+	NewPref = case Pref of
+		false -> 0;
+		_ -> 1
+	end,
+	{noreply, State#state{line_wrap=NewPref}};
 handle_cast({auto_indent,Pref}, State) ->
 	{noreply, State#state{auto_indent=Pref}};
 handle_cast({use_tabs,Pref}, State) ->
 	{noreply, State#state{use_tabs=Pref}};
-handle_cast({indent_width,Pref}, State) ->
-	{noreply, State#state{indent_width=Pref}};
+handle_cast({tab_width,Pref}, State) ->
+	{noreply, State#state{tab_width=Pref}};
 handle_cast({indent_guides,Pref}, State) ->
 	{noreply, State#state{indent_guides=Pref}};
 handle_cast(_Req, State) ->
@@ -94,7 +98,7 @@ handle_call(auto_indent, _From, State=#state{auto_indent=Bool}) ->
 	{reply, Bool, State};
 handle_call(use_tabs, _From, State=#state{use_tabs=Res}) ->
 	{reply, Res, State};
-handle_call(indent_width, _From, State=#state{indent_width=Width}) ->
+handle_call(tab_width, _From, State=#state{tab_width=Width}) ->
 	{reply, Width, State};
 handle_call(indent_guides, _From, State=#state{indent_guides=Width}) ->
 	{reply, Width, State};

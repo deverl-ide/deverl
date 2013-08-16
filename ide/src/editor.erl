@@ -11,7 +11,13 @@
   find/2,
   find_all/2,
   replace_all/3,
-	set_theme/3]).
+	set_theme/3,
+	set_tab_width/2,
+	set_use_tabs/2,
+	set_indent_guides/2,
+	set_line_wrap/2,
+	set_line_margin_visible/2,
+	indent_line_left/1]).
 
 -export([start/1,
   init/1, 
@@ -53,11 +59,14 @@
 -type filename()  :: string().
 -type erlangEditor() :: wxWindow:wxWindow().
 
--record(file, {path, filename, modified}).
+-record(file, {path, 
+							 filename, 
+							 filetype,
+							 modified}).
 
 -record(state, {editor_parent    :: erlangEditor(), 
                 text_ctrl          :: wxStyledTextCtrl:wxStyledTextCtrl(),
-                file_data
+                file_data = #file{}
                }).
 
 
@@ -113,9 +122,18 @@ init(Config) ->
   wxStyledTextCtrl:indicatorSetStyle(Editor,2,?wxSTC_INDIC_PLAIN), %% underline
 	
 	case theme:load_theme(user_prefs:get_user_pref({pref, theme})) of
-		{error, load_theme} -> ok;
+		{error, load_theme} -> ok; %% Default STC settings
 		Theme -> setup_theme(Editor, Theme, Font)
 	end,
+	
+	%% Indentation
+	wxStyledTextCtrl:setTabWidth(Editor, 
+		list_to_integer(user_prefs:get_user_pref({pref, tab_width}))),
+	wxStyledTextCtrl:setUseTabs(Editor, user_prefs:get_user_pref({pref, use_tabs})), 
+	wxStyledTextCtrl:setIndentationGuides(Editor, user_prefs:get_user_pref({pref, indent_guides})),
+	
+	%% Wrapping
+	wxStyledTextCtrl:setWrapMode(Editor, user_prefs:get_user_pref({pref, line_wrap})),
     
 	%% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
@@ -123,6 +141,8 @@ init(Config) ->
   wxStyledTextCtrl:connect(Editor, stc_change, [{userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, stc_savepointreached, [{userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, left_down, [{skip, true}, {userData, Sb}]),
+  wxStyledTextCtrl:connect(Editor, left_up, [{skip, true}, {userData, Sb}]),
+
   
   %% Load contents if any
   case File of
@@ -137,153 +157,101 @@ init(Config) ->
 
 
 %% =====================================================================
-%% @doc Sets all styles to have the same attributes as STYLE_DEFAULT.
-%% Must be called before setting any theme styles, as they will be reset.
-
-set_default_styles(Editor, Fg, Bg, Font) ->
-	wxStyledTextCtrl:styleSetBackground(Editor, ?wxSTC_STYLE_DEFAULT, Bg),
-	wxStyledTextCtrl:styleSetForeground(Editor, ?wxSTC_STYLE_DEFAULT, Fg),
-	wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
-	wxStyledTextCtrl:styleClearAll(Editor).
-
-
-%% =====================================================================
-%% @doc Update the line number margin font and width.
-
-set_linenumber_default(Editor, Font) ->
-	LnFont = wxFont:new(wxFont:getPointSize(Font), ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
-  wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_LINENUMBER, LnFont),
-	wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER, (wxFont:getPointSize(Font) - ?MARGIN_LN_PT_OFFSET)),
-  Mw = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, ?MARGIN_L_PADDING ++ ?MARGIN_L_WIDTH),
-	wxStyledTextCtrl:setMarginWidth(Editor, 0, Mw).
-	
-	
-%% =====================================================================
-%% @doc Update all styles relating to a theme.
-
-set_theme_styles(Editor, Font) ->
-  wxStyledTextCtrl:setCaretForeground(Editor, {255,255,255}),
-  wxStyledTextCtrl:setSelBackground(Editor, true, ?SELECTION_COLOUR),
-	wxStyledTextCtrl:styleSetBackground(Editor, ?wxSTC_STYLE_LINENUMBER, {51,51,50}),
-	set_linenumber_default(Editor, Font),
-  update_styles(Editor),
- 	set_font_style(Editor, Font),
-  set_marker_colour(Editor, {{36,35,34}, {36,35,34}}).
-
-set_theme_styles(Editor, Styles, Font) ->
-  wxStyledTextCtrl:setCaretForeground(Editor, 
-		theme:hexstr_to_rgb(proplists:get_value(caret, Styles))),
-  wxStyledTextCtrl:setSelBackground(Editor, true, 
-		theme:hexstr_to_rgb(proplists:get_value(selection, Styles))),
-	wxStyledTextCtrl:styleSetBackground(Editor, ?wxSTC_STYLE_LINENUMBER, 
-		theme:hexstr_to_rgb(proplists:get_value(marginBg, Styles))),
-	wxStyledTextCtrl:styleSetForeground(Editor, ?wxSTC_STYLE_LINENUMBER, 
-		theme:hexstr_to_rgb(proplists:get_value(marginFg, Styles))),
-	set_linenumber_default(Editor, Font),
-  % update_styles(Editor),
- 	set_font_style(Editor, Font),
-  set_marker_colour(Editor, {theme:hexstr_to_rgb(proplists:get_value(markers, Styles)), 
-		theme:hexstr_to_rgb(proplists:get_value(markers, Styles))}).
-	
-	
-%% =====================================================================
-%% @doc Set the font across the lexer.
-	
-set_font_style(Editor, Font) ->
-	Update = fun(Id) -> 
-		wxStyledTextCtrl:styleSetFont(Editor, Id, Font)
-		end,
-	[ Update(Id) || Id <- lists:seq(?wxSTC_ERLANG_DEFAULT, ?wxSTC_ERLANG_MODULES_ATT)],
-	wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font).
-
-%% =====================================================================
-%% @doc Update the colour of the markers used in the fold margin.
-
-set_marker_colour(Editor, {Fg, Bg}) ->
-	Update = fun(Id) -> 
-		wxStyledTextCtrl:markerSetForeground(Editor, Id, Fg),
-		wxStyledTextCtrl:markerSetBackground(Editor, Id, Bg)
-		end,
-	[ Update(Id) || Id <- lists:seq(?wxSTC_MARKNUM_FOLDEREND, ?wxSTC_MARKNUM_FOLDEROPEN)].
-
-%% =====================================================================
 %% @doc OTP behaviour callbacks
+%% 
+%% =====================================================================
 
 handle_info(Msg, State) ->
-    io:format("Got Info(Editor) ~p~n",[Msg]),
-    {noreply,State}.
+  io:format("Got Info(Editor) ~p~n",[Msg]),
+  {noreply,State}.
 
 handle_call(shutdown, _From, State=#state{editor_parent=Panel}) ->
-    wxPanel:destroy(Panel),
-    {stop, normal, ok, State};
+  wxPanel:destroy(Panel),
+  {stop, normal, ok, State};
 
 handle_call(save_request, _From, State=#state{file_data=#file{path=Path, filename=Fn, modified=Mod}}) ->
-    {reply,{Path,Fn,Mod},State};
+  {reply,{Path,Fn,Mod},State};
 
 handle_call({save_complete,{Path,Filename}}, _From, State) ->
-    wxStyledTextCtrl:setSavePoint(State#state.text_ctrl),
-    {reply,ok,State#state{file_data=#file{path=Path, filename=Filename}}};
+  wxStyledTextCtrl:setSavePoint(State#state.text_ctrl),
+  {reply,ok,State#state{file_data=#file{path=Path, filename=Filename}}};
     
 handle_call(text_content, _From, State) ->
-    Text = wxStyledTextCtrl:getText(State#state.text_ctrl),
-    {reply,Text,State};
+  Text = wxStyledTextCtrl:getText(State#state.text_ctrl),
+  {reply,Text,State};
     
 handle_call(text_ctrl, _From, State) ->
-    {reply,State#state.text_ctrl,State};
+  {reply,State#state.text_ctrl,State};
     
 handle_call(editor, _From, State) ->
-    {reply,State#state.editor_parent,State};
+  {reply,State#state.editor_parent,State};
 
 handle_call(Msg, _From, State) ->
-    io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
-    {reply,State,State}.
+  io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
+  {reply,State,State}.
 
 
 handle_cast(Msg, State) ->
-    io:format("Got cast ~p~n",[Msg]),
-    {noreply,State}.
+io:format("Got cast ~p~n",[Msg]),
+  {noreply,State}.
     
 
 handle_event(_A=#wx{event=#wxMouse{type=left_down}, userData=Sb}, 
              State = #state{text_ctrl=Editor}) ->
-    update_sb_line(Editor, Sb),
-    {noreply, State};
+	update_sb_line(Editor, Sb),
+{noreply, State};
+
+handle_event(_A=#wx{event=#wxMouse{type=left_up}, userData=Sb}, 
+             State = #state{text_ctrl=Editor}) ->
+	%% Update status bar selection info
+	case wxStyledTextCtrl:getSelection(Editor) of
+		{X,X} -> ok;
+		{X,Y} -> ide_status_bar:set_text(Sb,{field,selection}, io_lib:format("~w-~w",[X, Y])),
+						 ide_status_bar:set_text(Sb,{field,line}, "")
+	end,
+{noreply, State};
     
 handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{text_ctrl=Editor}) ->
-    {noreply, State};
+{noreply, State};
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointreached}=_E}, 
             State=#state{file_data=#file{path=Path, filename=Fn}}) ->
-    {noreply, State#state{file_data=#file{path=Path,filename=Fn,modified=false}}};
+  {noreply, State#state{file_data=#file{path=Path,filename=Fn,modified=false}}};
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointleft}=_E}, State) ->
-    {noreply, State};
+  {noreply, State};
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, 
-             State=#state{text_ctrl=Editor, file_data=#file{filename=Fn, path=Path}}) ->               
-    %% Update status bar line/col position
-    update_sb_line(Editor, Sb),
-    %% Update margin width if required
-    adjust_margin_width(Editor),  
-    {noreply, State#state{file_data=#file{modified=true, filename=Fn, path=Path}}};
+             State=#state{text_ctrl=Editor, file_data=#file{filename=Fn, path=Path}}) ->
+	io:format("EDITOR MODIFIED~n"),      
+  %% Update status bar line/col position
+  update_sb_line(Editor, Sb),
+  %% Update margin width if required
+	%% NOTE - When a large paste occurs the large volume of 'modified' events CAUSED
+	%% by update_line_margin, when lines numbers are displayed  essentially block the editor. 
+	%% A workaround MUST be implemented. Having the update_line_margin respond to key events
+	%% might solve this.
+	update_line_margin(Editor),
+	
+  {noreply, State#state{file_data=#file{modified=true, filename=Fn, path=Path}}};
 
 handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margin = Margin} = _E},
              State = #state{text_ctrl=Editor}) ->
-    Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
-    Fl = wxStyledTextCtrl:getFoldLevel(Editor, Ln),
-    case Margin of
-      1 when Ln > 0, Fl > 0 ->
-        wxStyledTextCtrl:toggleFold(Editor, Ln);
-      _ -> ok
-    end,
-    {noreply, State};
+  Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
+  Fl = wxStyledTextCtrl:getFoldLevel(Editor, Ln),
+  case Margin of
+    1 when Ln > 0, Fl > 0 ->
+      wxStyledTextCtrl:toggleFold(Editor, Ln);
+    _ -> ok
+  end,
+  {noreply, State};
 
 handle_event(E,O) ->
   io:format("editor catchall Event: ~p~nObject: ~p~n", [E,O]),
   {noreply, O}.
     
 code_change(_, _, State) ->
-    {stop, not_yet_implemented, State}.
+  {stop, not_yet_implemented, State}.
 
 terminate(_Reason, State=#state{editor_parent=Panel}) ->
   io:format("TERMINATE EDITOR~n"),
@@ -292,7 +260,6 @@ terminate(_Reason, State=#state{editor_parent=Panel}) ->
 	
 %% =====================================================================
 %% @doc Defines the keywords in the Erlang language
-%%
 %% @private
 
 keywords() ->
@@ -301,57 +268,8 @@ keywords() ->
   "end", "fun", "if", "let", "not", "of", "or", "orelse", 
   "receive", "rem", "try", "when", "xor"],
   L = lists:flatten([KW ++ " " || KW <- KWS]).
-	
 
-%% =====================================================================
-%% @doc Updates the styles for individual elements in the lexer
-%%
-%% @private
 
--spec update_styles(Editor) -> 'ok' when
-  Editor :: wxStyledTextCtrl:wxStyledTextCtrl().
-  
-update_styles(Editor) ->
-  %% {Style, Colour}
-  Styles = [
-			 {?wxSTC_ERLANG_DEFAULT,  {229,225,220}}, %
-       {?wxSTC_ERLANG_COMMENT,  {116,118,118}}, %
-       {?wxSTC_ERLANG_VARIABLE, {120,184,215}}, %
-       {?wxSTC_ERLANG_NUMBER,   {253,163,94}}, %
-       {?wxSTC_ERLANG_KEYWORD,  {233,238,194}}, %
-       {?wxSTC_ERLANG_STRING,   {122,184,215}}, %
-       {?wxSTC_ERLANG_OPERATOR, {229,225,220}}, %
-       {?wxSTC_ERLANG_ATOM,     {255,0,0}},
-       {?wxSTC_ERLANG_FUNCTION_NAME, {213,88,75}}, %
-       {?wxSTC_ERLANG_CHARACTER,{236,155,172}},
-       {?wxSTC_ERLANG_MACRO,    {120,184,215}}, %
-       {?wxSTC_ERLANG_RECORD,   {60,179,120}},
-       {?wxSTC_ERLANG_SEPARATOR,{0,0,0}},
-       {?wxSTC_ERLANG_NODE_NAME,{0,0,0}},
-       {?wxSTC_STYLE_LINENUMBER,{200,200,200}},
-       %% > wx2.9
-       {?wxSTC_ERLANG_COMMENT_FUNCTION, {116,118,118}}, %
-       {?wxSTC_ERLANG_COMMENT_MODULE, {116,118,118}}, %
-       {?wxSTC_ERLANG_COMMENT_DOC, {116,118,118}}, %
-       {?wxSTC_ERLANG_COMMENT_DOC_MACRO, {116,118,118}}, %
-       {?wxSTC_ERLANG_ATOM_QUOTED, {0,0,0}},
-       {?wxSTC_ERLANG_MACRO_QUOTED, {40,144,170}},
-       {?wxSTC_ERLANG_RECORD_QUOTED, {40,100,20}},
-       {?wxSTC_ERLANG_NODE_NAME_QUOTED, {0,0,0}},
-       {?wxSTC_ERLANG_BIFS, {255,255,255}}, %
-       {?wxSTC_ERLANG_MODULES, {255,255,255}},
-       {?wxSTC_ERLANG_MODULES_ATT, {64,102,244}}
-      ],
-    
-  %% Set the font and style
-  SetStyle = fun({Style, Color}) ->
-	       wxStyledTextCtrl:styleSetForeground(Editor, Style, Color)
-       end,
-
-  [SetStyle(Style) || Style <- Styles],
-  ok.
-  
-  
 %% =====================================================================  
 %% @doc Notify the editor it has been selected
 
@@ -366,7 +284,8 @@ selected(EditorPid, Sb) ->
 
 update_sb_line(Editor, Sb) ->
   {X,Y} = get_x_y(Editor),
-  ide_status_bar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])).
+  ide_status_bar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
+	ide_status_bar:set_text(Sb,{field,selection}, "").
 
 
 %% =====================================================================  
@@ -384,7 +303,21 @@ get_x_y(Editor) ->
   ColNo = Pos - wxStyledTextCtrl:positionFromLine(Editor, LineNo),
   {LineNo+1, ColNo}.
   
-  
+
+%% =====================================================================  
+%% @doc Check whether a margin adjustment is required, (if the margin is
+%% currently shown or not).
+%% @private	
+
+update_line_margin(Editor) ->
+	case user_prefs:get_user_pref({pref, show_line_no}) of
+		true ->
+			set_linenumber_default(Editor, user_prefs:get_user_pref({pref, font}));
+		false ->
+			ok
+	end.  
+	
+	
 %% =====================================================================  
 %% @doc Adjust the width of the line_number margin if necessary,
 %% dynamically (it doesn't currently decrease).
@@ -396,15 +329,18 @@ get_x_y(Editor) ->
   Result :: 'ok'.
   
 adjust_margin_width(Editor) ->
-  Lns = wxStyledTextCtrl:getLineCount(Editor),
-  NewWidth = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, integer_to_list(Lns)),
-  Cw = wxStyledTextCtrl:getMarginWidth(Editor, 0),
+  Lc = wxStyledTextCtrl:getLineCount(Editor),
+	Padding = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, " "),
+  NewWidth = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, integer_to_list(Lc) ++ " "),
+  Cw = wxStyledTextCtrl:getMarginWidth(Editor, 0),	  
   if
-    NewWidth >= Cw ->
-      %% Add an extra characters width
-      W = wxStyledTextCtrl:textWidth(Editor, ?wxSTC_STYLE_LINENUMBER, 
-               integer_to_list(Lns) ++ " "),
-      wxStyledTextCtrl:setMarginWidth(Editor, 0, W);
+    NewWidth /= Cw ->
+			if
+				Lc < 10 ->
+					wxStyledTextCtrl:setMarginWidth(Editor, 0, NewWidth + Padding);
+				true ->
+      		wxStyledTextCtrl:setMarginWidth(Editor, 0, NewWidth)
+			end;
     true -> ok
   end,
   ok.  
@@ -441,7 +377,6 @@ save_status(Editor) ->
       {save_status, unmodified};
     {undefined, undefined, _} -> %% New file, yet to be saved
       {save_status, no_file};
-
     {Path, Fn, _} ->
       {save_status, Path, Fn}
   end.
@@ -479,18 +414,217 @@ get_id(EditorPid) ->
   
 save_complete(Path,Filename,Server) ->
   wx_object:call(Server, {save_complete,{Path,Filename}}).
-  
+
+
+%% =====================================================================
+%% Styling
+%% 
+%% =====================================================================
+
+%% =====================================================================
+%% @doc Change the theme of the editor.
+
+set_theme(Editor, Theme, Font) ->
+	case theme:load_theme(Theme) of
+		{error, load_theme} -> ok;
+		NewTheme -> setup_theme(wx_object:call(Editor, text_ctrl), NewTheme, Font)
+	end,
+	ok.
+
+
+%% =====================================================================
+%% @doc	
+%% @private
+
+setup_theme(Editor, [Def | Lex], Font) ->
+	Fg = theme:hexstr_to_rgb(proplists:get_value(fgColour, Def)),
+	set_default_styles(Editor, Fg,
+		theme:hexstr_to_rgb(proplists:get_value(bgColour, Def)), Font),
+	set_theme_styles(Editor, Def, Font),
+	apply_lexer_styles(Editor, Lex, Fg),
+	ok.
+	
+	
+%% =====================================================================
+%% @doc Sets all styles to have the same attributes as STYLE_DEFAULT.
+%% Must be called before setting any theme styles, as they will be reset.
+%% @private
+
+set_default_styles(Editor, Fg, Bg, Font) ->
+	wxStyledTextCtrl:styleSetBackground(Editor, ?wxSTC_STYLE_DEFAULT, Bg),
+	wxStyledTextCtrl:styleSetForeground(Editor, ?wxSTC_STYLE_DEFAULT, Fg),
+	wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
+	wxStyledTextCtrl:styleClearAll(Editor),
+	ok.
+
+	
+%% =====================================================================
+%% @doc Update all styles relating to a theme.
+%% @private
+
+set_theme_styles(Editor, Styles, Font) ->
+  wxStyledTextCtrl:setCaretForeground(Editor, 
+		theme:hexstr_to_rgb(proplists:get_value(caret, Styles))),
+  wxStyledTextCtrl:setSelBackground(Editor, true, 
+		theme:hexstr_to_rgb(proplists:get_value(selection, Styles))),
+	wxStyledTextCtrl:styleSetBackground(Editor, ?wxSTC_STYLE_LINENUMBER, 
+		theme:hexstr_to_rgb(proplists:get_value(marginBg, Styles))),
+	wxStyledTextCtrl:styleSetForeground(Editor, ?wxSTC_STYLE_LINENUMBER, 
+		theme:hexstr_to_rgb(proplists:get_value(marginFg, Styles))),
+	% set_linenumber_default(Editor, Font),
+	update_line_margin(Editor),
+ 	set_font_style(Editor, Font),
+  set_marker_colour(Editor, {theme:hexstr_to_rgb(proplists:get_value(markers, Styles)), 
+		theme:hexstr_to_rgb(proplists:get_value(markers, Styles))}).
+	
+
+%% =====================================================================
+%% @doc Update the line number margin font and width.
+%% @private
+
+set_linenumber_default(Editor, Font) ->
+	wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER, 
+		(wxFont:getPointSize(Font) - ?MARGIN_LN_PT_OFFSET)),
+	adjust_margin_width(Editor),
+	ok.
+	
+	
+%% =====================================================================
+%% @doc
+%% @private
+
+apply_lexer_styles(Editor, Styles, Fg) ->
+	SetFg = fun wxStyledTextCtrl:styleSetForeground/3,
+	SetFg(Editor, ?wxSTC_ERLANG_DEFAULT, Fg),
+	[ SetFg(Editor, Id, Rgb) || {Id, Rgb} <- proplists:get_value(fgColour, Styles)],
+	SetBg = fun wxStyledTextCtrl:styleSetBackground/3,
+	[ SetBg(Editor, Id, Rgb) || {Id, Rgb} <- proplists:get_value(bgColour, Styles)],
+	[ set_font_style(Editor, Id, Fs) || {Id, Fs} <- proplists:get_value(fontStyle, Styles)],
+	[ set_font_size(Editor, Id, N) || {Id, N} <- proplists:get_value(fontSize, Styles)],
+	ok.
+	
+
+
+%% =====================================================================
+%% @doc Set the font across the lexer.
+%% @private
+	
+set_font_style(Editor, Font) ->
+	Update = fun(Id) -> 
+		wxStyledTextCtrl:styleSetFont(Editor, Id, Font)
+		end,
+	[Update(Id) || Id <- lists:seq(?wxSTC_ERLANG_DEFAULT, ?wxSTC_ERLANG_MODULES_ATT)],
+	wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
+	% set_linenumber_default(Editor, Font),
+	update_line_margin(Editor),
+	ok.
+
+	
+%% =====================================================================
+%% @doc
+%% @private
+
+set_font_style(Editor, Id, Style) ->
+	Res = case string:to_lower(Style) of
+		"italic" -> wxStyledTextCtrl:styleSetItalic(Editor, Id, true);
+		"bold" -> wxStyledTextCtrl:styleSetBold(Editor, Id, true);
+		"underlined" -> wxStyledTextCtrl:styleSetUnderline(Editor, Id, true);
+		"uppercase" -> wxStyledTextCtrl:styleSetCase(Editor, Id, ?wxSTC_CASE_UPPER)
+	end.
+	
+	
+%% =====================================================================
+%% @doc Update the colour of the markers used in the fold margin.
+%% @private
+
+set_marker_colour(Editor, {Fg, Bg}) ->
+	Update = fun(Id) -> 
+		wxStyledTextCtrl:markerSetForeground(Editor, Id, Fg),
+		wxStyledTextCtrl:markerSetBackground(Editor, Id, Bg)
+		end,
+	[ Update(Id) || Id <- lists:seq(?wxSTC_MARKNUM_FOLDEREND, ?wxSTC_MARKNUM_FOLDEROPEN)].
+
+
+%% =====================================================================
+%% @doc
+
+set_font_size(Editor, Id, Size) ->
+	wxStyledTextCtrl:styleSetSize(Editor, Id, list_to_integer(Size)).
+		
+
+%% =====================================================================
+%% @doc
+
+reset_styles_to_default(Editor, Styles) ->
+	%% switch lexer to null
+	% StyleResetDefault()
+	ok.
+	
+	
+%% =====================================================================
+%% @doc
+
+set_tab_width(EditorPid, Width) ->
+	wxStyledTextCtrl:setTabWidth(wx_object:call(EditorPid, text_ctrl), Width).
+	
+	
+%% =====================================================================
+%% @doc
+
+set_use_tabs(EditorPid, Bool) ->
+	wxStyledTextCtrl:setUseTabs(wx_object:call(EditorPid, text_ctrl), Bool).
+
+
+%% =====================================================================
+%% @doc
+
+set_indent_guides(EditorPid, Bool) ->
+	io:format("START TOGGLE GUIDES~n"),
+	wxStyledTextCtrl:setIndentationGuides(wx_object:call(EditorPid, text_ctrl), Bool),
+	io:format("END TOGGLE GUIDES~n"),
+	ok.
+
+%% =====================================================================
+%% @doc
+
+set_line_wrap(EditorPid, Bool) ->
+	Result = case Bool of
+		true -> 1;
+		_ -> 0
+	end,
+	wxStyledTextCtrl:setWrapMode(wx_object:call(EditorPid, text_ctrl), Result).
+
+
+%% =====================================================================
+%% @doc
+
+set_line_margin_visible(EditorPid, Bool) ->
+	Editor = wx_object:call(EditorPid, text_ctrl),
+	case Bool of
+		true -> set_linenumber_default(Editor, user_prefs:get_user_pref({pref, font}));
+		false -> wxStyledTextCtrl:setMarginWidth(Editor, 0, 0)
+	end.
+
+			
+%% =====================================================================
+%% Find and replace
+%% 
+%% =====================================================================
 
 %% ===================================================================== 
 %% @doc Search/replace with next/prev
 
 find(EditorPid, Str) ->
   TextCtrl = wx_object:call(EditorPid, text_ctrl),
-  Pos = wxStyledTextCtrl:findText(TextCtrl, 0, wxStyledTextCtrl:getLength(TextCtrl), Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]),
+  Pos = wxStyledTextCtrl:findText(TextCtrl, 0, 
+		wxStyledTextCtrl:getLength(TextCtrl), Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]),
   wxStyledTextCtrl:startStyling(TextCtrl, Pos, ?wxSTC_INDICS_MASK),
   wxStyledTextCtrl:setStyling(TextCtrl, length(Str), ?wxSTC_INDIC0_MASK).
   %% Bookmark line and add indicator to word
   
+	
+%% =====================================================================
+%% @doc
 
 find(Editor, Str, Start, End) ->
   case wxStyledTextCtrl:findText(Editor, Start, End, Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]) of
@@ -520,8 +654,8 @@ replace_all(EditorPid, Str, RepStr) ->
     replace_all(Editor, Str, RepStr, 0, wxStyledTextCtrl:getLength(Editor)).
 
 
-	%% ===================================================================== 
-	%% @doc Replace all occurrences of str with RepStr.
+%% ===================================================================== 
+%% @doc Replace all occurrences of str with RepStr.
 	
 replace_all(Editor, Str, RepStr, Start, End) ->
   wxStyledTextCtrl:setTargetStart(Editor, Start),
@@ -544,31 +678,25 @@ replace(EditorPid, Str, Start, End) ->
   wxStyledTextCtrl:setTargetStart(Editor, Start),
   wxStyledTextCtrl:setTargetEnd(Editor, End),
   wxStyledTextCtrl:replaceTarget(Editor, Str).
-	
-setup_theme(Editor, [Def | Lex]=L, Font) ->
-	Fg = theme:hexstr_to_rgb(proplists:get_value(fgColour, Def)),
-	set_default_styles(Editor, Fg,
-		theme:hexstr_to_rgb(proplists:get_value(bgColour, Def)), Font),
-	set_theme_styles(Editor, Def, Font),
-	apply_lexer_styles(Editor, Lex, Fg),
-	ok.
-	
-set_theme(Editor, Theme, Font) ->
-	case theme:load_theme(Theme) of
-		{error, load_theme} -> ok;
-		NewTheme -> setup_theme(wx_object:call(Editor, text_ctrl), NewTheme, Font)
-	end,
+
+
+%% =====================================================================
+%% Selections
+%% 
+%% =====================================================================
+
+indent_line_left(EditorPid) ->
+	Editor = wx_object:call(EditorPid, text_ctrl),
+	{X,Y} = wxStyledTextCtrl:getSelection(Editor),
+	io:format("Selection: ~p:~p~n", [X,Y]),
 	ok.
 
-apply_lexer_styles(Editor, Styles, Fg) ->
-	SetFg = fun wxStyledTextCtrl:styleSetForeground/3,
-	SetFg(Editor, ?wxSTC_ERLANG_DEFAULT, Fg),
-	[ SetFg(Editor, Id, Rgb) || {Id, Rgb} <- proplists:get_value(fgColour, Styles)],
-	SetBg = fun wxStyledTextCtrl:styleSetBackground/3,
-	[ SetBg(Editor, Id, Rgb) || {Id, Rgb} <- proplists:get_value(bgColour, Styles)],
-	adjust_margin_width(Editor),
+
+indent_line_right() ->
+	
 	ok.
 	
-reset_styles_to_default(Editor, Styles) ->
-	%% switch lexer to null
-	ok.
+%% =====================================================================
+%% 
+%% 
+%% =====================================================================

@@ -12,22 +12,30 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 %% API         
--export([add_editor/0, 
-		 add_editor/1, 
-		 close_selected_editor/0, 
-		 close_all_editors/0,
-		 toggle_pane/1, 
-		 get_selected_editor/0, 
-		 get_all_editors/0, 
-		 update_styles/1, 
-		 save_current_file/0,
-		 save_new/0, 
-	   save_all/0,
-		 open_file/1,
-		 open_dialog/1,
-     find_replace/1,
-		 get_current_theme_name/0,
-		 set_theme/1]).
+-export([
+		add_editor/0, 
+		add_editor/1, 
+		close_selected_editor/0, 
+		close_all_editors/0,
+		toggle_pane/1, 
+		get_selected_editor/0, 
+		get_all_editors/0, 
+		update_styles/1, 
+		save_current_file/0,
+		save_new/0, 
+		save_all/0,
+		open_file/1,
+		open_dialog/1,
+		find_replace/1,
+		get_current_theme_name/0,
+		set_theme/1,
+		set_line_wrap/1,
+		set_line_margin_visible/1,
+		set_indent_tabs/1,
+		set_indent_guides/1,
+		indent_line_left/0,
+		go_to_line/1
+		]).
 
 
 %% The record containing the State.
@@ -113,12 +121,6 @@ init(Options) ->
       
 	%% Menubar %%
   {Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
-  % wxFrame:setMenuBar(Frame, Menu),
-
-  
-  % wxFrame:connect(Frame, menu_highlight,  [{userData, {ets_table,MenuTab}}]),
-  % wxFrame:connect(Frame, menu_close,  []),
-  % wxFrame:connect(Frame, command_menu_selected, [{userData,{ets_table,MenuTab}}]),
  
   wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),      
@@ -152,6 +154,8 @@ init(Options) ->
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
+	
+	wxFrame:connect(Frame, command_button_clicked, []),
       
   State = #state{win=Frame},
   {Frame, State#state{workspace=Workspace, 
@@ -311,7 +315,7 @@ handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_hig
   Fun(Result),
   {noreply, State};
 
-%% First handle the anonymous sub-menus
+%% First handle the sub-menus
 handle_event(E=#wx{id=Id, userData={theme_menu,Menu}, event=#wxCommand{type=command_menu_selected}},
              State=#state{status_bar=Sb}) -> 
 	Env = wx:get_env(),
@@ -319,26 +323,33 @@ handle_event(E=#wx{id=Id, userData={theme_menu,Menu}, event=#wxCommand{type=comm
 		set_theme(Menu)
 	end),
 	{noreply, State};
+	
+handle_event(E=#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_selected}},
+             State=#state{status_bar=Sb}) when Id >= ?MENU_ID_TAB_WIDTH_LOWEST,
+						 Id =< ?MENU_ID_TAB_WIDTH_HIGHEST  -> 
+	Env = wx:get_env(),
+	spawn(fun() -> wx:set_env(Env),
+		[editor:set_tab_width(Ed, list_to_integer(wxMenu:getLabel(Menu, Id))) || {_,Ed} <- get_all_editors()]
+	end),
+	user_prefs:set_user_pref(tab_width, wxMenu:getLabel(Menu, Id)),
+	{noreply, State};
 
 %% The menu items from the ETS table					 
 handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=command_menu_selected}},
              State=#state{status_bar=Sb}) ->
   Result = ets:lookup(TabId,Id),
-  Fun = fun([{MenuItem,_,_,{Module, Function, Args},{update_label, Frame, Pos}}]) ->
+  Fun = fun([{MenuItem, {Module, Function, Args},{update_label, Frame, Pos}}]) ->
 			Env = wx:get_env(),
 			spawn(fun() -> wx:set_env(Env),
 			              erlang:apply(Module,Function,Args)
 			     end),
 			ide_menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos));
-		([{_,_,_,{Module,Function,[]}}]) ->
-			% Module:Function(); %% Called from this process
+		([{_,{Module,Function,[]}}]) ->
 			Env = wx:get_env(),
 			spawn(fun() -> wx:set_env(Env), 
 			              Module:Function()
 			     end);
-		([{_,_,_,{Module,Function,Args}}]) ->
-			% io:format("Mod:Func:Args~n"),
-			% erlang:apply(Module, Function, Args); %% Called from this process
+		([{_,{Module,Function,Args}}]) ->
 			Env = wx:get_env(),
 			spawn(fun() -> wx:set_env(Env),
 			              erlang:apply(Module, Function, Args)
@@ -451,8 +462,66 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),   
     
 	{Workspace, TabId}.
+	
+	
+%% =====================================================================
+%% @doc Display or hide a given window pane
+
+-spec toggle_pane(PaneType) -> Result when
+	PaneType :: 'test' | 'util' | 'editor' | 'maxutil',
+	Result :: 'ok'.
   
+toggle_pane(PaneType) ->
+    {V,H,Vp,Hp,W,T,U} = wx_object:call(?MODULE, splitter),
+	case PaneType of
+		test ->
+            case wxSplitterWindow:isSplit(V) of
+                true ->
+                    wxSplitterWindow:unsplit(V,[{toRemove, T}]);
+                false ->
+                    wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
+            end;
+		util ->
+            case wxSplitterWindow:isSplit(H) of
+                true ->
+					wxSplitterWindow:unsplit(H,[{toRemove, U}]);
+				false ->
+					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
+			end;
+		editor ->
+			case wxSplitterWindow:isSplit(H) of
+				true ->
+					wxSplitterWindow:unsplit(H,[{toRemove, U}]),
+					wxSplitterWindow:unsplit(V,[{toRemove, T}]);
+				false ->
+					case wxSplitterWindow:isShown(U) of
+						true ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:unsplit(H,[{toRemove, U}]),
+							wxSplitterWindow:unsplit(V,[{toRemove, T}]);
+						false ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
+					end
+			end;
+		maxutil ->
+			case wxSplitterWindow:isSplit(H) of
+				true ->
+					wxSplitterWindow:unsplit(H,[{toRemove, V}]);
+				false ->
+				    case wxSplitterWindow:isShown(U) of
+						true ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}]);
+						false ->
+							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
+							wxSplitterWindow:unsplit(H,[{toRemove, V}])
+					end
+			end
+	end,
+	ok.   
   
+	
 %% =====================================================================
 %% @doc 
 %%
@@ -461,10 +530,7 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
 add_editor(Workspace, Sb, TabId) ->
 	add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb, TabId),
 	Workspace.
-  
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Client API %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+ 
 
 %% =====================================================================
 %% @doc Create a new editor instance in the notebook  
@@ -557,6 +623,11 @@ get_all_editors(_, -1, Acc) ->
 get_all_editors(Workspace, Count, Acc) ->
 	get_all_editors(Workspace, Count -1, [{Count, get_editor_pid(Count)} | Acc]).
 
+
+%% =====================================================================
+%% Open/save/close editor functions
+%% 
+%% =====================================================================
 
 %% =====================================================================
 %% @doc Save the currently selected file to disk
@@ -741,29 +812,6 @@ add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
   
 
 %% =====================================================================
-%% @doc Change the font style across all open editors
- 
- update_styles(Frame) ->
-	%% Display the system font picker
-	FD = wxFontData:new(),
-	wxFontData:setInitialFont(FD, user_prefs:get_user_pref({pref, font})),
-	Dialog = wxFontDialog:new(Frame, FD),
-	case wxDialog:showModal(Dialog) of
-		?wxID_OK ->
-			%% Get the user selected font, and update the editors
-			Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
-			user_prefs:set_user_pref(font, Font),
-			Fun = fun({_, Pid}) ->
-				      editor:update_font(Pid, Font)
-				  end,
-			lists:map(Fun, get_all_editors()),
-			ok;
-		?wxID_CANCEL ->
-			ok
-	end.
-
-
-%% =====================================================================
 %% @doc 
 
 create_left_window(Parent) ->  
@@ -794,66 +842,37 @@ create_left_window(Parent) ->
   wxToolbook:setSelection(Toolbook, 0),
   
   Toolbook.
-  
-  
+
+
 %% =====================================================================
-%% @doc Display or hide a given window pane
+%% 
+%% 
+%% =====================================================================
 
--spec toggle_pane(PaneType) -> Result when
-	PaneType :: 'test' | 'util' | 'editor' | 'maxutil',
-	Result :: 'ok'.
-  
-toggle_pane(PaneType) ->
-    {V,H,Vp,Hp,W,T,U} = wx_object:call(?MODULE, splitter),
-	case PaneType of
-		test ->
-            case wxSplitterWindow:isSplit(V) of
-                true ->
-                    wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-                false ->
-                    wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
-            end;
-		util ->
-            case wxSplitterWindow:isSplit(H) of
-                true ->
-					wxSplitterWindow:unsplit(H,[{toRemove, U}]);
-				false ->
-					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
-			end;
-		editor ->
-			case wxSplitterWindow:isSplit(H) of
-				true ->
-					wxSplitterWindow:unsplit(H,[{toRemove, U}]),
-					wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-				false ->
-					case wxSplitterWindow:isShown(U) of
-						true ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:unsplit(H,[{toRemove, U}]),
-							wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-						false ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
-					end
-			end;
-		maxutil ->
-			case wxSplitterWindow:isSplit(H) of
-				true ->
-					wxSplitterWindow:unsplit(H,[{toRemove, V}]);
-				false ->
-				    case wxSplitterWindow:isShown(U) of
-						true ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}]);
-						false ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:unsplit(H,[{toRemove, V}])
-					end
-			end
-	end,
-	ok. 
 
-  
+%% =====================================================================
+%% @doc Change the font style across all open editors
+
+update_styles(Frame) ->
+	%% Display the system font picker
+	FD = wxFontData:new(),
+	wxFontData:setInitialFont(FD, user_prefs:get_user_pref({pref, font})),
+	Dialog = wxFontDialog:new(Frame, FD),
+	case wxDialog:showModal(Dialog) of
+		?wxID_OK ->
+			%% Get the user selected font, and update the editors
+			Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
+			user_prefs:set_user_pref(font, Font),
+			Fun = fun({_, Pid}) ->
+				      editor:update_font(Pid, Font)
+				  end,
+			lists:map(Fun, get_all_editors()),
+			ok;
+		?wxID_CANCEL ->
+			ok
+end. 
+
+
 %% =====================================================================
 %% @doc Show the find/replace dialog
 %% Might be better in editor.erl
@@ -899,3 +918,67 @@ get_checked_menu_item([H|T]) ->
 		_ ->
 			get_checked_menu_item(T)
 	end.
+	
+set_line_wrap(Menu) ->
+	Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LINE_WRAP)),
+	Fun = fun({_, Pid}) ->
+		      editor:set_line_wrap(Pid, Bool)
+  end,
+	lists:map(Fun, get_all_editors()),
+	user_prefs:set_user_pref(line_wrap, Bool).
+
+set_line_margin_visible(Menu) ->
+	Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LN_TOGGLE)),
+	Fun = fun({_, Pid}) ->
+		      editor:set_line_margin_visible(Pid, Bool)
+  end,
+	lists:map(Fun, get_all_editors()),
+	user_prefs:set_user_pref(show_line_no, Bool).
+	
+set_indent_tabs(Menu) ->
+	ok.	
+	
+set_indent_guides(Menu) ->
+	Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_INDENT_GUIDES)),
+	Fun = fun({_, Pid}) ->
+		      editor:set_indent_guides(Pid, Bool)
+  end,
+	lists:map(Fun, get_all_editors()),
+	user_prefs:set_user_pref(indent_guides, Bool).
+	
+indent_line_left() ->
+	{ok,{_,Pid}} = get_selected_editor(),
+	Ed = get_selected_editor(),
+	io:format("Ed: ~p~n", [Ed]),
+	editor:indent_line_left(Pid),
+	ok.
+	
+go_to_line(Parent) ->
+	Dialog = wxDialog:new(Parent, ?wxID_ANY, "Go to Line"),
+	%% Force events to propagate beyond this dialog
+	wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
+	Panel = wxWindow:new(Dialog, ?wxID_ANY),     
+	MainSz = wxBoxSizer:new(?wxVERTICAL),
+	wxWindow:setSizer(Panel, MainSz),
+	wxSizer:addSpacer(MainSz, 10),
+	wxSizer:add(MainSz, wxStaticText:new(Panel, ?wxID_ANY, "Enter line:"), 
+		[{border,10}, {flag, ?wxEXPAND bor ?wxLEFT}]),
+	wxSizer:addSpacer(MainSz, 7),
+	Input = wxTextCtrl:new(Panel,?wxID_ANY, []),
+	wxSizer:add(MainSz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
+	wxSizer:addSpacer(MainSz, 15),
+	ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
+	wxSizer:addSpacer(ButtonSz, 10),	
+	wxSizer:add(ButtonSz, wxButton:new(Panel, 100000, 
+		[{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
+	DefButton = wxButton:new(Panel, 100001, [{label,"Go"}]),
+	wxButton:setDefault(DefButton),
+	wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
+	wxSizer:addSpacer(ButtonSz, 10),	
+	wxSizer:add(MainSz, ButtonSz),
+	wxSizer:layout(MainSz),
+	wxSizer:fit(MainSz, Dialog),
+	wxSizer:setSizeHints(MainSz, Dialog),
+  wxDialog:show(Dialog),
+	wxWindow:setFocusFromKbd(Input),
+	ok.
