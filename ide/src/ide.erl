@@ -122,7 +122,7 @@ init(Options) ->
       
 	%% Menubar %%
   {Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
- 
+
 	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),      
 
@@ -152,7 +152,6 @@ init(Options) ->
 	wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
 	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
     
-
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
@@ -434,9 +433,8 @@ create_utils(Parent) ->
 
 create_left_window(Parent) ->  
 	SideBar = ide_side_bar:new(Parent).
-	
-  
-  
+
+
 %% =====================================================================
 %% @doc Create the workspace with the initial editor
 %% @private  
@@ -819,7 +817,7 @@ add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
 	wxButton:setLabel(Button, Label),
 	wxSizer:add(ButtonSizer, Button, [{border, 5}, {proportion, 1}]),
 	add_buttons(ButtonSizer, Parent, Rest).
-  
+
 
 %% =====================================================================
 %% @doc Change the font style across all open editors
@@ -960,3 +958,4 @@ go_to_line(Parent) ->
 	wxSizer:setSizeHints(Sz, Dialog),
 	wxDialog:show(Dialog),
 	wxWindow:setFocusFromKbd(Input).
+
