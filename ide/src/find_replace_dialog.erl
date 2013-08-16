@@ -9,10 +9,12 @@
 
 -export([new/1, 
          new/2,
-         get_ref/1]).
+         get_ref/1,
+				 show/1]).
 
 -record(state, {frame,
-            	  data
+            	  data,
+								to_focus
             	 }).
 
 new(Parent) ->
@@ -35,7 +37,8 @@ do_init(Config) ->
   
   FlexGridSz = wxFlexGridSizer:new(4, 2, 10, 5),
   wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Find:"), [{flag, ?wxALIGN_RIGHT bor ?wxALIGN_CENTRE_VERTICAL}]),
-  wxSizer:add(FlexGridSz, wxTextCtrl:new(Panel, ?FIND_INPUT, []), [{flag, ?wxEXPAND}, {proportion, 1}]),
+  ToFocus = wxTextCtrl:new(Panel, ?FIND_INPUT, []),
+	wxSizer:add(FlexGridSz, ToFocus, [{flag, ?wxEXPAND}, {proportion, 1}]),
   
   wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Replace:"), [{flag, ?wxALIGN_RIGHT bor ?wxALIGN_CENTRE_VERTICAL}]),
   wxSizer:add(FlexGridSz, wxTextCtrl:new(Panel,?REPLACE_INPUT, []), [{flag, ?wxEXPAND}, {proportion, 1}]),
@@ -56,12 +59,14 @@ do_init(Config) ->
   wxSizer:addSpacer(MainSz, 20),
   
   ButtonSz = wxBoxSizer:new(?wxVERTICAL),
-  wxSizer:add(ButtonSz, wxButton:new(Panel, ?FIND_ALL, [{label,"Find All"}]), [{border,5}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
-  wxSizer:add(ButtonSz, wxButton:new(Panel, ?REPLACE_ALL, [{label,"Replace All"}]), [{border,5}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
+	DefButton = wxButton:new(Panel, ?FIND_ALL, [{label,"Find All"}]),
+	wxButton:setDefault(DefButton),
+  wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
+  wxSizer:add(ButtonSz, wxButton:new(Panel, ?REPLACE_ALL, [{label,"Replace All"}]), [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(ButtonSz, 15),
-  wxSizer:add(ButtonSz, wxButton:new(Panel, ?REPLACE_FIND, [{label,"Replace && Find"}]), [{border,5}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
+  wxSizer:add(ButtonSz, wxButton:new(Panel, ?REPLACE_FIND, [{label,"Replace && Find"}]), [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(ButtonSz, 15),
-  wxSizer:add(ButtonSz, wxButton:new(Panel, ?FIND_PREV, [{label,"Find Previous"}]), [{border,5}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
+  wxSizer:add(ButtonSz, wxButton:new(Panel, ?FIND_PREV, [{label,"Find Previous"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
   wxSizer:add(ButtonSz, wxButton:new(Panel, ?FIND_NEXT, [{label,"Find Next"}]), [{flag, ?wxEXPAND}]),
   
   wxSizer:add(MainSz, ButtonSz, [{border,20}, {flag, ?wxTOP bor ?wxBOTTOM}]),
@@ -76,7 +81,7 @@ do_init(Config) ->
     [] -> ok;
     _ -> init_data(Panel, Data)
   end,  
-      
+	      
   wxDialog:connect(Dialog, close_window),
       
   wxPanel:connect(Panel, key_down, [{skip, true}]),
@@ -86,7 +91,7 @@ do_init(Config) ->
   wxPanel:connect(Panel, command_button_clicked, [{skip, true}]), 
   % wxPanel:connect(Panel, command_button_clicked, [{callback, fun(E,O) -> io:format("E: ~p~nO:~p~n", [E,O]),wxEvent:skip(O) end}]),  
   
-  {Dialog, #state{frame=Dialog, data=Data}}.
+  {Dialog, #state{frame=Dialog, data=Data, to_focus=ToFocus}}.
  
 %% =====================================================================
 %% @doc Get the reference to a living dialog.
@@ -119,7 +124,7 @@ init_data(Parent, Data) ->
  
 %% =====================================================================
 %% @doc Get a child from a window by Id
-%% This is a useful function, and therefore might be better in a seperate
+%% This is a useful utility function, and therefore might be better in a seperate
 %% library module, accessable by all.
 %% @private
 
@@ -132,7 +137,16 @@ init_data(Parent, Data) ->
 get_window_as(Id, Parent, Type) ->
    wx:typeCast(wxWindow:findWindowById(Id, [{parent, Parent}]), Type).
   
-  
+
+%% =====================================================================
+%% @doc Display the dialog
+
+show(This) ->
+	wxDialog:show(This),
+	%% Set focus to the correct input
+	wxWindow:setFocusFromKbd(wx_object:call(This, to_focus)).
+
+ 
 %% =====================================================================
 %% @doc OTP behaviour callbacks
 handle_event(#wx{event=#wxClose{}}, State) ->
@@ -202,6 +216,9 @@ handle_call(shutdown, _From, State=#state{frame=Dialog}) ->
 
 handle_call(ref, _From, State=#state{frame=Dialog}) ->
   {reply,Dialog,State};
+	
+handle_call(to_focus, _From, State=#state{to_focus=ToFocus}) ->
+  {reply,ToFocus,State};
 
 handle_call(Msg, _From, State) ->
   io:format("Got Call ~p~n",[Msg]),

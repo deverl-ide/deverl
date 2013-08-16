@@ -886,7 +886,7 @@ find_replace(Parent) ->
   
 	case erlang:whereis(find_replace_dialog) of
 		undefined ->
-			wxDialog:show(find_replace_dialog:new(Parent, FindData));
+			find_replace_dialog:show(find_replace_dialog:new(Parent, FindData));
 		Pid ->
 			wxDialog:raise(find_replace_dialog:get_ref(Pid))
 	end.
