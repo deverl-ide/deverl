@@ -955,87 +955,38 @@ indent_line_left() ->
 	ok.
 	
 go_to_line(Parent) ->
-	% Dialog = wxDialog:new(Parent, 123456, "Go to Line"),
-	% Force events to propagate beyond this dialog
-	% wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
+	Dialog = wxDialog:new(Parent, ?wxID_ANY, "Go to Line"),
+	%% Force events to propagate beyond this dialog
+	wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
 	
-	% Panel = wxWindow:new(Dialog, 321654),     
-	% MainSz = wxBoxSizer:new(?wxVERTICAL),
-	% % wxWindow:setSizer(Panel, MainSz),
-	% wxSizer:addSpacer(MainSz, 10),
-	% wxSizer:add(MainSz, wxStaticText:new(Panel, 456987, "Enter line:"), 
-	% 	[{border,10}, {flag, ?wxEXPAND bor ?wxLEFT}]),
-	% wxSizer:addSpacer(MainSz, 7),
-	% Input = wxTextCtrl:new(Panel,654321, []),
-	% wxSizer:add(MainSz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
-	% wxSizer:addSpacer(MainSz, 15),
+	Panel = wxWindow:new(Dialog, ?wxID_ANY),     
+	MainSz = wxBoxSizer:new(?wxVERTICAL),
+
+	wxSizer:addSpacer(MainSz, 10),
+	
+	wxSizer:add(MainSz, wxStaticText:new(Panel, ?wxID_ANY, "Enter line:"), 
+		[{border,10}, {flag, ?wxEXPAND bor ?wxLEFT}]),
+	
+	wxSizer:addSpacer(MainSz, 7),
+	
+	Input = wxTextCtrl:new(Panel, ?wxID_ANY, []),
+	wxSizer:add(MainSz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
+	
+	wxSizer:addSpacer(MainSz, 15),
+	
 	% ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
 	% wxSizer:addSpacer(ButtonSz, 10),	
-	% wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, 
-	% 	[{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
+	% wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, [{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
 	% DefButton = wxButton:new(Panel, 100001, [{label,"Go"}]),
 	% wxButton:setDefault(DefButton),
 	% wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
 	% wxSizer:addSpacer(ButtonSz, 10),	
 	% wxSizer:add(MainSz, ButtonSz),
-	% 
-	%   wxWindow:setSizer(Panel, MainSz),
-	% wxSizer:layout(MainSz),
+	
+	wxWindow:setSizer(Panel, MainSz),
+	wxSizer:layout(MainSz),
 	% wxSizer:fit(MainSz, Dialog),
-	% wxSizer:setSizeHints(MainSz, Dialog),
-	
-	% D = Panel = wxPanel:new(Dialog),
-	% wxButton:new(D, 100001, [{label,"Go"}]),
-	
-  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Find and Replace"),
-  
-  Panel = wxWindow:new(Dialog, ?wxID_ANY),     
-  MainSz = wxBoxSizer:new(?wxHORIZONTAL),
-  wxWindow:setSizer(Panel, MainSz),
-  wxSizer:addSpacer(MainSz, 20),
-  
-  FlexGridSz = wxFlexGridSizer:new(4, 2, 10, 5),
-  wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Find:"), [{flag, ?wxALIGN_RIGHT bor ?wxALIGN_CENTRE_VERTICAL}]),
-  ToFocus = wxTextCtrl:new(Panel, ?FIND_INPUT, []),
-	wxSizer:add(FlexGridSz, ToFocus, [{flag, ?wxEXPAND}, {proportion, 1}]),
-  
-  wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Replace:"), [{flag, ?wxALIGN_RIGHT bor ?wxALIGN_CENTRE_VERTICAL}]),
-  wxSizer:add(FlexGridSz, wxTextCtrl:new(Panel,?REPLACE_INPUT, []), [{flag, ?wxEXPAND}, {proportion, 1}]),
-  
-  wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Options:"), [{flag, ?wxALIGN_RIGHT bor ?wxALIGN_CENTRE_VERTICAL}]),
-  OptionSz = wxGridSizer:new(2,2,10,10),
-  wxSizer:add(OptionSz, wxCheckBox:new(Panel, ?IGNORE_CASE, "Ignore case")),
-  wxSizer:add(OptionSz, wxCheckBox:new(Panel, ?WHOLE_WORD, "Whole word")),
-  wxSizer:add(OptionSz, wxCheckBox:new(Panel, ?START_WORD, "Start of word")),
-  wxSizer:add(OptionSz, wxCheckBox:new(Panel, ?REGEX, "Regex")),
-  wxSizer:add(FlexGridSz, OptionSz),
-  
-  wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Search In:"), [{flag, ?wxALIGN_RIGHT bor ?wxALIGN_CENTRE_VERTICAL}]),
-  Choices = ["Document", "Project", "Open Documents"],
-  wxSizer:add(FlexGridSz, wxChoice:new(Panel,?FIND_LOC, [{choices, Choices}])),
-  
-  wxSizer:add(MainSz, FlexGridSz, [{border,20}, {flag, ?wxTOP bor ?wxBOTTOM}]),
-  wxSizer:addSpacer(MainSz, 20),
-  
-  ButtonSz = wxBoxSizer:new(?wxVERTICAL),
-	DefButton = wxButton:new(Panel, ?FIND_ALL, [{label,"Find All"}]),
-	wxButton:setDefault(DefButton),
-  wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
-  wxSizer:add(ButtonSz, wxButton:new(Panel, ?REPLACE_ALL, [{label,"Replace All"}]), [{flag, ?wxEXPAND}]),
-  wxSizer:addSpacer(ButtonSz, 15),
-  wxSizer:add(ButtonSz, wxButton:new(Panel, ?REPLACE_FIND, [{label,"Replace && Find"}]), [{flag, ?wxEXPAND}]),
-  wxSizer:addSpacer(ButtonSz, 15),
-  wxSizer:add(ButtonSz, wxButton:new(Panel, ?FIND_PREV, [{label,"Find Previous"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
-  wxSizer:add(ButtonSz, wxButton:new(Panel, ?FIND_NEXT, [{label,"Find Next"}]), [{flag, ?wxEXPAND}]),
-  
-  wxSizer:add(MainSz, ButtonSz, [{border,20}, {flag, ?wxTOP bor ?wxBOTTOM}]),
-  wxSizer:addSpacer(MainSz, 20),
-  
-  wxSizer:layout(MainSz),
-	wxSizer:fit(MainSz, Dialog),
 	wxSizer:setSizeHints(MainSz, Dialog),
-	
-	
 	
 	wxDialog:show(Dialog),
 	% wxWindow:setFocusFromKbd(Input),
