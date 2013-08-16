@@ -33,6 +33,7 @@
 		set_line_margin_visible/1,
 		set_indent_tabs/1,
 		set_indent_guides/1,
+		indent_line_right/0,
 		indent_line_left/0,
 		go_to_line/1
 		]).
@@ -282,7 +283,6 @@ handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinote
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
   add_editor(State#state.workspace, State#state.status_bar, 
              State#state.editor_pids),
-	go_to_line(State#state.win),
   {noreply, State};
 
 %% =====================================================================
@@ -947,10 +947,15 @@ set_indent_guides(Menu) ->
 	lists:map(Fun, get_all_editors()),
 	user_prefs:set_user_pref(indent_guides, Bool).
 	
+indent_line_right() ->
+	{ok,{_,Pid}} = get_selected_editor(),
+	Ed = get_selected_editor(),
+	editor:indent_line_right(Pid),
+	ok.
+	
 indent_line_left() ->
 	{ok,{_,Pid}} = get_selected_editor(),
 	Ed = get_selected_editor(),
-	io:format("Ed: ~p~n", [Ed]),
 	editor:indent_line_left(Pid),
 	ok.
 	
@@ -979,7 +984,7 @@ go_to_line(Parent) ->
 	wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
 	wxSizer:addSpacer(ButtonSz, 10),	
 	wxSizer:add(Sz, ButtonSz),
-	
+		
 	wxPanel:setSizer(Panel, Sz),	
 	wxSizer:layout(Sz),
 	wxSizer:setSizeHints(Sz, Dialog),

@@ -17,7 +17,8 @@
 	set_indent_guides/2,
 	set_line_wrap/2,
 	set_line_margin_visible/2,
-	indent_line_left/1]).
+	indent_line_left/1,
+	indent_line_right/1]).
 
 -export([start/1,
   init/1, 
@@ -131,6 +132,7 @@ init(Config) ->
 		list_to_integer(user_prefs:get_user_pref({pref, tab_width}))),
 	wxStyledTextCtrl:setUseTabs(Editor, user_prefs:get_user_pref({pref, use_tabs})), 
 	wxStyledTextCtrl:setIndentationGuides(Editor, user_prefs:get_user_pref({pref, indent_guides})),
+	wxStyledTextCtrl:setBackSpaceUnIndents(Editor, true),
 	
 	%% Wrapping
 	wxStyledTextCtrl:setWrapMode(Editor, user_prefs:get_user_pref({pref, line_wrap})),
@@ -138,10 +140,12 @@ init(Config) ->
 	%% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Sb}]),
-  wxStyledTextCtrl:connect(Editor, stc_change, [{userData, Sb}]),
+  % wxStyledTextCtrl:connect(Editor, stc_change, [{userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, stc_savepointreached, [{userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, left_down, [{skip, true}, {userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, left_up, [{skip, true}, {userData, Sb}]),
+  wxStyledTextCtrl:connect(Editor, motion, [{skip, true}, {userData, Sb}]),
+  wxStyledTextCtrl:connect(Editor, stc_charadded, [{skip, true}, {userData, Sb}]),
 
   
   %% Load contents if any
@@ -201,18 +205,24 @@ handle_event(_A=#wx{event=#wxMouse{type=left_down}, userData=Sb},
 	update_sb_line(Editor, Sb),
 {noreply, State};
 
+handle_event(_A=#wx{event=#wxMouse{type=motion, leftDown=true}, userData=Sb}, 
+             State = #state{text_ctrl=Editor}) ->
+	%% Update status bar selection info
+	update_sb_selection(Editor, Sb),
+{noreply, State};
+
 handle_event(_A=#wx{event=#wxMouse{type=left_up}, userData=Sb}, 
              State = #state{text_ctrl=Editor}) ->
 	%% Update status bar selection info
-	case wxStyledTextCtrl:getSelection(Editor) of
-		{X,X} -> ok;
-		{X,Y} -> ide_status_bar:set_text(Sb,{field,selection}, io_lib:format("~w-~w",[X, Y])),
-						 ide_status_bar:set_text(Sb,{field,line}, "")
-	end,
+	update_sb_selection(Editor, Sb),
 {noreply, State};
+
+
     
-handle_event(_A=#wx{event=#wxStyledText{type=stc_change}=_E}, State = #state{text_ctrl=Editor}) ->
-{noreply, State};
+handle_event(_A=#wx{event=#wxStyledText{type=stc_charadded}, userData=Sb}, State = #state{text_ctrl=Editor}) ->
+	update_sb_line(Editor, Sb),
+	update_line_margin(Editor),
+	{noreply, State};
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointreached}=_E}, 
             State=#state{file_data=#file{path=Path, filename=Fn}}) ->
@@ -223,15 +233,14 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointleft}=_E}, State) ->
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, 
              State=#state{text_ctrl=Editor, file_data=#file{filename=Fn, path=Path}}) ->
-	io:format("EDITOR MODIFIED~n"),      
   %% Update status bar line/col position
-  update_sb_line(Editor, Sb),
+  % update_sb_line(Editor, Sb),
   %% Update margin width if required
 	%% NOTE - When a large paste occurs the large volume of 'modified' events CAUSED
 	%% by update_line_margin, when lines numbers are displayed  essentially block the editor. 
 	%% A workaround MUST be implemented. Having the update_line_margin respond to key events
 	%% might solve this.
-	update_line_margin(Editor),
+	% update_line_margin(Editor),
 	
   {noreply, State#state{file_data=#file{modified=true, filename=Fn, path=Path}}};
 
@@ -247,35 +256,35 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margi
   {noreply, State};
 
 handle_event(E,O) ->
-  io:format("editor catchall Event: ~p~nObject: ~p~n", [E,O]),
+  % io:format("editor catchall Event: ~p~nObject: ~p~n", [E,O]),
   {noreply, O}.
     
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, State=#state{editor_parent=Panel}) ->
-  io:format("TERMINATE EDITOR~n"),
-  wxPanel:destroy(Panel).
+	  io:format("TERMINATE EDITOR~n"),
+		  wxPanel:destroy(Panel).
 
 	
-%% =====================================================================
-%% @doc Defines the keywords in the Erlang language
-%% @private
+				%% =====================================================================
+					%% @doc Defines the keywords in the Erlang language
+					%% @private
 
-keywords() ->
-  KWS = ["after", "and", "andalso", "band", "begin", "bnot", 
-  "bor", "bsl", "bsr", "bxor", "case", "catch", "cond", "div", 
-  "end", "fun", "if", "let", "not", "of", "or", "orelse", 
-  "receive", "rem", "try", "when", "xor"],
-  L = lists:flatten([KW ++ " " || KW <- KWS]).
+						keywords() ->
+								  KWS = ["after", "and", "andalso", "band", "begin", "bnot", 
+									  "bor", "bsl", "bsr", "bxor", "case", "catch", "cond", "div", 
+"end", "fun", "if", "let", "not", "of", "or", "orelse", 
+"receive", "rem", "try", "when", "xor"],
+L = lists:flatten([KW ++ " " || KW <- KWS]).
 
 
 %% =====================================================================  
 %% @doc Notify the editor it has been selected
 
 selected(EditorPid, Sb) ->
-  Editor = wx_object:call(EditorPid, text_ctrl),
-  update_sb_line(Editor, Sb).
+Editor = wx_object:call(EditorPid, text_ctrl),
+update_sb_line(Editor, Sb).
 
 
 %% =====================================================================  
@@ -283,25 +292,41 @@ selected(EditorPid, Sb) ->
 %% @private
 
 update_sb_line(Editor, Sb) ->
-  {X,Y} = get_x_y(Editor),
-  ide_status_bar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
-	ide_status_bar:set_text(Sb,{field,selection}, "").
+{X,Y} = get_caret_position(Editor),
+ide_status_bar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
+ide_status_bar:set_text(Sb,{field,selection}, "").
+
+
+update_sb_selection(Editor, Sb) ->
+case wxStyledTextCtrl:getSelection(Editor) of
+{X,X} -> ok;
+{X,Y} -> 
+{X1,Y1} = position_to_x_y(Editor, X),
+{X2,Y2} = position_to_x_y(Editor, Y),
+ide_status_bar:set_text(Sb,{field,selection}, io_lib:format("~w:~w-~w:~w",[X1,Y1,X2,Y2])),
+ide_status_bar:set_text(Sb,{field,line}, "")
+end.
 
 
 %% =====================================================================  
-%% @doc Get the cursor position in the editor
+%% @doc Convert a position to line and column number.
+
+position_to_x_y(Editor, Pos) -> 
+Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
+{Ln + 1, Pos - wxStyledTextCtrl:positionFromLine(Editor, Ln)}.
+
+
+%% =====================================================================  
+%% @doc Get the current position of of caret.
 %% x=line no, y=col no.
 %% @private
 
--spec editor:get_x_y(Editor) -> Result when
-  Editor :: wxStyledTextCtrl:wxStyledTextCtrl(),
-  Result :: {integer(), integer()}.
-  
-get_x_y(Editor) ->
-  LineNo = wxStyledTextCtrl:getCurrentLine(Editor),
-  Pos = wxStyledTextCtrl:getCurrentPos(Editor) + 1,
-  ColNo = Pos - wxStyledTextCtrl:positionFromLine(Editor, LineNo),
-  {LineNo+1, ColNo}.
+-spec editor:get_caret_position(Editor) -> Result when
+Editor :: wxStyledTextCtrl:wxStyledTextCtrl(),
+Result :: {integer(), integer()}.
+
+get_caret_position(Editor) ->
+position_to_x_y(Editor, wxStyledTextCtrl:getCurrentPos(Editor)).
   
 
 %% =====================================================================  
@@ -665,11 +690,11 @@ replace_all(Editor, Str, RepStr, Start, End) ->
       {no_match};
     Pos ->
       wxStyledTextCtrl:replaceTarget(Editor, RepStr),
-      replace_all(Editor, Str, RepStr, Pos+length(Str), End)
+			replace_all(Editor, Str, RepStr, Pos+length(Str), End)
       % Boob
   end.
-	
-				
+
+			
 %% ===================================================================== 
 %% @doc Replace all occurrences of Str within the range Start -> End. 
 
@@ -681,20 +706,32 @@ replace(EditorPid, Str, Start, End) ->
 
 
 %% =====================================================================
-%% Selections
+%% Selections, indentations
 %% 
 %% =====================================================================
 
 indent_line_left(EditorPid) ->
 	Editor = wx_object:call(EditorPid, text_ctrl),
-	{X,Y} = wxStyledTextCtrl:getSelection(Editor),
-	io:format("Selection: ~p:~p~n", [X,Y]),
+	Indent = wxStyledTextCtrl:getTabWidth(Editor),
+	Lns = lines(Editor, wxStyledTextCtrl:getSelection(Editor)),
+	[indent_line(Editor, Ln, -Indent) || Ln <- Lns],
 	ok.
 
-
-indent_line_right() ->
+indent_line_right(EditorPid) ->
+	Editor = wx_object:call(EditorPid, text_ctrl),
+	Indent = wxStyledTextCtrl:getTabWidth(Editor),
+	Lns = lines(Editor, wxStyledTextCtrl:getSelection(Editor)),
+	[indent_line(Editor, Ln, Indent) || Ln <- Lns],
+	ok.
 	
+indent_line(Editor, Ln, Indent) ->
+	Lns = lines(Editor, wxStyledTextCtrl:getSelection(Editor)),
+	wxStyledTextCtrl:setLineIndentation(Editor, Ln, (wxStyledTextCtrl:getLineIndentation(Editor, Ln) + Indent)),
 	ok.
+	
+lines(Editor, {X, Y}) ->
+	lists:seq(wxStyledTextCtrl:lineFromPosition(Editor, X), 
+		wxStyledTextCtrl:lineFromPosition(Editor, Y)).
 	
 %% =====================================================================
 %% 

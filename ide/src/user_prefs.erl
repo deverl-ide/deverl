@@ -48,7 +48,7 @@ init(Config) ->
 								 show_line_no = false,
 								 line_wrap = 1,
 								 auto_indent = false,
-								 use_tabs = false,
+								 use_tabs = true,
 								 tab_width = "7", %% String
 								 indent_guides = false
 								 },
