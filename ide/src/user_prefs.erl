@@ -19,26 +19,15 @@
 -behaviour(gen_server).
 
 -record(state, {theme,
-<<<<<<< HEAD
-				font,
-				project_dir,
-				show_line_no,
-				line_wrap :: integer(), %% 0/1
-				auto_indent,
-				use_tabs,
-				indent_width,
-				indent_guides
-				}).
-=======
 								font,
+								project_dir,
 								show_line_no,
-								line_wrap				:: integer(), %% 0/1
+								line_wrap :: integer(), %% 0/1
 								auto_indent,
 								use_tabs,
 								tab_width,
 								indent_guides
 								}).
->>>>>>> 962848890862a3b8232a91357af25aa1c977ed8c
 
 
 new(Config) ->

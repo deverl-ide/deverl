@@ -121,17 +121,7 @@ init(Options) ->
 	StatusBar = ide_status_bar:new([{parent, Frame}]),
       
 	%% Menubar %%
-<<<<<<< HEAD
-	{Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
-	% wxFrame:setMenuBar(Frame, Menu),
-
-  
-	% wxFrame:connect(Frame, menu_highlight,  [{userData, {ets_table,MenuTab}}]),
-	% wxFrame:connect(Frame, menu_close,  []),
-	% wxFrame:connect(Frame, command_menu_selected, [{userData,{ets_table,MenuTab}}]),
-=======
   {Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
->>>>>>> 962848890862a3b8232a91357af25aa1c977ed8c
  
 	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),      
@@ -162,15 +152,7 @@ init(Options) ->
 	wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
 	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
     
-<<<<<<< HEAD
-	wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
-	wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
-	wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
-      
-	State = #state{win=Frame},
-	{Frame, State#state{workspace=Workspace, 
-			workspace_manager=Manager,
-=======
+
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
@@ -180,7 +162,6 @@ init(Options) ->
   State = #state{win=Frame},
   {Frame, State#state{workspace=Workspace, 
             workspace_manager=Manager,
->>>>>>> 962848890862a3b8232a91357af25aa1c977ed8c
             left_pane=LeftWindow,
             utilities=Utilities,
             status_bar=StatusBar,
@@ -447,6 +428,7 @@ create_utils(Parent) ->
 
 	UtilPanel.
   
+	
 %% =====================================================================
 %% @doc 
 
@@ -838,70 +820,6 @@ add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
 	wxSizer:add(ButtonSizer, Button, [{border, 5}, {proportion, 1}]),
 	add_buttons(ButtonSizer, Parent, Rest).
   
-
-%% =====================================================================
-<<<<<<< HEAD
-%% @doc Change the font style across all open editors
- 
- update_styles(Frame) ->
-	%% Display the system font picker
-	FD = wxFontData:new(),
-	wxFontData:setInitialFont(FD, user_prefs:get_user_pref({pref, font})),
-	Dialog = wxFontDialog:new(Frame, FD),
-	case wxDialog:showModal(Dialog) of
-		?wxID_OK ->
-			%% Get the user selected font, and update the editors
-			Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
-			user_prefs:set_user_pref(font, Font),
-			Fun = fun({_, Pid}) ->
-				      editor:update_font(Pid, Font)
-				  end,
-			lists:map(Fun, get_all_editors()),
-			ok;
-		?wxID_CANCEL ->
-			ok
-	end.
-  
-  
-=======
-%% @doc 
-
-create_left_window(Parent) ->  
-  ImgList = wxImageList:new(24,24),
-  wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
-  wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-open.png"))),
-  wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
-    
-  Toolbook = wxToolbook:new(Parent, ?wxID_ANY),
-  wxToolbook:assignImageList(Toolbook, ImgList),
-  
-  P1 = wxPanel:new(Toolbook),
-  Sz = wxBoxSizer:new(?wxVERTICAL),
-  wxPanel:setSizer(P1, Sz),    
-  Tree = wxGenericDirCtrl:new(P1, [{dir, "/usr"}, 
-                                  {style, ?wxDIRCTRL_SHOW_FILTERS}]),
-  wxSizer:add(Sz, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
-  wxToolbook:addPage(Toolbook, P1, "Files", [{bSelect, true}, {imageId, 1}]),
-  
-  P2 = wxPanel:new(Toolbook),
-  Sz2 = wxBoxSizer:new(?wxVERTICAL),
-  W1 = wxWindow:new(P2, 987),
-  wxWindow:setBackgroundColour(W1, {123,34,1}),
-  wxPanel:setSizer(P2, Sz2),    
-  wxSizer:add(Sz2, W1, [{flag, ?wxEXPAND}, {proportion, 1}]),
-  wxToolbook:addPage(Toolbook, P2, "Tests", [{bSelect, true}, {imageId, 2}]),
-  
-  wxToolbook:setSelection(Toolbook, 0),
-  
-  Toolbook.
-
-
-%% =====================================================================
-%% 
-%% 
->>>>>>> 962848890862a3b8232a91357af25aa1c977ed8c
-%% =====================================================================
-
 
 %% =====================================================================
 %% @doc Change the font style across all open editors
