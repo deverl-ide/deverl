@@ -80,7 +80,7 @@ start(Args) ->
 
 init(Options) ->
 	wx:new(Options),
-  process_flag(trap_exit, true),
+	process_flag(trap_exit, true),
 	
 	%% Load user prefs - should be started by OTP Application and not here
 	user_prefs:new([{wxe_server, wx:get_env()}]),
@@ -90,72 +90,72 @@ init(Options) ->
 	wxFrame:setMinSize(Frame, {300,200}),
   
 	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxWindow:setSizer(Frame, FrameSizer),  
+	wxWindow:setSizer(Frame, FrameSizer),
   
-	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},
-                                                   {style, ?wxSP_NOBORDER bor 
-                                                           ?wxSP_LIVE_UPDATE}]),
-	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, 
-                                                               {style, ?wxSP_NOBORDER bor 
-                                                                       ?wxSP_LIVE_UPDATE}]),
+	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id,    ?SASH_HORIZONTAL},
+                                                     {style, ?wxSP_NOBORDER bor
+                                                             ?wxSP_LIVE_UPDATE}]),
+	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id,    ?SASH_VERTICAL}, 
+															     {style, ?wxSP_NOBORDER bor 
+                                                                         ?wxSP_LIVE_UPDATE}]),
 
-	%% Following two lines, see platforms.txt <1> 
-  %% After upgrading to 2.9.4 these have no effect on mac
-  % wxSplitterWindow:setSashSize(SplitterTopBottom, 10),
-  % wxSplitterWindow:setSashSize(SplitterLeftRight, 10),
+	% Following two lines, see platforms.txt <1> 
+	% After upgrading to 2.9.4 these have no effect on mac
+	% wxSplitterWindow:setSashSize(SplitterTopBottom, 10),
+	% wxSplitterWindow:setSashSize(SplitterLeftRight, 10),
 	wxSplitterWindow:setSashGravity(SplitterTopBottom, 0.5),
 	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
 
 	wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
 	%% Status bar %%
-  StatusBar = ide_status_bar:new([{parent, Frame}]),
+	StatusBar = ide_status_bar:new([{parent, Frame}]),
       
 	%% Menubar %%
-  {Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
-  % wxFrame:setMenuBar(Frame, Menu),
+	{Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
+	% wxFrame:setMenuBar(Frame, Menu),
 
   
-  % wxFrame:connect(Frame, menu_highlight,  [{userData, {ets_table,MenuTab}}]),
-  % wxFrame:connect(Frame, menu_close,  []),
-  % wxFrame:connect(Frame, command_menu_selected, [{userData,{ets_table,MenuTab}}]),
+	% wxFrame:connect(Frame, menu_highlight,  [{userData, {ets_table,MenuTab}}]),
+	% wxFrame:connect(Frame, menu_close,  []),
+	% wxFrame:connect(Frame, command_menu_selected, [{userData,{ets_table,MenuTab}}]),
  
-  wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
+	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),      
 
 	%% The workspace/text editors %%
-  Manager = wxAuiManager:new([{managed_wnd, Frame}]),
-  EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
-  {Workspace, TabId} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
+	Manager = wxAuiManager:new([{managed_wnd, Frame}]),
+	EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
+	{Workspace, TabId} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
   
 	%% The left window
-  LeftWindow = create_left_window(SplitterLeftRight),
+	LeftWindow = create_left_window(SplitterLeftRight),
   
 	%% The bottom pane/utility window
-  Utilities = create_utils(SplitterTopBottom),  
+	Utilities = create_utils(SplitterTopBottom),  
                                      
-  wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, Workspace,
+	wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, Workspace,
                   [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),  
-  wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, wxPanel:new(),
+	wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, wxPanel:new(),
                   [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
              
-  wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
+	wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
                   [{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
              
-  wxSizer:layout(FrameSizer),
-  wxFrame:center(Frame),
-  wxFrame:show(Frame),
+	wxSizer:layout(FrameSizer),
+	wxFrame:center(Frame),
+	wxFrame:show(Frame),
     
-  wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
-  wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
+	wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
+	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
     
-  wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
-  wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
-  wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
+	wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
+	wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
+	wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
       
-  State = #state{win=Frame},
-  {Frame, State#state{workspace=Workspace, 
-            workspace_manager=Manager,
+	State = #state{win=Frame},
+	{Frame, State#state{workspace=Workspace, 
+			workspace_manager=Manager,
             left_pane=LeftWindow,
             utilities=Utilities,
             status_bar=StatusBar,
@@ -415,6 +415,13 @@ create_utils(Parent) ->
 
 	UtilPanel.
   
+%% =====================================================================
+%% @doc 
+
+create_left_window(Parent) ->  
+	SideBar = ide_side_bar:new(Parent).
+	
+  
   
 %% =====================================================================
 %% @doc Create the workspace with the initial editor
@@ -431,7 +438,7 @@ create_editor(Parent, Manager, Pane, Sb, Filename) ->
     
 	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),  
 	Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
-                          {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
+                           {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
   
 	TabId = ets:new(editors, [public]),
 	{_,Id,_,Pid} = Editor,
@@ -761,39 +768,6 @@ add_buttons(ButtonSizer, Parent, [{Label, Id, _Function}|Rest]) ->
 		?wxID_CANCEL ->
 			ok
 	end.
-
-
-%% =====================================================================
-%% @doc 
-
-create_left_window(Parent) ->  
-  ImgList = wxImageList:new(24,24),
-  wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
-  wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-open.png"))),
-  wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
-    
-  Toolbook = wxToolbook:new(Parent, ?wxID_ANY),
-  wxToolbook:assignImageList(Toolbook, ImgList),
-  
-  P1 = wxPanel:new(Toolbook),
-  Sz = wxBoxSizer:new(?wxVERTICAL),
-  wxPanel:setSizer(P1, Sz),    
-  Tree = wxGenericDirCtrl:new(P1, [{dir, "/usr"}, 
-                                  {style, ?wxDIRCTRL_SHOW_FILTERS}]),
-  wxSizer:add(Sz, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
-  wxToolbook:addPage(Toolbook, P1, "Files", [{bSelect, true}, {imageId, 1}]),
-  
-  P2 = wxPanel:new(Toolbook),
-  Sz2 = wxBoxSizer:new(?wxVERTICAL),
-  W1 = wxWindow:new(P2, 987),
-  wxWindow:setBackgroundColour(W1, {123,34,1}),
-  wxPanel:setSizer(P2, Sz2),    
-  wxSizer:add(Sz2, W1, [{flag, ?wxEXPAND}, {proportion, 1}]),
-  wxToolbook:addPage(Toolbook, P2, "Tests", [{bSelect, true}, {imageId, 2}]),
-  
-  wxToolbook:setSelection(Toolbook, 0),
-  
-  Toolbook.
   
   
 %% =====================================================================

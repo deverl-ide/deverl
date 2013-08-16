@@ -19,14 +19,15 @@
 -behaviour(gen_server).
 
 -record(state, {theme,
-								font,
-								show_line_no,
-								line_wrap				:: integer(), %% 0/1
-								auto_indent,
-								use_tabs,
-								indent_width,
-								indent_guides
-								}).
+				font,
+				project_dir,
+				show_line_no,
+				line_wrap :: integer(), %% 0/1
+				auto_indent,
+				use_tabs,
+				indent_width,
+				indent_guides
+				}).
 
 
 new(Config) ->
@@ -45,6 +46,8 @@ init(Config) ->
 	%% Defining them here as constants for testing only.
 	State = #state{font = wxFont:new(?DEFAULT_FONT_SIZE, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[]),
 								 theme = "Putty",
+								 %project_dir = "/home/qqq/projects/git/erlangIDE/ide/priv/projects",
+								 project_dir = "../priv/projects",
 								 show_line_no = false,
 								 line_wrap = 1,
 								 auto_indent = false,
@@ -60,6 +63,8 @@ handle_cast({theme,Pref}, State) ->
 	{noreply, State#state{theme=Pref}};
 handle_cast({font,Pref}, State) ->
 	{noreply, State#state{font=Pref}};
+handle_cast({project_dir,Pref}, State) ->
+	{noreply, State#state{project_dir=Pref}};
 handle_cast({show_line_no,Pref}, State) ->
 	{noreply, State#state{show_line_no=Pref}};
 handle_cast({line_wrap,Pref}, State) ->
@@ -86,6 +91,8 @@ handle_call(theme, _From, State=#state{theme=Theme}) ->
 	{reply, Theme, State};
 handle_call(font, _From, State=#state{font=Font}) ->
 	{reply, Font, State};
+handle_call(project_dir, _From, State=#state{project_dir=ProjectDir}) ->
+	{reply, ProjectDir, State};
 handle_call(show_line_no, _From, State=#state{show_line_no=Bool}) ->
 	{reply, Bool, State};
 handle_call(line_wrap, _From, State=#state{line_wrap=Bool}) ->
