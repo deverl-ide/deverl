@@ -35,7 +35,8 @@
 		set_indent_guides/1,
 		indent_line_right/0,
 		indent_line_left/0,
-		go_to_line/1
+		go_to_line/1,
+		comment/0
 		]).
 
 
@@ -432,7 +433,7 @@ create_utils(Parent) ->
 %% @doc 
 
 create_left_window(Parent) ->  
-	SideBar = ide_side_bar:new(Parent).
+	ide_side_bar:new(Parent).
 
 
 %% =====================================================================
@@ -923,8 +924,12 @@ indent_line_right() ->
 	
 indent_line_left() ->
 	{ok,{_,Pid}} = get_selected_editor(),
-	Ed = get_selected_editor(),
 	editor:indent_line_left(Pid),
+	ok.
+	
+comment() ->
+	{ok,{_,Pid}} = get_selected_editor(),
+	editor:comment(Pid),
 	ok.
 	
 go_to_line(Parent) ->

@@ -41,8 +41,7 @@
 -define(MENU_ID_AUTO_INDENT,       6008).
 -define(MENU_ID_INDENT_RIGHT,  		 6050).
 -define(MENU_ID_INDENT_LEFT,  	 	 6051).
--define(MENU_ID_COMMENT, 					 6052).
--define(MENU_ID_UNCOMMENT, 				 6053).
+-define(MENU_ID_TOGGLE_COMMENT, 	 6052).
 -define(MENU_ID_GOTO_LINE, 				 6010).
 -define(MENU_ID_FOLD_ALL,          6011).
 -define(MENU_ID_UNFOLD_ALL,        6012).

@@ -18,7 +18,8 @@
 	set_line_wrap/2,
 	set_line_margin_visible/2,
 	indent_line_left/1,
-	indent_line_right/1]).
+	indent_line_right/1,
+	comment/1]).
 
 -export([start/1,
   init/1, 
@@ -46,9 +47,6 @@
 -define(wxSTC_ERLANG_MODULES, 23).
 -define(wxSTC_ERLANG_MODULES_ATT, 24).
 -endif.
-
--define(GREY, {25,0,0}).
--define(SELECTION_COLOUR, {90,100,126,224}).
 
 -define(LEFT_MARGIN_WIDTH, 6).
 -define(RIGHT_MARGIN_WIDTH, 6).
@@ -100,7 +98,7 @@ init(Config) ->
 	wxStyledTextCtrl:setKeyWords(Editor, 0, keywords()),
   wxStyledTextCtrl:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
 	wxStyledTextCtrl:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text         							
-  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),   		     
+  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),   		 
   
 	%% Folding
   wxStyledTextCtrl:setMarginType(Editor, 1, ?wxSTC_MARGIN_SYMBOL),
@@ -140,14 +138,17 @@ init(Config) ->
 	%% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Sb}]),
-  % wxStyledTextCtrl:connect(Editor, stc_change, [{userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, stc_savepointreached, [{userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, left_down, [{skip, true}, {userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, left_up, [{skip, true}, {userData, Sb}]),
-  wxStyledTextCtrl:connect(Editor, motion, [{skip, true}, {userData, Sb}]),
+  % wxStyledTextCtrl:connect(Editor, motion, [{skip, true}, {userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, stc_charadded, [{skip, true}, {userData, Sb}]),
+	wxStyledTextCtrl:connect(Editor, key_down, [{skip, true}, {userData, Sb}]),
+	wxStyledTextCtrl:connect(Editor, stc_styleneeded, [{skip, true}, {userData, Sb}]),
+	
+	%% Restrict the stc_chamge/stc_modified events to insert/delete text
+	wxStyledTextCtrl:setModEventMask(Editor, ?wxSTC_MOD_DELETETEXT bor ?wxSTC_MOD_INSERTTEXT),
 
-  
   %% Load contents if any
   case File of
     {Path, Filename, Contents} ->
@@ -156,6 +157,8 @@ init(Config) ->
     false ->
       F = #file{modified=false}
   end,
+	
+	wxWindow:setFocusFromKbd(Editor),
       
   {Panel, #state{editor_parent=Panel, text_ctrl=Editor, file_data=F}}.
 
@@ -202,11 +205,13 @@ io:format("Got cast ~p~n",[Msg]),
 
 handle_event(_A=#wx{event=#wxMouse{type=left_down}, userData=Sb}, 
              State = #state{text_ctrl=Editor}) ->
+	wxStyledTextCtrl:setCaretWidth(Editor, 1),
 	update_sb_line(Editor, Sb),
 {noreply, State};
 
 handle_event(_A=#wx{event=#wxMouse{type=motion, leftDown=true}, userData=Sb}, 
              State = #state{text_ctrl=Editor}) ->
+	wxStyledTextCtrl:setCaretWidth(Editor, 0),
 	%% Update status bar selection info
 	update_sb_selection(Editor, Sb),
 {noreply, State};
@@ -217,11 +222,13 @@ handle_event(_A=#wx{event=#wxMouse{type=left_up}, userData=Sb},
 	update_sb_selection(Editor, Sb),
 {noreply, State};
 
-
+handle_event(#wx{event=#wxKey{type=key_down, keyCode=_Kc}, userData=Sb}, 
+             State = #state{text_ctrl=Editor}) ->
+	update_sb_line(Editor, Sb),
+{noreply, State};
     
 handle_event(_A=#wx{event=#wxStyledText{type=stc_charadded}, userData=Sb}, State = #state{text_ctrl=Editor}) ->
-	update_sb_line(Editor, Sb),
-	update_line_margin(Editor),
+
 	{noreply, State};
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointreached}=_E}, 
@@ -233,15 +240,14 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointleft}=_E}, State) ->
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, 
              State=#state{text_ctrl=Editor, file_data=#file{filename=Fn, path=Path}}) ->
+	io:format("Modified event~n"),
   %% Update status bar line/col position
-  % update_sb_line(Editor, Sb),
+  update_sb_line(Editor, Sb),
   %% Update margin width if required
-	%% NOTE - When a large paste occurs the large volume of 'modified' events CAUSED
-	%% by update_line_margin, when lines numbers are displayed  essentially block the editor. 
-	%% A workaround MUST be implemented. Having the update_line_margin respond to key events
-	%% might solve this.
-	% update_line_margin(Editor),
-	
+	%% NOTE - setModEventMask() must be restricted to insert/delete events, otherwise
+	%% update_line_margin() might be serviced hundreds of times for a single occurence
+	%% such as a paste - destroying performance.
+	update_line_margin(Editor),
   {noreply, State#state{file_data=#file{modified=true, filename=Fn, path=Path}}};
 
 handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margin = Margin} = _E},
@@ -267,24 +273,24 @@ terminate(_Reason, State=#state{editor_parent=Panel}) ->
 		  wxPanel:destroy(Panel).
 
 	
-				%% =====================================================================
-					%% @doc Defines the keywords in the Erlang language
-					%% @private
+%% =====================================================================
+%% @doc Defines the keywords in the Erlang language
+%% @private
 
-						keywords() ->
-								  KWS = ["after", "and", "andalso", "band", "begin", "bnot", 
-									  "bor", "bsl", "bsr", "bxor", "case", "catch", "cond", "div", 
-"end", "fun", "if", "let", "not", "of", "or", "orelse", 
-"receive", "rem", "try", "when", "xor"],
-L = lists:flatten([KW ++ " " || KW <- KWS]).
+keywords() ->
+	KWS = ["after", "and", "andalso", "band", "begin", "bnot", 
+	"bor", "bsl", "bsr", "bxor", "case", "catch", "cond", "div", 
+	"end", "fun", "if", "let", "not", "of", "or", "orelse", 
+	"receive", "rem", "try", "when", "xor"],
+	L = lists:flatten([KW ++ " " || KW <- KWS]).
 
 
 %% =====================================================================  
 %% @doc Notify the editor it has been selected
 
 selected(EditorPid, Sb) ->
-Editor = wx_object:call(EditorPid, text_ctrl),
-update_sb_line(Editor, Sb).
+	Editor = wx_object:call(EditorPid, text_ctrl),
+	update_sb_line(Editor, Sb).
 
 
 %% =====================================================================  
@@ -292,20 +298,20 @@ update_sb_line(Editor, Sb).
 %% @private
 
 update_sb_line(Editor, Sb) ->
-{X,Y} = get_caret_position(Editor),
-ide_status_bar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
-ide_status_bar:set_text(Sb,{field,selection}, "").
+	{X,Y} = get_caret_position(Editor),
+	ide_status_bar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
+	ide_status_bar:set_text(Sb,{field,selection}, "").
 
 
 update_sb_selection(Editor, Sb) ->
-case wxStyledTextCtrl:getSelection(Editor) of
-{X,X} -> ok;
-{X,Y} -> 
-{X1,Y1} = position_to_x_y(Editor, X),
-{X2,Y2} = position_to_x_y(Editor, Y),
-ide_status_bar:set_text(Sb,{field,selection}, io_lib:format("~w:~w-~w:~w",[X1,Y1,X2,Y2])),
-ide_status_bar:set_text(Sb,{field,line}, "")
-end.
+	case wxStyledTextCtrl:getSelection(Editor) of
+	{X,X} -> ok;
+	{X,Y} -> 
+	{X1,Y1} = position_to_x_y(Editor, X),
+	{X2,Y2} = position_to_x_y(Editor, Y),
+	ide_status_bar:set_text(Sb,{field,selection}, io_lib:format("~w:~w-~w:~w",[X1,Y1,X2,Y2])),
+	ide_status_bar:set_text(Sb,{field,line}, "")
+	end.
 
 
 %% =====================================================================  
@@ -441,10 +447,13 @@ save_complete(Path,Filename,Server) ->
   wx_object:call(Server, {save_complete,{Path,Filename}}).
 
 
+
 %% =====================================================================
 %% Styling
 %% 
 %% =====================================================================
+
+
 
 %% =====================================================================
 %% @doc Change the theme of the editor.
@@ -604,9 +613,7 @@ set_use_tabs(EditorPid, Bool) ->
 %% @doc
 
 set_indent_guides(EditorPid, Bool) ->
-	io:format("START TOGGLE GUIDES~n"),
 	wxStyledTextCtrl:setIndentationGuides(wx_object:call(EditorPid, text_ctrl), Bool),
-	io:format("END TOGGLE GUIDES~n"),
 	ok.
 
 %% =====================================================================
@@ -706,7 +713,7 @@ replace(EditorPid, Str, Start, End) ->
 
 
 %% =====================================================================
-%% Selections, indentations
+%% Selections, Indentations
 %% 
 %% =====================================================================
 
@@ -729,11 +736,84 @@ indent_line(Editor, Ln, Indent) ->
 	wxStyledTextCtrl:setLineIndentation(Editor, Ln, (wxStyledTextCtrl:getLineIndentation(Editor, Ln) + Indent)),
 	ok.
 	
-lines(Editor, {X, Y}) ->
-	lists:seq(wxStyledTextCtrl:lineFromPosition(Editor, X), 
-		wxStyledTextCtrl:lineFromPosition(Editor, Y)).
+lines(Editor, {Start, End}) ->
+	lists:seq(wxStyledTextCtrl:lineFromPosition(Editor, Start), 
+		wxStyledTextCtrl:lineFromPosition(Editor, End)).
+		
+count_selected_lines(Editor) ->
+	{N, M} = wxStyledTextCtrl:getSelection(Editor),
+	Start = wxStyledTextCtrl:lineFromPosition(Editor, N),
+	End = wxStyledTextCtrl:lineFromPosition(Editor, M),
+	(End - Start) + 1.
+	
 	
 %% =====================================================================
-%% 
+%% Commenting
 %% 
 %% =====================================================================
+
+comment(EditorPid) ->
+	Editor = wx_object:call(EditorPid, text_ctrl),
+	case wxStyledTextCtrl:getSelection(Editor) of
+		{N,N} -> single_line_comment(Editor);
+		{N,M} ->
+			Sel = count_selected_lines(Editor),
+			{Result,Length} = case count_commented_lines_re(Editor) of
+				Sel -> remove_comments(wxStyledTextCtrl:getSelectedText(Editor));
+				_ -> insert_comments(wxStyledTextCtrl:getSelectedText(Editor))
+			end,
+			wxStyledTextCtrl:replaceSelection(Editor, Result),
+			wxStyledTextCtrl:setSelectionStart(Editor, N),
+			wxStyledTextCtrl:setSelectionEnd(Editor, N + Length),
+			correct_caret(Editor, wxStyledTextCtrl:getCurrentPos(Editor))
+	end,
+	ok.
+	
+count_commented_lines_re(Editor) ->
+	Txt = wxStyledTextCtrl:getSelectedText(Editor),
+	Count = case re:run(Txt, "^\\s*%", [global, multiline]) of
+		{match, Captured} ->
+			length(Captured);
+		nomatch -> 0
+	end,
+	Count.
+
+
+%% =====================================================================
+%% Regex replace. Returns a list.
+
+regex_replace(Subject, Search, Replace) ->
+	{ok, Regex} = re:compile(Search, [multiline]),
+	Result = re:replace(Subject, Regex, Replace, [global, {return, list}]),
+	{Result,length(Result)}.
+	
+remove_comments(Subject) ->
+	regex_replace(Subject, "(^\\s*)% ?", "\\g1").
+	
+insert_comments(Subject) ->
+	regex_replace(Subject, "^", "% ").
+	
+single_line_comment(Editor) ->
+	Pos = wxStyledTextCtrl:getCurrentPos(Editor),
+	Start = wxStyledTextCtrl:positionFromLine(Editor, wxStyledTextCtrl:lineFromPosition(Editor, Pos)),
+	wxStyledTextCtrl:setTargetStart(Editor, Start),
+	End = wxStyledTextCtrl:getLineEndPosition(Editor, wxStyledTextCtrl:lineFromPosition(Editor, Pos)),
+	wxStyledTextCtrl:setTargetEnd(Editor, End),
+	Txt = wxStyledTextCtrl:getTextRange(Editor, Start, End),
+	{{Result,_},Offset} = case wxStyledTextCtrl:getCharAt(Editor, wxStyledTextCtrl:getTargetStart(Editor)) of
+		37 -> {remove_comments(Txt),-1};
+		_ -> {insert_comments(Txt),1}
+	end,	
+	wxStyledTextCtrl:replaceTarget(Editor, Result),
+	%% Replace caret
+	wxStyledTextCtrl:gotoPos(Editor, Pos + Offset),
+	ok.
+
+correct_caret(Editor, Pos) ->
+	{X,Y} = position_to_x_y(Editor, Pos),
+	io:format("Pos: ~p~n", [Pos]),
+	case position_to_x_y(Editor, Pos) of
+		{_,0} -> %% Move the caret back one position
+			wxStyledTextCtrl:setCurrentPos(Editor, wxStyledTextCtrl:getCurrentPos(Editor) - 1);		
+		_ -> ok
+	end.

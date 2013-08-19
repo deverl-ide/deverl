@@ -48,7 +48,7 @@ init(Config) ->
 								 theme = "Putty",
 								 %project_dir = "/home/qqq/projects/git/erlangIDE/ide/priv/projects",
 								 project_dir = "../priv/projects",
-								 show_line_no = false,
+								 show_line_no = true,
 								 line_wrap = 1,
 								 auto_indent = false,
 								 use_tabs = true,
