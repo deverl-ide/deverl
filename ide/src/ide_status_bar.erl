@@ -66,7 +66,7 @@ init(Config) ->
 	wxSizer:add(SbSizer, Selection, [{border, ?PADDING}, {flag, ?wxALL}]),
    
 	add_separator(Sb, SbSizer, Separator),
-  
+
 	PopupSizer = wxBoxSizer:new(?wxHORIZONTAL),
 	L = wxStaticText:new(Sb, ?wxID_ANY, "Functions"),
 	set_style(L),
@@ -77,6 +77,11 @@ init(Config) ->
 	wxSizer:add(SbSizer, PopupSizer, [{proportion, 1}]),
 	wxPanel:connect(Icon, left_down),
 	wxPanel:connect(L, left_down),
+	
+	Choices = ["one", "two", "three"],
+	C = wxChoice:new(Sb, ?wxID_ANY, [{choices, Choices}, {style, ?wxBORDER_NONE}]),
+	wxSizer:add(SbSizer, C, [{proportion, 1}]),
+	
 
 	add_separator(Sb, SbSizer, Separator),
   
