@@ -65,7 +65,9 @@
 
 -record(state, {editor_parent    :: erlangEditor(), 
                 text_ctrl          :: wxStyledTextCtrl:wxStyledTextCtrl(),
-                file_data = #file{}
+                file_data = #file{},
+								func_list,
+								test_list
                }).
 
 
@@ -141,7 +143,7 @@ init(Config) ->
   wxStyledTextCtrl:connect(Editor, stc_savepointreached, [{userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, left_down, [{skip, true}, {userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, left_up, [{skip, true}, {userData, Sb}]),
-  % wxStyledTextCtrl:connect(Editor, motion, [{skip, true}, {userData, Sb}]),
+  wxStyledTextCtrl:connect(Editor, motion, [{skip, true}, {userData, Sb}]),
   wxStyledTextCtrl:connect(Editor, stc_charadded, [{skip, true}, {userData, Sb}]),
 	wxStyledTextCtrl:connect(Editor, key_down, [{skip, true}, {userData, Sb}]),
 	wxStyledTextCtrl:connect(Editor, stc_styleneeded, [{skip, true}, {userData, Sb}]),
@@ -227,8 +229,21 @@ handle_event(#wx{event=#wxKey{type=key_down, keyCode=_Kc}, userData=Sb},
 	update_sb_line(Editor, Sb),
 {noreply, State};
     
-handle_event(_A=#wx{event=#wxStyledText{type=stc_charadded}, userData=Sb}, State = #state{text_ctrl=Editor}) ->
-
+handle_event(_A=#wx{event=#wxStyledText{type=stc_charadded, key=Key}=_E, userData=Sb}, 
+						State = #state{text_ctrl=Editor}) when Key =:= 13 orelse Key =:= 10 ->
+	parse_functions(Editor, Sb),
+	Pos = wxStyledTextCtrl:getCurrentPos(Editor),
+	Line = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
+	CurInd = wxStyledTextCtrl:getLineIndentation(Editor, Line - 1),
+	Width = case to_indent(wxStyledTextCtrl:getLine(Editor, Line - 1)) of
+		true ->
+			CurInd + wxStyledTextCtrl:getTabWidth(Editor);
+		false ->
+			CurInd
+	end,
+	wxStyledTextCtrl:setLineIndentation(Editor, Line, Width),
+	wxStyledTextCtrl:gotoPos(Editor, wxStyledTextCtrl:getLineEndPosition(Editor, Line)),
+	update_sb_line(Editor, Sb),
 	{noreply, State};
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointreached}=_E}, 
@@ -238,9 +253,16 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointreached}=_E},
 handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointleft}=_E}, State) ->
   {noreply, State};
 
+%% Deal with block changes
+handle_event(#wx{event=#wxStyledText{type=stc_modified, length=Length}, userData=Sb}, 
+             State=#state{text_ctrl=Editor, file_data=#file{filename=Fn, path=Path}})
+							 when Length > 2 ->
+	io:format("Paste/Delete~n"),
+	{noreply, State};
+	
 handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, 
              State=#state{text_ctrl=Editor, file_data=#file{filename=Fn, path=Path}}) ->
-	io:format("Modified event~n"),
+	% io:format("Modified event: ~p~n~p~n", [_A, _E]),
   %% Update status bar line/col position
   update_sb_line(Editor, Sb),
   %% Update margin width if required
@@ -272,6 +294,14 @@ terminate(_Reason, State=#state{editor_parent=Panel}) ->
 	  io:format("TERMINATE EDITOR~n"),
 		  wxPanel:destroy(Panel).
 
+
+to_indent(Input) ->
+	Regex = "^[^%]*((?:if|case|receive|after|fun|try|catch|begin|query)|(?:->))(?:\\s*%+.*)?$",
+	% Regex = "^white$",
+	case re:run(Input, Regex, [{newline, anycrlf}]) of
+		nomatch -> false;
+		{_,_} -> true
+	end.
 	
 %% =====================================================================
 %% @doc Defines the keywords in the Erlang language
@@ -505,7 +535,6 @@ set_theme_styles(Editor, Styles, Font) ->
 		theme:hexstr_to_rgb(proplists:get_value(marginBg, Styles))),
 	wxStyledTextCtrl:styleSetForeground(Editor, ?wxSTC_STYLE_LINENUMBER, 
 		theme:hexstr_to_rgb(proplists:get_value(marginFg, Styles))),
-	% set_linenumber_default(Editor, Font),
 	update_line_margin(Editor),
  	set_font_style(Editor, Font),
   set_marker_colour(Editor, {theme:hexstr_to_rgb(proplists:get_value(markers, Styles)), 
@@ -517,6 +546,9 @@ set_theme_styles(Editor, Styles, Font) ->
 %% @private
 
 set_linenumber_default(Editor, Font) ->
+	% wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_LINENUMBER,
+	% 	wxFont:new(wxFont:getPointSize(Font) - ?MARGIN_LN_PT_OFFSET, 
+	% 		?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
 	wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER, 
 		(wxFont:getPointSize(Font) - ?MARGIN_LN_PT_OFFSET)),
 	adjust_margin_width(Editor),
@@ -547,9 +579,9 @@ set_font_style(Editor, Font) ->
 	Update = fun(Id) -> 
 		wxStyledTextCtrl:styleSetFont(Editor, Id, Font)
 		end,
+	Update(?wxSTC_STYLE_DEFAULT),
+	% wxStyledTextCtrl:styleClearAll(Editor), Needed to ensure all styles are resized
 	[Update(Id) || Id <- lists:seq(?wxSTC_ERLANG_DEFAULT, ?wxSTC_ERLANG_MODULES_ATT)],
-	wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
-	% set_linenumber_default(Editor, Font),
 	update_line_margin(Editor),
 	ok.
 
@@ -669,7 +701,7 @@ find(Editor, Str, Start, End) ->
       find(Editor, Str, Pos + length(Str), End)
   end.
   
-  
+ 
 %% ===================================================================== 
 %% @doc Find all occurrences of Str.
 
@@ -732,7 +764,7 @@ indent_line_right(EditorPid) ->
 	ok.
 	
 indent_line(Editor, Ln, Indent) ->
-	Lns = lines(Editor, wxStyledTextCtrl:getSelection(Editor)),
+	% Lns = lines(Editor, wxStyledTextCtrl:getSelection(Editor)),
 	wxStyledTextCtrl:setLineIndentation(Editor, Ln, (wxStyledTextCtrl:getLineIndentation(Editor, Ln) + Indent)),
 	ok.
 	
@@ -817,3 +849,13 @@ correct_caret(Editor, Pos) ->
 			wxStyledTextCtrl:setCurrentPos(Editor, wxStyledTextCtrl:getCurrentPos(Editor) - 1);		
 		_ -> ok
 	end.
+	
+parse_functions(Editor, Sb) ->
+	Input = wxStyledTextCtrl:getText(Editor),
+	Regex = "^\\s*((?:'.+')|(?:[a-z]+[a-zA-Z_]*))(?:\\(.*\\))",
+	Result = case re:run(Input, Regex, [global, multiline, {capture, all_but_first, list}]) of
+		nomatch -> false, [];
+		{_,Captured} -> Captured
+	end,
+	ide_status_bar:set_func_list(Sb, Result),
+	ok.

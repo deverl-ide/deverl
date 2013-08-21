@@ -52,7 +52,7 @@ init(Config) ->
 								 line_wrap = 1,
 								 auto_indent = false,
 								 use_tabs = true,
-								 tab_width = "7", %% String
+								 tab_width = "2", %% String
 								 indent_guides = false
 								 },
 	{ok, State}.

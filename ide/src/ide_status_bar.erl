@@ -10,7 +10,12 @@
          handle_info/2, handle_cast/2, handle_call/3, handle_event/2]).
 
 %% Client API         
--export([new/1, set_text/3, set_text_timeout/3]).
+-export([
+	new/1, 
+	set_text/3, 
+	set_text_timeout/3,
+	set_func_list/2
+	]).
 
 -record(state, {parent :: wxWindow:wxWindow(),
                 sb :: wxWindow:wxWindow(),     %% Status bar
@@ -62,25 +67,6 @@ init(Config) ->
    
 	add_separator(Sb, SbSizer, Separator),
   
-	%% Function Menu Popup %%
-	% add_label(Sb, ?wxID_ANY, SbSizer, "Function:"),
-	% FuncDyn = wxStaticText:new(Sb, ?SB_ID_FUNCTION, ":", []), 
-	% set_style(FuncDyn), 
-	% wxSizer:add(SbSizer, FuncDyn, [{proportion, 1}, {border, ?PADDING}, {flag, ?wxALL}]),
-	% FunctionPopup = create_menu(),
-	% wxPanel:connect(FuncDyn, left_down),
-
-	% PopupSizer = wxBoxSizer:new(?wxHORIZONTAL),
-	% add_label(Sb, ?wxID_ANY, PopupSizer, "Functions"),
-	% % Icon = wxBitmap:new(wxImage:new("icons/sb_menu.png")),
-	% Icon = wxStaticBitmap:new(Sb, 345, wxBitmap:new(wxImage:new("icons/sb_menu.png"))),
-	% wxSizer:add(PopupSizer, 0, 0, [{proportion, 1}]),
-	% % wxSizer:add(PopupSizer, wxStaticBitmap:new(Sb, 345, Icon), [{border,5},{proportion,0},{flag, ?wxALIGN_CENTER_VERTICAL bor ?wxRIGHT}]),
-	% wxSizer:add(PopupSizer, Icon, [{border,5},{proportion,0},{flag, ?wxALIGN_CENTER_VERTICAL bor ?wxRIGHT}]),
-	% FunctionPopup = create_menu(),
-	% wxSizer:add(SbSizer, PopupSizer, [{proportion, 1}]),
-	% wxPanel:connect(Icon, left_down),
-  
 	PopupSizer = wxBoxSizer:new(?wxHORIZONTAL),
 	L = wxStaticText:new(Sb, ?wxID_ANY, "Functions"),
 	set_style(L),
@@ -98,6 +84,7 @@ init(Config) ->
 	set_style(Help), 
 	wxSizer:add(SbSizer, Help, [{proportion, 1}, {border, ?PADDING}, {flag, ?wxEXPAND bor ?wxALL bor ?wxALIGN_RIGHT}]),  
 	
+	wxPanel:connect(Sb, command_menu_selected, []),
   
 	wxSizer:layout(SbSizer),
 	Fields = [{line, Line} | [{selection, Selection} | [{help, Help} | []]]],   
@@ -108,34 +95,54 @@ init(Config) ->
 %% @doc OTP behaviour callbacks
 
 handle_info(Msg, State) ->
-    io:format("Got Info ~p~n",[Msg]),
-    {noreply,State}.
+	io:format("Got Info ~p~n",[Msg]),
+	{noreply,State}.
 
 handle_cast(Msg, State) ->
-    io:format("Got cast ~p~n",[Msg]),
-    {noreply,State}.
+  io:format("Got cast ~p~n",[Msg]),
+  {noreply,State}.
+
 
 handle_call(fields, _From, State) ->
-    {reply, {State#state.fields, State#state.parent}, State};
+  {reply, State#state.fields, State};
+	
+handle_call({func_menu, List}, _From, State=#state{func_menu=Menu}) ->
+	wxMenu:destroy(Menu),
+	NewMenu = wxMenu:new([]),
+	[wxMenu:append(NewMenu, ?wxID_ANY, lists:flatten(Label)) || Label <- List],
+	{reply, ok, State#state{func_menu=NewMenu}};
+	
+handle_call(clear_menu, _From, State=#state{func_menu=Menu}) ->
+	wxMenu:destroy(Menu),
+	{reply, ok, State#state{func_menu=create_menu()}};
+	
 handle_call(shutdown, _From, State) ->
-    ok,
-    {reply,{error, nyi}, State}.
+  ok,
+  {reply,{error, nyi}, State}.
 
-handle_event(#wx{obj = Object, event = #wxMouse{type = left_down}},
-			 State = #state{sb=Sb, func_menu = Menu}) ->
-    %% Open the popup menu
-    wxWindow:popupMenu(Sb, Menu),
-    {noreply, State};  
+
+handle_event(#wx{obj=Object, event=#wxMouse{type=left_down}},
+						State = #state{sb=Sb, func_menu=Menu}) ->
+	%% Open the popup menu
+	wxWindow:popupMenu(Sb, Menu),
+	{noreply, State};  
+
+handle_event(O=#wx{obj=Object, event=#wxCommand{type=command_menu_selected}=E},
+						State=#state{sb=Sb, func_menu=Menu}) ->
+	io:format("Event: ~p~n~p~n", [O,E]),
+	{noreply, State}; 
+
 handle_event(Event, State) ->
-    io:format("SB EVENT CA~n"),
-    {noreply, State}.
+	io:format("SB EVENT CA~n"),
+	{noreply, State}.
   
+
 code_change(_, _, State) ->
-    {stop, not_yet_implemented, State}.
+  {stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{sb=Sb}) ->
-    io:format("TERMINATE STATUS BAR~n"),
-    wxPanel:destroy(Sb).
+	io:format("TERMINATE STATUS BAR~n"),
+	wxPanel:destroy(Sb).
 
 
 %% =====================================================================
@@ -176,7 +183,7 @@ add_label(Sb, Id, Sizer, Label) ->
 
 create_menu() ->
 	Menu = wxMenu:new([]),
-	wxMenuItem:enable(wxMenu:appendRadioItem(Menu, ?wxID_UNDO, 
+	wxMenuItem:enable(wxMenu:appendRadioItem(Menu, ?wxID_ANY, 
 					  "Document currently empty.", []), [{enable,false}]),
 	wxMenu:connect(Menu, command_menu_selected),
 	Menu.
@@ -193,7 +200,7 @@ create_menu() ->
       Result :: atom().
       
 set_text(Sb, {field, Field}, Label) ->
-	{Fields, Parent} = wx_object:call(Sb, fields),
+	Fields = wx_object:call(Sb, fields),
 	case Field of
 		line ->
 			T = proplists:get_value(line, Fields),
@@ -227,3 +234,10 @@ set_text_timeout(Sb, {field,Field}, Label) ->
 
 set_text(Field, Label) ->
 	wxStaticText:setLabel(Field, Label).  
+	
+	
+set_func_list(Sb, []) ->
+	wx_object:call(Sb, clear_menu);
+set_func_list(Sb, List) ->
+	wx_object:call(Sb, {func_menu, List}).
+	
