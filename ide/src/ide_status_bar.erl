@@ -225,8 +225,11 @@ set_text(Sb, {field, Field}, Label) ->
     
 set_text_timeout(Sb, {field,Field}, Label) ->
 	set_text(Sb, {field,Field}, Label),
+	io:format("start timeout~n"),
 	receive 
 		after ?TIMEOUT ->
+			io:format("end timeout~n"),
+			
 			set_text(Sb, {field,Field}, "")
 	end.
 	
