@@ -113,7 +113,7 @@ init(Config) ->
     wxMenu:append(Document, ?MENU_ID_FOLD_ALL, "Fold All"),
     wxMenu:append(Document, ?MENU_ID_UNFOLD_ALL, "Unfold All"),
     wxMenu:append(Document, ?wxID_SEPARATOR, []),	
-    wxMenu:append(Document, ?MENU_ID_GOTO_LINE, "Go to Line.."),
+    wxMenu:append(Document, ?MENU_ID_GOTO_LINE, "Go to Line.. \tCtrl+L"),
   
     Wrangler    = wxMenu:new([]),
     wxMenu:append(Wrangler, ?MENU_ID_WRANGLER, "WRANGLER"),
@@ -255,7 +255,8 @@ init(Config) ->
 	  wxFrame:connect(Frame, menu_highlight,  
 			[{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
 	  wxFrame:connect(Frame, menu_close,  [{id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
-	  wxFrame:connect(Frame, command_menu_selected, 
+	  
+		wxFrame:connect(Frame, command_menu_selected, 
 			[{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
 		%% Submenus
 	  wxFrame:connect(Frame, command_menu_selected,  

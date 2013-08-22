@@ -2,7 +2,8 @@
 %% Creates an instance of an editor in a wxPanel().
 -module(editor).
 
--export([update_font/2,
+-export([
+	update_font/2,
   save_status/1, 
   save_complete/3,
   get_text/1,
@@ -19,9 +20,11 @@
 	set_line_margin_visible/2,
 	indent_line_left/1,
 	indent_line_right/1,
-	comment/1]).
+	comment/1,
+	go_to_line/2]).
 
--export([start/1,
+-export([
+	start/1,
   init/1, 
   terminate/2,  
   code_change/3,
@@ -100,21 +103,27 @@ init(Config) ->
 	wxStyledTextCtrl:setKeyWords(Editor, 0, keywords()),
   wxStyledTextCtrl:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
 	wxStyledTextCtrl:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text         							
-  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),   		 
+  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),   	
+	
+	wxStyledTextCtrl:setMarginWidth(Editor, 1, 10),
+	wxStyledTextCtrl:setMarginType(Editor, 1, ?wxSTC_MARGIN_SYMBOL),
+	wxStyledTextCtrl:setMarginMask(Editor, 1, (bnot ?wxSTC_MASK_FOLDERS) - 4),
+	wxStyledTextCtrl:markerDefine(Editor, 2, 2),
+	io:format("MASK: ~p~n", [wxStyledTextCtrl:getMarginMask(Editor, 1)]),
   
 	%% Folding
-  wxStyledTextCtrl:setMarginType(Editor, 1, ?wxSTC_MARGIN_SYMBOL),
-  wxStyledTextCtrl:setMarginWidth(Editor, 1, 9),
-  wxStyledTextCtrl:setMarginMask(Editor, 1, ?wxSTC_MASK_FOLDERS),
-  wxStyledTextCtrl:setMarginSensitive(Editor, 1, true), %% Makes margin sensitive to mouse clicks
+  wxStyledTextCtrl:setMarginType(Editor, 2, ?wxSTC_MARGIN_SYMBOL),
+  wxStyledTextCtrl:setMarginWidth(Editor, 2, 9),
+  wxStyledTextCtrl:setMarginMask(Editor, 2, ?wxSTC_MASK_FOLDERS),
+  wxStyledTextCtrl:setMarginSensitive(Editor, 2, true), %% Makes margin sensitive to mouse clicks
   wxStyledTextCtrl:setProperty(Editor, "fold", "1"),
-  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDER, ?wxSTC_MARK_ARROW,[]),
-  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDEROPEN, ?wxSTC_MARK_ARROWDOWN,[]),
-  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDERSUB, ?wxSTC_MARK_EMPTY,[]),
-  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDEREND, ?wxSTC_MARK_ARROW,[]),
-  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDEROPENMID, ?wxSTC_MARK_ARROWDOWN,[]),
-  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDERMIDTAIL, ?wxSTC_MARK_EMPTY,[]),
-  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDERTAIL, ?wxSTC_MARK_EMPTY,[]),					     
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDER, ?wxSTC_MARK_BOXPLUS,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDEROPEN, ?wxSTC_MARK_BOXMINUS,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDERSUB, ?wxSTC_MARK_VLINE,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDEREND, ?wxSTC_MARK_BOXPLUSCONNECTED,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDEROPENMID, ?wxSTC_MARK_BOXMINUSCONNECTED,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDERMIDTAIL, ?wxSTC_MARK_TCORNER,[]),
+  wxStyledTextCtrl:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDERTAIL, ?wxSTC_MARK_LCORNER,[]),					     
   
 	%% Indicators
   wxStyledTextCtrl:indicatorSetStyle(Editor,0,?wxSTC_INDIC_ROUNDBOX),
@@ -204,6 +213,10 @@ handle_cast(Msg, State) ->
 io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
     
+%% =====================================================================
+%% Mouse events
+%% 
+%% =====================================================================
 
 handle_event(_A=#wx{event=#wxMouse{type=left_down}, userData=Sb}, 
              State = #state{text_ctrl=Editor}) ->
@@ -223,6 +236,11 @@ handle_event(_A=#wx{event=#wxMouse{type=left_up}, userData=Sb},
 	%% Update status bar selection info
 	update_sb_selection(Editor, Sb),
 {noreply, State};
+
+%% =====================================================================
+%% Key events
+%% 
+%% =====================================================================
 
 handle_event(#wx{event=#wxKey{type=key_down, keyCode=_Kc}, userData=Sb}, 
              State = #state{text_ctrl=Editor}) ->
@@ -254,10 +272,14 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_savepointleft}=_E}, State) ->
   {noreply, State};
 
 %% Deal with block changes
-handle_event(#wx{event=#wxStyledText{type=stc_modified, length=Length}, userData=Sb}, 
+handle_event(_A=#wx{event=#wxStyledText{type=stc_modified, length=Length}=_E, userData=Sb}, 
              State=#state{text_ctrl=Editor, file_data=#file{filename=Fn, path=Path}})
 							 when Length > 2 ->
-	io:format("Paste/Delete~n"),
+	% io:format("Paste/Delete~n"),
+	% io:format("Block change event: ~p~n~p~n", [_A, _E]),
+	
+	update_line_margin(Editor),
+  update_sb_line(Editor, Sb),		
 	{noreply, State};
 	
 handle_event(_A=#wx{event=#wxStyledText{type=stc_modified}=_E, userData=Sb}, 
@@ -277,7 +299,7 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margi
   Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
   Fl = wxStyledTextCtrl:getFoldLevel(Editor, Ln),
   case Margin of
-    1 when Ln > 0, Fl > 0 ->
+    2 when Ln > 0, Fl > 0 ->
       wxStyledTextCtrl:toggleFold(Editor, Ln);
     _ -> ok
   end,
@@ -859,3 +881,24 @@ parse_functions(Editor, Sb) ->
 	end,
 	ide_status_bar:set_func_list(Sb, Result),
 	ok.
+	
+
+go_to_line(EditorPid, {Line, Col}) ->
+	Editor = wx_object:call(EditorPid, text_ctrl),
+	wxStyledTextCtrl:gotoLine(Editor, Line - 1),
+	flash_current_line(Editor, {255,0,0}, 200, 1),
+	ok.
+
+
+%% NOTE: This was originally implemented using markerAdd() using a marker
+%% that wasn't in the margins mask. This caused a segmentation error on
+%% OSX wx294 erlang16b01
+flash_current_line(Editor, _, _, 0) -> ok;
+flash_current_line(Editor, Colour, Interval, N) ->
+	wxStyledTextCtrl:setCaretLineBackground(Editor, Colour),
+	wxStyledTextCtrl:setCaretLineVisible(Editor, true),
+	receive
+	after Interval ->
+		wxStyledTextCtrl:setCaretLineVisible(Editor, false),
+		flash_current_line(Editor, Colour, Interval, N - 1)
+	end. 

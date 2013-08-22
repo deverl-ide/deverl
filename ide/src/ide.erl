@@ -367,6 +367,14 @@ handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=com
   Fun(Result),
   {noreply, State};
   
+%% =====================================================================
+%% Event handlers
+%% 
+%% =====================================================================
+
+handle_event(#wx{id=Id, event=#wxCommand{type=command_button_clicked}}, State) ->
+	io:format("gotoline~n"),
+	{noreply, State};
    
 %% Event catchall for testing
 handle_event(Ev, State) ->
@@ -952,15 +960,38 @@ go_to_line(Parent) ->
 	wxSizer:addSpacer(ButtonSz, 10),	
 	wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, 
 		[{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
-	DefButton = wxButton:new(Panel, 100001, [{label,"Go"}]),
+	DefButton = wxButton:new(Panel, ?ID_GO_TO_LINE, [{label,"Go"}]),
 	wxButton:setDefault(DefButton),
 	wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
 	wxSizer:addSpacer(ButtonSz, 10),	
 	wxSizer:add(Sz, ButtonSz),
+	
+	Self = self(),
+	wxButton:connect(DefButton, command_button_clicked, [{callback, fun(E,O)->Self ! done end}]),
 		
 	wxPanel:setSizer(Panel, Sz),	
 	wxSizer:layout(Sz),
 	wxSizer:setSizeHints(Sz, Dialog),
 	wxDialog:show(Dialog),
-	wxWindow:setFocusFromKbd(Input).
+	wxWindow:setFocusFromKbd(Input),
+	
+	receive
+		done ->
+			{Line, Column} = case string:tokens(wxTextCtrl:getValue(Input), ":") of
+				[Ln | []] -> {Ln, 0};
+				[Ln, Col | _ ] -> {Ln, Col}
+			end,
+			L = try
+				list_to_integer(Line)
+			catch _:_ -> 0
+			end,
+			C = try
+				list_to_integer(Column)
+			catch _:_ -> 0
+			end,
+			{ok,{_,Ed}} = ide:get_selected_editor(),
+			editor:go_to_line(Ed, {L, C}),
+			wxDialog:destroy(Dialog)
+	end,
+	ok.
 
