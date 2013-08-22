@@ -315,11 +315,14 @@ handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_hig
   Fun = fun([{_,_,HelpString,_}]) ->
          Env = wx:get_env(),
          spawn(fun() -> wx:set_env(Env),
+					 io:format("IN FUN~n"),
                         ide_status_bar:set_text_timeout(Sb, {field, help}, HelpString)
                end);
        (_) ->
          Env = wx:get_env(),
          spawn(fun() -> wx:set_env(Env),
+					 io:format("IN FUN~n"),
+					 
                         ide_status_bar:set_text_timeout(Sb, {field, help}, "Help not available.")
                end)
        end,
