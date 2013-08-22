@@ -145,7 +145,7 @@ init(Config) ->
 	
 	%% Wrapping
 	wxStyledTextCtrl:setWrapMode(Editor, user_prefs:get_user_pref({pref, line_wrap})),
-    
+    wxStyledTextCtrl:setCaretLineVisible(Editor, true),
 	%% Attach events
   wxStyledTextCtrl:connect(Editor, stc_marginclick, []),
   wxStyledTextCtrl:connect(Editor, stc_modified, [{userData, Sb}]),
@@ -929,16 +929,14 @@ test() ->
 %% NOTE: This was originally implemented using markerAdd() using a marker
 %% that wasn't in the margins mask. This caused a segmentation error on
 %% OSX wx294 erlang16b01
+%% 
 
 flash_current_line(Editor, _, _, 0) -> ok;
 flash_current_line(Editor, Colour, Interval, N) ->
-	io:format("Env: ~p~n", [wx:get_env()]),
-	wxStyledTextCtrl:setText(Editor, "YEP"),
 	wxStyledTextCtrl:setCaretLineBackground(Editor, Colour),
 	wxStyledTextCtrl:setCaretLineVisible(Editor, true),
 	receive
 	after Interval ->
-		io:format("TIMEOUT IN FLASH~n"),
 		wxStyledTextCtrl:setCaretLineVisible(Editor, false),
 		flash_current_line(Editor, Colour, Interval, N - 1)
 	end. 
