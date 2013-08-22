@@ -933,6 +933,7 @@ test() ->
 flash_current_line(Editor, _, _, 0) -> ok;
 flash_current_line(Editor, Colour, Interval, N) ->
 	io:format("Env: ~p~n", [wx:get_env()]),
+	wxStyledTextCtrl:setText(Editor, "YEP"),
 	wxStyledTextCtrl:setCaretLineBackground(Editor, Colour),
 	wxStyledTextCtrl:setCaretLineVisible(Editor, true),
 	receive
