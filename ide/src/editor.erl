@@ -823,6 +823,10 @@ comment(EditorPid) ->
 	end,
 	ok.
 	
+	
+%% =====================================================================
+%% Regex replace. Returns a list.	
+
 count_commented_lines_re(Editor) ->
 	Txt = wxStyledTextCtrl:getSelectedText(Editor),
 	Count = case re:run(Txt, "^\\s*%", [global, multiline]) of
@@ -841,12 +845,24 @@ regex_replace(Subject, Search, Replace) ->
 	Result = re:replace(Subject, Regex, Replace, [global, {return, list}]),
 	{Result,length(Result)}.
 	
+	
+%% =====================================================================
+%% Regex replace. Returns a list.	
+
 remove_comments(Subject) ->
 	regex_replace(Subject, "(^\\s*)% ?", "\\g1").
 	
+	
+%% =====================================================================
+%% Regex replace. Returns a list.	
+
 insert_comments(Subject) ->
 	regex_replace(Subject, "^", "% ").
 	
+	
+%% =====================================================================
+%% Regex replace. Returns a list.	
+
 single_line_comment(Editor) ->
 	Pos = wxStyledTextCtrl:getCurrentPos(Editor),
 	Start = wxStyledTextCtrl:positionFromLine(Editor, wxStyledTextCtrl:lineFromPosition(Editor, Pos)),
@@ -862,6 +878,10 @@ single_line_comment(Editor) ->
 	%% Replace caret
 	wxStyledTextCtrl:gotoPos(Editor, Pos + Offset),
 	ok.
+	
+	
+%% =====================================================================
+%% Regex replace. Returns a list.
 
 correct_caret(Editor, Pos) ->
 	{X,Y} = position_to_x_y(Editor, Pos),
@@ -872,6 +892,10 @@ correct_caret(Editor, Pos) ->
 		_ -> ok
 	end.
 	
+	
+%% =====================================================================
+%% Parse the document for a list of current functions
+
 parse_functions(Editor, Sb) ->
 	Input = wxStyledTextCtrl:getText(Editor),
 	Regex = "^\\s*((?:'.+')|(?:[a-z]+[a-zA-Z_]*))(?:\\(.*\\))",
@@ -882,17 +906,30 @@ parse_functions(Editor, Sb) ->
 	ide_status_bar:set_func_list(Sb, Result),
 	ok.
 	
+	
+%% =====================================================================
+%% Move the caret to the line Line and Column Col.
 
 go_to_line(EditorPid, {Line, Col}) ->
+	test(),
 	Editor = wx_object:call(EditorPid, text_ctrl),
 	wxStyledTextCtrl:gotoLine(Editor, Line - 1),
 	flash_current_line(Editor, {255,0,0}, 200, 1),
 	ok.
+test() ->
+	spawn(fun() ->
+		receive
+		after 1000 ->
+			io:format("TIMEOUT~n")
+		end
+	end).
 
-
+%% =====================================================================
+%% Highlight the current line to attract the user's attention.
 %% NOTE: This was originally implemented using markerAdd() using a marker
 %% that wasn't in the margins mask. This caused a segmentation error on
 %% OSX wx294 erlang16b01
+
 flash_current_line(Editor, _, _, 0) -> ok;
 flash_current_line(Editor, Colour, Interval, N) ->
 	wxStyledTextCtrl:setCaretLineBackground(Editor, Colour),
