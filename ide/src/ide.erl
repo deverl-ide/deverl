@@ -327,6 +327,7 @@ handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_hig
                end)
        end,
   Fun(Result),
+	io:format("FUN DONE~n"),
   {noreply, State};
 
 %% First handle the sub-menus
