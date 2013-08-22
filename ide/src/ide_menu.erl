@@ -226,8 +226,8 @@ init(Config) ->
     ets:insert(TabId,{?MENU_ID_INDENT_SPACES, {ide,set_indent_tabs,[View]}}),
     ets:insert(TabId,{?MENU_ID_INDENT_GUIDES, {ide,set_indent_guides,[View]}}),		
     ets:insert(TabId,{?MENU_ID_FULLSCREEN, {}}),
-    ets:insert(TabId,{?MENU_ID_HIDE_TEST, {ide,toggle_pane,[test]}, {update_label,Frame,2}}),
-    ets:insert(TabId,{?MENU_ID_HIDE_UTIL, {ide,toggle_pane,[util]}, {update_label,Frame,2}}),
+    ets:insert(TabId,{?MENU_ID_HIDE_TEST, {ide,toggle_pane,[test]}, {update_label,2}}),
+    ets:insert(TabId,{?MENU_ID_HIDE_UTIL, {ide,toggle_pane,[util]}, {update_label,2}}),
     ets:insert(TabId,{?MENU_ID_MAX_EDITOR, {ide,toggle_pane,[editor]}}),
     ets:insert(TabId,{?MENU_ID_MAX_UTIL, {ide,toggle_pane,[maxutil]}}),
       

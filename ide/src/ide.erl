@@ -310,37 +310,15 @@ handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}},
 %% Handle menu highlight events    
 handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}},
              State=#state{status_bar=Sb}) ->
-	io:format("MENU HOVER~n"),
 	Help = case ets:lookup(TabId,Id) of
-		{_,_,HelpString} -> HelpString;
-		[{_,_}] -> "Help not available."
+		% [{_,_,HelpString}] -> HelpString;
+		_ -> "Help not available."
 	end,
 	Env = wx:get_env(),
 	Pid = spawn(fun() -> 
 		wx:set_env(Env),
-		io:format("IN FUN~n"),
 		ide_status_bar:set_text_timeout(Sb, {field, help}, Help)
   end),
-  % Result = ets:lookup(TabId,Id),
-  % Fun = fun([{_,_,HelpString,_}]) ->
-  %        Env = wx:get_env(),
-  %        Pid = spawn(fun() -> wx:set_env(Env),
-  % 					 io:format("IN FUN~n"),
-  %                       ide_status_bar:set_text_timeout(Sb, {field, help}, HelpString)
-  %              end),
-  % 							 io:format("FUN PID~p~n", [Pid]);
-  %      (_) ->
-  %        Env = wx:get_env(),
-  %        Pid = spawn(fun() -> wx:set_env(Env),
-  % 					 io:format("IN FUN~n"),
-  % 					 
-  %                       ide_status_bar:set_text_timeout(Sb, {field, help}, "Help not available.")
-  %              end),
-  % 							 io:format("FUN PID~p~n", [Pid])
-  %      end,
-  % Fun(Result),
-	io:format("FUN PID~p~n", [Pid]),
-	io:format("FUN DONE~n"),
   {noreply, State};
 
 %% First handle the sub-menus
@@ -364,33 +342,20 @@ handle_event(E=#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_sele
 
 %% The menu items from the ETS table					 
 handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=command_menu_selected}},
-             State=#state{status_bar=Sb}) ->
-  Result = ets:lookup(TabId,Id),
-  Fun = fun([{MenuItem, {Module, Function, Args},{update_label, Frame, Pos}}]) ->
-			Env = wx:get_env(),
-			spawn(fun() -> wx:set_env(Env),
-			              erlang:apply(Module,Function,Args)
-			     end),
-			ide_menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos));
-		([{_,{Module,Function,[]}}]) ->
-			Env = wx:get_env(),
-			spawn(fun() -> wx:set_env(Env), 
-			              Module:Function()
-			     end);
-		([{_,{Module,Function,Args}}]) ->
-			Env = wx:get_env(),
-			spawn(fun() -> wx:set_env(Env),
-			              erlang:apply(Module, Function, Args)
-			     end);
-		(_) ->
-			%% The status bar updated inside a temporary process for true concurrency,
-			%% otherwise the main event loop waits for this function to return (inc. timeout)
-			Env = wx:get_env(),
-			spawn(fun() -> wx:set_env(Env), 
-			              ide_status_bar:set_text_timeout(Sb, {field, help}, "Not yet implemented.") 
-			     end)
-		end,
-  Fun(Result),
+             State=#state{status_bar=Sb, win=Frame}) ->
+	Result = case ets:lookup(TabId, Id) of
+		[{MenuItem, {Mod, Func, Args}, {update_label, Pos}}] ->
+			ide_menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos)),
+			{ok, {Mod,Func,Args}};
+		[{_,{Mod,Func,Args}}] ->
+			{ok, {Mod,Func,Args}};
+		_ -> nomatch
+	end,
+	Env = wx:get_env(),
+	case Result of
+		{ok,{M,F,A}} -> spawn(fun() -> wx:set_env(Env), erlang:apply(M,F,A) end);
+		nomatch -> io:format("Not yet implemented")
+	end,
   {noreply, State};
   
 %% =====================================================================

@@ -26,12 +26,6 @@
 -define(FG_COLOUR, {60,60,60}).
 -define(FONT_SIZE, 11).
 -define(PADDING, 4).
-
-% -define(SB_ID_LINE, 1).
-% -define(SB_ID_SELECTION, 2).
-% -define(SB_ID_FUNCTION, 3).
-% -define(SB_ID_HELP, 4).
-
 -define(TIMEOUT, 1000).
 
 -export_type([status_bar/0]).
@@ -206,20 +200,7 @@ create_menu() ->
       Result :: atom().
       
 set_text(Sb, {field, Field}, Label) ->
-	% Fields = wx_object:call(Sb, fields),
 	wx_object:cast(Sb, {settext, {Field, Label}}).
-	% case Field of
-	% 	line ->
-	% 		% T = proplists:get_value(line, Fields),
-	% 		set_text(T, Label);
-	% 	selection ->
-	% 		% T = proplists:get_value(selection, Fields),
-	% 		set_text(T, Label);
-	% 	help ->
-	% 		% T = proplists:get_value(help, Fields),
-	% 		set_text(T, Label)
-	% end,
-	%     wxSizer:layout(wxPanel:getSizer(Sb)).
 
 
 %% =====================================================================
@@ -228,11 +209,8 @@ set_text(Sb, {field, Field}, Label) ->
     
 set_text_timeout(Sb, {field,Field}, Label) ->
 	set_text(Sb, {field,Field}, Label),
-	io:format("start timeout~n"),
 	receive 
 		after ?TIMEOUT ->
-			io:format("end timeout~n"),
-			
 			set_text(Sb, {field,Field}, "")
 	end.
 	
