@@ -89,6 +89,14 @@ start(Args) ->
 %% @doc Initialise the IDE
 
 init(Options) ->
+	
+		spawn(fun() ->
+			receive
+			after 2500 ->
+				io:format("TIMEOUT~n")
+			end
+		end),
+	
 	wx:new(Options),
 	process_flag(trap_exit, true),
 	
