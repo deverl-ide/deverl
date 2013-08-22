@@ -310,23 +310,36 @@ handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}},
 %% Handle menu highlight events    
 handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}},
              State=#state{status_bar=Sb}) ->
-						io:format("MENU HOVER~n"),
-  Result = ets:lookup(TabId,Id),
-  Fun = fun([{_,_,HelpString,_}]) ->
-         Env = wx:get_env(),
-         spawn(fun() -> wx:set_env(Env),
-					 io:format("IN FUN~n"),
-                        ide_status_bar:set_text_timeout(Sb, {field, help}, HelpString)
-               end);
-       (_) ->
-         Env = wx:get_env(),
-         spawn(fun() -> wx:set_env(Env),
-					 io:format("IN FUN~n"),
-					 
-                        ide_status_bar:set_text_timeout(Sb, {field, help}, "Help not available.")
-               end)
-       end,
-  Fun(Result),
+	io:format("MENU HOVER~n"),
+	Help = case ets:lookup(TabId,Id) of
+		{_,_,HelpString} -> HelpString;
+		[{_,_}] -> "Help not available."
+	end,
+	Env = wx:get_env(),
+	Pid = spawn(fun() -> 
+		wx:set_env(Env),
+		io:format("IN FUN~n"),
+		ide_status_bar:set_text_timeout(Sb, {field, help}, Help)
+  end),
+  % Result = ets:lookup(TabId,Id),
+  % Fun = fun([{_,_,HelpString,_}]) ->
+  %        Env = wx:get_env(),
+  %        Pid = spawn(fun() -> wx:set_env(Env),
+  % 					 io:format("IN FUN~n"),
+  %                       ide_status_bar:set_text_timeout(Sb, {field, help}, HelpString)
+  %              end),
+  % 							 io:format("FUN PID~p~n", [Pid]);
+  %      (_) ->
+  %        Env = wx:get_env(),
+  %        Pid = spawn(fun() -> wx:set_env(Env),
+  % 					 io:format("IN FUN~n"),
+  % 					 
+  %                       ide_status_bar:set_text_timeout(Sb, {field, help}, "Help not available.")
+  %              end),
+  % 							 io:format("FUN PID~p~n", [Pid])
+  %      end,
+  % Fun(Result),
+	io:format("FUN PID~p~n", [Pid]),
 	io:format("FUN DONE~n"),
   {noreply, State};
 
