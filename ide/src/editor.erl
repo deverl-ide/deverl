@@ -914,7 +914,7 @@ go_to_line(EditorPid, {Line, Col}) ->
 	test(),
 	Editor = wx_object:call(EditorPid, text_ctrl),
 	wxStyledTextCtrl:gotoLine(Editor, Line - 1),
-	flash_current_line(Editor, {255,0,0}, 200, 1),
+	flash_current_line(Editor, {255,0,0}, 2500, 1),
 	ok.
 test() ->
 	spawn(fun() ->
@@ -936,6 +936,7 @@ flash_current_line(Editor, Colour, Interval, N) ->
 	wxStyledTextCtrl:setCaretLineVisible(Editor, true),
 	receive
 	after Interval ->
+		io:format("TIMEOUT IN FLASH~n"),
 		wxStyledTextCtrl:setCaretLineVisible(Editor, false),
 		flash_current_line(Editor, Colour, Interval, N - 1)
 	end. 
