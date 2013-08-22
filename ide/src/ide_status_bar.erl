@@ -102,8 +102,10 @@ handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
 
-handle_cast(Msg, State) ->
-  io:format("Got cast ~p~n",[Msg]),
+handle_cast({settext, {Field,Label}}, State=#state{fields=Fields, sb=Sb}) ->
+	T = proplists:get_value(Field, Fields),
+	set_text(T, Label),
+	wxSizer:layout(wxPanel:getSizer(Sb)),
   {noreply,State}.
 
 
@@ -204,19 +206,20 @@ create_menu() ->
       Result :: atom().
       
 set_text(Sb, {field, Field}, Label) ->
-	Fields = wx_object:call(Sb, fields),
-	case Field of
-		line ->
-			T = proplists:get_value(line, Fields),
-			set_text(T, Label);
-		selection ->
-			T = proplists:get_value(selection, Fields),
-			set_text(T, Label);
-		help ->
-			T = proplists:get_value(help, Fields),
-			set_text(T, Label)
-	end,
-    wxSizer:layout(wxPanel:getSizer(Sb)).
+	% Fields = wx_object:call(Sb, fields),
+	wx_object:cast(Sb, {settext, {Field, Label}}).
+	% case Field of
+	% 	line ->
+	% 		% T = proplists:get_value(line, Fields),
+	% 		set_text(T, Label);
+	% 	selection ->
+	% 		% T = proplists:get_value(selection, Fields),
+	% 		set_text(T, Label);
+	% 	help ->
+	% 		% T = proplists:get_value(help, Fields),
+	% 		set_text(T, Label)
+	% end,
+	%     wxSizer:layout(wxPanel:getSizer(Sb)).
 
 
 %% =====================================================================
