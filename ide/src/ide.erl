@@ -310,6 +310,7 @@ handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}},
 %% Handle menu highlight events    
 handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}},
              State=#state{status_bar=Sb}) ->
+						io:format("MENU HOVER~n"),
   Result = ets:lookup(TabId,Id),
   Fun = fun([{_,_,HelpString,_}]) ->
          Env = wx:get_env(),
