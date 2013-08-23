@@ -277,12 +277,13 @@ init(Config) ->
     	{?wxID_ABOUT, {about, new, [{parent, Frame}]}}
 		]),
 		
-		%% This seems to imply a bug with erlang.
-		io:format("Value: X=~p, Y=~p~n", [?MENU_GROUP_WS, ?MENU_GROUP_ED]),
-		io:format("X bor Y = ~p~n", [?MENU_GROUP_WS bor ?MENU_GROUP_ED]),
-		io:format("Y bor X = ~p~n", [?MENU_GROUP_ED bor ?MENU_GROUP_WS]),
-		io:format("2 bor 1 = ~p~n", [2 bor 1]),
-		io:format("1 bor 2 = ~p~n", [1 bor 2]),
+		%% This seems to imply a bug with erlang,
+		%% or there's something with the preprocessor that I don't understand
+		% io:format("Value: X=~p, Y=~p~n", [?MENU_GROUP_WS, ?MENU_GROUP_ED]),
+		% io:format("X bor Y = ~p~n", [?MENU_GROUP_WS bor ?MENU_GROUP_ED]),
+		% io:format("Y bor X = ~p~n", [?MENU_GROUP_ED bor ?MENU_GROUP_WS]),
+		% io:format("2 bor 1 = ~p~n", [2 bor 1]),
+		% io:format("1 bor 2 = ~p~n", [1 bor 2]),
 				
 		%% Connect event handlers
 	  wxFrame:connect(Frame, menu_highlight,  
