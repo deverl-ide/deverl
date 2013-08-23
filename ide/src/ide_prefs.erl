@@ -36,11 +36,7 @@ start(Config) ->
 
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
-	Frame = wxFrame:new(Parent, ?wxID_ANY, "Preferences", 
-													 [{size,{-1,-1}},
-                            {style, ?wxSYSTEM_MENU bor
-                                                   ?wxFRAME_NO_TASKBAR bor
-                                                   ?wxCLOSE_BOX}]),
+	Frame = wxFrame:new(Parent, ?wxID_ANY, "Preferences", []),
           
   ToolBar = wxFrame:createToolBar(Frame, [{style, ?wxTB_TEXT}]),
   wxToolBar:setToolBitmapSize(ToolBar, {48,48}),

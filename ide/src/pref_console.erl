@@ -21,7 +21,7 @@ init(Config) ->
 
 do_init(Config) ->
   Parent = proplists:get_value(parent, Config),
-  Panel = wxWindow:new(Parent, ?wxID_ANY),
+  Panel = wxWindow:new(Parent),
      
   MainSz = wxBoxSizer:new(?wxHORIZONTAL),
   wxWindow:setSizer(Panel, MainSz),
