@@ -38,7 +38,8 @@
 		go_to_line/1,
 		comment/0,
 		zoom_in/0,
-		zoom_out/0
+		zoom_out/0,
+		transform_selection/1
 		]).
 
 
@@ -158,9 +159,7 @@ init(Options) ->
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
-	
-	wxFrame:connect(Frame, command_button_clicked, []),
-	
+		
 	%% Testing accelerator table
 	% AccelTab = wxAcceleratorTable:new(1,
 	% [wxAcceleratorEntry:new([{flags, ?wxACCEL_NORMAL}, {keyCode, ?WXK_SPACE}, {cmd, ?MENU_ID_FONT}])]),
@@ -345,9 +344,16 @@ handle_event(E=#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_sele
 handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=command_menu_selected}},
              State=#state{status_bar=Sb, win=Frame}) ->
 	Result = case ets:lookup(TabId, Id) of
-		[{MenuItem, {Mod, Func, Args}, Options}] ->
-			% ide_menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos)),
-			{ok, {Mod,Func,Args}};
+		[{MenuItemID, {Mod, Func, Args}, Options}] ->
+			case proplists:get_value(update_label, Options) of
+				undefined -> ok;
+				Pos -> 
+					ide_menu:update_label(MenuItemID, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos))
+			end,
+			case proplists:get_value(send_event, Options) of
+				undefined -> {ok, {Mod,Func,Args}};
+				true -> {ok, {Mod,Func,[E]}}
+			end;
 		[{_,{Mod,Func,Args}}] ->
 			{ok, {Mod,Func,Args}};
 		_ -> nomatch
@@ -360,13 +366,9 @@ handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=com
   {noreply, State};
   
 %% =====================================================================
-%% Event handlers
+%% Other handlers
 %% 
 %% =====================================================================
-
-handle_event(#wx{id=Id, event=#wxCommand{type=command_button_clicked}}, State) ->
-	io:format("gotoline~n"),
-	{noreply, State};
    
 %% Event catchall for testing
 handle_event(Ev, State) ->
@@ -1030,3 +1032,7 @@ toggle_menu_item(Mb, Mask, Id, Groups, Enable) ->
 		_ ->
 			wxMenuItem:enable(wxMenuBar:findItem(Mb, Id), [{enable, false}])
 	end.
+	
+transform_selection(Event) ->
+	io:format("Transform event: ~p~n", [Event]),
+	ok.

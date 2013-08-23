@@ -68,14 +68,14 @@ init(Config) ->
     View        = wxMenu:new([]),
     wxMenu:append(View, ?wxID_ANY, "Font", Font),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
-    wxMenu:append(View, ?MENU_ID_LINE_WRAP, "Line Wrap", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:append(View, ?MENU_ID_LINE_WRAP, "Line Wrap\tCtrl+W", [{kind, ?wxITEM_CHECK}]),
 		Pref = case user_prefs:get_user_pref({pref, line_wrap}) of
 			0 -> false;
 			_ -> true
 		end,
     wxMenu:check(View, ?MENU_ID_LINE_WRAP, Pref),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
-    wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers\tCtrl+Alt+L", [{kind, ?wxITEM_CHECK}]),
     wxMenu:check(View, ?MENU_ID_LN_TOGGLE, user_prefs:get_user_pref({pref, show_line_no})),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
 
@@ -93,7 +93,7 @@ init(Config) ->
 		{Theme, ThemeMax} = generate_radio_submenu(wxMenu:new([]),
 			theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), ?MENU_ID_THEME_LOWEST),
 		
-    wxMenu:append(View, ?MENU_ID_INDENT_GUIDES, "Indent Guides", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:append(View, ?MENU_ID_INDENT_GUIDES, "Indent Guides\tCtrl+Alt+G", [{kind, ?wxITEM_CHECK}]),
     wxMenu:check(View, ?MENU_ID_INDENT_GUIDES, user_prefs:get_user_pref({pref, indent_guides})),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_THEME_SELECT, "Theme", Theme),
@@ -103,38 +103,38 @@ init(Config) ->
     wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_FULLSCREEN, "Fullscreen", [{kind, ?wxITEM_CHECK}]),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
-    wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Hide Test Pane", []),
-    wxMenu:append(View, ?MENU_ID_HIDE_UTIL, "Hide Utilities Pane", []),
-    wxMenu:append(View, ?MENU_ID_MAX_EDITOR, "Maximise Editor", []),
-    wxMenu:append(View, ?MENU_ID_MAX_UTIL, "Maximise Utilities", []),
+    wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Hide Test Pane\tShift+Alt+T", []),
+    wxMenu:append(View, ?MENU_ID_HIDE_UTIL, "Hide Utilities Pane\tShift+Alt+U", []),
+    wxMenu:append(View, ?MENU_ID_MAX_EDITOR, "Maximise Editor\tAlt+E", []),
+    wxMenu:append(View, ?MENU_ID_MAX_UTIL, "Maximise Utilities\tAlt+U", []),
   
     Document    = wxMenu:new([]),	
-    wxMenu:append(Document, ?MENU_ID_AUTO_INDENT, "Auto-Indent", [{kind, ?wxITEM_CHECK}]),
+    wxMenu:append(Document, ?MENU_ID_AUTO_INDENT, "Auto-Indent\tCtrl+Alt+I", [{kind, ?wxITEM_CHECK}]),
     wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, user_prefs:get_user_pref({pref, auto_indent})),
     wxMenu:append(Document, ?wxID_SEPARATOR, []),
-    wxMenu:append(Document, ?MENU_ID_INDENT_RIGHT, "Indent Right \tCtrl+]"),
-    wxMenu:append(Document, ?MENU_ID_INDENT_LEFT, "Indent Left \tCtrl+["),
+    wxMenu:append(Document, ?MENU_ID_INDENT_RIGHT, "Indent Right\tCtrl+]"),
+    wxMenu:append(Document, ?MENU_ID_INDENT_LEFT, "Indent Left\tCtrl+["),
     wxMenu:append(Document, ?wxID_SEPARATOR, []),
-    wxMenu:append(Document, ?MENU_ID_TOGGLE_COMMENT, "Comment \tCtrl+/"),
+    wxMenu:append(Document, ?MENU_ID_TOGGLE_COMMENT, "Comment\tCtrl+/"),
     wxMenu:append(Document, ?wxID_SEPARATOR, []),
-    wxMenu:append(Document, ?MENU_ID_UC_SEL, "Uppercase Selection"),
-    wxMenu:append(Document, ?MENU_ID_LC_SEL, "Lowercase Selection"),
+    wxMenu:append(Document, ?MENU_ID_UC_SEL, "Uppercase Selection\tCtrl+U"),
+    wxMenu:append(Document, ?MENU_ID_LC_SEL, "Lowercase Selection\tCtrl+Shift+U"),
     wxMenu:append(Document, ?wxID_SEPARATOR, []),
     wxMenu:append(Document, ?MENU_ID_FOLD_ALL, "Fold All"),
     wxMenu:append(Document, ?MENU_ID_UNFOLD_ALL, "Unfold All"),
     wxMenu:append(Document, ?wxID_SEPARATOR, []),	
-    wxMenu:append(Document, ?MENU_ID_GOTO_LINE, "Go to Line.. \tCtrl+L"),
+    wxMenu:append(Document, ?MENU_ID_GOTO_LINE, "Go to Line..\tCtrl+L"),
   
     Wrangler    = wxMenu:new([]),
     wxMenu:append(Wrangler, ?MENU_ID_WRANGLER, "WRANGLER"),
   
     ToolMenu    = wxMenu:new([]),
-    wxMenu:append(ToolMenu, ?MENU_ID_COMPILE, "Compile"),
+    wxMenu:append(ToolMenu, ?MENU_ID_COMPILE, "Compile\tF1"),
     wxMenu:append(ToolMenu, ?wxID_SEPARATOR, []),
-    wxMenu:append(ToolMenu, ?MENU_ID_RUN, "Run Module"),
-    wxMenu:append(ToolMenu, ?MENU_ID_DIALYZER, "Run Dialyzer"),
-    wxMenu:append(ToolMenu, ?MENU_ID_TESTS, "Run Tests"),
-    wxMenu:append(ToolMenu, ?MENU_ID_DEBUGGER, "Run Debugger"),
+    wxMenu:append(ToolMenu, ?MENU_ID_RUN, "Run Module\tF2"),
+    wxMenu:append(ToolMenu, ?MENU_ID_DIALYZER, "Run Dialyzer\tF3"),
+    wxMenu:append(ToolMenu, ?MENU_ID_TESTS, "Run Tests\tF4"),
+    wxMenu:append(ToolMenu, ?MENU_ID_DEBUGGER, "Run Debugger\tF5"),
   
 	  Window        = wxMenu:new([]),
 	  wxMenu:append(Window, ?MENU_ID_PROJECTS_WINDOW, "Projects \tCtrl+1"),
@@ -218,12 +218,24 @@ init(Config) ->
 		%% =====================================================================
 		%% ETS menu events table.
 		%% Record format: {Id, {Module, Function, [Args]}, [Options]}
+		%% When Options can be 0 or more of:
+		%% 		
+		%%		{update_label, Pos} | {send_event, true}	|	
+		%%		{help_string, HelpString}	| {group, Groups}	
+		%%
+		%%		Pos :: integer(), % the position of the menu item
+		%%		HelpString :: string(), % help string for status bar
+		%%		Groups :: integer(), % any menu groups to which the menu item belongs (added)
+		%%		Use send_event to forward the event record to the Function
+		%%		
 		%% =====================================================================
     
     TabId = ets:new(myTable, []),
     ets:insert(TabId, [
 			{?wxID_NEW,{ide,add_editor,[]}},
+			{?MENU_ID_NEW_PROJECT,{}},
     	{?wxID_OPEN, {ide,open_file,[Frame]}},
+			{?MENU_ID_OPEN_PROJECT,{}},
     	{?wxID_SAVE, {ide,save_current_file,[]}},
     	{?wxID_SAVEAS, {ide,save_new,[]}},
     	{?MENU_ID_SAVE_ALL, {}},
@@ -259,6 +271,8 @@ init(Config) ->
 			{?MENU_ID_INDENT_LEFT, {ide, indent_line_left,[]}},
 			{?MENU_ID_TOGGLE_COMMENT, {ide, comment,[]}},
 			{?MENU_ID_GOTO_LINE, {ide,go_to_line,[Frame]}},
+			{?MENU_ID_UC_SEL, {ide,transform_selection,[]}, [{send_event, true}]},
+			{?MENU_ID_LC_SEL, {ide,transform_selection,[]}, [{send_event, true}]},			
 			{?MENU_ID_FOLD_ALL, {}},
 			{?MENU_ID_UNFOLD_ALL, {}},
 		
@@ -330,14 +344,14 @@ generate_radio_submenu(Menu, [Label|T], ToCheck, StartId) ->
 %% =====================================================================
 %% @doc Update the label of a menu item
 
-update_label(MenuItem, Menu) ->
-	case wxMenu:getLabel(Menu, MenuItem) of
+update_label(MenuItem, Menu) ->  
+	case wxMenuItem:getLabelFromText(wxMenu:getLabel(Menu, MenuItem)) of
 		"Hide Test Pane" ->
-			wxMenu:setLabel(Menu, MenuItem, "Show Test Pane");
+			wxMenu:setLabel(Menu, MenuItem, "Show Test Pane\tShift+Alt+T");
 		"Show Test Pane" ->
-			wxMenu:setLabel(Menu, MenuItem, "Hide Test Pane");
+			wxMenu:setLabel(Menu, MenuItem, "Hide Test Pane\tShift+Alt+T");
 		"Hide Utilities Pane" ->
-			wxMenu:setLabel(Menu, MenuItem, "Show Utilities Pane");
+			wxMenu:setLabel(Menu, MenuItem, "Show Utilities Pane\tShift+Alt+U");
 		"Show Utilities Pane" ->
-			wxMenu:setLabel(Menu, MenuItem, "Hide Utilities Pane")
+			wxMenu:setLabel(Menu, MenuItem, "Hide Utilities Pane\tShift+Alt+U")
 	end.

@@ -23,7 +23,9 @@
 	comment/1,
 	go_to_position/2,
 	zoom_in/1,
-	zoom_out/1
+	zoom_out/1,
+	transform_uc_selection/1,
+	transform_lc_selection/1
 	]).
 
 -export([
@@ -941,3 +943,10 @@ zoom_out(EditorPid) ->
 	Editor = wx_object:call(EditorPid, text_ctrl),
 	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_ZOOMOUT).
 
+transform_uc_selection(EditorPid) ->
+	Editor = wx_object:call(EditorPid, text_ctrl),
+	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_UPPERCASE).
+	
+transform_lc_selection(EditorPid) ->
+	Editor = wx_object:call(EditorPid, text_ctrl),
+	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_LOWERCASE).
