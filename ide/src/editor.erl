@@ -145,7 +145,6 @@ init(Config) ->
 	%% Scrolling
 	% wxStyledTextCtrl:setEndAtLastLine(Editor, user_prefs:get_user_pref({pref, scroll_past_end})),
 
-
 	%% Wrapping
 	wxStyledTextCtrl:setWrapMode(Editor, user_prefs:get_user_pref({pref, line_wrap})),
 
@@ -171,6 +170,7 @@ init(Config) ->
   Fd = case File of
     {Path, Filename, Contents} ->
 			wxStyledTextCtrl:setText(Editor, Contents),
+			update_line_margin(Editor),
       #file{path=Path, filename=Filename};
     false -> undefined
   end,
