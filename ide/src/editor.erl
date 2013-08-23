@@ -141,6 +141,10 @@ init(Config) ->
 	wxStyledTextCtrl:setUseTabs(Editor, user_prefs:get_user_pref({pref, use_tabs})), 
 	wxStyledTextCtrl:setIndentationGuides(Editor, user_prefs:get_user_pref({pref, indent_guides})),
 	wxStyledTextCtrl:setBackSpaceUnIndents(Editor, true),
+	
+	%% Scrolling
+	% wxStyledTextCtrl:setEndAtLastLine(Editor, user_prefs:get_user_pref({pref, scroll_past_end})),
+
 
 	%% Wrapping
 	wxStyledTextCtrl:setWrapMode(Editor, user_prefs:get_user_pref({pref, line_wrap})),
@@ -908,7 +912,7 @@ parse_functions(Editor, Sb) ->
 go_to_position(EditorPid, {Line, Col}) ->
 	Editor = wx_object:call(EditorPid, text_ctrl),
 	wxStyledTextCtrl:gotoLine(Editor, Line - 1),
-	flash_current_line(Editor, {255,0,0}, 2500, 1),
+	flash_current_line(Editor, {255,0,0}, 500, 1),
 	ok.
 
 

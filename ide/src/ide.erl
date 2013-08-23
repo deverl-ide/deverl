@@ -355,7 +355,7 @@ handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=com
 	Env = wx:get_env(),
 	case Result of
 		{ok,{M,F,A}} -> spawn(fun() -> wx:set_env(Env), erlang:apply(M,F,A) end);
-		nomatch -> io:format("Not yet implemented")
+		nomatch -> io:format("Not yet implemented~n")
 	end,
   {noreply, State};
   
@@ -415,7 +415,7 @@ create_utils(Parent) ->
 	wxNotebook:addPage(Utils, Console, "Console", []),
 
 	Pman = wxPanel:new(Utils, []),
-	wxNotebook:addPage(Utils, Pman, "Processes", []),
+	wxNotebook:addPage(Utils, Pman, "Observer", []),
 
 	Dialyser = wxPanel:new(Utils, []),
 	wxNotebook:addPage(Utils, Dialyser, "Dialyser", []),
@@ -960,7 +960,7 @@ go_to_line(Parent) ->
 	wxSizer:addSpacer(ButtonSz, 10),	
 	wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, 
 		[{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
-	DefButton = wxButton:new(Panel, ?ID_GO_TO_LINE, [{label,"Go"}]),
+	DefButton = wxButton:new(Panel, ?wxID_OK, [{label,"Go"}]),
 	wxButton:setDefault(DefButton),
 	wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
 	wxSizer:addSpacer(ButtonSz, 10),	
@@ -989,9 +989,9 @@ go_to_line(Parent) ->
 				list_to_integer(Column)
 			catch _:_ -> 0
 			end,
+			wxDialog:destroy(Dialog),
 			{ok,{_,Ed}} = ide:get_selected_editor(),
-			editor:go_to_position(Ed, {L, C}),
-			wxDialog:destroy(Dialog)
+			editor:go_to_position(Ed, {L, C})
 	end,
 	ok.
 
@@ -1028,5 +1028,5 @@ toggle_menu_item(Mb, Mask, Id, Groups, Enable) ->
 	case (Mask band Groups) of
 		0 -> ok;
 		_ ->
-			wxMenuItem:enable(wxMenuBar:findItem(Mb, Id), [Enable])
+			wxMenuItem:enable(wxMenuBar:findItem(Mb, Id), [{enable, false}])
 	end.
