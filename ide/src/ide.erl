@@ -36,7 +36,9 @@
 		indent_line_right/0,
 		indent_line_left/0,
 		go_to_line/1,
-		comment/0
+		comment/0,
+		zoom_in/0,
+		zoom_out/0
 		]).
 
 
@@ -89,14 +91,6 @@ start(Args) ->
 %% @doc Initialise the IDE
 
 init(Options) ->
-	
-		spawn(fun() ->
-			receive
-			after 2500 ->
-				io:format("TIMEOUT~n")
-			end
-		end),
-	
 	wx:new(Options),
 	process_flag(trap_exit, true),
 	
@@ -139,7 +133,7 @@ init(Options) ->
 	Manager = wxAuiManager:new([{managed_wnd, Frame}]),
 	EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
 	{Workspace, TabId} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
-  
+
 	%% The left window
 	LeftWindow = create_left_window(SplitterLeftRight),
   
@@ -166,6 +160,13 @@ init(Options) ->
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
 	
 	wxFrame:connect(Frame, command_button_clicked, []),
+	
+	%% Testing accelerator table
+	% AccelTab = wxAcceleratorTable:new(1,
+	% [wxAcceleratorEntry:new([{flags, ?wxACCEL_NORMAL}, {keyCode, ?WXK_SPACE}, {cmd, ?MENU_ID_FONT}])]),
+	% wxFrame:setAcceleratorTable(Frame, AccelTab),
+	
+	toggle_menu_group(Menu, 1, MenuTab, {enable, false}),
 	      
   State = #state{win=Frame},
   {Frame, State#state{workspace=Workspace, 
@@ -344,8 +345,8 @@ handle_event(E=#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_sele
 handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=command_menu_selected}},
              State=#state{status_bar=Sb, win=Frame}) ->
 	Result = case ets:lookup(TabId, Id) of
-		[{MenuItem, {Mod, Func, Args}, {update_label, Pos}}] ->
-			ide_menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos)),
+		[{MenuItem, {Mod, Func, Args}, Options}] ->
+			% ide_menu:update_label(MenuItem, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos)),
 			{ok, {Mod,Func,Args}};
 		[{_,{Mod,Func,Args}}] ->
 			{ok, {Mod,Func,Args}};
@@ -656,7 +657,7 @@ save_current_file() ->
 %% @doc Save the contents of the editor Pid located at index Index.
   
 save_file(Index, Pid) ->  
-	{Workspace,Sb,_,_} = wx_object:call(?MODULE, workspace), 
+	{Workspace,Sb,_} = wx_object:call(?MODULE, workspace), 
 	case editor:save_status(Pid) of
 		{save_status, new_file} ->
 			save_new(Index, Workspace, Sb, Pid);
@@ -670,7 +671,7 @@ save_file(Index, Pid) ->
 			%% Document already exists, overwrite
 			Contents = editor:get_text(Pid),
 			ide_io:save(Path, Contents),
-			editor:save_complete(Path, Fn, Pid),
+			editor:set_savepoint(Pid, Path, Fn),
 			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.")
 	end.
 
@@ -697,7 +698,7 @@ save_new(Index, Workspace, Sb, Pid) ->
 			{save, cancelled};
 		{ok, {Path, Filename}}  ->
 			wxAuiNotebook:setPageText(Workspace, Index, Filename),
-			editor:save_complete(Path, Filename, Pid),
+			editor:set_savepoint(Pid, Path, Filename),
 			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
 			{save, complete}
 	end.
@@ -931,6 +932,14 @@ comment() ->
 	editor:comment(Pid),
 	ok.
 	
+zoom_in() ->
+	{ok,{_,Pid}} = get_selected_editor(),
+	editor:zoom_in(Pid).
+	
+zoom_out() ->
+	{ok,{_,Pid}} = get_selected_editor(),
+	editor:zoom_out(Pid).	
+	
 go_to_line(Parent) ->
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, "Go to Line"),
 	%% Force events to propagate beyond this dialog
@@ -981,8 +990,43 @@ go_to_line(Parent) ->
 			catch _:_ -> 0
 			end,
 			{ok,{_,Ed}} = ide:get_selected_editor(),
-			editor:go_to_line(Ed, {L, C}),
+			editor:go_to_position(Ed, {L, C}),
 			wxDialog:destroy(Dialog)
 	end,
 	ok.
 
+%% =====================================================================
+%% @doc Enable/disable a menu group
+%% @private
+
+toggle_menu_group(Mb, Mask, TabId, {enable, Bool}=Toggle) ->
+	ets:foldl(
+	fun({Id,_}, DontCare) ->
+		DontCare;
+	({Id,_,Options}, DontCare) ->
+		case proplists:get_value(group, Options) of
+			undefined -> ok;
+			Groups ->
+				toggle_menu_item(Mb, Mask, Id, Groups, Toggle)
+		end,
+		DontCare
+	end, notused, TabId).
+
+
+%% =====================================================================
+%% @doc Enable/disable a menu item
+%% @private
+
+-spec toggle_menu_item(Mb, Mask, Id, Groups, Enable) -> 'ok' when
+	Mb :: wxMenuBar:wxMenuBar(), 
+	Mask :: integer(), % Defines which groups to affect
+	Id :: integer(),	% The menu item id
+	Groups :: integer(), % The groups associated to the menu item with Id
+	Enable :: {'enable', boolean()}.
+				
+toggle_menu_item(Mb, Mask, Id, Groups, Enable) ->
+	case (Mask band Groups) of
+		0 -> ok;
+		_ ->
+			wxMenuItem:enable(wxMenuBar:findItem(Mb, Id), [Enable])
+	end.
