@@ -261,7 +261,6 @@ handle_event(_A=#wx{event=#wxMouse{}, userData=Sb},
 
 handle_event(_A=#wx{event=#wxKey{type=key_down, keyCode=_Kc}, userData=Sb}, 
              State = #state{text_ctrl=Editor}) ->
-							 io:format("LINE: ~p~n", [wxStyledTextCtrl:getCurLine(Editor)]),
 	update_sb_line(Editor, Sb),
 	update_line_margin(Editor),
 {noreply, State};
@@ -888,7 +887,6 @@ single_line_comment(Editor) ->
 
 correct_caret(Editor, Pos) ->
 	{X,Y} = position_to_x_y(Editor, Pos),
-	io:format("Pos: ~p~n", [Pos]),
 	case position_to_x_y(Editor, Pos) of
 		{_,0} -> %% Move the caret back one position
 			wxStyledTextCtrl:setCurrentPos(Editor, wxStyledTextCtrl:getCurrentPos(Editor) - 1);		

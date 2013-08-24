@@ -79,8 +79,12 @@ init(Config) ->
     wxMenu:check(View, ?MENU_ID_LN_TOGGLE, user_prefs:get_user_pref({pref, show_line_no})),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
 
+		TabPref = case user_prefs:get_user_pref({pref, use_tabs}) of
+			true -> "Tabs";
+			_ -> "Spaces"
+		end,
 		{IndentType, _} = generate_radio_submenu(wxMenu:new([]), ["Tabs", "Spaces"],
-			user_prefs:get_user_pref({pref, use_tabs}), ?MENU_ID_INDENT_TABS),
+			TabPref, ?MENU_ID_INDENT_TABS),
 		
     wxMenu:append(View, ?MENU_ID_INDENT_TYPE, "Indent Type", IndentType),
 		
