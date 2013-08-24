@@ -25,7 +25,8 @@
 	zoom_in/1,
 	zoom_out/1,
 	transform_uc_selection/1,
-	transform_lc_selection/1
+	transform_lc_selection/1,
+	transform_selection/2
 	]).
 
 -export([
@@ -110,7 +111,6 @@ init(Config) ->
 	wxStyledTextCtrl:setMarginWidth(Editor, 1, 10),
 	wxStyledTextCtrl:setMarginType(Editor, 1, ?wxSTC_MARGIN_SYMBOL),
 	wxStyledTextCtrl:setMarginMask(Editor, 1, (bnot ?wxSTC_MASK_FOLDERS) - 4),
-	wxStyledTextCtrl:markerDefine(Editor, 2, 2),
 
 	%% Folding
   wxStyledTextCtrl:setMarginType(Editor, 2, ?wxSTC_MARGIN_SYMBOL),
@@ -167,7 +167,7 @@ init(Config) ->
 
 	%% Restrict the stc_chamge/stc_modified events to insert/delete text
 	wxStyledTextCtrl:setModEventMask(Editor, ?wxSTC_MOD_DELETETEXT bor ?wxSTC_MOD_INSERTTEXT),
-
+	
   %% Load contents if any
   Fd = case File of
     {Path, Filename, Contents} ->
@@ -261,6 +261,7 @@ handle_event(_A=#wx{event=#wxMouse{}, userData=Sb},
 
 handle_event(_A=#wx{event=#wxKey{type=key_down, keyCode=_Kc}, userData=Sb}, 
              State = #state{text_ctrl=Editor}) ->
+							 io:format("LINE: ~p~n", [wxStyledTextCtrl:getCurLine(Editor)]),
 	update_sb_line(Editor, Sb),
 	update_line_margin(Editor),
 {noreply, State};
@@ -882,7 +883,8 @@ single_line_comment(Editor) ->
 
 
 %% =====================================================================
-%% Regex replace. Returns a list.
+%% This moves the caret back onto the last line of the selection, rather
+%% than the first position of the next line
 
 correct_caret(Editor, Pos) ->
 	{X,Y} = position_to_x_y(Editor, Pos),
@@ -950,3 +952,11 @@ transform_uc_selection(EditorPid) ->
 transform_lc_selection(EditorPid) ->
 	Editor = wx_object:call(EditorPid, text_ctrl),
 	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_LOWERCASE).
+	
+transform_selection(EditorPid, {transform, Type}) ->
+	Editor = wx_object:call(EditorPid, text_ctrl),
+	Cmd = case Type of 
+		uppercase -> ?wxSTC_CMD_UPPERCASE;
+		lowercase -> ?wxSTC_CMD_LOWERCASE
+	end,
+	wxStyledTextCtrl:cmdKeyExecute(Editor, Cmd).

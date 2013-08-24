@@ -98,9 +98,6 @@ init(Config) ->
     wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_THEME_SELECT, "Theme", Theme),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
-    wxMenu:append(View, ?MENU_ID_SCROLL_END, "Scroll Past Last Line", [{kind, ?wxITEM_CHECK}]),
-    wxMenu:check(View, ?MENU_ID_SCROLL_END, user_prefs:get_user_pref({pref, scroll_past_end})),
-    wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_FULLSCREEN, "Fullscreen", [{kind, ?wxITEM_CHECK}]),
     wxMenu:append(View, ?wxID_SEPARATOR, []),
     wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Hide Test Pane\tShift+Alt+T", []),
@@ -225,8 +222,8 @@ init(Config) ->
 		%%
 		%%		Pos :: integer(), % the position of the menu item
 		%%		HelpString :: string(), % help string for status bar
-		%%		Groups :: integer(), % any menu groups to which the menu item belongs (added)
-		%%		Use send_event to forward the event record to the Function
+		%%		Groups :: integer(), % any menu groups to which the menu item belongs (combine by adding)
+		%%		Use send_event to forward the event record to Function
 		%%		
 		%% =====================================================================
     
@@ -258,8 +255,8 @@ init(Config) ->
     	{?MENU_ID_FONT_SMALLER, {ide,zoom_out,[]}},
     	{?MENU_ID_LINE_WRAP, {ide,set_line_wrap,[View]}},
     	{?MENU_ID_LN_TOGGLE, {ide,set_line_margin_visible,[View]}},
-    	{?MENU_ID_INDENT_TABS, {ide,set_indent_tabs,[View]}},
-    	{?MENU_ID_INDENT_SPACES, {ide,set_indent_tabs,[View]}},
+    	{?MENU_ID_INDENT_TABS, {ide,set_indent_tabs,[]}, [{send_event, true}]},
+    	{?MENU_ID_INDENT_SPACES, {ide,set_indent_tabs,[]}, [{send_event, true}]},
     	{?MENU_ID_INDENT_GUIDES, {ide,set_indent_guides,[View]}},		
     	{?MENU_ID_FULLSCREEN, {}},
     	{?MENU_ID_HIDE_TEST, {ide,toggle_pane,[test]}, [{update_label,2}] },

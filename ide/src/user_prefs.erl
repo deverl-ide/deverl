@@ -26,8 +26,7 @@
 								auto_indent,
 								use_tabs,
 								tab_width,
-								indent_guides,
-								scroll_past_end
+								indent_guides
 								}).
 
 
@@ -54,8 +53,7 @@ init(Config) ->
 								 auto_indent = false,
 								 use_tabs = false,
 								 tab_width = "2", %% String
-								 indent_guides = false,
-								 scroll_past_end = true
+								 indent_guides = false
 								 },
 	{ok, State}.
 
@@ -83,8 +81,6 @@ handle_cast({tab_width,Pref}, State) ->
 	{noreply, State#state{tab_width=Pref}};
 handle_cast({indent_guides,Pref}, State) ->
 	{noreply, State#state{indent_guides=Pref}};
-handle_cast({scroll_past_end,Pref}, State) ->
-	{noreply, State#state{scroll_past_end=Pref}};
 handle_cast(_Req, State) ->
 	io:format("handle_cast: user_prefs"),
 	{noreply, State}.
@@ -112,8 +108,6 @@ handle_call(use_tabs, _From, State=#state{use_tabs=Res}) ->
 handle_call(tab_width, _From, State=#state{tab_width=Width}) ->
 	{reply, Width, State};
 handle_call(indent_guides, _From, State=#state{indent_guides=Bool}) ->
-	{reply, Bool, State};
-handle_call(scroll_past_end, _From, State=#state{scroll_past_end=Bool}) ->
 	{reply, Bool, State};
 handle_call(_Req, _From, State) ->
 	io:format("handle_call/2: user_prefs"),

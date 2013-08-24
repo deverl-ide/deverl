@@ -72,10 +72,6 @@ init(Config) ->
 	wxPanel:connect(Icon, left_down),
 	wxPanel:connect(L, left_down),
 	
-	Choices = ["one", "two", "three"],
-	C = wxChoice:new(Sb, ?wxID_ANY, [{choices, Choices}, {style, ?wxBORDER_NONE}]),
-	wxSizer:add(SbSizer, C, [{proportion, 1}]),
-	
 	add_separator(Sb, SbSizer, Separator),
   
 	Help = wxStaticText:new(Sb, ?SB_ID_HELP, "", []),

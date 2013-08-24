@@ -105,12 +105,10 @@ init(Options) ->
 	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Frame, FrameSizer),
   
-	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id,    ?SASH_HORIZONTAL},
-                                                     {style, ?wxSP_NOBORDER bor
-                                                             ?wxSP_LIVE_UPDATE}]),
-	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id,    ?SASH_VERTICAL}, 
-															     {style, ?wxSP_NOBORDER bor 
-                                                                         ?wxSP_LIVE_UPDATE}]),
+	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},
+		{style, ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE}]),
+	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, 
+		{style, ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE}]),
 
 	% Following two lines, see platforms.txt <1> 
 	% After upgrading to 2.9.4 these have no effect on mac
@@ -142,9 +140,7 @@ init(Options) ->
 	Utilities = create_utils(SplitterTopBottom),  
                                      
 	wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, Workspace,
-                  [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),  
-	wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, wxPanel:new(),
-                  [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
+	                  [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),  
              
 	wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
                   [{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
@@ -907,9 +903,17 @@ set_line_margin_visible(Menu) ->
 	lists:map(Fun, get_all_editors()),
 	user_prefs:set_user_pref(show_line_no, Bool).
 	
-set_indent_tabs(Menu) ->
-	ok.	
-	
+set_indent_tabs(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
+	Cmd = case Id of
+		?MENU_ID_INDENT_SPACES -> false;
+		?MENU_ID_INDENT_TABS -> true
+	end,
+	Fun = fun({_, Pid}) ->
+		      editor:set_use_tabs(Pid, Cmd)
+  end,
+	lists:map(Fun, get_all_editors()),
+	user_prefs:set_user_pref(use_tabs, Cmd).
+		
 set_indent_guides(Menu) ->
 	Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_INDENT_GUIDES)),
 	Fun = fun({_, Pid}) ->
@@ -920,7 +924,6 @@ set_indent_guides(Menu) ->
 	
 indent_line_right() ->
 	{ok,{_,Pid}} = get_selected_editor(),
-	Ed = get_selected_editor(),
 	editor:indent_line_right(Pid),
 	ok.
 	
@@ -1033,6 +1036,10 @@ toggle_menu_item(Mb, Mask, Id, Groups, Enable) ->
 			wxMenuItem:enable(wxMenuBar:findItem(Mb, Id), [{enable, false}])
 	end.
 	
-transform_selection(Event) ->
-	io:format("Transform event: ~p~n", [Event]),
-	ok.
+transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
+	Cmd = case Id of
+		?MENU_ID_UC_SEL -> uppercase;
+		?MENU_ID_LC_SEL -> lowercase
+	end,
+	{ok,{_,Ed}} = ide:get_selected_editor(),
+	editor:transform_selection(Ed, {transform, Cmd}).

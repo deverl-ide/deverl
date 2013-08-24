@@ -41,7 +41,6 @@
 -define(MENU_ID_INDENT_SPACES,     6011).
 -define(MENU_ID_INDENT_GUIDES,		 6012).
 -define(MENU_ID_THEME_SELECT, 		 6013).
--define(MENU_ID_SCROLL_END,		 		 6014).
 -define(MENU_ID_FULLSCREEN,        6015).
 -define(MENU_ID_HIDE_TEST,         6016).
 -define(MENU_ID_HIDE_UTIL,         6017).
