@@ -20,10 +20,10 @@ create(Config) ->
 init(Config) ->
     Frame = proplists:get_value(parent, Config),
     
-		%% =====================================================================
-		%% Menubar
-		%% 
-		%% =====================================================================
+	%% =====================================================================
+	%% Menubar
+	%% 
+	%% =====================================================================
 
     MenuBar     = wxMenuBar:new(),
       
@@ -136,17 +136,17 @@ init(Config) ->
     wxMenu:append(ToolMenu, ?MENU_ID_TESTS, "Run Tests\tF4"),
     wxMenu:append(ToolMenu, ?MENU_ID_DEBUGGER, "Run Debugger\tF5"),
   
-	  Window        = wxMenu:new([]),
-	  wxMenu:append(Window, ?MENU_ID_PROJECTS_WINDOW, "Projects \tCtrl+1"),
-	  wxMenu:append(Window, ?MENU_ID_TESTS_WINDOW, "Tests \tCtrl+2"),
-	  wxMenu:append(Window, ?wxID_SEPARATOR, []),
-	  wxMenu:append(Window, ?MENU_ID_CONSOLE_WINDOW, "Console \tCtrl+3"),
-	  wxMenu:append(Window, ?MENU_ID_OBSERVER_WINDOW, "Observer \tCtrl+4"),
-	  wxMenu:append(Window, ?MENU_ID_DIALYSER_WINDOW, "Dialyser \tCtrl+5"),
-	  wxMenu:append(Window, ?MENU_ID_DEBUGGER_WINDOW, "Debugger \tCtrl+6"),
-	  wxMenu:append(Window, ?wxID_SEPARATOR, []),
-	  wxMenu:append(Window, ?MENU_ID_NEXT_TAB, "Next Tab \tCtrl+}"),
-	  wxMenu:append(Window, ?MENU_ID_PREV_TAB, "Previous Tab \tCtrl+{"),
+	Window      = wxMenu:new([]),
+	wxMenu:append(Window, ?MENU_ID_PROJECTS_WINDOW, "Projects \tCtrl+1"),
+	wxMenu:append(Window, ?MENU_ID_TESTS_WINDOW, "Tests \tCtrl+2"),
+	wxMenu:append(Window, ?wxID_SEPARATOR, []),
+	wxMenu:append(Window, ?MENU_ID_CONSOLE_WINDOW, "Console \tCtrl+3"),
+	wxMenu:append(Window, ?MENU_ID_OBSERVER_WINDOW, "Observer \tCtrl+4"),
+	wxMenu:append(Window, ?MENU_ID_DIALYSER_WINDOW, "Dialyser \tCtrl+5"),
+	wxMenu:append(Window, ?MENU_ID_DEBUGGER_WINDOW, "Debugger \tCtrl+6"),
+	wxMenu:append(Window, ?wxID_SEPARATOR, []),
+	wxMenu:append(Window, ?MENU_ID_NEXT_TAB, "Next Tab \tCtrl+}"),
+	wxMenu:append(Window, ?MENU_ID_PREV_TAB, "Previous Tab \tCtrl+{"),
 	
     Help        = wxMenu:new([]),
     wxMenu:append(Help, ?wxID_HELP, "Help"),
@@ -166,76 +166,76 @@ init(Config) ->
     wxMenuBar:append(MenuBar, Window, "Window"),
     wxMenuBar:append(MenuBar, Help, "Help"),
 		
-	  wxFrame:setMenuBar(Frame, MenuBar),
+	wxFrame:setMenuBar(Frame, MenuBar),
     
-		%% =====================================================================
-		%% Toolbar
-		%% 
-		%% =====================================================================
+	%% =====================================================================
+	%% Toolbar
+	%% 
+	%% =====================================================================
 
-		ToolBar = wxFrame:createToolBar(Frame, []),
-		wxToolBar:setMargins(ToolBar, 10, 10),
-		wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
-		%% Id, StatusBar help, filename/art id, args, add seperator
-		Tools = [
-			{?wxID_NEW,           "ToolTip", {default, "wxART_NEW"},    
-				[{shortHelp, "Create a new file"}],               false},
-			{?wxID_OPEN,          "ToolTip", {default, "wxART_FILE_OPEN"},   
-				[{shortHelp, "Open existing document"}],          false},
-			{?wxID_SAVE,          "ToolTip", {default, "wxART_FILE_SAVE"},   
-				[{shortHelp, "Save the current file"}],           false}, 
-			{?wxID_CLOSE,         "ToolTip", {default, "wxART_CLOSE"},  
-				[{shortHelp, "Close the current file"}],          true},
-			{?MENU_ID_COMPILE,    "ToolTip", {custom, "../icons/module-compile.png"},  
-				[{shortHelp, "Compile the current file"}],        false},
-			{?MENU_ID_RUN,        "ToolTip", {custom, "../icons/module-run.png"},      
-				[{shortHelp, "Run the current file"}],            true},
-			{?MENU_ID_HIDE_TEST,  "ToolTip", {custom, "../icons/hide-test.png"},       
-				[{shortHelp, "Hide the test pane"}],              false},
-			{?MENU_ID_HIDE_UTIL,  "ToolTip", {custom, "../icons/hide-util.png"},       
-				[{shortHelp, "Hide the utilities pane"}],         false},
-			{?MENU_ID_MAX_EDITOR, "ToolTip", {custom, "../icons/maximise-editor.png"}, 
-				[{shortHelp, "Maximise/minimise the text editor"}], false},
-			{?MENU_ID_MAX_UTIL,   "ToolTip", {custom, "../icons/maximise-util.png"},   
-				[{shortHelp, "Maximise/minimise the utilities"}],   false}],
+	ToolBar = wxFrame:createToolBar(Frame, []),
+	wxToolBar:setMargins(ToolBar, 10, 10),
+	wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
+	%% Id, StatusBar help, filename/art id, args, add seperator
+	Tools = [
+		{?wxID_NEW,           "ToolTip", {default, "wxART_NEW"},    
+			[{shortHelp, "Create a new file"}],               false},
+		{?wxID_OPEN,          "ToolTip", {default, "wxART_FILE_OPEN"},   
+			[{shortHelp, "Open existing document"}],          false},
+		{?wxID_SAVE,          "ToolTip", {default, "wxART_FILE_SAVE"},   
+			[{shortHelp, "Save the current file"}],           false}, 
+		{?wxID_CLOSE,         "ToolTip", {default, "wxART_CLOSE"},  
+			[{shortHelp, "Close the current file"}],          true},
+		{?MENU_ID_COMPILE,    "ToolTip", {custom, "../icons/module-compile.png"},  
+			[{shortHelp, "Compile the current file"}],        false},
+		{?MENU_ID_RUN,        "ToolTip", {custom, "../icons/module-run.png"},      
+			[{shortHelp, "Run the current file"}],            true},
+		{?MENU_ID_HIDE_TEST,  "ToolTip", {custom, "../icons/hide-test.png"},       
+			[{shortHelp, "Hide the test pane"}],              false},
+		{?MENU_ID_HIDE_UTIL,  "ToolTip", {custom, "../icons/hide-util.png"},       
+			[{shortHelp, "Hide the utilities pane"}],         false},
+		{?MENU_ID_MAX_EDITOR, "ToolTip", {custom, "../icons/maximise-editor.png"}, 
+			[{shortHelp, "Maximise/minimise the text editor"}], false},
+		{?MENU_ID_MAX_UTIL,   "ToolTip", {custom, "../icons/maximise-util.png"},   
+			[{shortHelp, "Maximise/minimise the utilities"}],   false}],
 
-		AddTool = fun({Id, Tooltip, {custom, Path}, Args, true}) ->
-		        		wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Path)), Args),
-		        		wxToolBar:addSeparator(ToolBar);
-							({Id, Tooltip, {custom, Path}, Args, false}) ->
-								wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Path)), Args);
-							({Id, Tooltip, {default, Art}, Args, true}) ->
-								wxToolBar:addTool(ToolBar, Id, Tooltip, wxArtProvider:getBitmap(Art), Args),
-								wxToolBar:addSeparator(ToolBar);
-							({Id, Tooltip, {default, Art}, Args, false}) ->
-								wxToolBar:addTool(ToolBar, Id, Tooltip, wxArtProvider:getBitmap(Art), Args)
-		          end,       
+	AddTool = fun({Id, Tooltip, {custom, Path}, Args, true}) ->
+		        	wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Path)), Args),
+		        	wxToolBar:addSeparator(ToolBar);
+                 ({Id, Tooltip, {custom, Path}, Args, false}) ->
+					wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Path)), Args);
+                 ({Id, Tooltip, {default, Art}, Args, true}) ->
+					wxToolBar:addTool(ToolBar, Id, Tooltip, wxArtProvider:getBitmap(Art), Args),
+					wxToolBar:addSeparator(ToolBar);
+                 ({Id, Tooltip, {default, Art}, Args, false}) ->
+					wxToolBar:addTool(ToolBar, Id, Tooltip, wxArtProvider:getBitmap(Art), Args)
+		      end,      
 
-		[AddTool(Tool) || Tool <- Tools],
+	[AddTool(Tool) || Tool <- Tools],
 
-		wxToolBar:realize(ToolBar),
+	wxToolBar:realize(ToolBar),
 		
-		%% =====================================================================
-		%% ETS menu events table.
-		%% Record format: {Id, {Module, Function, [Args]}, [Options]}
-		%% When Options can be 0 or more of:
-		%% 		
-		%%		{update_label, Pos} | {send_event, true}	|	
-		%%		{help_string, HelpString}	| {group, Groups}	
-		%%
-		%%		Pos :: integer(), % the position of the menu item
-		%%		HelpString :: string(), % help string for status bar
-		%%		Groups :: integer(), % any menu groups to which the menu item belongs (added)
-		%%		Use send_event to forward the event record to the Function
-		%%		
-		%% =====================================================================
+	%% =====================================================================
+	%% ETS menu events table.
+	%% Record format: {Id, {Module, Function, [Args]}, [Options]}
+	%% When Options can be 0 or more of:
+	%% 		
+	%%		{update_label, Pos} | {send_event, true}	|	
+	%%		{help_string, HelpString}	| {group, Groups}	
+	%%
+	%%		Pos :: integer(), % the position of the menu item
+	%%		HelpString :: string(), % help string for status bar
+	%%		Groups :: integer(), % any menu groups to which the menu item belongs (added)
+	%%		Use send_event to forward the event record to the Function
+	%%		
+	%% =====================================================================
     
     TabId = ets:new(myTable, []),
     ets:insert(TabId, [
-			{?wxID_NEW,{ide,add_editor,[]}},
-			{?MENU_ID_NEW_PROJECT,{}},
+		{?wxID_NEW,{ide,add_editor,[]}},
+		{?MENU_ID_NEW_PROJECT,{}},
     	{?wxID_OPEN, {ide,open_file,[Frame]}},
-			{?MENU_ID_OPEN_PROJECT,{}},
+		{?MENU_ID_OPEN_PROJECT,{}},
     	{?wxID_SAVE, {ide,save_current_file,[]}},
     	{?wxID_SAVEAS, {ide,save_new,[]}},
     	{?MENU_ID_SAVE_ALL, {}},
@@ -267,14 +267,14 @@ init(Config) ->
     	{?MENU_ID_MAX_EDITOR, {ide,toggle_pane,[editor]}},
     	{?MENU_ID_MAX_UTIL, {ide,toggle_pane,[maxutil]}},
       
-			{?MENU_ID_INDENT_RIGHT, {ide, indent_line_right,[]}},
-			{?MENU_ID_INDENT_LEFT, {ide, indent_line_left,[]}},
-			{?MENU_ID_TOGGLE_COMMENT, {ide, comment,[]}},
-			{?MENU_ID_GOTO_LINE, {ide,go_to_line,[Frame]}},
-			{?MENU_ID_UC_SEL, {ide,transform_selection,[]}, [{send_event, true}]},
-			{?MENU_ID_LC_SEL, {ide,transform_selection,[]}, [{send_event, true}]},			
-			{?MENU_ID_FOLD_ALL, {}},
-			{?MENU_ID_UNFOLD_ALL, {}},
+		{?MENU_ID_INDENT_RIGHT, {ide, indent_line_right,[]}},
+		{?MENU_ID_INDENT_LEFT, {ide, indent_line_left,[]}},
+		{?MENU_ID_TOGGLE_COMMENT, {ide, comment,[]}},
+		{?MENU_ID_GOTO_LINE, {ide,go_to_line,[Frame]}},
+		{?MENU_ID_UC_SEL, {ide,transform_selection,[]}, [{send_event, true}]},
+		{?MENU_ID_LC_SEL, {ide,transform_selection,[]}, [{send_event, true}]},			
+		{?MENU_ID_FOLD_ALL, {}},
+		{?MENU_ID_UNFOLD_ALL, {}},
 		
     	{?MENU_ID_WRANGLER, {}},
 		
@@ -299,19 +299,20 @@ init(Config) ->
 		% io:format("2 bor 1 = ~p~n", [2 bor 1]),
 		% io:format("1 bor 2 = ~p~n", [1 bor 2]),
 				
-		%% Connect event handlers
-	  wxFrame:connect(Frame, menu_highlight,  
-			[{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
-	  wxFrame:connect(Frame, menu_close,  [{id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}, {callback, fun(_,_) -> io:format("MENU CLOSE~n") end}]),
-		wxFrame:connect(Frame, command_menu_selected, 
-			[{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
-		%% Submenus
-	  wxFrame:connect(Frame, command_menu_selected,  
-			[{userData, {theme_menu,Theme}}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),	
-	  wxFrame:connect(Frame, command_menu_selected,  
-			[{userData, IndentWidth}, {id,?MENU_ID_TAB_WIDTH_LOWEST}, {lastId, ?MENU_ID_TAB_WIDTH_HIGHEST}]),        
+	%% Connect event handlers
+	wxFrame:connect(Frame, menu_highlight,  
+		[{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+	wxFrame:connect(Frame, menu_close,  [{id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}, {callback, fun(_,_) -> io:format("MENU CLOSE~n") end}]),
+	wxFrame:connect(Frame, command_menu_selected, 
+		[{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+		
+	%% Submenus
+	wxFrame:connect(Frame, command_menu_selected,  
+		[{userData, {theme_menu,Theme}}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),	
+	wxFrame:connect(Frame, command_menu_selected,  
+		[{userData, IndentWidth}, {id,?MENU_ID_TAB_WIDTH_LOWEST}, {lastId, ?MENU_ID_TAB_WIDTH_HIGHEST}]),        
   
-	  {MenuBar, TabId}.
+	{MenuBar, TabId}.
 
 
 %% =====================================================================

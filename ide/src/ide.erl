@@ -15,6 +15,7 @@
 -export([
 		add_editor/0, 
 		add_editor/1, 
+		add_editor_with_contents/3,
 		close_selected_editor/0, 
 		close_all_editors/0,
 		toggle_pane/1, 
