@@ -14,6 +14,9 @@
 		 handle_event/2]).
 		 
 -record(state, {win, wx_env}).
+
+-define(FOLDER_IMAGE,  0).
+-define(FILE_IMAGE, 1).
 		 
 new(Config) ->
 	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
@@ -42,6 +45,23 @@ handle_call(Msg, _From, State) ->
     io:format("Got Call ~p~n",[Msg]),
     {reply,ok,State}.
     
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated}}, State) ->
+	SelectedItem = wxTreeCtrl:getSelection(Tree),
+	File         = wxTreeCtrl:getItemData(Tree, SelectedItem), 
+	Text         = wxTreeCtrl:getItemText(Tree, SelectedItem),
+	IsDir        = filelib:is_dir(File),
+	case IsDir of
+		true ->
+			wxTreeCtrl:toggle(Tree, SelectedItem),
+			ok;
+		_ ->
+			%% CHECK IF FILE CAN BE OPENED AS TEXT
+			Filename = filename:basename(File),
+			{_, FileContents} = file:read_file(File),
+			ide:add_editor_with_contents(File, Filename, binary_to_list(FileContents)),
+			io:format(Text++"~n"++File++"~n")
+	end,
+	{noreply, State};
 handle_event(_Event, State) ->
     io:format("SIDE BAR EVENT CA~n"),
     {noreply, State}.
@@ -52,6 +72,9 @@ code_change(_, _, State) ->
 terminate(_Reason, #state{win=Toolbook}) ->
 	io:format("TERMINATE SIDEBAR~n"),
 	wxToolbook:destroy(Toolbook).
+
+
+
 
 
 %% =====================================================================
@@ -81,14 +104,16 @@ make_toolbook(Config) ->
 	wxSizer:add(TestSizer, TestWindow, [{flag, ?wxEXPAND}, {proportion, 1}]),
 	wxToolbook:addPage(Toolbook, TestPanel, "Tests", [{imageId, 2}]),
   
-	FilesPanel = wxPanel:new(Toolbook),
-	FilesSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxPanel:setSizer(FilesPanel, FilesSizer),    
-	Tree = wxGenericDirCtrl:new(FilesPanel, [{dir, "/usr"}, {style, ?wxDIRCTRL_SHOW_FILTERS}]),
-	wxSizer:add(FilesSizer, Tree, [{flag, ?wxEXPAND}, {proportion, 1}]),
-	wxToolbook:addPage(Toolbook, FilesPanel, "Files", [{imageId, 1}]), % {bSelect, true} taking this option out fixed the files window bug. I don't know what this option is supposed to do!
+	FunctionsPanel = wxPanel:new(Toolbook),
+	FunctionSizer = wxBoxSizer:new(?wxVERTICAL),
+	FunctionWindow = wxWindow:new(FunctionsPanel, 2222),
+	wxPanel:setSizer(FunctionsPanel, FunctionSizer),    
+	wxSizer:add(FunctionSizer, FunctionWindow, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	wxToolbook:addPage(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
   
 	wxToolbook:setSelection(Toolbook, 0), %% Default to projects
+	
+	wxTreeCtrl:connect(ProjectTree, command_tree_item_activated, []),
 	
 	Toolbook.
 	
@@ -103,11 +128,17 @@ make_toolbook(Config) ->
 
 make_tree(Parent) ->
 	ProjectDir = user_prefs:get_user_pref({pref, project_dir}),
-    Tree = wxTreeCtrl:new(Parent, [{style, ?wxTR_HAS_BUTTONS bor ?wxTR_HIDE_ROOT}]),
+    Tree = wxTreeCtrl:new(Parent, [{style, ?wxTR_HAS_BUTTONS bor 
+                                           ?wxTR_HIDE_ROOT}]),                                 
+    ImgList = wxImageList:new(24,24),
+	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER")),
+	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_NORMAL_FILE")),
+	wxTreeCtrl:assignImageList(Tree, ImgList),                                       
+                                                                               
     Root = wxTreeCtrl:addRoot(Tree, ProjectDir),
     build_tree(Tree, Root, ProjectDir),
 	Tree.
-	
+
 	
 %% =====================================================================
 %% @doc Get a list of files in a given root directory then build its
@@ -125,21 +156,17 @@ add_files(_, _, []) ->
 add_files(Tree, Root, [File|Files]) ->
 	FileName = filename:basename(File),
 	Child = wxTreeCtrl:appendItem(Tree, Root, FileName, [{data, File}]), 
-	%io:format(wxTreeCtrl:getItemData(Tree, Child) ++ "~n"),
-	IsDir    = filelib:is_dir(File),
-	if
-		 IsDir ->
+	IsDir = filelib:is_dir(File),
+	case IsDir of
+		true ->
+			wxTreeCtrl:setItemImage(Tree, Child, ?FOLDER_IMAGE),
 			build_tree(Tree, Child, File);
-		 true ->
-			ok
+		_ ->
+			wxTreeCtrl:setItemImage(Tree, Child, ?FILE_IMAGE)
 	end,
 	add_files(Tree, Root, Files).
 	
 
-	
-	
-	
-	
-	
+
 	
 	
