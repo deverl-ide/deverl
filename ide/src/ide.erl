@@ -307,15 +307,15 @@ handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}},
 %% Handle menu highlight events    
 handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}},
              State=#state{status_bar=Sb}) ->
-	Help = case ets:lookup(TabId,Id) of
-		% [{_,_,HelpString}] -> HelpString;
-		_ -> "Help not available."
-	end,
-	Env = wx:get_env(),
-	Pid = spawn(fun() -> 
-		wx:set_env(Env),
-		ide_status_bar:set_text_timeout(Sb, {field, help}, Help)
-  end),
+	% Help = case ets:lookup(TabId,Id) of
+	% 	% [{_,_,HelpString}] -> HelpString;
+	% 	_ -> "Help not available."
+	% end,
+	% Env = wx:get_env(),
+	% Pid = spawn(fun() -> 
+	% 	wx:set_env(Env),
+		ide_status_bar:set_text_timeout(Sb, {field, help}, "testing"),
+  % end),
   {noreply, State};
 
 %% First handle the sub-menus
