@@ -146,6 +146,11 @@ init(Config) ->
 	
 	%% Scrolling
 	% wxStyledTextCtrl:setEndAtLastLine(Editor, user_prefs:get_user_pref({pref, scroll_past_end})),
+  % Policy = ?wxSTC_CARET_SLOP bor ?wxSTC_CARET_JUMPS bor ?wxSTC_CARET_EVEN, 
+  Policy = ?wxSTC_CARET_SLOP bor ?wxSTC_CARET_EVEN, 
+  wxStyledTextCtrl:setYCaretPolicy(Editor, Policy, 3),
+  wxStyledTextCtrl:setXCaretPolicy(Editor, Policy, 3),
+  wxStyledTextCtrl:setVisiblePolicy(Editor, Policy, 3),
 
 	%% Wrapping
 	wxStyledTextCtrl:setWrapMode(Editor, user_prefs:get_user_pref({pref, line_wrap})),
@@ -263,11 +268,11 @@ handle_event(_A=#wx{event=#wxKey{type=key_down, keyCode=_Kc}, userData=Sb},
              State = #state{text_ctrl=Editor}) ->
 	update_sb_line(Editor, Sb),
 	update_line_margin(Editor),
+	parse_functions(Editor),
 {noreply, State};
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_charadded, key=Key}=_E, userData=Sb}, 
 						State = #state{text_ctrl=Editor}) when Key =:= 13 orelse Key =:= 10 ->
-	parse_functions(Editor, Sb),
 	Pos = wxStyledTextCtrl:getCurrentPos(Editor),
 	Line = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
 	CurInd = wxStyledTextCtrl:getLineIndentation(Editor, Line - 1),
@@ -897,14 +902,15 @@ correct_caret(Editor, Pos) ->
 %% =====================================================================
 %% Parse the document for a list of current functions
 
-parse_functions(Editor, Sb) ->
+parse_functions(Editor) ->
 	Input = wxStyledTextCtrl:getText(Editor),
 	Regex = "^\\s*((?:'.+')|(?:[a-z]+[a-zA-Z_]*))(?:\\(.*\\))",
 	Result = case re:run(Input, Regex, [global, multiline, {capture, all_but_first, list}]) of
 		nomatch -> false, [];
 		{_,Captured} -> Captured
 	end,
-	ide_status_bar:set_func_list(Sb, Result),
+		% io:format("Funcs: ~p~n", [Result]),
+	func_list:set(Result),
 	ok.
 
 

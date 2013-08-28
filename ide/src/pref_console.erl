@@ -9,9 +9,6 @@
 -record(state, {parent,
             	  config
             	 }).
-               
--define(ID_CONSOLE_THEME_LIGHT, 1).
--define(ID_CONSOLE_THEME_DARK, 2).
 
 start(Config) ->
     wx_object:start_link(?MODULE, Config, []).
