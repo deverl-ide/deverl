@@ -92,24 +92,31 @@ make_toolbook(Config) ->
 	
 	ProjectsPanel = wxPanel:new(Toolbook),
 	ProjectsSizer = wxBoxSizer:new(?wxVERTICAL),
+<<<<<<< HEAD
 	wxPanel:setSizer(ProjectsPanel, ProjectsSizer),   
   ProjectTree = make_tree(ProjectsPanel),
+=======
+    ProjectTree = make_tree(ProjectsPanel),
+>>>>>>> 726aa2a85344226952c31e1ae211e16c575a18f7
 	wxSizer:add(ProjectsSizer, ProjectTree, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	wxPanel:setSizer(ProjectsPanel, ProjectsSizer),   
+
 	wxToolbook:addPage(Toolbook, ProjectsPanel, "Projects", [{imageId, 2}]),
 	
 	TestPanel = wxPanel:new(Toolbook),
-	TestSizer = wxBoxSizer:new(?wxVERTICAL),
-	TestWindow = wxWindow:new(TestPanel, 2222),
+	% TestSizer = wxBoxSizer:new(?wxVERTICAL),
+	% TestWindow = wxWindow:new(TestPanel, 2222),
 	%wxWindow:setBackgroundColour(W1, {123,34,1}),
-	wxPanel:setSizer(TestPanel, TestSizer),    
-	wxSizer:add(TestSizer, TestWindow, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	% wxSizer:add(TestSizer, TestWindow, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	% wxPanel:setSizer(TestPanel, TestSizer),    
 	wxToolbook:addPage(Toolbook, TestPanel, "Tests", [{imageId, 2}]),
   
-	FunctionsPanel = wxPanel:new(Toolbook),
-	FunctionSizer = wxBoxSizer:new(?wxVERTICAL),
-	FunctionWindow = wxWindow:new(FunctionsPanel, 2222),
-	wxPanel:setSizer(FunctionsPanel, FunctionSizer),    
-	wxSizer:add(FunctionSizer, FunctionWindow, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	
+	FunctionsPanel = func_list:start([{parent, Toolbook}]),
+	% FunctionSizer = wxBoxSizer:new(?wxVERTICAL),
+	% FunctionWindow = wxWindow:new(FunctionsPanel, 2222),
+	% wxPanel:setSizer(FunctionsPanel, FunctionSizer),    
+	% wxSizer:add(FunctionSizer, FunctionWindow, [{flag, ?wxEXPAND}, {proportion, 1}]),
 	wxToolbook:addPage(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
   
 	wxToolbook:setSelection(Toolbook, 0), %% Default to projects
@@ -166,8 +173,3 @@ add_files(Tree, Root, [File|Files]) ->
 			wxTreeCtrl:setItemImage(Tree, Child, ?FILE_IMAGE)
 	end,
 	add_files(Tree, Root, Files).
-	
-
-
-	
-	
