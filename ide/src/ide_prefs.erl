@@ -7,17 +7,17 @@
 -behaviour(wx_object).
 
 %% wx_objects callbacks
--export([start/1, 
-         init/1, 
-         terminate/2,  
+-export([start/1,
+         init/1,
+         terminate/2,
          code_change/3,
-         handle_info/2, 
-         handle_call/3, 
-         handle_cast/2, 
+         handle_info/2,
+         handle_call/3,
+         handle_cast/2,
          handle_event/2]).
-         
+  
 -record(state, {frame, pref_panel, pref}).        
-         
+  
 -define(PREF_GENERAL,  1).
 -define(PREF_EDITOR, 2).
 -define(PREF_CONSOLE,  3).
