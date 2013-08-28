@@ -286,7 +286,7 @@ terminate(_Reason, #state{panel=Panel}) ->
 	io:format("TERMINATE FUNCTIONS~n"),
   wxPanel:destroy(Panel),
   ok.
-	
+
 auto_complete(TextCtrl, InsPt, Value) ->
 	% InsPt = wxTextCtrl:getInsertionPoint(TextCtrl),
 	wxTextCtrl:setValue(TextCtrl, Value),
