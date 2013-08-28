@@ -708,16 +708,22 @@ set_line_margin_visible(EditorPid, Bool) ->
 %% 
 %% =====================================================================
 
-%% ===================================================================== 
-%% @doc Search/replace with next/prev
-
 find(EditorPid, Str) ->
   TextCtrl = wx_object:call(EditorPid, text_ctrl),
   Pos = wxStyledTextCtrl:findText(TextCtrl, 0, 
 		wxStyledTextCtrl:getLength(TextCtrl), Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]),
-  wxStyledTextCtrl:startStyling(TextCtrl, Pos, ?wxSTC_INDICS_MASK),
-  wxStyledTextCtrl:setStyling(TextCtrl, length(Str), ?wxSTC_INDIC0_MASK).
-  %% Bookmark line and add indicator to word
+	io:format("Pos: ~p~n", [position_to_x_y(TextCtrl, Pos)]).
+
+%% ===================================================================== 
+%% @doc Search/replace with next/prev
+
+% find(EditorPid, Str) ->
+%   TextCtrl = wx_object:call(EditorPid, text_ctrl),
+%   Pos = wxStyledTextCtrl:findText(TextCtrl, 0, 
+% 		wxStyledTextCtrl:getLength(TextCtrl), Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]),
+%   wxStyledTextCtrl:startStyling(TextCtrl, Pos, ?wxSTC_INDICS_MASK),
+%   wxStyledTextCtrl:setStyling(TextCtrl, length(Str), ?wxSTC_INDIC0_MASK).
+%   %% Bookmark line and add indicator to word
 
 
 %% =====================================================================

@@ -1,7 +1,7 @@
 -module(ide_status_bar).
 
 -include_lib("wx/include/wx.hrl").
--include("../include/ide.hrl").
+-include("ide.hrl").
 
 -behaviour(wx_object).
 

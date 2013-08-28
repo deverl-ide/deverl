@@ -4,7 +4,7 @@
 -module(ide).
 
 -include_lib("wx/include/wx.hrl").
--include("../include/ide.hrl").
+-include("ide.hrl").
 
 -behaviour(wx_object).
 %% wx_objects callbacks
@@ -595,14 +595,13 @@ get_editor_pid(Index, Workspace, PidTable) ->
             
 get_selected_editor() ->
 	{Workspace,_,_} = wx_object:call(?MODULE, workspace), 
-	Index = wxAuiNotebook:getSelection(Workspace), %% Get the index of the tab
-	Valid = fun(-1) -> %% no editor instance
+	case wxAuiNotebook:getSelection(Workspace) of %% Get the index of the tab
+		-1 -> %% no editor instance
 				{error, no_open_editor};
-			(_) ->
+		Index ->
 				{ok, {Index, get_editor_pid(Index)}}
-			end,
-	Valid(Index).   
-
+	end.
+	
 
 %% =====================================================================
 %% @doc Get all open editor instances.
