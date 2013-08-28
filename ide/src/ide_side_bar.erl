@@ -4,14 +4,15 @@
 -include("../include/ide.hrl").
 
 -behaviour(wx_object).
--export([new/1,
-		 init/1, 
-		 terminate/2, 
-		 code_change/3, 
-		 handle_info/2, 
-		 handle_call/3, 
-		 handle_cast/2, 
-		 handle_event/2]).
+-export([
+        new/1,
+        init/1, 
+        terminate/2, 
+        code_change/3, 
+        handle_info/2, 
+        handle_call/3, 
+        handle_cast/2, 
+        handle_event/2]).
 		 
 -record(state, {win, wx_env}).
 
@@ -32,18 +33,18 @@ init(Config) ->
 %% =====================================================================
 
 handle_info(Msg, State) ->
-    io:format("Got Info ~p~n",[Msg]),
-    {noreply,State}.
+  io:format("Got Info ~p~n",[Msg]),
+  {noreply,State}.
     
 handle_cast(Msg, State) ->
-    io:format("Got cast ~p~n",[Msg]),
-    {noreply,State}.
+  io:format("Got cast ~p~n",[Msg]),
+  {noreply,State}.
     
 handle_call(toolbook, _From, State) ->
-    {reply,State#state.win,State};
+  {reply,State#state.win,State};
 handle_call(Msg, _From, State) ->
-    io:format("Got Call ~p~n",[Msg]),
-    {reply,ok,State}.
+  io:format("Got Call ~p~n",[Msg]),
+  {reply,ok,State}.
     
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated}}, State) ->
 	SelectedItem = wxTreeCtrl:getSelection(Tree),
@@ -63,8 +64,8 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated}}, Sta
 	end,
 	{noreply, State};
 handle_event(_Event, State) ->
-    io:format("SIDE BAR EVENT CA~n"),
-    {noreply, State}.
+  io:format("SIDE BAR EVENT CA~n"),
+  {noreply, State}.
     
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
@@ -92,7 +93,7 @@ make_toolbook(Config) ->
 	ProjectsPanel = wxPanel:new(Toolbook),
 	ProjectsSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(ProjectsPanel, ProjectsSizer),   
-    ProjectTree = make_tree(ProjectsPanel),
+  ProjectTree = make_tree(ProjectsPanel),
 	wxSizer:add(ProjectsSizer, ProjectTree, [{flag, ?wxEXPAND}, {proportion, 1}]),
 	wxToolbook:addPage(Toolbook, ProjectsPanel, "Projects", [{imageId, 2}]),
 	
@@ -128,15 +129,15 @@ make_toolbook(Config) ->
 
 make_tree(Parent) ->
 	ProjectDir = user_prefs:get_user_pref({pref, project_dir}),
-    Tree = wxTreeCtrl:new(Parent, [{style, ?wxTR_HAS_BUTTONS bor 
-                                           ?wxTR_HIDE_ROOT}]),                                 
-    ImgList = wxImageList:new(24,24),
+  Tree = wxTreeCtrl:new(Parent, [{style, ?wxTR_HAS_BUTTONS bor 
+                                         ?wxTR_HIDE_ROOT}]),                                 
+  ImgList = wxImageList:new(24,24),
 	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER")),
 	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_NORMAL_FILE")),
 	wxTreeCtrl:assignImageList(Tree, ImgList),                                       
                                                                                
-    Root = wxTreeCtrl:addRoot(Tree, ProjectDir),
-    build_tree(Tree, Root, ProjectDir),
+  Root = wxTreeCtrl:addRoot(Tree, ProjectDir),
+  build_tree(Tree, Root, ProjectDir),
 	Tree.
 
 	
