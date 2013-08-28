@@ -85,24 +85,23 @@ make_toolbook(Config) ->
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-open.png"))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
-  
+
 	Toolbook = wxToolbook:new(Config, ?wxID_ANY),
 	wxToolbook:assignImageList(Toolbook, ImgList),
-	
 	ProjectsPanel = wxPanel:new(Toolbook),
 	ProjectsSizer = wxBoxSizer:new(?wxVERTICAL),
-  ProjectTree = make_tree(ProjectsPanel),
+	ProjectTree = make_tree(ProjectsPanel),
 	wxSizer:add(ProjectsSizer, ProjectTree, [{flag, ?wxEXPAND}, {proportion, 1}]),
 	wxPanel:setSizer(ProjectsPanel, ProjectsSizer),   
 	wxToolbook:addPage(Toolbook, ProjectsPanel, "Projects", [{imageId, 2}]),
-	
+
 	TestPanel = wxPanel:new(Toolbook),
 	wxToolbook:addPage(Toolbook, TestPanel, "Tests", [{imageId, 2}]),
 	
 	FunctionsPanel = func_list:start([{parent, Toolbook}]),
 	wxToolbook:addPage(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
-  
-	wxToolbook:setSelection(Toolbook, 0), %% Default to projects
+
+	wxToolbook:setSelection(Toolbook, 0), %% Default to projects	
 	wxTreeCtrl:connect(ProjectTree, command_tree_item_activated, []),
 	{Toolbook, ProjectTree}.
 	
