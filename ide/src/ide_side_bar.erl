@@ -1,7 +1,7 @@
 -module(ide_side_bar).
   
 -include_lib("wx/include/wx.hrl").
--include("../include/ide.hrl").
+-include("ide.hrl").
   
 -behaviour(wx_object).
 -export([
@@ -14,7 +14,7 @@
         handle_cast/2, 
         handle_event/2]).
   
--record(state, {win, tree, wx_env}).
+-record(state, {win, tree}).
   
 -define(FOLDER_IMAGE, 0).
 -define(FILE_IMAGE, 1).
@@ -24,7 +24,7 @@ new(Config) ->
 	
 init(Config) ->
 	{Toolbook, ProjectTree} = make_toolbook(Config),
-	{Toolbook, #state{win=Toolbook, tree=ProjectTree, wx_env=wx:get_env()}}. %% Maintained at server
+	{Toolbook, #state{win=Toolbook, tree=ProjectTree}}. %% Maintained at server
 	
 	
 %% =====================================================================

@@ -1,11 +1,11 @@
 %% The preference pane for the IDE
 %% ide.erl
-
+  
 -module(ide_prefs).
-
+  
 -include_lib("wx/include/wx.hrl").
 -behaviour(wx_object).
-
+  
 %% wx_objects callbacks
 -export([start/1,
          init/1,
@@ -22,8 +22,8 @@
 -define(PREF_EDITOR, 2).
 -define(PREF_CONSOLE,  3).
 -define(PREF_DEBUG,   4).
-
-
+  
+  
 %% =====================================================================
 %% @doc Start a preference pane instance.
   
@@ -33,11 +33,11 @@ start(Config) ->
   
 %% =====================================================================
 %% @doc Initialise the preference pane.
-
+  
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
 	Frame = wxFrame:new(Parent, ?wxID_ANY, "Preferences", []),
-          
+  
   ToolBar = wxFrame:createToolBar(Frame, [{style, ?wxTB_TEXT}]),
   wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
   %% Id, text, bitmap path, args, add seperator
