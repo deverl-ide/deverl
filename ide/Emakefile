@@ -3,3 +3,4 @@
 		   {i, "include"},
 		   {outdir, "ebin"}]}.
 {'src/preferences/*', [debug_info, {outdir, "ebin"}]}.
+{'src/dialogs/*', [debug_info, {outdir, "ebin"}]}.
