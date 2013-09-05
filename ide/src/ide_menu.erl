@@ -282,7 +282,7 @@ init(Config) ->
 		
     {?MENU_ID_WRANGLER, {}},
 		
-    {?MENU_ID_COMPILE_FILE, {}, [{group, ?MENU_GROUP_ED bor ?MENU_GROUP_WS}]},
+    {?MENU_ID_COMPILE_FILE, {ide_build,compile,[]}, [{group, ?MENU_GROUP_ED bor ?MENU_GROUP_WS}]},
     {?MENU_ID_MAKE_PROJECT, {}, [{group, ?MENU_GROUP_ED bor ?MENU_GROUP_WS}]},
     {?MENU_ID_RUN, {}, [{group, ?MENU_GROUP_ED bor ?MENU_GROUP_WS}]},
     {?MENU_ID_DIALYZER, {}, [{group, ?MENU_GROUP_ED bor ?MENU_GROUP_WS}]},

@@ -21,6 +21,7 @@
 	save_current_file/0,
 	save_new/0, 
 	save_all/0,
+	save_file/2,
 	open_file/1,
 	open_dialog/1,
 	find_replace/1,
