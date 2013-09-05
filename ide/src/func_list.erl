@@ -219,7 +219,7 @@ insert([H|T]=Items, Pos) ->
 	ok.
 	
 set(Items) ->
-	{ok, {_,Pid}} = ide:get_selected_editor(),
+	{ok, {_,Pid}} = doc_manager:get_selected_editor(),
 	ListBox = wx_object:call(?MODULE, {list, Pid}),
 	wxListBox:clear(ListBox),
 	wxListBox:insertItems(ListBox, Items, 0).

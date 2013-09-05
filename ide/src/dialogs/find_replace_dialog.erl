@@ -183,11 +183,11 @@ handle_event(E=#wx{id=Id, event=#wxCommand{type=command_button_clicked}},
   io:format("E: ~p~n", [E]),
   case Id of
     ?FIND_ALL ->
-      {ok, {_Index,Pid}} = ide:get_selected_editor(),
+      {ok, {_Index,Pid}} = doc_manager:get_selected_editor(),
       editor:find_all(Pid, find_replace_data:get_find_string(Data)),
       ok;
     ?REPLACE_ALL ->
-      {ok, {_Index,Pid}} = ide:get_selected_editor(),
+      {ok, {_Index,Pid}} = doc_manager:get_selected_editor(),
       editor:replace_all(Pid, find_replace_data:get_find_string(Data),
         find_replace_data:get_replace_string(Data)),
       ok;  

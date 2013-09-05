@@ -26,7 +26,8 @@
 	zoom_out/1,
 	transform_uc_selection/1,
 	transform_lc_selection/1,
-	transform_selection/2
+	transform_selection/2,
+	get_editor_path/1
 	]).
 
 -export([
@@ -220,6 +221,9 @@ handle_call(text_ctrl, _From, State) ->
 
 handle_call(editor, _From, State) ->
   {reply,State#state.editor_parent,State};
+	
+handle_call(path, _, State=#state{file_data=#file{path=Path}}) ->
+	{reply,Path,State};
 
 handle_call(Msg, _From, State) ->
   io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
@@ -974,4 +978,7 @@ transform_selection(EditorPid, {transform, Type}) ->
 		lowercase -> ?wxSTC_CMD_LOWERCASE
 	end,
 	wxStyledTextCtrl:cmdKeyExecute(Editor, Cmd).
+	
+get_editor_path(This) ->
+	wx_object:call(This, path).
 	

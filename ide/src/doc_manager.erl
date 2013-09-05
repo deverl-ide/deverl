@@ -88,22 +88,28 @@ init(Config) ->
   {Workspace, #state{workspace=Workspace, manager=Manager, status_bar=Sb, editor_pids=TabId}}.
 
 handle_info(Msg, State) ->
-    io:format("Got Info ~p~n",[Msg]),
-    {noreply,State}.
+	io:format("Got Info ~p~n",[Msg]),
+	{noreply,State}.
 
 handle_cast(Msg, State) ->
-    io:format("Got cast ~p~n",[Msg]),
-    {noreply,State}.
+	io:format("Got cast ~p~n",[Msg]),
+	{noreply,State}.
+	
+handle_call(workspace, _, State=#state{workspace=Ws, status_bar=Sb, editor_pids=Tb}) ->
+	{reply, {Ws,Sb,Tb}, State};
     
 handle_call(Msg, _From, State) ->
-  io:format("Got Call ~p~n",[Msg]),
-  {reply,ok,State}.
+	io:format("Got Call ~p~n",[Msg]),
+	{reply,ok,State}.
   
 code_change(_, _, State) ->
-  {stop, ignore, State}.
+	{stop, ignore, State}.
 
-terminate(_Reason, _) ->
-  ok.
+terminate(_Reason, State=#state{manager=Manager, workspace=Ws}) ->
+	io:format("TERMINATE DOC_MANAGER~n"),
+  wxAuiManager:unInit(Manager),
+  wxAuiManager:destroy(Manager),
+	wxAuiNotebook:destroy(Ws).
 
 %% =====================================================================
 %% AUI handlers
@@ -306,7 +312,7 @@ save_new() ->
 			%% Toolbar/menubar buttons should be disabled to prevent this action
 			io:format("No editor open.~n");
 		{ok, {Index, Pid}} ->
-			{Workspace,Sb,_,_} = wx_object:call(?MODULE, workspace),
+			{Workspace,Sb,_} = wx_object:call(?MODULE, workspace),
 			save_new(Index, Workspace, Sb, Pid)
 	end.
 
@@ -577,7 +583,7 @@ go_to_line(Parent) ->
       catch _:_ -> 0
       end,
       wxDialog:destroy(Dialog),
-      {ok,{_,Ed}} = ide:get_selected_editor(),
+      {ok,{_,Ed}} = doc_manager:get_selected_editor(),
       editor:go_to_position(Ed, {L, C})
   end,
   ok.
@@ -588,5 +594,5 @@ transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 		?MENU_ID_UC_SEL -> uppercase;
 		?MENU_ID_LC_SEL -> lowercase
 	end,
-	{ok,{_,Ed}} = ide:get_selected_editor(),
+	{ok,{_,Ed}} = doc_manager:get_selected_editor(),
 	editor:transform_selection(Ed, {transform, Cmd}).
