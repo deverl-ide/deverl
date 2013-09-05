@@ -910,7 +910,11 @@ correct_caret(Editor, Pos) ->
 
 parse_functions(Editor) ->
 	Input = wxStyledTextCtrl:getText(Editor),
-	Regex = "^\\s*((?:'.+')|(?:[a-z]+[a-zA-Z_]*))(?:\\(.*\\))",
+	% Regex = "(?<!foo)^\\s*((?:'.+')|(?:[a-z][a-zA-Z\\d_@]*))(?:\\(.*\\))",
+	
+	% Regex = "(tom)(?= ->)",
+	% Regex = "^\\s*((?:[a-z]+[a-zA-Z\d_@]*))(?:\\(.*\\))",
+	Regex = "^\\s*((?:[a-z]+[a-zA-Z\\d_@]*))(?:\\(.*\\))",
 	Result = case re:run(Input, Regex, [global, multiline, {capture, all_but_first, list}]) of
 		nomatch -> false, [];
 		{_,Captured} -> Captured
@@ -970,3 +974,4 @@ transform_selection(EditorPid, {transform, Type}) ->
 		lowercase -> ?wxSTC_CMD_LOWERCASE
 	end,
 	wxStyledTextCtrl:cmdKeyExecute(Editor, Cmd).
+	
