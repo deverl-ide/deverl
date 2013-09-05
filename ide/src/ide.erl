@@ -127,8 +127,8 @@ init(Options) ->
                                         {proportion, 0}]),      
 
 	%% The workspace/text editors %%
-	Manager = wxAuiManager:new([{managed_wnd, Frame}]),
-	EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
+	% Manager = wxAuiManager:new([{managed_wnd, Frame}]),
+	% EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
 	% {Workspace, TabId} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
 	Workspace = create_workspace(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar),
 
@@ -421,7 +421,7 @@ create_left_window(Parent) ->
 
 
 create_workspace(Parent, Manager, PaneInfo, StatusBar) ->
-	doc_manager:build_workspace(Parent, Manager, PaneInfo, StatusBar).
+	doc_manager:build_workspace([{config, {Parent, StatusBar}}]).
 	
 	
 % %% =====================================================================

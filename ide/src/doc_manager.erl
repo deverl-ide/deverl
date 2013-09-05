@@ -7,19 +7,88 @@
 
 -export([new/1, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+				 
+% API         
+-export([
+	add_editor/0, 
+	add_editor/1, 
+	add_editor_with_contents/3,
+	close_selected_editor/0, 
+	close_all_editors/0,
+	toggle_pane/1, 
+	get_selected_editor/0, 
+	get_all_editors/0, 
+	update_styles/1, 
+	save_current_file/0,
+	save_new/0, 
+	save_all/0,
+	open_file/1,
+	open_dialog/1,
+	find_replace/1,
+	get_current_theme_name/0,
+	set_theme/1,
+	set_line_wrap/1,
+	set_line_margin_visible/1,
+	set_indent_tabs/1,
+	set_indent_guides/1,
+	indent_line_right/0,
+	indent_line_left/0,
+	go_to_line/1,
+	comment/0,
+	zoom_in/0,
+	zoom_out/0,
+	transform_selection/1,
+	load_file/0,
+	]).
          
--record(state, {win,  
-                workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
+-record(state, {
+								manager,
+             		workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 editor_pids :: {integer(), pid()}              %% A table containing the Id returned when an editor is created, and the associated pid
                 }).
 
 -define(ID_WORKSPACE, 3211).
 
+
 new(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
 init(Config) ->
-  ok.
+	{Parent, Sb} = proplists:get_value(conf, Config),
+	
+	Manager = wxAuiManager:new([{managed_wnd, Parent}]),
+	EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()),
+	
+	Style = (0
+			bor ?wxAUI_NB_TOP
+			bor ?wxAUI_NB_WINDOWLIST_BUTTON
+			bor ?wxAUI_NB_TAB_MOVE
+			bor ?wxAUI_NB_SCROLL_BUTTONS
+			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
+			),
+    
+	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),  
+	Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
+                           {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
+  
+	TabId = ets:new(editors, [public]),
+	{_,Id,_,Pid} = Editor,
+	ets:insert(TabId,{Id, Pid}),
+
+	wxAuiNotebook:addPage(Workspace, Editor, ?DEFAULT_TAB_LABEL, []),
+  
+	wxAuiManager:addPane(Manager, Workspace, Pane),
+  
+	Close = fun(_,O) ->
+				wxNotifyEvent:veto(O),
+				close_selected_editor()
+			end,
+  
+	wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
+	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,TabId}]),
+	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),   
+	
+  {Workspace, #state{workspace=Workspace, manager=Manager, editor_pids=TabId}}.
 
 handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
@@ -59,41 +128,6 @@ handle_event(Ev = #wx{}, State = #state{}) ->
   io:format("Got Event ~p~n",[Ev]),
   {noreply,State}.
 
-%% =====================================================================
-%% @doc Create the workspace with the initial editor
-%% @private  
-
-build_workspace(Parent, Manager, Pane, Sb) ->
-	Style = (0
-			bor ?wxAUI_NB_TOP
-			bor ?wxAUI_NB_WINDOWLIST_BUTTON
-			bor ?wxAUI_NB_TAB_MOVE
-			bor ?wxAUI_NB_SCROLL_BUTTONS
-			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
-			),
-    
-	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),  
-	Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
-                           {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
-  
-	TabId = ets:new(editors, [public]),
-	{_,Id,_,Pid} = Editor,
-	ets:insert(TabId,{Id, Pid}),
-
-	wxAuiNotebook:addPage(Workspace, Editor, ?DEFAULT_TAB_LABEL, []),
-  
-	wxAuiManager:addPane(Manager, Workspace, Pane),
-  
-	Close = fun(_,O) ->
-				wxNotifyEvent:veto(O),
-				close_selected_editor()
-			end,
-  
-	wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
-	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,TabId}]),
-	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),   
-    
-	{Workspace, TabId}.
 
 %% =====================================================================
 %% @doc 
