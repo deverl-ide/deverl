@@ -15,7 +15,6 @@
 	add_editor_with_contents/3,
 	close_selected_editor/0, 
 	close_all_editors/0,
-	toggle_pane/1, 
 	get_selected_editor/0, 
 	get_all_editors/0, 
 	update_styles/1, 
@@ -37,8 +36,7 @@
 	comment/0,
 	zoom_in/0,
 	zoom_out/0,
-	transform_selection/1,
-	load_file/0,
+	transform_selection/1
 	]).
          
 -record(state, {
@@ -54,10 +52,10 @@ new(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
 init(Config) ->
-	{Parent, Sb} = proplists:get_value(conf, Config),
+	{Parent, Sb} = proplists:get_value(config, Config),
 	
 	Manager = wxAuiManager:new([{managed_wnd, Parent}]),
-	EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()),
+	Pane = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()),
 	
 	Style = (0
 			bor ?wxAUI_NB_TOP
@@ -216,7 +214,6 @@ get_selected_editor() ->
   
 -spec get_all_editors() -> Result when
 	Result :: [{integer(), pid()}].
-	-module(document_io).
 
 get_all_editors() ->
 	{Workspace,_,_} = wx_object:call(?MODULE, workspace), 
