@@ -275,11 +275,6 @@ handle_event(#wx{event = #wxSplitter{type = command_splitter_doubleclicked} = _E
 %% AUI handlers
 %% 
 %% =====================================================================
-
-%% Not connected currently
-handle_event(#wx{event = #wxAuiManager{type = aui_render} = _E}, State) ->
-  io:format("render:~n"),   
-  {noreply, State};
     
 handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinotebook_page_changed, 
 			selection = Index}}, State) ->

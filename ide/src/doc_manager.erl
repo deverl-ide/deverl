@@ -1,5 +1,61 @@
 -module(document_io).
 
+-include_lib("wx/include/wx.hrl").
+-include("ide.hrl").
+
+-behaviour(wx_object).
+
+-export([new/1, init/1, terminate/2,  code_change/3,
+         handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+         
+-record(state, {win,  
+                workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
+                editor_pids :: {integer(), pid()}              %% A table containing the Id returned when an editor is created, and the associated pid
+                }).
+
+-define(ID_WORKSPACE, 3211).
+
+new(Config) ->
+  wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
+
+init(Config) ->
+  ok.
+
+handle_info(Msg, State) ->
+    io:format("Got Info ~p~n",[Msg]),
+    {noreply,State}.
+
+handle_cast(Msg, State) ->
+    io:format("Got cast ~p~n",[Msg]),
+    {noreply,State}.
+    
+handle_call(Msg, _From, State) ->
+  io:format("Got Call ~p~n",[Msg]),
+  {reply,ok,State}.
+  
+code_change(_, _, State) ->
+  {stop, ignore, State}.
+
+terminate(_Reason, _) ->
+  ok.
+
+%% =====================================================================
+%% AUI handlers
+%% 
+%% =====================================================================
+    
+handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinotebook_page_changed, 
+			selection = Index}}, State) ->
+  %% Make sure editor knows (needs to update sb)
+  editor:selected(get_editor_pid(Index, State#state.workspace, State#state.editor_pids), State#state.status_bar),
+  {noreply, State}; 
+    
+handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
+  add_editor(State#state.workspace, State#state.status_bar, 
+             State#state.editor_pids),
+  {noreply, State};
+
+
 
 %% =====================================================================
 %% @doc 
@@ -90,8 +146,6 @@ get_selected_editor() ->
 	Result :: [{integer(), pid()}].
 	-module(document_io).
 
-
-
 get_all_editors() ->
 	{Workspace,_,_} = wx_object:call(?MODULE, workspace), 
 	Count = wxAuiNotebook:getPageCount(Workspace),
@@ -102,7 +156,6 @@ get_all_editors(_, -1, Acc) ->
 
 get_all_editors(Workspace, Count, Acc) ->
 	get_all_editors(Workspace, Count -1, [{Count, get_editor_pid(Count)} | Acc]).
-	
 	
 	
 %% =====================================================================
@@ -277,199 +330,189 @@ open_dialog(Parent) ->
 	wxSizer:setSizeHints(Box,Dialog),
   
 	wxDialog:showModal(Dialog).
+  
 	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	%% =====================================================================
-	%% @doc Change the font style across all open editors
+%% =====================================================================
+%% @doc Change the font style across all open editors
 
-	update_styles(Frame) ->
-		%% Display the system font picker
-		FD = wxFontData:new(),
-		wxFontData:setInitialFont(FD, user_prefs:get_user_pref({pref, font})),
-		Dialog = wxFontDialog:new(Frame, FD),
-		case wxDialog:showModal(Dialog) of
-			?wxID_OK ->
-				%% Get the user selected font, and update the editors
-				Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
-				user_prefs:set_user_pref(font, Font),
-				Fun = fun({_, Pid}) ->
-					      editor:update_font(Pid, Font)
+update_styles(Frame) ->
+  %% Display the system font picker
+  FD = wxFontData:new(),
+  wxFontData:setInitialFont(FD, user_prefs:get_user_pref({pref, font})),
+  Dialog = wxFontDialog:new(Frame, FD),
+  case wxDialog:showModal(Dialog) of
+    ?wxID_OK ->
+      %% Get the user selected font, and update the editors
+      Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
+      user_prefs:set_user_pref(font, Font),
+      Fun = fun({_, Pid}) ->
+              editor:update_font(Pid, Font)
 					  end,
-				lists:map(Fun, get_all_editors()),
-				ok;
-			?wxID_CANCEL ->
+      lists:map(Fun, get_all_editors()),
+      ok;
+    ?wxID_CANCEL ->
 				ok
 	end. 
 
 
-	%% =====================================================================
-	%% @doc Show the find/replace dialog
-	%% Might be better in editor.erl
+%% =====================================================================
+%% @doc Show the find/replace dialog
+%% Might be better in editor.erl
 
-	find_replace(Parent) ->
-	  FindData = find_replace_data:new(),
+find_replace(Parent) ->
+  FindData = find_replace_data:new(),
   
-	  %% This data will eventually be loaded from transient/permanent storage PREFS!!
-	  find_replace_data:set_options(FindData, ?IGNORE_CASE bor ?WHOLE_WORD bor ?START_WORD),
-	  find_replace_data:set_search_location(FindData, ?FIND_LOC_DOC),
+  %% This data will eventually be loaded from transient/permanent storage PREFS!!
+  find_replace_data:set_options(FindData, ?IGNORE_CASE bor ?WHOLE_WORD bor ?START_WORD),
+  find_replace_data:set_search_location(FindData, ?FIND_LOC_DOC),
   
-		case erlang:whereis(find_replace_dialog) of
-			undefined ->
-				find_replace_dialog:show(find_replace_dialog:new(Parent, FindData));
-			Pid ->
-				wxDialog:raise(find_replace_dialog:get_ref(Pid))
-		end.
+  case erlang:whereis(find_replace_dialog) of
+    undefined ->
+      find_replace_dialog:show(find_replace_dialog:new(Parent, FindData));
+    Pid ->
+      wxDialog:raise(find_replace_dialog:get_ref(Pid))
+  end.
 
 		
-	set_theme(ThemeMenu) ->
-		{ok, Ckd} = get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
-		Fun = fun({_, Pid}) ->
-			      editor:set_theme(Pid, wxMenuItem:getLabel(Ckd), user_prefs:get_user_pref({pref, font}))
-			  end,
-		lists:map(Fun, get_all_editors()),
-		user_prefs:set_user_pref(theme, wxMenuItem:getLabel(Ckd)).
+set_theme(ThemeMenu) ->
+  {ok, Ckd} = get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
+  Fun = fun({_, Pid}) ->
+          editor:set_theme(Pid, wxMenuItem:getLabel(Ckd), user_prefs:get_user_pref({pref, font}))
+        end,
+  lists:map(Fun, get_all_editors()),
+  user_prefs:set_user_pref(theme, wxMenuItem:getLabel(Ckd)).
 
-	get_current_theme_name() ->
-		Frame = wx_object:call(?MODULE, frame),
-		Mb = wxFrame:getMenuBar(Frame),
-		Menu = wxMenuBar:findMenu(Mb, "View"),
-		Item = wxMenu:findItem(wxMenuBar:getMenu(Mb, Menu), ?MENU_ID_THEME_SELECT),
-		Itms = wxMenu:getMenuItems(wxMenuItem:getSubMenu(Item)),
-		{ok, Ckd} = get_checked_menu_item(Itms),
-		wxMenuItem:getLabel(Ckd).
+get_current_theme_name() ->
+  Frame = wx_object:call(?MODULE, frame),
+  Mb = wxFrame:getMenuBar(Frame),
+  Menu = wxMenuBar:findMenu(Mb, "View"),
+  Item = wxMenu:findItem(wxMenuBar:getMenu(Mb, Menu), ?MENU_ID_THEME_SELECT),
+  Itms = wxMenu:getMenuItems(wxMenuItem:getSubMenu(Item)),
+  {ok, Ckd} = get_checked_menu_item(Itms),
+  wxMenuItem:getLabel(Ckd).
 	
-	get_checked_menu_item([]) ->
-		{error, nomatch};
-	get_checked_menu_item([H|T]) ->
-		case wxMenuItem:isChecked(H) of
-			true ->
-				{ok, H};
-			_ ->
-				get_checked_menu_item(T)
-		end.
+get_checked_menu_item([]) ->
+  {error, nomatch};
+get_checked_menu_item([H|T]) ->
+  case wxMenuItem:isChecked(H) of
+    true ->
+      {ok, H};
+    _ ->
+      get_checked_menu_item(T)
+  end.
 	
-	set_line_wrap(Menu) ->
-		Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LINE_WRAP)),
-		Fun = fun({_, Pid}) ->
-			      editor:set_line_wrap(Pid, Bool)
-	  end,
-		lists:map(Fun, get_all_editors()),
-		user_prefs:set_user_pref(line_wrap, Bool).
+set_line_wrap(Menu) ->
+  Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LINE_WRAP)),
+  Fun = fun({_, Pid}) ->
+          editor:set_line_wrap(Pid, Bool)
+  end,
+  lists:map(Fun, get_all_editors()),
+  user_prefs:set_user_pref(line_wrap, Bool).
 
-	set_line_margin_visible(Menu) ->
-		Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LN_TOGGLE)),
-		Fun = fun({_, Pid}) ->
-			      editor:set_line_margin_visible(Pid, Bool)
-	  end,
-		lists:map(Fun, get_all_editors()),
-		user_prefs:set_user_pref(show_line_no, Bool).
-	
-	set_indent_tabs(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
-		Cmd = case Id of
-			?MENU_ID_INDENT_SPACES -> false;
-			?MENU_ID_INDENT_TABS -> true
-		end,
-		Fun = fun({_, Pid}) ->
-			      editor:set_use_tabs(Pid, Cmd)
-	  end,
-		lists:map(Fun, get_all_editors()),
-		user_prefs:set_user_pref(use_tabs, Cmd).
-		
-	set_indent_guides(Menu) ->
-		Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_INDENT_GUIDES)),
-		Fun = fun({_, Pid}) ->
-			      editor:set_indent_guides(Pid, Bool)
-	  end,
-		lists:map(Fun, get_all_editors()),
-		user_prefs:set_user_pref(indent_guides, Bool).
-	
-	indent_line_right() ->
-		{ok,{_,Pid}} = get_selected_editor(),
-		editor:indent_line_right(Pid),
-		ok.
-	
-	indent_line_left() ->
-		{ok,{_,Pid}} = get_selected_editor(),
-		editor:indent_line_left(Pid),
-		ok.
-	
-	comment() ->
-		{ok,{_,Pid}} = get_selected_editor(),
-		editor:comment(Pid),
-		ok.
-	
-	zoom_in() ->
-		{ok,{_,Pid}} = get_selected_editor(),
-		editor:zoom_in(Pid).
-	
-	zoom_out() ->
-		{ok,{_,Pid}} = get_selected_editor(),
-		editor:zoom_out(Pid).	
-	
-	go_to_line(Parent) ->
-		Dialog = wxDialog:new(Parent, ?wxID_ANY, "Go to Line"),
-		%% Force events to propagate beyond this dialog
-		wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
-	
-		Panel = wxPanel:new(Dialog),     
-		Sz = wxBoxSizer:new(?wxVERTICAL),
-		wxSizer:addSpacer(Sz, 10),
-	
-		wxSizer:add(Sz, wxStaticText:new(Panel, ?wxID_ANY, "Enter line:"), 
-			[{border,10}, {flag, ?wxEXPAND bor ?wxLEFT}]),
-		wxSizer:addSpacer(Sz, 7),
-		Input = wxTextCtrl:new(Panel, ?wxID_ANY, []),
-		wxSizer:add(Sz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
-		wxSizer:addSpacer(Sz, 15),	
-	
-		ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
-		wxSizer:addSpacer(ButtonSz, 10),	
-		wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, 
-			[{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
-		DefButton = wxButton:new(Panel, ?wxID_OK, [{label,"Go"}]),
-		wxButton:setDefault(DefButton),
-		wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
-		wxSizer:addSpacer(ButtonSz, 10),	
-		wxSizer:add(Sz, ButtonSz),
-	
-		Self = self(),
-		wxButton:connect(DefButton, command_button_clicked, [{callback, fun(E,O)->Self ! done end}]),
-		
-		wxPanel:setSizer(Panel, Sz),	
-		wxSizer:layout(Sz),
-		wxSizer:setSizeHints(Sz, Dialog),
-		wxDialog:show(Dialog),
-		wxWindow:setFocusFromKbd(Input),
-	
-		receive
-			done ->
-				{Line, Column} = case string:tokens(wxTextCtrl:getValue(Input), ":") of
-					[Ln | []] -> {Ln, 0};
-					[Ln, Col | _ ] -> {Ln, Col}
-				end,
-				L = try
-					list_to_integer(Line)
-				catch _:_ -> 0
-				end,
-				C = try
-					list_to_integer(Column)
-				catch _:_ -> 0
-				end,
-				wxDialog:destroy(Dialog),
-				{ok,{_,Ed}} = ide:get_selected_editor(),
-				editor:go_to_position(Ed, {L, C})
-		end,
-		ok.
+set_line_margin_visible(Menu) ->
+  Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LN_TOGGLE)),
+  Fun = fun({_, Pid}) ->
+          editor:set_line_margin_visible(Pid, Bool)
+  end,
+  lists:map(Fun, get_all_editors()),
+  user_prefs:set_user_pref(show_line_no, Bool).
+
+set_indent_tabs(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
+  Cmd = case Id of
+    ?MENU_ID_INDENT_SPACES -> false;
+    ?MENU_ID_INDENT_TABS -> true
+  end,
+  Fun = fun({_, Pid}) ->
+          editor:set_use_tabs(Pid, Cmd)
+  end,
+  lists:map(Fun, get_all_editors()),
+  user_prefs:set_user_pref(use_tabs, Cmd).
+  
+set_indent_guides(Menu) ->
+  Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_INDENT_GUIDES)),
+  Fun = fun({_, Pid}) ->
+          editor:set_indent_guides(Pid, Bool)
+  end,
+  lists:map(Fun, get_all_editors()),
+  user_prefs:set_user_pref(indent_guides, Bool).
+
+indent_line_right() ->
+  {ok,{_,Pid}} = get_selected_editor(),
+  editor:indent_line_right(Pid),
+  ok.
+
+indent_line_left() ->
+  {ok,{_,Pid}} = get_selected_editor(),
+  editor:indent_line_left(Pid),
+  ok.
+
+comment() ->
+  {ok,{_,Pid}} = get_selected_editor(),
+  editor:comment(Pid),
+  ok.
+
+zoom_in() ->
+  {ok,{_,Pid}} = get_selected_editor(),
+  editor:zoom_in(Pid).
+
+zoom_out() ->
+  {ok,{_,Pid}} = get_selected_editor(),
+  editor:zoom_out(Pid).	
+
+go_to_line(Parent) ->
+  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Go to Line"),
+  %% Force events to propagate beyond this dialog
+  wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
+
+  Panel = wxPanel:new(Dialog),     
+  Sz = wxBoxSizer:new(?wxVERTICAL),
+  wxSizer:addSpacer(Sz, 10),
+
+  wxSizer:add(Sz, wxStaticText:new(Panel, ?wxID_ANY, "Enter line:"), 
+    [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT}]),
+  wxSizer:addSpacer(Sz, 7),
+  Input = wxTextCtrl:new(Panel, ?wxID_ANY, []),
+  wxSizer:add(Sz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
+  wxSizer:addSpacer(Sz, 15),	
+
+  ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
+  wxSizer:addSpacer(ButtonSz, 10),	
+  wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, 
+    [{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
+  DefButton = wxButton:new(Panel, ?wxID_OK, [{label,"Go"}]),
+  wxButton:setDefault(DefButton),
+  wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
+  wxSizer:addSpacer(ButtonSz, 10),	
+  wxSizer:add(Sz, ButtonSz),
+
+  Self = self(),
+  wxButton:connect(DefButton, command_button_clicked, [{callback, fun(E,O)->Self ! done end}]),
+  
+  wxPanel:setSizer(Panel, Sz),	
+  wxSizer:layout(Sz),
+  wxSizer:setSizeHints(Sz, Dialog),
+  wxDialog:show(Dialog),
+  wxWindow:setFocusFromKbd(Input),
+
+  receive
+    done ->
+      {Line, Column} = case string:tokens(wxTextCtrl:getValue(Input), ":") of
+        [Ln | []] -> {Ln, 0};
+        [Ln, Col | _ ] -> {Ln, Col}
+      end,
+      L = try
+        list_to_integer(Line)
+      catch _:_ -> 0
+      end,
+      C = try
+        list_to_integer(Column)
+      catch _:_ -> 0
+      end,
+      wxDialog:destroy(Dialog),
+      {ok,{_,Ed}} = ide:get_selected_editor(),
+      editor:go_to_position(Ed, {L, C})
+  end,
+  ok.
 		
 		
 transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
