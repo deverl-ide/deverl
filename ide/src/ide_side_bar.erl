@@ -154,7 +154,3 @@ add_files(Tree, Root, [File|Files]) ->
 			wxTreeCtrl:setItemImage(Tree, Child, ?FILE_IMAGE)
 	end,
 	add_files(Tree, Root, Files).
-
-
-
-
