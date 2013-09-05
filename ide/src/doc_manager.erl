@@ -55,9 +55,9 @@ handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, Stat
              State#state.editor_pids),
   {noreply, State};
 
-
-
-
+handle_event(Ev = #wx{}, State = #state{}) ->
+  io:format("Got Event ~p~n",[Ev]),
+  {noreply,State}.
 
 %% =====================================================================
 %% @doc Create the workspace with the initial editor
