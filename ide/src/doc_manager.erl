@@ -13,7 +13,6 @@
                 editor_pids :: {integer(), pid()}              %% A table containing the Id returned when an editor is created, and the associated pid
                 }).
 
--define(ID_WORKSPACE, 3211).
 
 new(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
