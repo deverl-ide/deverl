@@ -35,7 +35,6 @@
 -define(SASH_VERT_DEFAULT_POS, 200).
 -define(SASH_HOR_DEFAULT_POS, -250).
 
--define(ID_DIALOG, 9000).
 -define(ID_DIALOG_TEXT, 9001).
 
 
@@ -314,8 +313,6 @@ terminate(_Reason, #state{win=Frame, workspace_manager=Manager}) ->
 	user_prefs:stop(),
   %% Below is the necessary cleanup
   io:format("TERMINATE IDE~n"),
-  wxAuiManager:unInit(Manager),
-  wxAuiManager:destroy(Manager),
   wxFrame:destroy(Frame),
   wx:destroy().
 
@@ -365,7 +362,7 @@ create_left_window(Parent) ->
 
 
 create_workspace(Parent, StatusBar) ->
-	doc_manager:build_workspace([{config, {Parent, StatusBar}}]).
+	doc_manager:new([{config, {Parent, StatusBar}}]).
 	
 	
 %% =====================================================================
