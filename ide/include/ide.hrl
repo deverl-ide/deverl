@@ -97,4 +97,4 @@
 
 %% Documents
 -define(DEFAULT_TAB_LABEL, "untitled").
-
+-define(ID_WORKSPACE, 3211).

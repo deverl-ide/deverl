@@ -44,9 +44,7 @@
              		workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 editor_pids :: {integer(), pid()}              %% A table containing the Id returned when an editor is created, and the associated pid
                 }).
-
--define(ID_WORKSPACE, 3211).
-
+                
 
 new(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
@@ -78,9 +76,9 @@ init(Config) ->
 	wxAuiManager:addPane(Manager, Workspace, Pane),
   
 	Close = fun(_,O) ->
-				wxNotifyEvent:veto(O),
-				close_selected_editor()
-			end,
+            wxNotifyEvent:veto(O),
+            close_selected_editor()
+          end,
   
 	wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,TabId}]),
@@ -591,3 +589,26 @@ transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 	end,
 	{ok,{_,Ed}} = ide:get_selected_editor(),
 	editor:transform_selection(Ed, {transform, Cmd}).
+  
+  
+%% =====================================================================
+%% @doc Open a dialog box for various functions
+%% Buttons = [{Label, Id, Function}]
+
+open_dialog(Parent) ->
+	Dialog = wxDialog:new(Parent, ?ID_DIALOG, "Title"),
+  
+	Bs = wxBoxSizer:new(?wxHORIZONTAL),
+	Ba = wxButton:new(Dialog, 1, [{label, "Nibble"}]),
+ 	Bb = wxButton:new(Dialog, 2, [{label, "Nobble"}]),
+ 	wxSizer:add(Bs, Ba),
+ 	wxSizer:add(Bs, Bb),
+     
+ 	Box  = wxBoxSizer:new(?wxVERTICAL),
+ 
+ 	wxSizer:add(Box, Bs,  [{border, 2}, {flag, ?wxALL bor ?wxEXPAND}]),    
+ 	wxWindow:setSizer(Dialog, Box),
+ 	wxSizer:fit(Box, Dialog),
+ 	wxSizer:setSizeHints(Box,Dialog),
+   
+ 	wxDialog:showModal(Dialog).
