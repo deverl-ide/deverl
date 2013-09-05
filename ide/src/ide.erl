@@ -7,7 +7,6 @@
 -include("ide.hrl").
 
 -behaviour(wx_object).
-%% wx_objects callbacks
 -export([start/0, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
@@ -47,8 +46,8 @@
 
 %% The record containing the State.
 -record(state, {win,  
-                env,                                           %% The wx environment
-                workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
+                % env,                                           %% The wx environment
+                % workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 utilities,                                     %% The utilities pane
                 left_pane,                                     %% The test pane
                 workspace_manager,                             %% Tabbed UI manager for editors
@@ -57,15 +56,12 @@
                 sash_v_pos :: integer(),
                 sash_h_pos :: integer(),
                 status_bar :: wxPanel:wxPanel(),
-                editor_pids :: {integer(), pid()}               %% A table containing the Id returned when an editor is created, and the associated pid
                 }).
 
 -define(DEFAULT_FRAME_WIDTH,  1300).
 -define(DEFAULT_FRAME_HEIGHT, 731).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
-
--define(DEFAULT_TAB_LABEL, "untitled").
 
 -define(SASH_VERTICAL, 1).
 -define(SASH_HORIZONTAL, 2).
@@ -133,7 +129,8 @@ init(Options) ->
 	%% The workspace/text editors %%
 	Manager = wxAuiManager:new([{managed_wnd, Frame}]),
 	EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()), 
-	{Workspace, TabId} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
+	% {Workspace, TabId} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
+	Workspace = create_workspace(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar),
 
 	%% The left window
 	LeftWindow = create_left_window(SplitterLeftRight),
@@ -423,41 +420,45 @@ create_left_window(Parent) ->
 	ide_side_bar:new(Parent).
 
 
-%% =====================================================================
-%% @doc Create the workspace with the initial editor
-%% @private  
-
-create_editor(Parent, Manager, Pane, Sb, Filename) ->
-	Style = (0
-			bor ?wxAUI_NB_TOP
-			bor ?wxAUI_NB_WINDOWLIST_BUTTON
-			bor ?wxAUI_NB_TAB_MOVE
-			bor ?wxAUI_NB_SCROLL_BUTTONS
-			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
-			),
-    
-	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),  
-	Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
-                           {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
-  
-	TabId = ets:new(editors, [public]),
-	{_,Id,_,Pid} = Editor,
-	ets:insert(TabId,{Id, Pid}),
-
-	wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
-  
-	wxAuiManager:addPane(Manager, Workspace, Pane),
-  
-	Close = fun(_,O) ->
-				wxNotifyEvent:veto(O),
-				close_selected_editor()
-			end,
-  
-	wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
-	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,TabId}]),
-	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),   
-    
-	{Workspace, TabId}.
+create_workspace(Parent, Manager, PaneInfo, StatusBar) ->
+	doc_manager:build_workspace(Parent, Manager, PaneInfo, StatusBar).
+	
+	
+% %% =====================================================================
+% %% @doc Create the workspace with the initial editor
+% %% @private  
+% 
+% create_editor(Parent, Manager, Pane, Sb, Filename) ->
+% 	Style = (0
+% 			bor ?wxAUI_NB_TOP
+% 			bor ?wxAUI_NB_WINDOWLIST_BUTTON
+% 			bor ?wxAUI_NB_TAB_MOVE
+% 			bor ?wxAUI_NB_SCROLL_BUTTONS
+% 			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
+% 			),
+%     
+% 	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),  
+% 	Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
+%                            {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
+%   
+% 	TabId = ets:new(editors, [public]),
+% 	{_,Id,_,Pid} = Editor,
+% 	ets:insert(TabId,{Id, Pid}),
+% 
+% 	wxAuiNotebook:addPage(Workspace, Editor, Filename, []),
+%   
+% 	wxAuiManager:addPane(Manager, Workspace, Pane),
+%   
+% 	Close = fun(_,O) ->
+% 				wxNotifyEvent:veto(O),
+% 				close_selected_editor()
+% 			end,
+%   
+% 	wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
+% 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,TabId}]),
+% 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),   
+%     
+% 	{Workspace, TabId}.
 	
 	
 %% =====================================================================
