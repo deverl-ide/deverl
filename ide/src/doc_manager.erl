@@ -1,6 +1,44 @@
 -module(document_io).
 
 
+
+
+%% =====================================================================
+%% @doc Create the workspace with the initial editor
+%% @private  
+
+build_workspace(Parent, Manager, Pane, Sb) ->
+	Style = (0
+			bor ?wxAUI_NB_TOP
+			bor ?wxAUI_NB_WINDOWLIST_BUTTON
+			bor ?wxAUI_NB_TAB_MOVE
+			bor ?wxAUI_NB_SCROLL_BUTTONS
+			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
+			),
+    
+	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),  
+	Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
+                           {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
+  
+	TabId = ets:new(editors, [public]),
+	{_,Id,_,Pid} = Editor,
+	ets:insert(TabId,{Id, Pid}),
+
+	wxAuiNotebook:addPage(Workspace, Editor, ?DEFAULT_TAB_LABEL, []),
+  
+	wxAuiManager:addPane(Manager, Workspace, Pane),
+  
+	Close = fun(_,O) ->
+				wxNotifyEvent:veto(O),
+				close_selected_editor()
+			end,
+  
+	wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
+	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,TabId}]),
+	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),   
+    
+	{Workspace, TabId}.
+
 %% =====================================================================
 %% @doc 
 %%

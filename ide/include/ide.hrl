@@ -93,3 +93,6 @@
 -define(MENU_GROUP_WS, 	2).
 -define(MENU_GROUP_TC, 	4).
 -define(MENU_GROUP_GL, 	8).
+
+%% Documents
+-define(DEFAULT_TAB_LABEL, "untitled").
