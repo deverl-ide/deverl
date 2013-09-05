@@ -38,8 +38,6 @@
 -define(ID_DIALOG, 9000).
 -define(ID_DIALOG_TEXT, 9001).
 
--define(ID_WORKSPACE, 3211).
-
 
 %% =====================================================================
 %% @doc Start the erlang IDE

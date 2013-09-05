@@ -1,4 +1,4 @@
--module(document_io).
+-module(doc_manager).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -40,6 +40,7 @@
 	]).
          
 -record(state, {
+								status_bar,
 								manager,
              		workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 editor_pids :: {integer(), pid()}              %% A table containing the Id returned when an editor is created, and the associated pid
@@ -84,7 +85,7 @@ init(Config) ->
 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,TabId}]),
 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),   
 	
-  {Workspace, #state{workspace=Workspace, manager=Manager, editor_pids=TabId}}.
+  {Workspace, #state{workspace=Workspace, manager=Manager, status_bar=Sb, editor_pids=TabId}}.
 
 handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
@@ -381,7 +382,7 @@ close_all_editors() ->
 %% Buttons = [{Label, Id, Function}]
 
 open_dialog(Parent) ->
-	Dialog = wxDialog:new(Parent, ?ID_DIALOG, "Title"),
+	Dialog = wxDialog:new(Parent, ?wxID_ANY, "Title"),
   
 	Bs = wxBoxSizer:new(?wxHORIZONTAL),
 	Ba = wxButton:new(Dialog, 1, [{label, "Nibble"}]),
@@ -589,26 +590,3 @@ transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 	end,
 	{ok,{_,Ed}} = ide:get_selected_editor(),
 	editor:transform_selection(Ed, {transform, Cmd}).
-  
-  
-%% =====================================================================
-%% @doc Open a dialog box for various functions
-%% Buttons = [{Label, Id, Function}]
-
-open_dialog(Parent) ->
-	Dialog = wxDialog:new(Parent, ?ID_DIALOG, "Title"),
-  
-	Bs = wxBoxSizer:new(?wxHORIZONTAL),
-	Ba = wxButton:new(Dialog, 1, [{label, "Nibble"}]),
- 	Bb = wxButton:new(Dialog, 2, [{label, "Nobble"}]),
- 	wxSizer:add(Bs, Ba),
- 	wxSizer:add(Bs, Bb),
-     
- 	Box  = wxBoxSizer:new(?wxVERTICAL),
- 
- 	wxSizer:add(Box, Bs,  [{border, 2}, {flag, ?wxALL bor ?wxEXPAND}]),    
- 	wxWindow:setSizer(Dialog, Box),
- 	wxSizer:fit(Box, Dialog),
- 	wxSizer:setSizeHints(Box,Dialog),
-   
- 	wxDialog:showModal(Dialog).
