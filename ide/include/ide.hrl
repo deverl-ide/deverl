@@ -55,9 +55,10 @@
 -define(MENU_ID_LC_SEL, 				 	 6026).
 -define(MENU_ID_FOLD_ALL,          6027).
 -define(MENU_ID_UNFOLD_ALL,        6028).
--define(MENU_ID_GOTO_LINE, 				 6029).
+-define(MENU_ID_GOTO_LINE, 		     6029).
 -define(MENU_ID_WRANGLER,          6030).
--define(MENU_ID_COMPILE,           6031).
+-define(MENU_ID_COMPILE_FILE,      6031).
+-define(MENU_ID_MAKE_PROJECT,      6047).
 -define(MENU_ID_RUN,               6032).
 -define(MENU_ID_DIALYZER,          6033).
 -define(MENU_ID_TESTS,             6034).
@@ -81,8 +82,8 @@
 -define(MENU_ID_THEME_LOWEST,			 7000).
 -define(MENU_ID_THEME_HIGHEST,		 7200).     
 
--define(MENU_ID_TAB_WIDTH_LOWEST,	7201).
--define(MENU_ID_TAB_WIDTH_HIGHEST,	7210).
+-define(MENU_ID_TAB_WIDTH_LOWEST,	 7201).
+-define(MENU_ID_TAB_WIDTH_HIGHEST, 7210).
 
 %% Menu groups
 % -define(MENU_GROUP_ED, 	1). %% Erlang bug? See ide_menu.erl

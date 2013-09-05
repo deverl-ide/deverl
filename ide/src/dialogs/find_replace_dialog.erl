@@ -1,7 +1,7 @@
 -module(find_replace_dialog).
 
 -include_lib("wx/include/wx.hrl").
--include("ide.hrl").
+-include("../../include/ide.hrl").
 
 -behaviour(wx_object).
 -export([init/1, terminate/2,  code_change/3,

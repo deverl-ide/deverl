@@ -2,7 +2,7 @@
 
 -module(find_replace_data).
 
--include("../include/ide.hrl").
+-include("../../include/ide.hrl").
                
 -export([new/0,
          set_find_string/2,
