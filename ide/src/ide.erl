@@ -7,7 +7,6 @@
 -include("ide.hrl").
 
 -behaviour(wx_object).
-%% wx_objects callbacks
 -export([start/0, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
@@ -47,8 +46,8 @@
 
 %% The record containing the State.
 -record(state, {win,  
-                env,                                           %% The wx environment
-                workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
+                % env,                                           %% The wx environment
+                % workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 utilities,                                     %% The utilities pane
                 left_pane,                                     %% The test pane
                 workspace_manager,                             %% Tabbed UI manager for editors
