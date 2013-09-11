@@ -9,8 +9,9 @@
 -behaviour(wx_object).
 -export([start/0, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
-
-
+		
+-export([toggle_pane/1]).		 
+		
 %% The record containing the State.
 -record(state, {win,  
                 % env,                                           %% The wx environment
@@ -71,11 +72,7 @@ init(Options) ->
 		{style, ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE}]),
 	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL}, 
 		{style, ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE}]),
-
-	% Following two lines, see platforms.txt <1> 
-	% After upgrading to 2.9.4 these have no effect on mac
-	% wxSplitterWindow:setSashSize(SplitterTopBottom, 10),
-	% wxSplitterWindow:setSashSize(SplitterLeftRight, 10),
+	
 	wxSplitterWindow:setSashGravity(SplitterTopBottom, 0.5),
 	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
 

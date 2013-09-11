@@ -86,17 +86,17 @@ make_toolbook(Config) ->
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-open.png"))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
 
-	Toolbook = wxToolbook:new(Config, ?wxID_ANY),
+	Toolbook = wxToolbook:new(Config, ?wxID_ANY, [{style, ?wxBK_BUTTONBAR}]),
 	wxToolbook:assignImageList(Toolbook, ImgList),
 	ProjectsPanel = wxPanel:new(Toolbook),
 	ProjectsSizer = wxBoxSizer:new(?wxVERTICAL),
 	ProjectTree = make_tree(ProjectsPanel),
 	wxSizer:add(ProjectsSizer, ProjectTree, [{flag, ?wxEXPAND}, {proportion, 1}]),
 	wxPanel:setSizer(ProjectsPanel, ProjectsSizer),   
-	wxToolbook:addPage(Toolbook, ProjectsPanel, "Projects", [{imageId, 2}]),
+	wxToolbook:addPage(Toolbook, ProjectsPanel, "Projects", [{imageId, 0}]),
 
 	TestPanel = wxPanel:new(Toolbook),
-	wxToolbook:addPage(Toolbook, TestPanel, "Tests", [{imageId, 2}]),
+	wxToolbook:addPage(Toolbook, TestPanel, "Tests", [{imageId, 1}]),
 	
 	FunctionsPanel = func_list:start([{parent, Toolbook}]),
 	wxToolbook:addPage(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
