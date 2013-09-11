@@ -12,10 +12,11 @@ compile() ->
     {ok, {Index, Pid}} ->
       doc_manager:save_file(Index, Pid),
       Path = filename:rootname(editor:get_editor_path(Pid)),
+			ide_shell:load_response("Compiling module.. " ++ 
+				filename:basename(Path) ++ io_lib:nl()),
       compile_file(Path)
   end.
   
 
 compile_file(Path) ->
-	io:format("Path: ~p~n", [Path]),
 	port:call_port("c(\"" ++ Path ++ "\")." ++ io_lib:nl()).

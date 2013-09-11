@@ -182,7 +182,7 @@ init(Config) ->
       #file{path=Path, filename=Filename};
     false -> undefined
   end,
-
+		
 	wxStyledTextCtrl:setSavePoint(Editor),
 
 	wxWindow:setFocusFromKbd(Editor),
@@ -209,8 +209,7 @@ handle_call(save_request, _From, State=#state{file_data=#file{path=Path, filenam
   {reply,{Path,Fn,Mod},State};
 
 handle_call({set_savepoint,{Path,Filename}}, _From, State) ->
-  wxStyledTextCtrl:setSavePoint(State#state.text_ctrl),
-  {reply,ok,State#state{file_data=#file{path=Path, filename=Filename}}};
+  {reply,ok,State#state{file_data=#file{path=Path, filename=Filename, dirty=false}}};
 
 handle_call(text_content, _From, State) ->
   Text = wxStyledTextCtrl:getText(State#state.text_ctrl),
@@ -240,28 +239,29 @@ io:format("Got cast ~p~n",[Msg]),
 %% =====================================================================
 
 handle_event(_A=#wx{event=#wxMouse{type=left_down}, userData=Sb}, 
-             State = #state{text_ctrl=Editor}) ->
+             State = #state{text_ctrl=Editor, file_data=Fd}) ->
 	wxStyledTextCtrl:setCaretWidth(Editor, 1),
 	update_sb_line(Editor, Sb),
-{noreply, State};
+	{noreply, State};
 
 handle_event(_A=#wx{event=#wxMouse{type=motion, leftDown=true}, userData=Sb}, 
              State = #state{text_ctrl=Editor}) ->
 	wxStyledTextCtrl:setCaretWidth(Editor, 0),
 	%% Update status bar selection info
 	update_sb_selection(Editor, Sb),
-{noreply, State};
+	{noreply, State};
 
 handle_event(_A=#wx{event=#wxMouse{type=left_up}, userData=Sb}, 
              State = #state{text_ctrl=Editor}) ->
 	%% Update status bar selection info
 	update_sb_selection(Editor, Sb),
-{noreply, State};
+	{noreply, State};
 
 %% For testing:
 handle_event(_A=#wx{event=#wxMouse{}, userData=Sb}, 
              State = #state{text_ctrl=Editor}) ->
-{noreply, State};
+	{noreply, State};
+
 
 %% =====================================================================
 %% Key events
@@ -273,7 +273,7 @@ handle_event(_A=#wx{event=#wxKey{type=key_down, keyCode=_Kc}, userData=Sb},
 	update_sb_line(Editor, Sb),
 	update_line_margin(Editor),
 	parse_functions(Editor),
-{noreply, State};
+	{noreply, State};
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_charadded, key=Key}=_E, userData=Sb}, 
 						State = #state{text_ctrl=Editor}) when Key =:= 13 orelse Key =:= 10 ->
@@ -291,16 +291,11 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_charadded, key=Key}=_E, userDat
 	update_sb_line(Editor, Sb),
 	{noreply, State};
 
+
 %% =====================================================================
 %% Document events
 %% 
 %% =====================================================================
-
-%% Modified
-handle_event(_A=#wx{event=#wxStyledText{type=stc_modified, length=Length}=_E, userData=Sb}, 
-             State=#state{text_ctrl=Editor, file_data=#file{filename=Fn, path=Path}})
-							 when Length > 2 ->
-	{noreply, State};
 
 handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margin = Margin} = _E},
              State = #state{text_ctrl=Editor}) ->
@@ -313,16 +308,18 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margi
   end,
   {noreply, State};
 
+
 %% =====================================================================
 %% Save events
 %% 
 %% =====================================================================
-
-handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State) ->
+handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State=#state{file_data=undefined}) ->
   {noreply, State#state{file_data=#file{dirty=false}}};
+handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State=#state{file_data=Fd}) ->
+  {noreply, State#state{file_data=Fd#file{dirty=false}}};
 
-handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State) ->
-  {noreply, State#state{file_data=#file{dirty=true}}};
+handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State=#state{file_data=Fd}) ->
+  {noreply, State#state{file_data=Fd#file{dirty=true}}};
 
 handle_event(E,O) ->
   {noreply, O}.
