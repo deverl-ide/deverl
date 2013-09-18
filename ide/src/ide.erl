@@ -115,6 +115,10 @@ init(Options) ->
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),  
+	
+	wxTextCtrl:connect(Utilities, set_focus, [{skip, true}]),
+	wxTextCtrl:connect(Frame, kill_focus, [{skip, true}]),
+			
 		
 	%% Testing accelerator table
 	% AccelTab = wxAcceleratorTable:new(1,
@@ -182,6 +186,14 @@ handle_cast(Msg, State) ->
 handle_event(#wx{event=#wxClose{}}, State) ->
   io:format("~p Closing window ~n",[self()]),
   {stop, normal, State};
+	
+handle_event(#wx{event=#wxFocus{type=set_focus}}, State) ->	
+	io:format("Frame in focus~n"),
+	{noreply, State};
+	
+handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->	
+	io:format("Frame out of focus~n"),
+	{noreply, State};
 	
 %% =====================================================================
 %% Sash drag handlers

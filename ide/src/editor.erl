@@ -1,6 +1,6 @@
 %% editor.erl
 %% Creates an instance of an editor in a wxPanel().
--module(editor).
+- module(editor).
 
 -export([
 	update_font/2,
@@ -27,7 +27,8 @@
 	transform_uc_selection/1,
 	transform_lc_selection/1,
 	transform_selection/2,
-	get_editor_path/1
+	get_editor_path/1,
+	fn_list/2
 	]).
 
 -export([
@@ -102,17 +103,16 @@ init(Config) ->
   wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND},
                               {proportion, 1}]),              
 
-	%% Static editor styles
-  wxStyledTextCtrl:setLexer(Editor, ?wxSTC_LEX_ERLANG),
+	%% Immutable editor styles
+  wxStyledTextCtrl:setLexer(Editor, ?wxSTC_LEX_ERLANG), %% This lexer needs a lot of work, e.g. better folding support, proper display of ctrl chars etc.
 	wxStyledTextCtrl:setKeyWords(Editor, 0, keywords()),
-  wxStyledTextCtrl:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
+	  wxStyledTextCtrl:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
 	wxStyledTextCtrl:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text         							
-  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),   	
-
+	  wxStyledTextCtrl:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),   	
 	wxStyledTextCtrl:setMarginWidth(Editor, 1, 10),
 	wxStyledTextCtrl:setMarginType(Editor, 1, ?wxSTC_MARGIN_SYMBOL),
 	wxStyledTextCtrl:setMarginMask(Editor, 1, (bnot ?wxSTC_MASK_FOLDERS) - 4),
-
+	
 	%% Folding
   wxStyledTextCtrl:setMarginType(Editor, 2, ?wxSTC_MARGIN_SYMBOL),
   wxStyledTextCtrl:setMarginWidth(Editor, 2, 9),
@@ -981,3 +981,9 @@ transform_selection(EditorPid, {transform, Type}) ->
 get_editor_path(This) ->
 	wx_object:call(This, path).
 	
+fn_list(EditorPid, Str) ->
+	get_focus(wx_object:call(EditorPid, stc)),
+	ok.
+	
+get_focus(This) ->
+	wxStyledTextCtrl:setFocus(This).
