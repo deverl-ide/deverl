@@ -98,3 +98,6 @@
 %% Documents
 -define(DEFAULT_TAB_LABEL, "untitled").
 -define(ID_WORKSPACE, 3211).
+
+%% Global styling
+-define(SYSTEM_BG_COLOUR, {150,150,150}).
