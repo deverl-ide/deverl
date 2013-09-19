@@ -277,7 +277,7 @@ init(Config) ->
 		{?MENU_ID_GOTO_LINE, {doc_manager,go_to_line,[Frame]}},
 		{?MENU_ID_UC_SEL, {doc_manager,transform_selection,[]}, [{send_event, true}]},
 		{?MENU_ID_LC_SEL, {doc_manager,transform_selection,[]}, [{send_event, true}]},			
-		{?MENU_ID_FOLD_ALL, {}},
+		{?MENU_ID_FOLD_ALL, {ide_side_bar, refresh_tree, []}},
 		{?MENU_ID_UNFOLD_ALL, {}},
 		
     {?MENU_ID_WRANGLER, {}},
