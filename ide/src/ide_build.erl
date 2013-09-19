@@ -17,10 +17,6 @@ compile() ->
   
 
 compile_file(Path) ->
-<<<<<<< HEAD
-	port:call_port("c(" ++ Path ++ ")." ++ io_lib:nl()).
-	
-=======
 	io:format("Path: ~p~n", [Path]),
 	port:call_port("c(\"" ++ Path ++ "\")." ++ io_lib:nl()).
->>>>>>> e9781b8d4ce0534ad069773f0bc3a17adef77311
+
