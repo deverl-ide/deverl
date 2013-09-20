@@ -10,7 +10,7 @@ compile() ->
     {error, _} ->
       ok;
     {ok, {Index, Pid}} ->
-      doc_manager:save_file(Index, Pid),
+      doc_manager:save_document(Index, Pid),
       Path = filename:rootname(editor:get_editor_path(Pid)),
 			ide_shell:load_response("Compiling module.. " ++ 
 				filename:basename(Path) ++ io_lib:nl()),

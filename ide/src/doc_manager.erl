@@ -10,20 +10,19 @@
 				 
 % API         
 -export([
-	add_editor/0, 
-	add_editor/1, 
-	add_editor_with_contents/3,
+	new_document/0, 
+	new_document/1, 
+	% new_document_from_existing/3,
 	close_selected_editor/0, 
 	close_all_editors/0,
 	get_selected_editor/0, 
 	get_all_editors/0, 
 	update_styles/1, 
-	save_current_file/0,
-	save_new/0, 
+	save_current_document/0,
+	save_new_document/0, 
 	save_all/0,
-	save_file/2,
-	open_file/1,
-	open_dialog/1,
+	save_document/2,
+	open_document/1,
 	find_replace/1,
 	get_current_theme_name/0,
 	set_theme/1,
@@ -71,7 +70,7 @@ init(Config) ->
   
 	TabId = ets:new(editors, [public]),
 	{_,Id,_,Pid} = Editor,
-	ets:insert(TabId,{Id, Pid}),
+	ets:insert(TabId,{Id, Pid, {path, undefined}}),
 
 	wxAuiNotebook:addPage(Workspace, Editor, ?DEFAULT_TAB_LABEL, []),
   
@@ -124,7 +123,7 @@ handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinote
   {noreply, State}; 
     
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
-  add_editor(State#state.workspace, State#state.status_bar, 
+  new_document(State#state.workspace, State#state.status_bar, 
              State#state.editor_pids),
   {noreply, State};
 
@@ -138,40 +137,46 @@ handle_event(Ev = #wx{}, State = #state{}) ->
 %%
 %% @private
 
-add_editor(Workspace, Sb, TabId) ->
-	add_editor(Workspace, ?DEFAULT_TAB_LABEL, Sb, TabId),
+new_document(Workspace, Sb, TabId) ->
+	new_document(Workspace, ?DEFAULT_TAB_LABEL, Sb, TabId),
 	Workspace.
  
 
 %% =====================================================================
 %% @doc Create a new editor instance in the notebook  
 
-add_editor() -> 
-	add_editor(?DEFAULT_TAB_LABEL).
+new_document() -> 
+	new_document(?DEFAULT_TAB_LABEL).
   
-%% @doc Create a new editor with specified filename
-add_editor(Filename) ->
+%% @doc Create a new editor with specified documentname
+new_document(Filename) ->
 	{Workspace, Sb, TabId} = wx_object:call(?MODULE, workspace), 
-	add_editor(Workspace, Filename, Sb, TabId),
+	new_document(Workspace, Filename, Sb, TabId),
 	ok.
   
 %% @private
-add_editor(Workspace, Filename, Sb, TabId) ->
+new_document(Workspace, Filename, Sb, TabId) ->
 	Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
 	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
 	{_,Id,_,Pid} = Editor,
-	ets:insert_new(TabId,{Id, Pid}),
+	ets:insert_new(TabId,{Id, Pid, {path, undefined}}),
 	ok.
-  
-%% @doc Create an editor from an existing file
-add_editor_with_contents(Path, Filename, Contents) -> 
-		{Workspace, Sb, TabId} = wx_object:call(?MODULE, workspace), 
-		Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}, 
-							   {file, {Path, Filename, Contents}}]),
-		wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
-		{_,Id,_,Pid} = Editor,
-		ets:insert_new(TabId,{Id, Pid}),
-		ok.
+	
+	
+%% =====================================================================
+%% @doc Add an existing document to the workspace.
+		
+new_document_from_existing(Path, Filename, Contents) -> 
+	{Workspace, Sb, TabId} = wx_object:call(?MODULE, workspace), 
+	Editor = {_,Id,_,Pid} = editor:start([{parent, Workspace}, {status_bar, Sb}, 
+		{font,user_prefs:get_user_pref({pref, font})}]),
+	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
+	ets:insert_new(TabId,{Id, Pid, {path, Path}}),
+	editor:set_text(Pid, Contents),
+	editor:set_savepoint(Pid),
+	editor:link_poller(Pid, Path),
+	ok.
+
 
 %% =====================================================================
 %% @doc Get the Pid of an editor instance at position Index.
@@ -192,7 +197,7 @@ get_editor_pid(Index) ->
 
 get_editor_pid(Index, Workspace, PidTable) ->
 	{_,Key,_,_} = wxAuiNotebook:getPage(Workspace, Index),
-	[{_,Pid}] = ets:lookup(PidTable, Key),
+	[{_,Pid,_}] = ets:lookup(PidTable, Key),
 	Pid.
 
 	
@@ -237,93 +242,75 @@ get_all_editors(Workspace, Count, Acc) ->
 %% Open/save/close editor functions
 %% 
 %% =====================================================================
-
 %% =====================================================================
-%% @doc Save the currently selected file to disk
+%% @doc Save the currently selected document to disk
 
--spec save_current_file() -> 'ok'. %% Not yet done
+-spec save_current_document() -> 'ok'. %% Not yet done
 
-save_current_file() ->
+save_current_document() ->
 	case get_selected_editor() of
 		{error, no_open_editor} ->
 			%% Toolbar/menubar buttons should be disabled to prevent this action
 			io:format("No editor open.~n");
 		{ok, {Index, Pid}} ->
-			save_file(Index, Pid)
+			save_document(Index, Pid)
 	end.
 
 
 %% =====================================================================
 %% @doc Save the contents of the editor Pid located at index Index.
-  
-save_file(Index, Pid) ->  
-	{Workspace,Sb,_} = wx_object:call(?MODULE, workspace), 
+
+save_document(Index, Pid) when is_pid(Pid)->  
+	{Workspace,Sb,Ets} = wx_object:call(?MODULE, workspace), 
 	case editor:save_status(Pid) of
-		{save_status, new_file} ->
-			save_new(Index, Workspace, Sb, Pid);
-		{save_status, no_file} ->
-			%% Display save dialog
-			save_new(Index, Workspace, Sb, Pid);
-		{save_status, unmodified} ->
-			%% Document is unmodified, no need to save
-			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document already saved.");
-		{save_status, Path, Fn} ->
-			%% Document already exists, overwrite
-			Contents = editor:get_text(Pid),
-			ide_io:save(Path, Contents),
-			editor:set_savepoint(Pid, Path, Fn),
-			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.")
-	end.
+		true -> 
+			save_document(Sb, hd(ets:lookup(Ets, editor:get_id(Pid))));
+		undefined -> 
+			save_document(Sb, hd(ets:lookup(Ets, editor:get_id(Pid))));
+		false -> ok
+	end;	
+save_document(Sb, {_Id, Pid, {path, undefined}}) ->
+	save_new_document();
+save_document(Sb, {_Id, Pid, {path, Path}}) ->
+	%% Document already exists, overwrite
+	ide_io:save(Path, editor:get_text(Pid)),
+	editor:set_savepoint(Pid),
+	ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.").
 
-
+	
 %% =====================================================================
 %% @doc Save the erlang editor with pid Pid located at index position 
 %% Index to disk. The user will be prompted for a save path.
-%%
-%% @private
 
--spec save_new(Index, Workspace, Sb, Pid) -> Result when
-	Index :: integer(),
-	Workspace :: wxAuiNotebook:wxAuiNotebook(),
-	Sb :: ide_status_bar:status_bar(),
-	Pid :: pid(),
-	Result :: {save, cancelled} %% User cancelled save
-			| {save, complete}. %% Save success 
+save_new_document() ->
+	case get_selected_editor() of
+		{error, no_open_editor} -> ok;
+		{ok, {Index, Pid}} ->
+			save_new_document(Index,Pid)
+	end.
 
-save_new(Index, Workspace, Sb, Pid) ->
+save_new_document(Index, Pid) ->
 	Contents = editor:get_text(Pid),
+	{Workspace,Sb,Ets} = wx_object:call(?MODULE, workspace), 
 	case ide_io:save_as(Workspace, Contents) of
 		{cancel} ->
-			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document not saved."),
-			{save, cancelled};
+			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document not saved.");
 		{ok, {Path, Filename}}  ->
+			ets:update_element(Ets, editor:get_id(Pid), {3, {path, Path}}),
 			wxAuiNotebook:setPageText(Workspace, Index, Filename),
-			editor:set_savepoint(Pid, Path, Filename),
-			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
-			{save, complete}
-	end.
-  
--spec save_new() -> Result when
-  Result :: {save, cancelled}
-          | {save, complete}.
-  
-save_new() ->
-	case get_selected_editor() of
-		{error, no_open_editor} ->
-			%% Toolbar/menubar buttons should be disabled to prevent this action
-			io:format("No editor open.~n");
-		{ok, {Index, Pid}} ->
-			{Workspace,Sb,_} = wx_object:call(?MODULE, workspace),
-			save_new(Index, Workspace, Sb, Pid)
-	end.
-
+			editor:set_savepoint(Pid),
+			editor:link_poller(Pid, Path),
+			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.")
+	end,
+	ok.
+	
 
 %% =====================================================================
 %% @doc Save all open editors.
 
 save_all() ->
 	Fun = fun({Index, Pid}) ->
-		      save_file(Index, Pid)
+		      save_document(Index, Pid)
 		  end,
 	lists:map(Fun, get_all_editors()).
 
@@ -331,16 +318,15 @@ save_all() ->
 %% =====================================================================
 %% @doc
 
--spec open_file(Frame) -> 'ok' when
+-spec open_document(Frame) -> 'ok' when
 	Frame :: wxWindow:wxWindow().
 
-open_file(Frame) ->
-	case ide_io:open(Frame) of
+open_document(Frame) ->
+	case ide_io:open_new(Frame) of
 		{cancel} ->
 			ok;
 		{Path, Filename, Contents} ->
-			add_editor_with_contents(Path, Filename, Contents),
-			ok
+			new_document_from_existing(Path, Filename, Contents)
 	end.
 
 
@@ -358,18 +344,15 @@ close_selected_editor() ->
 
 %% =====================================================================
 %% @doc Close the selected editor
-
+	
 close_editor(EditorPid, Index) ->
 	{Workspace,_Sb,Tab} = wx_object:call(?MODULE, workspace),
 	case editor:save_status(EditorPid) of
-		{save_status, new_file} ->
+		true ->
+			io:format("Close dialog needs to be displayed.~n");
+		_ -> %% Go ahead, close the editor
 			ets:delete(Tab, editor:get_id(EditorPid)),
-      wxAuiNotebook:deletePage(Workspace, Index);
-		{save_status, unmodified} -> %% Go ahead, close the editor
-			ets:delete(Tab, editor:get_id(EditorPid)),
-      wxAuiNotebook:deletePage(Workspace, Index);
-		_ -> 
-			io:format("Close dialog needs to be displayed.~n")
+      wxAuiNotebook:deletePage(Workspace, Index)
 	end.
   
   
@@ -383,29 +366,6 @@ close_all_editors() ->
 	lists:map(Fun, lists:reverse(get_all_editors())),
 	ok.
 
-
-%% =====================================================================
-%% @doc Open a dialog box for various functions
-%% Buttons = [{Label, Id, Function}]
-
-open_dialog(Parent) ->
-	Dialog = wxDialog:new(Parent, ?wxID_ANY, "Title"),
-  
-	Bs = wxBoxSizer:new(?wxHORIZONTAL),
-	Ba = wxButton:new(Dialog, 1, [{label, "Nibble"}]),
-	Bb = wxButton:new(Dialog, 2, [{label, "Nobble"}]),
-	wxSizer:add(Bs, Ba),
-	wxSizer:add(Bs, Bb),
-    
-	Box  = wxBoxSizer:new(?wxVERTICAL),
-
-	wxSizer:add(Box, Bs,  [{border, 2}, {flag, ?wxALL bor ?wxEXPAND}]),    
-	wxWindow:setSizer(Dialog, Box),
-	wxSizer:fit(Box, Dialog),
-	wxSizer:setSizeHints(Box,Dialog),
-  
-	wxDialog:showModal(Dialog).
-  
 	
 %% =====================================================================
 %% @doc Change the font style across all open editors
@@ -421,7 +381,7 @@ update_styles(Frame) ->
       Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
       user_prefs:set_user_pref(font, Font),
       Fun = fun({_, Pid}) ->
-              editor:update_font(Pid, Font)
+              editor:set_font_style(Pid, Font)
 					  end,
       lists:map(Fun, get_all_editors()),
       ok;

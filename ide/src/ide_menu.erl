@@ -236,12 +236,12 @@ init(Config) ->
   %% =====================================================================  
   TabId = ets:new(myTable, []),
   ets:insert(TabId, [
-		{?wxID_NEW,{doc_manager,add_editor,[]}},
+		{?wxID_NEW,{doc_manager,new_document,[]}},
 		{?MENU_ID_NEW_PROJECT,{}},
-    {?wxID_OPEN, {doc_manager,open_file,[Frame]}},
+    {?wxID_OPEN, {doc_manager,open_document,[Frame]}},
 		{?MENU_ID_OPEN_PROJECT,{}},
-    {?wxID_SAVE, {doc_manager,save_current_file,[]}},
-    {?wxID_SAVEAS, {doc_manager,save_new,[]}},
+    {?wxID_SAVE, {doc_manager,save_current_document,[]}},
+    {?wxID_SAVEAS, {doc_manager,save_new_document,[]}},
     {?MENU_ID_SAVE_ALL, {}},
     {?wxID_PRINT, {}},
     {?wxID_CLOSE, {doc_manager,close_selected_editor,[]} },
