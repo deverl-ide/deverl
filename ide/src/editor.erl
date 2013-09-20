@@ -30,7 +30,8 @@
 	transform_selection/2,
 	get_editor_path/1,
 	fn_list/2,
-	link_poller/2
+	link_poller/2,
+	empty_undo_buffer/1
 	]).
 
 -export([

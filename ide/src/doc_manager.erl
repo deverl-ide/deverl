@@ -12,7 +12,6 @@
 -export([
 	new_document/0, 
 	new_document/1, 
-	% new_document_from_existing/3,
 	close_selected_editor/0, 
 	close_all_editors/0,
 	get_selected_editor/0, 
@@ -173,6 +172,7 @@ new_document_from_existing(Path, Filename, Contents) ->
 	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
 	ets:insert_new(TabId,{Id, Pid, {path, Path}}),
 	editor:set_text(Pid, Contents),
+	editor:empty_undo_buffer(Pid),
 	editor:set_savepoint(Pid),
 	editor:link_poller(Pid, Path),
 	ok.
@@ -244,8 +244,6 @@ get_all_editors(Workspace, Count, Acc) ->
 %% =====================================================================
 %% =====================================================================
 %% @doc Save the currently selected document to disk
-
--spec save_current_document() -> 'ok'. %% Not yet done
 
 save_current_document() ->
 	case get_selected_editor() of
