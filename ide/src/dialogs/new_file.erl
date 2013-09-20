@@ -28,6 +28,7 @@ init(Args) ->
   
   
 	%%%%%%%%
+  
 	
   
 	wxFrame:centerOnParent(Frame),
