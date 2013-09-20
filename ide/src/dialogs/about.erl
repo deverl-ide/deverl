@@ -30,7 +30,7 @@ start(Config) ->
   
 init(Args) ->
 	Parent = proplists:get_value(parent, Args),
-	Frame = wxFrame:new(Parent, ?wxID_ANY, "About", [{size,{500, 500}}]),
+	Frame = wxDialog:new(Parent, ?wxID_ANY, "About", [{size,{500, 500}}]),
 	Panel = wxPanel:new(Frame),
 	MainSizer   = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(Panel, MainSizer),
@@ -58,11 +58,9 @@ init(Args) ->
 	wxSizer:add(MainSizer, TabbedPane,  [{border, 8},  {proportion, 1}, {flag, ?wxALL bor ?wxEXPAND}]),
 	wxSizer:add(MainSizer, CloseButton, [{border, 10}, {flag, ?wxALL bor ?wxALIGN_RIGHT}]),
   
-	wxFrame:centerOnParent(Frame),
-	wxFrame:show(Frame),
-	wxFrame:raise(Frame),
+	wxDialog:showModal(Frame),
   
-	wxFrame:connect(CloseButton, command_button_clicked),
+	wxDialog:connect(CloseButton, command_button_clicked),
   
 	State = #state{win = Frame},
 	{Frame, State}.
@@ -82,14 +80,15 @@ handle_call(shutdown, _From, State=#state{win=Frame}) ->
 handle_event(#wx{event = #wxClose{}}, State) ->
 	{stop, normal, State};
 handle_event(#wx{id = ?wxID_EXIT, event = #wxCommand{type = command_button_clicked}}, State=#state{win=Frame}) ->
-	wxFrame:destroy(Frame),
+	wxDialog:destroy(Frame),
 	{stop, normal, State}.
   
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
   
 terminate(_Reason, #state{win=Frame}) ->
-  wxFrame:destroy(Frame).
+  wxDialog:destroy(Frame).
+  
   
 set_info(TextBox, Text) ->
 	wxTextCtrl:appendText(TextBox, Text).
