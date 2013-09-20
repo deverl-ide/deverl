@@ -22,8 +22,6 @@ open_new(Parent) ->
 		?wxID_OK ->
 			Path = wxFileDialog:getPath(Dialog),
 			Filename = wxFileDialog:getFilename(Dialog),
-			% {ok, Contents} = file:read_file(Path),
-			% {Path, Filename, binary_to_list(Contents)};
 			{Path, Filename, read_file(Path)};
 		?wxID_CANCEL ->
 			{cancel}
@@ -36,6 +34,7 @@ open_new(Parent) ->
 read_file(Path) ->
 	{ok, Contents} = file:read_file(Path),
 	binary_to_list(Contents).
+
 
 %% =====================================================================
 %% @doc Write the data to the path specified by the user through a 
