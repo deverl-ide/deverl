@@ -263,12 +263,10 @@ save_current_document() ->
 save_document(Index, Pid) when is_pid(Pid)->  
 	{Workspace,Sb,Ets} = wx_object:call(?MODULE, workspace), 
 	case editor:save_status(Pid) of
-		true -> 
-			save_document(Sb, hd(ets:lookup(Ets, editor:get_id(Pid))));
-		undefined -> 
-			save_document(Sb, hd(ets:lookup(Ets, editor:get_id(Pid))));
-		false -> ok
-	end;	
+		false -> ok;
+		_ ->
+			save_document(Sb, hd(ets:lookup(Ets, editor:get_id(Pid))))
+	end;
 save_document(Sb, {_Id, Pid, {path, undefined}}) ->
 	save_new_document();
 save_document(Sb, {_Id, Pid, {path, Path}}) ->

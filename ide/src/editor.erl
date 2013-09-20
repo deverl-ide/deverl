@@ -469,9 +469,10 @@ get_id(EditorPid) ->
 
 %% =====================================================================
 %% @doc Set the text.
+
 set_text(This, Text) ->
-	wxStyledTextCtrl:setText(wx_object:call(This, stc), Text),
-		
+	Editor = wx_object:call(This, stc),
+	wxStyledTextCtrl:setText(Editor, Text),	
 	update_line_margin(Editor).
 	
 empty_undo_buffer(This) ->
