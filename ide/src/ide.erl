@@ -294,8 +294,10 @@ handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=com
 	end,
 	Env = wx:get_env(),
 	case Result of
-		{ok,{M,F,A}} -> spawn(fun() -> wx:set_env(Env), erlang:apply(M,F,A) end);
-		nomatch -> io:format("Not yet implemented~n")
+		{ok,{M,F,A}} -> 
+			erlang:apply(M,F,A);
+		nomatch -> 
+			io:format("Not yet implemented~n")
 	end,
   {noreply, State};
 

@@ -3,16 +3,17 @@
 - module(editor).
 
 -export([
-	update_font/2,
-  save_status/1, 
-  set_savepoint/3,
+	save_status/1,
+  set_savepoint/1,
   get_text/1,
   get_id/1,
   selected/2,
   find/2,
   find_all/2,
   replace_all/3,
+	set_text/2,
 	set_theme/3,
+	set_font_style/2,
 	set_tab_width/2,
 	set_use_tabs/2,
 	set_indent_guides/2,
@@ -28,7 +29,8 @@
 	transform_lc_selection/1,
 	transform_selection/2,
 	get_editor_path/1,
-	fn_list/2
+	fn_list/2,
+	link_poller/2
 	]).
 
 -export([
@@ -67,13 +69,9 @@
 -type filename()  :: string().
 -type erlangEditor() :: wxWindow:wxWindow().
 
--record(file, {path, 
-							 filename, 
-							 dirty}).
-
--record(state, {editor_parent    :: erlangEditor(), 
+-record(state, {parent_panel    :: erlangEditor(), 
                 stc          :: wxStyledTextCtrl:wxStyledTextCtrl(),
-                file = #file{},
+								dirty :: boolean(),
 								func_list,
 								test_list
                }).
@@ -173,25 +171,15 @@ init(Config) ->
 
 	%% Restrict the stc_chamge/stc_modified events to insert/delete text
 	wxStyledTextCtrl:setModEventMask(Editor, ?wxSTC_MOD_DELETETEXT bor ?wxSTC_MOD_INSERTTEXT),
-	
-  %% Load contents if any
-  Fd = case File of
-    {Path, Filename, Contents} ->
-			wxStyledTextCtrl:setText(Editor, Contents),
-			wxStyledTextCtrl:emptyUndoBuffer(Editor),
-			update_line_margin(Editor),
-      #file{path=Path, filename=Filename};
-    false -> undefined
-  end,
 		
-	wxStyledTextCtrl:setSavePoint(Editor),
+	% wxStyledTextCtrl:setSavePoint(Editor),
 	wxWindow:setFocusFromKbd(Editor),
 	
 	%% Keyboard mapping
 	% wxStyledTextCtrl:cmdKeyClearAll(Editor),
 	wxStyledTextCtrl:cmdKeyAssign(Editor, 79, ?wxSTC_SCMOD_CTRL, ?wxSTC_CMD_SELECTALL),
 
-  {Panel, #state{editor_parent=Panel, stc=Editor, file=Fd}}.
+  {Panel, #state{parent_panel=Panel, stc=Editor}}.
 
 
 %% =====================================================================
@@ -203,16 +191,13 @@ handle_info(Msg, State) ->
   io:format("Got Info(Editor) ~p~n",[Msg]),
   {noreply,State}.
 
-handle_call(shutdown, _From, State=#state{editor_parent=Panel}) ->
+handle_call(shutdown, _From, State=#state{parent_panel=Panel}) ->
   wxPanel:destroy(Panel),
   {stop, normal, ok, State};
 
-handle_call(save_request, _From, State=#state{file=#file{path=Path, filename=Fn, dirty=Mod}}) ->
-  {reply,{Path,Fn,Mod},State};
-
-handle_call({set_savepoint,{Path,Filename}}, _From, State) ->
-	wxStyledTextCtrl:setSavePoint(State#state.stc),
-  {reply,ok,State#state{file=#file{path=Path, filename=Filename}}};
+handle_call(save_request, _From, State=#state{dirty=Mod}) ->
+	io:format("MOD: L214 ~p~n", [Mod]),
+  {reply,Mod,State};
 
 handle_call(text_content, _From, State) ->
   Text = wxStyledTextCtrl:getText(State#state.stc),
@@ -221,17 +206,17 @@ handle_call(text_content, _From, State) ->
 handle_call(stc, _From, State) ->
   {reply,State#state.stc,State};
 
-handle_call(editor, _From, State) ->
-  {reply,State#state.editor_parent,State};
-	
-handle_call(path, _, State=#state{file=#file{path=Path}}) ->
-	{reply,Path,State};
+handle_call(parent_panel, _From, State) ->
+  {reply,State#state.parent_panel,State};
 
 handle_call(Msg, _From, State) ->
   io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
   {reply,State,State}.
 
-
+handle_cast({link_poller, Path}, State) ->
+	file_sup:start_link([{editor_pid, self()}, {path, Path}]),
+  {noreply,State};
+	
 handle_cast(Msg, State) ->
 io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
@@ -242,7 +227,7 @@ io:format("Got cast ~p~n",[Msg]),
 %% =====================================================================
 
 handle_event(_A=#wx{event=#wxMouse{type=left_down}, userData=Sb}, 
-             State = #state{stc=Editor, file=Fd}) ->
+             State = #state{stc=Editor}) ->
 	wxStyledTextCtrl:setCaretWidth(Editor, 1),
 	update_sb_line(Editor, Sb),
 	{noreply, State};
@@ -276,7 +261,6 @@ handle_event(_A=#wx{event=#wxKey{type=key_down, keyCode=_Kc}, userData=Sb},
 	update_sb_line(Editor, Sb),
 	update_line_margin(Editor),
 	parse_functions(Editor),
-	io:format("Text: ~p~n", [wxStyledTextCtrl:getText(Editor)]),
 	{noreply, State};
 
 handle_event(_A=#wx{event=#wxStyledText{type=stc_charadded, key=Key}=_E, userData=Sb}, 
@@ -301,7 +285,7 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_charadded, key=Key}=_E, userDat
 %% 
 %% =====================================================================
 
-handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margin = Margin} = _E},
+handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position=Pos, margin=Margin}=_E},
              State = #state{stc=Editor}) ->
   Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
   Fl = wxStyledTextCtrl:getFoldLevel(Editor, Ln),
@@ -317,14 +301,13 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position = Pos, margi
 %% Save events
 %% 
 %% =====================================================================
-handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State=#state{file=undefined}) ->
-  {noreply, State#state{file=#file{dirty=false}}};
-handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State=#state{file=Fd}) ->
-  {noreply, State#state{file=Fd#file{dirty=false}}};
 
-handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State=#state{file=Fd}) ->
+handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State) ->
+  {noreply, State#state{dirty=false}};
+
+handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State) ->
 	io:format("save pt. left~n"),
-  {noreply, State#state{file=Fd#file{dirty=true}}};
+  {noreply, State#state{dirty=true}};
 
 handle_event(E,O) ->
   {noreply, O}.
@@ -332,7 +315,7 @@ handle_event(E,O) ->
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
-terminate(_Reason, State=#state{editor_parent=Panel}) ->
+terminate(_Reason, State=#state{parent_panel=Panel}) ->
 	  io:format("TERMINATE EDITOR~n"),
 		  wxPanel:destroy(Panel).
 
@@ -451,39 +434,16 @@ adjust_margin_width(Editor) ->
 %% =====================================================================
 %% @doc Get the status of the document
 
--spec save_status(Editor) -> Result when
-  Editor :: pid(),
-  Result :: {'save_status', 'new_file'}            %% New document with no changes
-          | {'save_status', 'unmodified'}          %% The document has not been modified since the last savepoint.
-          | {'save_status', 'no_file'}             %% There is no path/filename associated with this editor
-          | {'save_status', {path(), filename()}}. %% The path/filename currently associated to this instance
-
 save_status(Editor) ->
-  Result = case wx_object:call(Editor, save_request) of
-    {undefined, undefined, false} -> %% Empty, unused document
-      {save_status, new_file};
-    {_,_,false} ->
-      {save_status, unmodified};
-    {undefined, undefined, _} -> %% New file, yet to be saved
-      {save_status, no_file};
-    {Path, Fn, _} ->
-      {save_status, Path, Fn}
-  end,
-	io:format("L467, Status: ~p~n", [Result]),
-	Result.
+  wx_object:call(Editor, save_request).
 
 
 %% ===================================================================== 
 %% @doc Add a savepoint: update the document state to unmodified
 
--spec set_savepoint(EditorPid, Path, Filename) -> 'ok' when
-  Path :: unicode:charlist(),
-  Filename :: unicode:charlist(),
-  EditorPid :: pid().
-
-set_savepoint(EditorPid, Path, Filename) ->
-  wx_object:call(EditorPid, {set_savepoint,{Path,Filename}}).
-
+set_savepoint(EditorPid) ->
+	wxStyledTextCtrl:setSavePoint(wx_object:call(EditorPid, stc)).
+	
 
 %% ===================================================================== 
 %% @doc Get the text from the editor
@@ -503,29 +463,26 @@ get_text(EditorPid) ->
   EditorPid :: pid().
 
 get_id(EditorPid) ->
-  Editor = wx_object:call(EditorPid, editor),
-  wxWindow:getId(Editor).
+  {_,Id,_,_} = wx_object:call(EditorPid, parent_panel),
+	Id.
+
+
+%% =====================================================================
+%% @doc Set the text.
+
+set_text(This, Text) ->
+	Editor = wx_object:call(This, stc),
+	wxStyledTextCtrl:setText(Editor, Text),	
+	update_line_margin(Editor).
+	
+empty_undo_buffer(This) ->
+	wxStyledTextCtrl:emptyUndoBuffer(wx_object:call(This, stc)).
 
 
 %% =====================================================================
 %% Styling
 %% 
 %% =====================================================================
-
-
-%% =====================================================================
-%% @doc Update the font used in the editor
-
--spec update_font(EditorPid, Font) -> 'ok' when
-  EditorPid :: pid(),
-  Font :: wxFont:wxFont().
-
-update_font(EditorPid, Font) ->
-  Editor = wx_object:call(EditorPid, stc),
-  set_font_style(Editor, Font),
-	ok.
-
-
 %% =====================================================================
 %% @doc Change the theme of the editor.
 
@@ -610,6 +567,17 @@ apply_lexer_styles(Editor, Styles, Fg) ->
 	[ set_font_size(Editor, Id, N) || {Id, N} <- proplists:get_value(fontSize, Styles)],
 	ok.
 
+
+%% =====================================================================
+%% @doc Update the font used in the editor
+
+-spec set_font_style(EditorPid, Font) -> 'ok' when
+  EditorPid :: pid(),
+  Font :: wxFont:wxFont().
+
+set_font_style(EditorPid, Font) when is_pid(EditorPid) -> 
+  Editor = wx_object:call(EditorPid, stc),
+  set_font_style(Editor, Font);
 
 
 %% =====================================================================
@@ -987,3 +955,6 @@ fn_list(EditorPid, Str) ->
 	
 get_focus(This) ->
 	wxStyledTextCtrl:setFocus(This).
+	
+link_poller(Pid, Path) ->
+	wx_object:cast(Pid, {link_poller, Path}).
