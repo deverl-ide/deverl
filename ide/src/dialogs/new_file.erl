@@ -44,10 +44,19 @@ init(_Args) ->
   wxSizer:add(FlexGridSizer, wxStaticText:new(Panel, ?wxID_ANY, "File Type:"), []),
   wxSizer:add(FlexGridSizer, wxListBox:new(Panel, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
 
+<<<<<<< HEAD
   wxSizer:add(FlexGridSizer, wxStaticText:new(Panel, ?wxID_ANY, "Description:"), []),
   wxSizer:add(FlexGridSizer, wxTextCtrl:new(Panel, ?wxID_ANY, [{style, ?wxTE_MULTILINE bor ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxFlexGridSizer:addGrowableCol(FlexGridSizer, 1),
   wxFlexGridSizer:addGrowableCol(FlexGridSizer, 2),
+=======
+  DescriptionText   = wxStaticText:new(Panel, ?wxID_ANY, "Description:"),
+  DescriptionBox   = wxTextCtrl:new(Panel, ?wxID_ANY),
+  wxSizer:add(FlexGridSizer, DescriptionText,  []),
+  wxSizer:add(FlexGridSizer, DescriptionBox,   [{proportion, 1}, {flag, ?wxEXPAND}]),
+	wxFlexGridSizer:addGrowableCol(FlexGridSizer, 1), 
+	wxFlexGridSizer:addGrowableCol(FlexGridSizer, 2), 
+>>>>>>> 38fd6168ff680fb8ba8c6c5af00e3cf8a4cf0b39
   
   wxSizer:add(MainSizer, FlexGridSizer, [{proportion, 0}, {flag, ?wxEXPAND}]),
 
