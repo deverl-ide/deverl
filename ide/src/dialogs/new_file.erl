@@ -53,6 +53,8 @@ init(_Args) ->
   DescriptionBox   = wxTextCtrl:new(Panel, ?wxID_ANY),
   wxSizer:add(FlexGridSizer, DescriptionText,  []),
   wxSizer:add(FlexGridSizer, DescriptionBox,   [{proportion, 1}, {flag, ?wxEXPAND}]),
+	wxFlexGridSizer:addGrowableCol(FlexGridSizer, 1), 
+	wxFlexGridSizer:addGrowableCol(FlexGridSizer, 2), 
   
   wxSizer:add(MainSizer, FlexGridSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
 

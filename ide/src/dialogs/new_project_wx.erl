@@ -14,14 +14,14 @@
             	 }).
 
 start(Parent) ->
-  wx_object:start_link({local, ?MODULE}, ?MODULE, Parent, []).
+  wx_object:start({local, ?MODULE}, ?MODULE, Parent, []).
 
 init(Parent) ->
   wx:batch(fun() -> do_init(Parent) end).
 
 do_init(Parent) ->
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, "New Project", 
-		[{style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}, {size,{700, 600}}]),
+		[{size,{640,460}}, {style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}]),
   Panel = wxPanel:new(Dialog),    
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(Panel, LRSizer),
@@ -64,19 +64,20 @@ do_init(Parent) ->
 	wxSizer:addStretchSpacer(ButtonSz),
   wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_ANY, [{label, "Finish"}]), [{proportion, 0}]),
 	wxSizer:addSpacer(ButtonSz, 10),  
-  wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_ANY, [{label, "Cancel"}]), [{proportion, 0}]),
+  wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, [{label, "Cancel"}]), [{proportion, 0}]),
 	wxSizer:add(VertSizer, ButtonSz, [{flag, ?wxEXPAND}, {proportion, 0}]),   
 	wxSizer:addSpacer(VertSizer, 20),     
   
   wxSizer:add(LRSizer, VertSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(LRSizer, 20),
 	
-	wxSizer:setSizeHints(LRSizer, Dialog),
+	% wxSizer:setSizeHints(LRSizer, Dialog),
 	wxSizer:layout(LRSizer),
 	
 	wxDialog:show(Dialog),
 	
   wxDialog:connect(Dialog, close_window),
+	wxDialog:connect(Dialog, command_button_clicked, [{skip, true}]), 
 
   {Panel, #state{dialog=Dialog}}.
   
@@ -84,6 +85,9 @@ do_init(Parent) ->
 %% =====================================================================
 %% @doc OTP behaviour callbacks
 handle_event(#wx{event=#wxClose{}}, State) ->
+  {stop, normal, State};
+handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}}, 
+             State) ->
   {stop, normal, State};
 handle_event(Ev = #wx{}, State = #state{}) ->
   io:format("Got Event ~p~n",[Ev]),
