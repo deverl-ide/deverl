@@ -1,4 +1,4 @@
--module(ide_side_bar).
+-module(ide_projects_tree).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -18,7 +18,7 @@
         get_open_projects/0,
         refresh_tree/0]).
 
--record(state, {win, tree}).
+-record(state, {tree}).
 
 -define(FOLDER_IMAGE, 0).
 -define(FILE_IMAGE, 1).
@@ -27,8 +27,8 @@ new(Config) ->
 	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
 init(Config) ->
-	{Toolbook, ProjectTree} = make_toolbook(Config),
-	{Toolbook, #state{win=Toolbook, tree=ProjectTree}}.
+	ProjectTree = make_tree(Config),
+	{ProjectTree, #state{tree=ProjectTree}}.
 
 
 %% =====================================================================
@@ -44,8 +44,6 @@ handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
 
-handle_call(toolbook, _From, State) ->
-  {reply,State#state.win,State};
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State};
 handle_call(Msg, _From, State) ->
@@ -65,7 +63,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated}}, Sta
 			%% CHECK IF FILE CAN BE OPENED AS TEXT
 			Filename = filename:basename(File),
 			{_, FileContents} = file:read_file(File),
-			doc_manager:new_document_from_existing(File, Filename, binary_to_list(FileContents)),
+			doc_manager:add_editor_with_contents(File, Filename, binary_to_list(FileContents)),
 			io:format(Text++"~n"++File++"~n")
 	end,
 	{noreply, State};
@@ -76,39 +74,9 @@ handle_event(_Event, State) ->
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
 
-terminate(_Reason, #state{win=Toolbook}) ->
-	io:format("TERMINATE SIDEBAR~n"),
-	wxToolbook:destroy(Toolbook).
-
-
-%% =====================================================================
-%% @doc Construct the sidebar's wxToolbook.
-
-make_toolbook(Config) ->
-	ImgList = wxImageList:new(24,24),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-open.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
-
-	Toolbook = wxToolbook:new(Config, ?wxID_ANY, [{style, ?wxBK_BUTTONBAR}]),
-	wxToolbook:assignImageList(Toolbook, ImgList),
-	ProjectsPanel = wxPanel:new(Toolbook),
-	ProjectsSizer = wxBoxSizer:new(?wxVERTICAL),
-	ProjectTree = make_tree(ProjectsPanel),
-	wxSizer:add(ProjectsSizer, ProjectTree, [{flag, ?wxEXPAND}, {proportion, 1}]),
-	wxPanel:setSizer(ProjectsPanel, ProjectsSizer),
-	wxToolbook:addPage(Toolbook, ProjectsPanel, "Projects", [{imageId, 0}]),
-
-	TestPanel = wxPanel:new(Toolbook),
-	wxToolbook:addPage(Toolbook, TestPanel, "Tests", [{imageId, 1}]),
-
-	FunctionsPanel = func_list:start([{parent, Toolbook}]),
-	wxToolbook:addPage(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
-
-	wxToolbook:setSelection(Toolbook, 0), %% Default to projects
-	wxTreeCtrl:connect(ProjectTree, command_tree_item_activated, []),
-
-	{Toolbook, ProjectTree}.
+terminate(_Reason, #state{tree=Tree}) ->
+	io:format("TERMINATE PROJECTS TREE~n"),
+	wxTreeCtrl:destroy(Tree).
 
 
 %% =====================================================================
@@ -131,6 +99,7 @@ make_tree(Parent) ->
   ProjectDir = user_prefs:get_user_pref({pref, project_dir}),
   Root = wxTreeCtrl:addRoot(Tree, ProjectDir),
   build_tree(Tree, Root, ProjectDir, main),
+  wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
 	Tree.
 
 
@@ -156,11 +125,11 @@ add_files(Tree, Root, [File|Files]) ->
 	IsDir = filelib:is_dir(File),
 	case IsDir of
 		true ->
-      Child = wxTreeCtrl:appendItem(Tree, Root, FileName, [{data, File}]),
+			Child = wxTreeCtrl:appendItem(Tree, Root, FileName, [{data, File}]),
 			wxTreeCtrl:setItemImage(Tree, Child, ?FOLDER_IMAGE),
 			build_tree(Tree, Child, File);
 		_ ->
-      Child = wxTreeCtrl:prependItem(Tree, Root, FileName, [{data, File}]),
+			Child = wxTreeCtrl:prependItem(Tree, Root, FileName, [{data, File}]),
 			wxTreeCtrl:setItemImage(Tree, Child, ?FILE_IMAGE)
 	end,
 	add_files(Tree, Root, Files).
@@ -178,7 +147,8 @@ refresh_tree() ->
 
 
 %% =====================================================================
-%% @doc Get all open projects
+%% @doc Get all open projects. Returns a list of tuples that contain 
+%% the tree id and path of the root folder.
 
 -spec get_open_projects() -> Result when
 	Result :: [{integer(), string()}].
@@ -207,9 +177,4 @@ get_projects(Tree, Root, Cookie, List) ->
     false ->
       List
   end.
-
-
-
-
-
 
