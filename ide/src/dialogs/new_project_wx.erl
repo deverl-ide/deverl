@@ -3,26 +3,26 @@
 -include_lib("wx/include/wx.hrl").
 
 -behaviour(wx_object).
--export([start/1, init/1, terminate/2,  code_change/3,
+-export([init/1, terminate/2,  code_change/3,
 	       handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 				 
--record(state, {parent,
+%% API
+-export([start/1]).
+				 
+-record(state, {dialog,
             	  config
             	 }).
 
-start(Config) ->
-  wx_object:start_link(?MODULE, Config, []).
+start(Parent) ->
+  wx_object:start_link({local, ?MODULE}, ?MODULE, Parent, []).
 
-init(Config) ->
-	wx:new([]),
-	
-  wx:batch(fun() -> do_init(Config) end).
+init(Parent) ->
+  wx:batch(fun() -> do_init(Parent) end).
 
-do_init(Config) ->
-	
-  % Parent = proplists:get_value(parent, Config),
-	Parent = wxFrame:new(wx:null(), ?wxID_ANY, "New Project", []),
-  Panel = wxPanel:new(Parent),    
+do_init(Parent) ->
+	Dialog = wxDialog:new(Parent, ?wxID_ANY, "New Project", 
+		[{style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}, {size,{700, 600}}]),
+  Panel = wxPanel:new(Dialog),    
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(Panel, LRSizer),
   wxSizer:addSpacer(LRSizer, 20),
@@ -59,7 +59,7 @@ do_init(Config) ->
 	
   wxSizer:add(VertSizer, wxStaticLine:new(Panel, [{style, ?wxLI_HORIZONTAL}]), 
               [{flag, ?wxEXPAND}]),
-	wxSizer:addSpacer(VertSizer, 10),
+	wxSizer:addSpacer(VertSizer, 20),
 	ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxSizer:addStretchSpacer(ButtonSz),
   wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_ANY, [{label, "Finish"}]), [{proportion, 0}]),
@@ -71,24 +71,29 @@ do_init(Config) ->
   wxSizer:add(LRSizer, VertSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(LRSizer, 20),
 	
-	wxSizer:setSizeHints(LRSizer, Parent),
+	wxSizer:setSizeHints(LRSizer, Dialog),
 	wxSizer:layout(LRSizer),
-	wxFrame:center(Parent),
-	wxFrame:show(Parent),
-  {Panel, #state{parent=Panel}}.
+	
+	wxDialog:show(Dialog),
+	
+  wxDialog:connect(Dialog, close_window),
+
+  {Panel, #state{dialog=Dialog}}.
   
     
 %% =====================================================================
 %% @doc OTP behaviour callbacks
+handle_event(#wx{event=#wxClose{}}, State) ->
+  {stop, normal, State};
 handle_event(Ev = #wx{}, State = #state{}) ->
   io:format("Got Event ~p~n",[Ev]),
   {noreply,State}.
 
 handle_info(Msg, State) ->
-  io:format( "Got Info ~p~n",[Msg]),
+  io:format( "Got Info ~p~nMsg:~p",[State, Msg]),
   {noreply,State}.
 
-handle_call(shutdown, _From, State=#state{parent=Panel}) ->
+handle_call(shutdown, _From, State=#state{dialog=Panel}) ->
   wxWindow:destroy(Panel),
   {stop, normal, ok, State};
 
@@ -103,5 +108,7 @@ handle_cast(Msg, State) ->
 code_change(_, _, State) ->
   {stop, ignore, State}.
 
-terminate(_Reason, _) ->
-  io:format("TERMINATE NEW DIALOG~n").
+terminate(_Reason, #state{dialog=Dialog}) ->
+  io:format("TERMINATE NEW DIALOG~n"),
+	wxDialog:destroy(Dialog),
+	ok.
