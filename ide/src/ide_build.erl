@@ -20,3 +20,4 @@ compile() ->
 
 compile_file(Path) ->
 	port:call_port("c(\"" ++ Path ++ "\")." ++ io_lib:nl()).
+
