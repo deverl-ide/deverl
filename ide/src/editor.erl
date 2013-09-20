@@ -3,7 +3,7 @@
 - module(editor).
 
 -export([
-	save_status/1,
+	is_dirty/1,
   set_savepoint/1,
   get_text/1,
   get_id/1,
@@ -196,8 +196,7 @@ handle_call(shutdown, _From, State=#state{parent_panel=Panel}) ->
   wxPanel:destroy(Panel),
   {stop, normal, ok, State};
 
-handle_call(save_request, _From, State=#state{dirty=Mod}) ->
-	io:format("MOD: L214 ~p~n", [Mod]),
+handle_call(is_dirty, _From, State=#state{dirty=Mod}) ->
   {reply,Mod,State};
 
 handle_call(text_content, _From, State) ->
@@ -307,7 +306,6 @@ handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State) ->
   {noreply, State#state{dirty=false}};
 
 handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State) ->
-	io:format("save pt. left~n"),
   {noreply, State#state{dirty=true}};
 
 handle_event(E,O) ->
@@ -435,8 +433,8 @@ adjust_margin_width(Editor) ->
 %% =====================================================================
 %% @doc Get the status of the document
 
-save_status(Editor) ->
-  wx_object:call(Editor, save_request).
+is_dirty(Editor) ->
+  wx_object:call(Editor, is_dirty).
 
 
 %% ===================================================================== 

@@ -12,6 +12,7 @@
 -export([
 	new_document/0, 
 	new_document/1, 
+	new_document_from_existing/3,
 	close_selected_editor/0, 
 	close_all_editors/0,
 	get_selected_editor/0, 
@@ -262,7 +263,7 @@ save_current_document() ->
 
 save_document(Index, Pid) when is_pid(Pid)->  
 	{Workspace,Sb,Ets} = wx_object:call(?MODULE, workspace), 
-	case editor:save_status(Pid) of
+	case editor:is_dirty(Pid) of
 		false -> ok;
 		_ ->
 			save_document(Sb, hd(ets:lookup(Ets, editor:get_id(Pid))))
@@ -345,7 +346,7 @@ close_selected_editor() ->
 	
 close_editor(EditorPid, Index) ->
 	{Workspace,_Sb,Tab} = wx_object:call(?MODULE, workspace),
-	case editor:save_status(EditorPid) of
+	case editor:is_dirty(EditorPid) of
 		true ->
 			io:format("Close dialog needs to be displayed.~n");
 		_ -> %% Go ahead, close the editor

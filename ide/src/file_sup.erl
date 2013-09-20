@@ -7,7 +7,7 @@
 -export([start_link/1]).
 
 start_link(Config) ->
-	supervisor:start_link({local, ?MODULE}, ?MODULE, Config).
+	supervisor:start_link(?MODULE, Config).
 	
 init(Config) ->
 	Server = {file_poller, {file_poller, start, [Config]},

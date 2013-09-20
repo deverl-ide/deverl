@@ -63,8 +63,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated}}, Sta
 			%% CHECK IF FILE CAN BE OPENED AS TEXT
 			Filename = filename:basename(File),
 			{_, FileContents} = file:read_file(File),
-			doc_manager:add_editor_with_contents(File, Filename, binary_to_list(FileContents)),
-			io:format(Text++"~n"++File++"~n")
+			doc_manager:new_document_from_existing(File, Filename, binary_to_list(FileContents))
 	end,
 	{noreply, State};
 handle_event(_Event, State) ->

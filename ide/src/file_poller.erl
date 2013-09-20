@@ -12,7 +12,7 @@
 -define(INTERVAL, 500).
 
 start(Config) ->
-	gen_server:start({local, ?MODULE},?MODULE, Config, []).
+	gen_server:start(?MODULE, Config, []).
 	
 init(Config) ->
 	Path = proplists:get_value(path, Config),
@@ -48,6 +48,7 @@ handle_event(_, State) ->
 	{noreply, State}.
 
 terminate(_Reason, _) ->
+	io:foramt("TERMINATE POLLER"),
   ok.
 
 stop() ->
