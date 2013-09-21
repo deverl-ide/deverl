@@ -5,11 +5,12 @@
 
 -behaviour(wx_object).
 
--export([new/1, init/1, terminate/2,  code_change/3,
+-export([init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 % API
 -export([
+	start/1,
 	new_document/0, 
 	new_document/1, 
 	new_document_from_existing/3,
@@ -23,6 +24,7 @@
 	save_all/0,
 	save_document/2,
 	open_document/1,
+	open_project/1,
 	find_replace/1,
 	get_current_theme_name/0,
 	set_theme/1,
@@ -47,7 +49,7 @@
                 }).
 
 
-new(Config) ->
+start(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
 init(Config) ->
@@ -328,6 +330,16 @@ open_document(Frame) ->
 			new_document_from_existing(Path, Filename, Contents)
 	end.
 
+
+%% =====================================================================
+%% @doc
+
+open_project(Frame) ->
+	case lib_dialog_wx:get_existing_dir(Frame) of
+		cancelled -> ok;
+		Path -> ide_projects_tree:add_project(Path)
+	end,
+	ok.
 
 %% =====================================================================
 %% @doc Close the selected editor

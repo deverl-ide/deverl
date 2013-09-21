@@ -5,7 +5,6 @@
 
 -behaviour(wx_object).
 -export([
-        new/1,
         init/1,
         terminate/2,
         code_change/3,
@@ -15,20 +14,46 @@
         handle_event/2]).
 
 -export([
+        start/1,
+				add_project/1,
         get_open_projects/0,
         refresh_tree/0]).
 
--record(state, {tree}).
+-record(state, {panel, tree}).
 
 -define(FOLDER_IMAGE, 0).
 -define(FILE_IMAGE, 1).
 
-new(Config) ->
-	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
+start(Parent) ->
+	wx_object:start_link({local, ?MODULE}, ?MODULE, Parent, []).
 
-init(Config) ->
-	ProjectTree = make_tree(Config),
-	{ProjectTree, #state{tree=ProjectTree}}.
+init(Parent) ->
+	Panel = wxPanel:new(Parent),
+	Sz = wxBoxSizer:new(?wxVERTICAL),
+	wxPanel:setSizer(Panel, Sz),
+		
+  Tree = wxTreeCtrl:new(Panel, [{style, ?wxTR_HAS_BUTTONS bor
+                                         ?wxTR_HIDE_ROOT bor
+                                         ?wxTR_FULL_ROW_HIGHLIGHT}]),
+  
+	ImgList = wxImageList:new(24,24),
+	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER", [{client,"wxART_MENU"}])),
+	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_NORMAL_FILE", [{client,"wxART_MENU"}])),
+	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_HELP_BOOK", [{client,"wxART_MENU"}])),
+	wxTreeCtrl:assignImageList(Tree, ImgList),
+	
+  % ProjectDir = user_prefs:get_user_pref({pref, project_dir}),
+	
+  wxTreeCtrl:addRoot(Tree, "ProjectTreeRoot"),
+	wxSizer:add(Sz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	
+  wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
+	
+	% add_project(Tree, "/Users/tommo/Desktop/erlang/erlangIDE/ide/priv"),
+	% add_project(Tree, "/Users/tommo/Desktop/erlang/erlangIDE/ide/include"),
+	% add_project(Tree, "/Users/tommo/Desktop/erlang/erlangIDE/ide/src"),
+
+	{Panel, #state{panel=Panel, tree=Tree}}.
 
 
 %% =====================================================================
@@ -52,10 +77,8 @@ handle_call(Msg, _From, State) ->
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated}}, State) ->
 	SelectedItem = wxTreeCtrl:getSelection(Tree),
-	File         = wxTreeCtrl:getItemData(Tree, SelectedItem),
-	Text         = wxTreeCtrl:getItemText(Tree, SelectedItem),
-	IsDir        = filelib:is_dir(File),
-	case IsDir of
+	File = wxTreeCtrl:getItemData(Tree, SelectedItem),
+	case filelib:is_dir(File) of
 		true ->
 			wxTreeCtrl:toggle(Tree, SelectedItem),
 			ok;
@@ -65,53 +88,38 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated}}, Sta
 			{_, FileContents} = file:read_file(File),
 			doc_manager:new_document_from_existing(File, Filename, binary_to_list(FileContents))
 	end,
-	{noreply, State};
-handle_event(_Event, State) ->
-  io:format("SIDE BAR EVENT CA~n"),
-  {noreply, State}.
+	{noreply, State}.
 
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
 
-terminate(_Reason, #state{tree=Tree}) ->
+terminate(_Reason, #state{panel=Panel}) ->
 	io:format("TERMINATE PROJECTS TREE~n"),
-	wxTreeCtrl:destroy(Tree).
-
-
-%% =====================================================================
-%% @doc Make a directory tree from project directory. Gets root from
-%% user preferences.
-
--spec make_tree(Parent) -> Result when
-	Parent :: wxPanel:wxPanel(),
-	Result :: wxTreeCtrl:wxTreeCtrl().
-
-make_tree(Parent) ->
-  Tree = wxTreeCtrl:new(Parent, [{style, ?wxTR_HAS_BUTTONS bor
-                                         ?wxTR_HIDE_ROOT bor
-                                         ?wxTR_FULL_ROW_HIGHLIGHT}]),
-  ImgList = wxImageList:new(24,24),
-	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER")),
-	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_NORMAL_FILE")),
-	wxTreeCtrl:assignImageList(Tree, ImgList),
-
-  ProjectDir = user_prefs:get_user_pref({pref, project_dir}),
-  Root = wxTreeCtrl:addRoot(Tree, ProjectDir),
-  build_tree(Tree, Root, ProjectDir, main),
-  wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
-	Tree.
+	wxPanel:destroy(Panel).
 
 
 %% =====================================================================
 %% @doc Get a list of files in a given root directory then build its
 %% subdirectories.
 
-build_tree(Tree, Root, Dir, main) ->
+add_project(Dir) ->
+	Tree = wx_object:call(?MODULE, tree),
+	Id = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir), [{data, Dir}]),
+	wxTreeCtrl:setItemImage(Tree, Id, 2),
+	build_tree(Tree, Id, Dir),
+	ok.
+	
+	
+%% =====================================================================
+%% @doc Get a list of files in a given root directory then build its
+%% subdirectories.
+
+build_tree(Tree, Parent, Dir, main) ->
   Files = filelib:wildcard(Dir ++ "/*"),
-	add_files(Tree, Root, Files).
-build_tree(Tree, Root, Dir) ->
+	add_files(Tree, Parent, Files).
+build_tree(Tree, Parent, Dir) ->
 	Files = filelib:wildcard(Dir ++ "/*"),
-	add_files(Tree, Root, lists:reverse(Files)).
+	add_files(Tree, Parent, lists:reverse(Files)).
 
 
 %% =====================================================================

@@ -401,12 +401,8 @@ create_left_window(Parent) ->
 	Toolbook = wxToolbook:new(Parent, ?wxID_ANY, [{style, ?wxBK_BUTTONBAR}]),
 	wxToolbook:assignImageList(Toolbook, ImgList),
 
-	ProjectsPanel = wxPanel:new(Toolbook),
-	ProjectsSizer = wxBoxSizer:new(?wxVERTICAL),
-	ProjectTree = ide_projects_tree:new(ProjectsPanel),
-	wxSizer:add(ProjectsSizer, ProjectTree, [{flag, ?wxEXPAND}, {proportion, 1}]),
-	wxPanel:setSizer(ProjectsPanel, ProjectsSizer),
-	wxToolbook:addPage(Toolbook, ProjectsPanel, "Projects", [{imageId, 0}]),
+	ProjectTrees = ide_projects_tree:start(Toolbook),
+	wxToolbook:addPage(Toolbook, ProjectTrees, "Projects", [{imageId, 0}]),
 
 	TestPanel = wxPanel:new(Toolbook),
 	wxToolbook:addPage(Toolbook, TestPanel, "Tests", [{imageId, 1}]),
@@ -421,7 +417,7 @@ create_left_window(Parent) ->
 %% @doc
 
 create_workspace(Parent, StatusBar) ->
-	doc_manager:new([{config, {Parent, StatusBar}}]).
+	doc_manager:start([{config, {Parent, StatusBar}}]).
 
 
 %% =====================================================================
@@ -459,4 +455,3 @@ toggle_menu_item(Mb, Mask, Id, Groups, Enable) ->
 		_ ->
 			wxMenuItem:enable(wxMenuBar:findItem(Mb, Id), [{enable, false}])
 	end.
-

@@ -100,9 +100,10 @@ handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}}
   {stop, normal, State};
 handle_event(#wx{id=?ID_FILE_CHOOSER, event=#wxCommand{type=command_button_clicked}}, 
              State=#state{parent=Parent, project_path=PathTc}) ->
-	 Dialog = wxDirDialog:new(Parent),
-	 wxDirDialog:showModal(Dialog),
-	 wxTextCtrl:setValue(PathTc, wxDirDialog:getPath(Dialog)),
+	case lib_dialog_wx:get_dir(Parent) of
+		cancelled -> ok;
+		Path -> wxTextCtrl:setValue(PathTc, Path)
+	end,
 	{noreply, State};
 handle_event(Ev = #wx{}, State = #state{}) ->
   io:format("Got Event ~p~n",[Ev]),
