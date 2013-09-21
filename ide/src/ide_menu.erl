@@ -1,7 +1,10 @@
 -module(ide_menu).
 
 %% Client API
--export([create/1, update_label/2]). 
+-export([
+	create/1, 
+	update_label/3,
+	toggle_item/2]). 
          
 -include_lib("wx/include/wx.hrl").
 -include("../include/ide.hrl").
@@ -196,13 +199,13 @@ init(Config) ->
 		{?MENU_ID_RUN,        "ToolTip", {custom, "../icons/module-run.png"},      
 			[{shortHelp, "Run Project"}],            true},
 		{?MENU_ID_HIDE_TEST,  "ToolTip", {custom, "../icons/hide-test.png"},       
-			[{shortHelp, "Hide the test pane"}],              false},
+			[{shortHelp, "Toggle left pane visibility"}],              false},
 		{?MENU_ID_HIDE_UTIL,  "ToolTip", {custom, "../icons/hide-util.png"},       
-			[{shortHelp, "Hide the utilities pane"}],         false},
+			[{shortHelp, "Toggle utility pane visibility"}],         false},
 		{?MENU_ID_MAX_EDITOR, "ToolTip", {custom, "../icons/maximise-editor.png"}, 
-			[{shortHelp, "Maximise/minimise the text editor"}], false},
+			[{shortHelp, "Maximise/restore the text editor"}], false},
 		{?MENU_ID_MAX_UTIL,   "ToolTip", {custom, "../icons/maximise-util.png"},   
-			[{shortHelp, "Maximise/minimise the utilities"}],   false}],
+			[{shortHelp, "Maximise/restore the utilities"}],   false}],
 
 	AddTool = fun({Id, Tooltip, {custom, Path}, Args, true}) ->
                   wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Path)), Args),
@@ -225,10 +228,9 @@ init(Config) ->
   %% Record format: {Id, {Module, Function, [Args]}, [Options]}
   %% When Options can be 0 or more of:
   %% 		
-  %%		{update_label, Pos} | {send_event, true}	|	
+  %%		{send_event, true}	|	
   %%		{help_string, HelpString}	| {group, Groups}	
   %%
-  %%		Pos :: integer(), % the position of the menu item
   %%		HelpString :: string(), % help string for status bar
   %%		Groups :: integer(), % any menu groups to which the menu item belongs (combine by adding)
   %%		Use send_event to forward the event record to Function
@@ -237,7 +239,7 @@ init(Config) ->
   TabId = ets:new(myTable, []),
   ets:insert(TabId, [
 		{?wxID_NEW,{doc_manager,new_document,[]}},
-		{?MENU_ID_NEW_PROJECT,{new_project_wx, start, [Frame]}},
+		{?MENU_ID_NEW_PROJECT,{new_project_wx,start,[Frame]}},
     {?wxID_OPEN, {doc_manager,open_document,[Frame]}},
 		{?MENU_ID_OPEN_PROJECT,{}},
     {?wxID_SAVE, {doc_manager,save_current_document,[]}},
@@ -266,10 +268,6 @@ init(Config) ->
     {?MENU_ID_INDENT_SPACES, {doc_manager,set_indent_tabs,[]}, [{send_event, true}]},
     {?MENU_ID_INDENT_GUIDES, {doc_manager,set_indent_guides,[View]}},		
     {?MENU_ID_FULLSCREEN, {}},
-    {?MENU_ID_HIDE_TEST, {ide,toggle_pane,[test]}, [{update_label,2}] },
-    {?MENU_ID_HIDE_UTIL, {ide,toggle_pane,[util]}, [{update_label,2}] },
-    {?MENU_ID_MAX_EDITOR, {ide,toggle_pane,[editor]}},
-    {?MENU_ID_MAX_UTIL, {ide,toggle_pane,[maxutil]}},
       
 		{?MENU_ID_INDENT_RIGHT, {doc_manager, indent_line_right,[]}},
 		{?MENU_ID_INDENT_LEFT, {doc_manager, indent_line_left,[]}},
@@ -277,7 +275,7 @@ init(Config) ->
 		{?MENU_ID_GOTO_LINE, {doc_manager,go_to_line,[Frame]}},
 		{?MENU_ID_UC_SEL, {doc_manager,transform_selection,[]}, [{send_event, true}]},
 		{?MENU_ID_LC_SEL, {doc_manager,transform_selection,[]}, [{send_event, true}]},			
-		{?MENU_ID_FOLD_ALL, {new_file, new, [{parent, Frame}]}},
+		{?MENU_ID_FOLD_ALL, {new_file,start,[Frame]}},
 		{?MENU_ID_UNFOLD_ALL, {}},
 		
     {?MENU_ID_WRANGLER, {}},
@@ -307,7 +305,6 @@ init(Config) ->
 	%% Connect event handlers
 	wxFrame:connect(Frame, menu_highlight,  
 		[{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
-	wxFrame:connect(Frame, menu_close,  [{id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}, {callback, fun(_,_) -> io:format("MENU CLOSE~n") end}]),
 	wxFrame:connect(Frame, command_menu_selected, 
 		[{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
 		
@@ -350,14 +347,10 @@ generate_radio_submenu(Menu, [Label|T], ToCheck, StartId) ->
 %% =====================================================================
 %% @doc Update the label of a menu item
 
-update_label(MenuItem, Menu) ->  
-	case wxMenuItem:getLabelFromText(wxMenu:getLabel(Menu, MenuItem)) of
-		"Hide Test Pane" ->
-			wxMenu:setLabel(Menu, MenuItem, "Show Test Pane\tShift+Alt+T");
-		"Show Test Pane" ->
-			wxMenu:setLabel(Menu, MenuItem, "Hide Test Pane\tShift+Alt+T");
-		"Hide Utilities Pane" ->
-			wxMenu:setLabel(Menu, MenuItem, "Show Utilities Pane\tShift+Alt+U");
-		"Show Utilities Pane" ->
-			wxMenu:setLabel(Menu, MenuItem, "Hide Utilities Pane\tShift+Alt+U")
-	end.
+update_label(Menubar, ItemId, Label) ->
+	wxMenuBar:setLabel(Menubar, ItemId, Label).
+	
+toggle_item(Menubar, ItemId) ->
+	% case isEnabled(Menubar, ItemId) of
+	% 	true
+	wxMenuBar:enable(Menubar, ItemId, not wxMenuBar:isEnabled(Menubar, ItemId)).

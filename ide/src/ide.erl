@@ -1,5 +1,4 @@
-%% The main GUI for the IDE
-%% ide.erl
+%% This module is responsible for building all of the GUI components.
 
 -module(ide).
 
@@ -10,10 +9,8 @@
 -export([start/0, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
--export([toggle_pane/1]).
-
 %% The record containing the State.
--record(state, {win,
+-record(state, {frame,
                 % env,                                           %% The wx environment
                 workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 utilities,                                     %% The utilities pane
@@ -37,6 +34,9 @@
 -define(SASH_HOR_DEFAULT_POS, -250).
 
 -define(ID_DIALOG_TEXT, 9001).
+
+-define(LABEL_HIDE_UTIL, "Hide Utilities Pane\tShift+Alt+U").
+-define(LABEL_SHOW_UTIL, "Show Utilities Pane\tShift+Alt+U").
 
 
 %% =====================================================================
@@ -87,10 +87,6 @@ init(Options) ->
 	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),
 
-	%% The workspace/text editors %%
-	% Manager = wxAuiManager:new([{managed_wnd, Frame}]),
-	% EditorWindowPaneInfo = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()),
-	% {Workspace, TabId} = create_editor(SplitterLeftRight, Manager, EditorWindowPaneInfo, StatusBar, ?DEFAULT_TAB_LABEL),
 	Workspace = create_workspace(SplitterLeftRight, StatusBar),
 
 	%% The left window
@@ -113,7 +109,6 @@ init(Options) ->
 	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
 
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
-  wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changing, [{userData, SplitterLeftRight}]),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
 
 	%% Testing accelerator table
@@ -123,8 +118,8 @@ init(Options) ->
 
 	toggle_menu_group(Menu, 1, MenuTab, {enable, false}),
 
-  State = #state{win=Frame},
-  {Frame, State#state{
+  {Frame, #state{
+						frame=Frame,
             left_pane=LeftWindow,
             utilities=Utilities,
             status_bar=StatusBar,
@@ -154,17 +149,8 @@ handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
 
-%% @doc Get the frames sash positions
-handle_call(splitter, _From, State) ->
-	{reply, {State#state.sash_v,
-			 State#state.sash_h,
-             State#state.sash_v_pos,
-             State#state.sash_h_pos,
-             State#state.workspace,
-             State#state.left_pane,
-             State#state.utilities}, State};
 handle_call(frame, _From, State) ->
-	{reply, State#state.win, State};
+	{reply, State#state.frame, State};
 handle_call(Msg, _From, State) ->
   demo:format(State#state{}, "Got Call ~p\n", [Msg]),
   {reply,{error, nyi}, State}.
@@ -182,7 +168,7 @@ handle_cast(Msg, State) ->
 handle_event(#wx{event=#wxClose{}}, State) ->
   io:format("~p Closing window ~n",[self()]),
   {stop, normal, State};
-	
+
 
 %% =====================================================================
 %% Sash drag handlers
@@ -215,10 +201,6 @@ handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter
   wxWindow:refresh(State#state.sash_v),
   wxWindow:update(State#state.sash_v),
   {noreply, State#state{sash_h_pos=NewPos}};
-
-handle_event(#wx{event = #wxSplitter{type = command_splitter_sash_pos_changing} = _E}, State) ->
-  io:format("Sash position changing ~n"),
-  {noreply, State};
 
 handle_event(#wx{event = #wxSplitter{type = command_splitter_doubleclicked} = _E}, State) ->
   io:format("Sash double clicked ~n"),
@@ -262,17 +244,70 @@ handle_event(E=#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_sele
 	end),
 	user_prefs:set_user_pref(tab_width, wxMenu:getLabel(Menu, Id)),
 	{noreply, State};
+	
+handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_TEST=Id},
+						 State=#state{frame=Frame, sash_v=V, left_pane=LeftPane, workspace=Ws, sash_v_pos=VPos}) ->
+   Str = case wxSplitterWindow:isSplit(V) of
+       true -> wxSplitterWindow:unsplit(V,[{toRemove, LeftPane}]), "Show Left Pane\tShift+Alt+T";
+       false -> wxSplitterWindow:splitVertically(V, LeftPane, Ws, [{sashPosition, VPos}]), "Hide Left Pane\tShift+Alt+T"
+   end,
+	 ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, Str),
+	{noreply, State};
+handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_UTIL=Id},
+						 State=#state{frame=Frame, sash_h=H, sash_v=V, utilities=Utils, sash_h_pos=HPos}) ->
+	IsShown = wxSplitterWindow:isShown(Utils),
+	case wxSplitterWindow:isSplit(H) of
+		true -> ok;
+		false -> 
+			wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
+			ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, ?LABEL_HIDE_UTIL)
+	end,
+	case IsShown of
+		true -> 
+			wxSplitterWindow:unsplit(H,[{toRemove, Utils}]),
+			ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, ?LABEL_SHOW_UTIL);
+		false -> ok
+	end,
+	{noreply, State};
+handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_EDITOR},
+						 State=#state{sash_h=H, sash_v=V, utilities=Utils, left_pane=LeftPane,
+						 							sash_h_pos=HPos, sash_v_pos=VPos, workspace=Ws}) ->
+	Fun = fun(false, false, false) -> %% Restore
+		wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
+		wxSplitterWindow:splitVertically(V, LeftPane, Ws, [{sashPosition, VPos}]);
+	(false, _, true) ->
+		wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
+		maximise;
+	(_,_,_) -> maximise %% Unsplit both, even if already unsplit
+	end,
+	case Fun(wxSplitterWindow:isSplit(H), wxSplitterWindow:isSplit(V), wxSplitterWindow:isShown(Utils)) of
+		maximise -> 
+			wxSplitterWindow:unsplit(H,[{toRemove, Utils}]),
+			wxSplitterWindow:unsplit(V,[{toRemove, LeftPane}]);
+		_ -> ok
+	end,
+	{noreply, State};
+handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UTIL},
+						 State=#state{frame=Frame, sash_h=H, sash_v=V, utilities=Utils, left_pane=LeftPane,
+						 							sash_h_pos=HPos, sash_v_pos=VPos, workspace=Ws}) ->
+	IsSplit = wxSplitterWindow:isSplit(H),
+	IsShown = wxSplitterWindow:isShown(Utils),
+	case IsSplit of
+		false -> wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
+						 ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_HIDE_UTIL, ?LABEL_HIDE_UTIL);
+		true -> ok
+	end,
+	case IsSplit =:= IsShown of
+		true -> wxSplitterWindow:unsplit(H,[{toRemove, V}]);
+		false -> ok
+	end,
+	{noreply, State};
 
 %% The menu items from the ETS table
 handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=command_menu_selected}},
-             State=#state{status_bar=Sb, win=Frame}) ->
+             State=#state{status_bar=Sb, frame=Frame}) ->
 	Result = case ets:lookup(TabId, Id) of
 		[{MenuItemID, {Mod, Func, Args}, Options}] ->
-			case proplists:get_value(update_label, Options) of
-				undefined -> ok;
-				Pos ->
-					ide_menu:update_label(MenuItemID, wxMenuBar:getMenu(wxFrame:getMenuBar(Frame), Pos))
-			end,
 			case proplists:get_value(send_event, Options) of
 				undefined -> {ok, {Mod,Func,Args}};
 				true -> {ok, {Mod,Func,[E]}}
@@ -303,7 +338,7 @@ handle_event(Ev, State) ->
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
-terminate(_Reason, #state{win=Frame, workspace_manager=Manager}) ->
+terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
   %% Unregister any pids/ports that dont close automatically
   %% This is a bit nasty - an OTP Application which allows
   %% components that can be started and stopped as a unit might
@@ -387,64 +422,6 @@ create_left_window(Parent) ->
 
 create_workspace(Parent, StatusBar) ->
 	doc_manager:new([{config, {Parent, StatusBar}}]).
-
-
-%% =====================================================================
-%% @doc Display or hide a given window pane
-
--spec toggle_pane(PaneType) -> Result when
-	PaneType :: 'test' | 'util' | 'editor' | 'maxutil',
-	Result :: 'ok'.
-
-toggle_pane(PaneType) ->
-    {V,H,Vp,Hp,W,T,U} = wx_object:call(?MODULE, splitter),
-	case PaneType of
-		test ->
-            case wxSplitterWindow:isSplit(V) of
-                true ->
-                    wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-                false ->
-                    wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
-            end;
-		util ->
-            case wxSplitterWindow:isSplit(H) of
-                true ->
-					wxSplitterWindow:unsplit(H,[{toRemove, U}]);
-				false ->
-					wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}])
-			end;
-		editor ->
-			case wxSplitterWindow:isSplit(H) of
-				true ->
-					wxSplitterWindow:unsplit(H,[{toRemove, U}]),
-					wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-				false ->
-					case wxSplitterWindow:isShown(U) of
-						true ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:unsplit(H,[{toRemove, U}]),
-							wxSplitterWindow:unsplit(V,[{toRemove, T}]);
-						false ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}])
-					end
-			end;
-		maxutil ->
-			case wxSplitterWindow:isSplit(H) of
-				true ->
-					wxSplitterWindow:unsplit(H,[{toRemove, V}]);
-				false ->
-				    case wxSplitterWindow:isShown(U) of
-						true ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:splitVertically(V, T, W, [{sashPosition, Vp}]);
-						false ->
-							wxSplitterWindow:splitHorizontally(H, V, U, [{sashPosition, Hp}]),
-							wxSplitterWindow:unsplit(H,[{toRemove, V}])
-					end
-			end
-	end,
-	ok.
 
 
 %% =====================================================================
