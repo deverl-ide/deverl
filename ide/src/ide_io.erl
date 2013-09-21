@@ -3,7 +3,7 @@
 
 -module(ide_io).
 
--export([open_new/1, read_file/1, save_as/2, save/2]).
+-export([open_new/1, read_file/1, save_as/2, save/2, create_directory_structure/3]).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -74,3 +74,53 @@ save(Path, Contents) ->
 	file:write(Fd, Contents),
 	file:close(Fd),
 	ok.
+
+
+%% =====================================================================
+%% @doc Create the directory structure for a new project.
+	
+create_directory_structure(Parent, Name, Path) ->
+	Root = filename:join([Path, Name]),
+  try
+    create_dir(Root),
+    create_dir(filename:join([Root, "ebin"])),		
+    create_dir(filename:join([Root, "priv"])),		
+    create_dir(filename:join([Root, "include"])),		
+    create_dir(filename:join([Root, "src"])),
+		copy_emakefile(Root),
+		Root
+  catch
+    throw:E -> throw(E)
+  end.
+
+
+%% =====================================================================
+%% @doc Create directory Dir.
+
+create_dir(Dir) ->
+	case file:make_dir(Dir) of
+		{error, eacces} ->
+			throw("Could not create the directory, check your permissions.");
+		{error, eexist} ->
+			throw("A directory named " ++ filename:basename(Dir) ++ " already exists.");
+		{error, enoent} ->
+			throw("The path is invalid.");
+		{error, enospc} ->
+			throw("There is a no space left on the device.");
+		{error, _} ->
+			throw("An error occurred.");
+		ok -> ok
+	end.
+	
+copy_file(Source, Dest) ->
+	case file:copy(Source, Dest) of
+		{ok, _BytesCopied} -> ok;
+		{error, Reason} -> throw("Copy failed: " ++ atom_to_list(Reason))
+	end.
+	
+copy_emakefile(Root) ->
+	case filelib:is_file("../priv/templates/emakefile.txt") of
+		true ->
+			copy_file("../priv/templates/emakefile.txt", filename:join([Root, "Emakefile"]));
+		false -> throw("Emakefile template not found.")
+	end.

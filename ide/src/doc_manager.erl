@@ -14,6 +14,7 @@
 	new_document/0, 
 	new_document/1, 
 	new_document_from_existing/3,
+	new_project/1,
 	close_selected_editor/0, 
 	close_all_editors/0,
 	get_selected_editor/0, 
@@ -180,6 +181,26 @@ new_document_from_existing(Path, Filename, Contents) ->
 	editor:link_poller(Pid, Path),
 	ok.
 
+
+new_project(Parent) ->
+	Dialog = new_project_wx:start(Parent),
+	case new_project_wx:showModal(Dialog) of
+		?wxID_CANCEL -> ok;
+		?wxID_OK ->
+			new_project(Parent, Dialog)
+	end,
+	new_project_wx:close(Dialog).
+	
+new_project(Parent, Dialog) ->
+  try
+		Path = ide_io:create_directory_structure(Parent, 
+			new_project_wx:get_name(Dialog), new_project_wx:get_path(Dialog)),
+		ide_projects_tree:add_project(Path)
+  catch
+    throw:E -> 
+			lib_dialog_wx:error_msg(Parent, E)
+  end.
+			
 
 %% =====================================================================
 %% @doc Get the Pid of an editor instance at position Index.

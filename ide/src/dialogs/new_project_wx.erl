@@ -1,21 +1,26 @@
 -module(new_project_wx).
 
 -include_lib("wx/include/wx.hrl").
-
--behaviour(wx_object).
--export([init/1, terminate/2,  code_change/3,
-	       handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 				 
 %% API
--export([start/1]).
+-export([start/1, get_name/1, get_path/1, close/1]).
+
+-behaviour(wx_object).
+-export([init/1, terminate/2, code_change/3,
+	       handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+			
+%% inherited exports
+-export([show/1,showModal/1]).
 				 
 -record(state, {dialog,
             	  parent,
+								project_name_text_ctrl,
+								project_path_text_ctrl,
 								project_name,
 								project_path
             	 }).
 							 
--define(ID_FILE_CHOOSER, 200).
+-define(ID_BROWSE_PROJECTS, 200).
 -define(ID_PROJ_PATH, 201).
 -define(ID_PROJ_NAME, 202).
 
@@ -50,7 +55,7 @@ do_init(Parent) ->
   wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Project Path:"), []),
 	ProjPath = wxTextCtrl:new(Panel, ?ID_PROJ_NAME, []),
   wxSizer:add(FlexGridSz, ProjPath, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(FlexGridSz, wxButton:new(Panel, ?ID_FILE_CHOOSER, [{label, "Browse.."}]), [{proportion, 0}]),
+  wxSizer:add(FlexGridSz, wxButton:new(Panel, ?ID_BROWSE_PROJECTS, [{label, "Browse.."}]), [{proportion, 0}]),
    
   wxFlexGridSizer:addGrowableCol(FlexGridSz, 1),                      
   wxSizer:add(VertSizer, FlexGridSz, [{flag, ?wxEXPAND}, {proportion, 0}]),      
@@ -70,7 +75,7 @@ do_init(Parent) ->
 	wxSizer:addSpacer(VertSizer, 20),
 	ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxSizer:addStretchSpacer(ButtonSz),
-  wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_ANY, [{label, "Finish"}]), [{proportion, 0}]),
+  wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_OK, [{label, "Finish"}]), [{proportion, 0}]),
 	wxSizer:addSpacer(ButtonSz, 10),  
   wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, [{label, "Cancel"}]), [{proportion, 0}]),
 	wxSizer:add(VertSizer, ButtonSz, [{flag, ?wxEXPAND}, {proportion, 0}]),   
@@ -79,16 +84,15 @@ do_init(Parent) ->
   wxSizer:add(LRSizer, VertSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(LRSizer, 20),
 	
-	% wxSizer:setSizeHints(LRSizer, Dialog),
 	wxSizer:layout(LRSizer),
-	
-	wxDialog:show(Dialog),
+	% 
+	% wxDialog:show(Dialog),
 	
   wxDialog:connect(Dialog, close_window),
 	wxDialog:connect(Dialog, command_button_clicked, [{skip, true}]), 
 
-  {Panel, #state{dialog=Dialog, parent=Parent, project_name=ProjName,
-		project_path=ProjPath}}.
+  {Dialog, #state{dialog=Dialog, parent=Parent, project_name_text_ctrl=ProjName,
+		project_path_text_ctrl=ProjPath}}.
   
     
 %% =====================================================================
@@ -98,8 +102,15 @@ handle_event(#wx{event=#wxClose{}}, State) ->
 handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}}, 
              State) ->
   {stop, normal, State};
-handle_event(#wx{id=?ID_FILE_CHOOSER, event=#wxCommand{type=command_button_clicked}}, 
-             State=#state{parent=Parent, project_path=PathTc}) ->
+handle_event(#wx{id=?wxID_OK, event=#wxCommand{type=command_button_clicked}}, 
+             State=#state{project_path_text_ctrl=PathTc, project_name_text_ctrl=NameTc}) ->
+	%% Validation				
+	
+	Path = wxTextCtrl:getValue(PathTc), 
+	Name = wxTextCtrl:getValue(NameTc), 
+  {noreply, State#state{project_name=Name, project_path=Path}};
+handle_event(#wx{id=?ID_BROWSE_PROJECTS, event=#wxCommand{type=command_button_clicked}}, 
+             State=#state{parent=Parent, project_path_text_ctrl=PathTc}) ->
 	case lib_dialog_wx:get_dir(Parent) of
 		cancelled -> ok;
 		Path -> wxTextCtrl:setValue(PathTc, Path)
@@ -113,9 +124,13 @@ handle_info(Msg, State) ->
   io:format( "Got Info ~p~nMsg:~p",[State, Msg]),
   {noreply,State}.
 
-handle_call(Msg, _From, State) ->
-  io:format("Got Call ~p~n",[Msg]),
-  {reply,ok,State}.
+handle_call(name, _From, State=#state{project_name=Name}) ->
+  {reply, Name, State};
+handle_call(path, _From, State=#state{project_path=Path}) ->
+  {reply, Path, State};
+handle_call(shutdown, _From, State) ->
+  {stop, normal, ok, State}.
+
 
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
@@ -128,3 +143,17 @@ terminate(_Reason, #state{dialog=Dialog}) ->
   io:format("TERMINATE NEW DIALOG~n"),
 	wxDialog:destroy(Dialog),
 	ok.
+	
+get_name(This) ->
+	wx_object:call(This, name).
+	
+get_path(This) ->
+	wx_object:call(This, path).
+	
+close(This) ->
+	wx_object:call(This, shutdown).
+	
+%% @hidden
+show(This) -> wxDialog:show(This).
+%% @hidden
+showModal(This) -> wxDialog:showModal(This).

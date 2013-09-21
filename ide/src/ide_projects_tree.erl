@@ -48,10 +48,6 @@ init(Parent) ->
 	wxSizer:add(Sz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
 	
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
-	
-	% add_project(Tree, "/Users/tommo/Desktop/erlang/erlangIDE/ide/priv"),
-	% add_project(Tree, "/Users/tommo/Desktop/erlang/erlangIDE/ide/include"),
-	% add_project(Tree, "/Users/tommo/Desktop/erlang/erlangIDE/ide/src"),
 
 	{Panel, #state{panel=Panel, tree=Tree}}.
 
