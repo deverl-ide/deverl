@@ -244,7 +244,16 @@ handle_event(E=#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_sele
 	end),
 	user_prefs:set_user_pref(tab_width, wxMenu:getLabel(Menu, Id)),
 	{noreply, State};
-	
+handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSCREEN=Id},
+						 State=#state{frame=Frame}) ->
+	IsFullScreen = wxFrame:isFullScreen(Frame),
+	wxFrame:showFullScreen(Frame, not IsFullScreen, [{style, ?wxFULLSCREEN_NOBORDER}]),
+	Label = case IsFullScreen of
+		true -> "Enter Fullscreen";
+		false -> "Exit Fullscreen"
+	end,
+	ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, Label ++ "\tCtrl+Alt+F"),
+	{noreply, State};	
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_TEST=Id},
 						 State=#state{frame=Frame, sash_v=V, left_pane=LeftPane, workspace=Ws, sash_v_pos=VPos}) ->
    Str = case wxSplitterWindow:isSplit(V) of
@@ -455,3 +464,6 @@ toggle_menu_item(Mb, Mask, Id, Groups, Enable) ->
 		_ ->
 			wxMenuItem:enable(wxMenuBar:findItem(Mb, Id), [{enable, false}])
 	end.
+	
+% set_title() ->
+	

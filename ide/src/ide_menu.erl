@@ -107,7 +107,7 @@ init(Config) ->
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_THEME_SELECT, "Theme", Theme),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
-  wxMenu:append(View, ?MENU_ID_FULLSCREEN, "Fullscreen", [{kind, ?wxITEM_CHECK}]),
+  wxMenu:append(View, ?MENU_ID_FULLSCREEN, "Enter Fullscreen\tCtrl+Alt+F", []),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Hide Test Pane\tShift+Alt+T", []),
   wxMenu:append(View, ?MENU_ID_HIDE_UTIL, "Hide Utilities Pane\tShift+Alt+U", []),
@@ -269,7 +269,6 @@ init(Config) ->
     {?MENU_ID_INDENT_TABS, {doc_manager,set_indent_tabs,[]}, [{send_event, true}]},
     {?MENU_ID_INDENT_SPACES, {doc_manager,set_indent_tabs,[]}, [{send_event, true}]},
     {?MENU_ID_INDENT_GUIDES, {doc_manager,set_indent_guides,[View]}},		
-    {?MENU_ID_FULLSCREEN, {}},
       
 		{?MENU_ID_INDENT_RIGHT, {doc_manager, indent_line_right,[]}},
 		{?MENU_ID_INDENT_LEFT, {doc_manager, indent_line_left,[]}},
