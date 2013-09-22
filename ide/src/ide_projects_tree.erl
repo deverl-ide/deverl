@@ -52,31 +52,31 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
 	wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
 	
-	Dir1 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/priv",
-	Dir2 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/include",
-	Dir3 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/src",
-	
-	Id1 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir1), [{data, Dir1}]),
-	wxTreeCtrl:setItemImage(Tree, Id1, 2),
-	build_tree(Tree, Id1, Dir1),
-	
-	Id2 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir2), [{data, Dir2}]),
-	wxTreeCtrl:setItemImage(Tree, Id2, 2),
-	build_tree(Tree, Id2, Dir2),
-	
-	Id3 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir3), [{data, Dir3}]),
-	wxTreeCtrl:setItemImage(Tree, Id3, 2),
-	build_tree(Tree, Id3, Dir3),
-	
-	io:format("Item1: ~p~n", [wxTreeCtrl:getItemText(Tree, Id1)]),
-	io:format("Item2: ~p~n", [wxTreeCtrl:getItemText(Tree, Id2)]),
-	io:format("Item3: ~p~n", [wxTreeCtrl:getItemText(Tree, Id3)]),
-	
-	% wxTreeCtrl:delete(Tree, Id1),
+	% Dir1 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/priv",
+	% Dir2 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/include",
+	% Dir3 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/src",
 	% 
-	% % io:format("Item1: ~p~n", [wxTreeCtrl:getItemText(Tree, Id1)]),
+	% Id1 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir1), [{data, Dir1}]),
+	% wxTreeCtrl:setItemImage(Tree, Id1, 2),
+	% build_tree(Tree, Id1, Dir1),
+	% 
+	% Id2 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir2), [{data, Dir2}]),
+	% wxTreeCtrl:setItemImage(Tree, Id2, 2),
+	% build_tree(Tree, Id2, Dir2),
+	% 
+	% Id3 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir3), [{data, Dir3}]),
+	% wxTreeCtrl:setItemImage(Tree, Id3, 2),
+	% build_tree(Tree, Id3, Dir3),
+	% 
+	% io:format("Item1: ~p~n", [wxTreeCtrl:getItemText(Tree, Id1)]),
 	% io:format("Item2: ~p~n", [wxTreeCtrl:getItemText(Tree, Id2)]),
 	% io:format("Item3: ~p~n", [wxTreeCtrl:getItemText(Tree, Id3)]),
+	% 
+	% % wxTreeCtrl:delete(Tree, Id1),
+	% % 
+	% % % io:format("Item1: ~p~n", [wxTreeCtrl:getItemText(Tree, Id1)]),
+	% % io:format("Item2: ~p~n", [wxTreeCtrl:getItemText(Tree, Id2)]),
+	% % io:format("Item3: ~p~n", [wxTreeCtrl:getItemText(Tree, Id3)]),
 
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
 
@@ -99,12 +99,13 @@ handle_call(tree, _From, State) ->
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item}}, 
 						 State=#state{frame=Frame}) ->
-	ProjRoot = get_project_root(Tree, wxTreeCtrl:getRootItem(Tree), wxTreeCtrl:getItemParent(Tree, Item), Item),
+	ProjRoot = get_project_root(Tree, Item),
 	ProjName = filename:basename(wxTreeCtrl:getItemData(Tree, ProjRoot)),
 	ide:set_title(ProjName),
 	ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjName ++ ")"),
 	{noreply, State};
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}}, State) ->
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}}, 
+						State=#state{frame=Frame}) ->
 	File = wxTreeCtrl:getItemData(Tree, Item),
 	case filelib:is_dir(File) of
 		true ->
@@ -112,9 +113,13 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
 			ok;
 		_ ->
 			%% CHECK IF FILE CAN BE OPENED AS TEXT
-			Filename = filename:basename(File),
-			{_, FileContents} = file:read_file(File),
-			doc_manager:new_document_from_existing(File, Filename, binary_to_list(FileContents))
+			try 
+				FileContents = ide_io:read_file(File),
+				doc_manager:new_document_from_existing(File, filename:basename(File), 
+					FileContents, [{project,{Item, wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item))}}])
+			catch
+				throw:_ -> lib_dialog_wx:error_msg(Frame, "The file could not be loaded.")
+			end
 	end,
 	{noreply, State}.
 
@@ -136,7 +141,7 @@ add_project(Dir) ->
 	wxTreeCtrl:setItemImage(Tree, Id, 2),
 	build_tree(Tree, Id, Dir),
 	% ide:set_title(filename:basename(Dir)),
-	Id.
+	ok.
 	
 	
 %% =====================================================================
@@ -217,6 +222,10 @@ get_projects(Tree, Root, Cookie, List) ->
 
 %% =====================================================================
 %% @doc Get the project's root item when given any item.
+
+get_project_root(Tree, Item) ->
+	get_project_root(Tree, wxTreeCtrl:getRootItem(Tree), 
+		wxTreeCtrl:getItemParent(Tree, Item), Item).
 
 get_project_root(Tree, Root, Root, Item) ->
 	Item;

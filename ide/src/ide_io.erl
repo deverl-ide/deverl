@@ -32,8 +32,13 @@ open_new(Parent) ->
 %% @doc Read the file at Path.
 
 read_file(Path) ->
-	{ok, Contents} = file:read_file(Path),
-	binary_to_list(Contents).
+	try
+		{ok, Contents} = file:read_file(Path),
+		binary_to_list(Contents)
+	catch
+		error:E ->
+			throw("Could not read file.")
+	end.
 
 
 %% =====================================================================

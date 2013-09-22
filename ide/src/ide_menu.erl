@@ -247,9 +247,9 @@ init(Config) ->
     {?wxID_SAVEAS, {doc_manager,save_new_document,[]}},
     {?MENU_ID_SAVE_ALL, {}},
     {?wxID_PRINT, {}},
-    {?wxID_CLOSE, {doc_manager,close_selected_editor,[]}},
-    {?wxID_CLOSE_ALL, {doc_manager,close_all_editors,[]}},
-		{?MENU_ID_CLOSE_PROJECT, {}},
+    {?wxID_CLOSE, {doc_manager,close_active_document,[]}},
+    {?wxID_CLOSE_ALL, {doc_manager,close_all_documents,[]}},
+		{?MENU_ID_CLOSE_PROJECT, {doc_manager,close_project,[]}},
     {?wxID_EXIT, {}},
     {?wxID_PREFERENCES, {ide_prefs,start,[[{parent,Frame}]] }},
     

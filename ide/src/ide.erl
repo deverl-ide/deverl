@@ -243,7 +243,7 @@ handle_event(E=#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_sele
 						 Id =< ?MENU_ID_TAB_WIDTH_HIGHEST  ->
 	Env = wx:get_env(),
 	spawn(fun() -> wx:set_env(Env),
-		[editor:set_tab_width(Ed, list_to_integer(wxMenu:getLabel(Menu, Id))) || {_,Ed} <- doc_manager:get_all_editors()]
+		[editor:set_tab_width(Ed, list_to_integer(wxMenu:getLabel(Menu, Id))) || {_,Ed} <- doc_manager:get_open_documents()]
 	end),
 	user_prefs:set_user_pref(tab_width, wxMenu:getLabel(Menu, Id)),
 	{noreply, State};

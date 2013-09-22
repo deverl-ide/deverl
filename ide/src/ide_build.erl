@@ -6,7 +6,7 @@
 
 
 compile() ->
-  case doc_manager:get_selected_editor() of
+  case doc_manager:get_active_document() of
     {error, _} ->
       ok;
     {ok, {Index, Pid}} ->

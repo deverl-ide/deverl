@@ -180,7 +180,7 @@ terminate(_Reason, #state{panel=Panel}) ->
   ok.
 
 set(Items) ->
-	{ok, {_,Pid}} = doc_manager:get_selected_editor(),
+	{ok, {_,Pid}} = doc_manager:get_active_document(),
 	ListCtrl = wx_object:call(?MODULE, {list, Pid}),
 	wxListCtrl:deleteAllItems(ListCtrl),
 	% insert_items(ListCtrl, Items),
