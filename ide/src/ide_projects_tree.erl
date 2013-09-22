@@ -103,6 +103,7 @@ add_project(Dir) ->
 	Id = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir), [{data, Dir}]),
 	wxTreeCtrl:setItemImage(Tree, Id, 2),
 	build_tree(Tree, Id, Dir),
+	ide:set_title(filename:basename(Dir)),
 	ok.
 	
 	

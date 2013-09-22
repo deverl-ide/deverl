@@ -8,6 +8,8 @@
 -behaviour(wx_object).
 -export([start/0, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+				 
+-export([set_title/1]).
 
 %% The record containing the State.
 -record(state, {frame,
@@ -37,6 +39,7 @@
 
 -define(LABEL_HIDE_UTIL, "Hide Utilities Pane\tShift+Alt+U").
 -define(LABEL_SHOW_UTIL, "Show Utilities Pane\tShift+Alt+U").
+-define(FRAME_TITLE, "Erlang IDE").
 
 
 %% =====================================================================
@@ -155,8 +158,8 @@ handle_call(Msg, _From, State) ->
   demo:format(State#state{}, "Got Call ~p\n", [Msg]),
   {reply,{error, nyi}, State}.
 
-handle_cast(Msg, State) ->
-  io:format("Got cast ~p~n",[Msg]),
+handle_cast({title, Title}, State=#state{frame=Frame}) ->
+	wxFrame:setTitle(Frame, Title ++ " - " ++ ?FRAME_TITLE),
   {noreply,State}.
 
 %% =====================================================================
@@ -464,6 +467,10 @@ toggle_menu_item(Mb, Mask, Id, Groups, Enable) ->
 		_ ->
 			wxMenuItem:enable(wxMenuBar:findItem(Mb, Id), [{enable, false}])
 	end.
-	
-% set_title() ->
-	
+
+
+%% =====================================================================
+%% @doc Update the frame's title.
+
+set_title(Title) ->
+	wx_object:cast(?MODULE, {title, Title}).
