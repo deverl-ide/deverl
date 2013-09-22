@@ -350,8 +350,10 @@ generate_radio_submenu(Menu, [Label|T], ToCheck, StartId) ->
 
 update_label(Menubar, ItemId, Label) ->
 	wxMenuBar:setLabel(Menubar, ItemId, Label).
+
+
+%% =====================================================================
+%% @doc Toggle the enabled status of a menu item
 	
 toggle_item(Menubar, ItemId) ->
-	% case isEnabled(Menubar, ItemId) of
-	% 	true
 	wxMenuBar:enable(Menubar, ItemId, not wxMenuBar:isEnabled(Menubar, ItemId)).

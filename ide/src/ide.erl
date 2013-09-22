@@ -93,7 +93,7 @@ init(Options) ->
 	Workspace = create_workspace(SplitterLeftRight, StatusBar),
 
 	%% The left window
-	LeftWindow = create_left_window(SplitterLeftRight),
+	LeftWindow = create_left_window(Frame, SplitterLeftRight),
 
 	%% The bottom pane/utility window
 	Utilities = create_utils(SplitterTopBottom),
@@ -404,7 +404,7 @@ create_utils(Parent) ->
 %% =====================================================================
 %% @doc
 
-create_left_window(Parent) ->
+create_left_window(Frame, Parent) ->
 	ImgList = wxImageList:new(24,24),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-open.png"))),
@@ -413,7 +413,7 @@ create_left_window(Parent) ->
 	Toolbook = wxToolbook:new(Parent, ?wxID_ANY, [{style, ?wxBK_BUTTONBAR}]),
 	wxToolbook:assignImageList(Toolbook, ImgList),
 
-	ProjectTrees = ide_projects_tree:start(Toolbook),
+	ProjectTrees = ide_projects_tree:start([{parent, Toolbook}, {frame, Frame}]),
 	wxToolbook:addPage(Toolbook, ProjectTrees, "Projects", [{imageId, 0}]),
 
 	TestPanel = wxPanel:new(Toolbook),

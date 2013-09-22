@@ -2,7 +2,7 @@
 -module(lib_dialog_wx).
 -include_lib("wx/include/wx.hrl").
 
--define(ERROR_CAPTION, "The operation could not continue..").
+-define(ERROR_CAPTION, "The operation could not continue.").
 
 -export([
 	get_dir/1,
