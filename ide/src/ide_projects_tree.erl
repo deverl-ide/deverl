@@ -178,7 +178,7 @@ get_project_root(Tree, Root, Parent, Item) ->
 delete_project(Id) ->
 	wx_object:cast(?MODULE, {delete, Id}).
 
-	
+
 %% =====================================================================
 %% @doc Print the tree
 
@@ -200,3 +200,4 @@ print_tree_debug(Tree, Node, Indent) ->
 		true -> print_tree_debug(Tree, Sibling, Indent);
 		false -> ok
 	end.
+
