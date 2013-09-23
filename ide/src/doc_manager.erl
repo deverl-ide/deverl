@@ -132,7 +132,6 @@ handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type=command_auinotebo
   editor:selected(Pid, Sb),
 	Id = editor:get_id(Pid),
 	[{_,_,_,{project, Proj}}] = ets:lookup(Ets, Id),
-	io:format("PAGE CHANGED PROJ: ~p~n", [Proj]),
   {noreply, State#state{active_project=Proj}};
   % {noreply, State};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
