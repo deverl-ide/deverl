@@ -28,7 +28,7 @@ start(Parent) ->
 init(Parent) ->
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{500, 500}}]),
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  wxPanel:setSizer(Dialog, LRSizer),
+  wxDialog:setSizer(Dialog, LRSizer),
   
 	wxSizer:addSpacer(LRSizer, 20),
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
@@ -116,7 +116,7 @@ terminate(_Reason, #state{win=Dialog}) ->
 dialog1(Parent) -> 
 	Dialog1 = wxWindow:new(Parent, 555),
   DialogSizer1 = wxFlexGridSizer:new(2, 2, 10, 10),
-	wxPanel:setSizer(Dialog1, DialogSizer1),
+	wxWindow:setSizer(Dialog1, DialogSizer1),
 
   wxSizer:add(DialogSizer1, wxStaticText:new(Dialog1, ?wxID_ANY, "Project:"),   []),
   wxSizer:add(DialogSizer1, wxChoice:new(Dialog1, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
@@ -128,7 +128,7 @@ dialog1(Parent) ->
   wxSizer:add(DialogSizer1, wxTextCtrl:new(Dialog1, ?wxID_ANY, [{style, ?wxTE_MULTILINE bor ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxFlexGridSizer:addGrowableCol(DialogSizer1, 1),
   wxFlexGridSizer:addGrowableCol(DialogSizer1, 2),
-  
+ 
   Dialog1.
 
 

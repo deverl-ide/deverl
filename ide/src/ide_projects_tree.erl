@@ -53,57 +53,7 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
 	wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
 	
-	Dir1 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/priv",
-	Dir2 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/include",
-	Dir3 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/src",
-	
-	Id1 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir1), [{data, Dir1}]),
-	wxTreeCtrl:setItemImage(Tree, Id1, 2),
-	build_tree(Tree, Id1, Dir1),
-	% 
-	% Id2 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir2), [{data, Dir2}]),
-	% wxTreeCtrl:setItemImage(Tree, Id2, 2),
-	% build_tree(Tree, Id2, Dir2),
-	% 
-	% Id3 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir3), [{data, Dir3}]),
-	% wxTreeCtrl:setItemImage(Tree, Id3, 2),
-	% build_tree(Tree, Id3, Dir3),
-	% 
-	% io:format("Item1: ~p~n", [wxTreeCtrl:getItemText(Tree, Id1)]),
-	% io:format("Item2: ~p~n", [wxTreeCtrl:getItemText(Tree, Id2)]),
-	% io:format("Item3: ~p~n", [wxTreeCtrl:getItemText(Tree, Id3)]),
-	
-	Dir4 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/ebin",
-	% wxTreeCtrl:deleteChildren(Tree, Id1),
-	wxTreeCtrl:delete(Tree, Id1),
-	% wxTreeCtrl:deleteAllItems(Tree),
-	Id4 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir4), [{data, Dir4}]),
-	wxTreeCtrl:setItemImage(Tree, Id1, 2),
-	build_tree(Tree, Id4, Dir4),
-	
-	print_tree_debug(Tree),
-	
-
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
-
-print_tree_debug(Tree) ->
-	Root = wxTreeCtrl:getRootItem(Tree),
-	print_tree_debug(Tree, Root, 0).
-	
-print_tree_debug(Tree, Node, Indent) ->
-	Spac = lists:duplicate(Indent + 1, "---"),
-	io:format(Spac ++ "Node: ~p~n", [wxTreeCtrl:getItemData(Tree, Node)]),
-	case wxTreeCtrl:itemHasChildren(Tree, Node) of
-		true ->
-			{Child, _} = wxTreeCtrl:getFirstChild(Tree, Node),
-			print_tree_debug(Tree, Child, Indent + 1);
-		false -> ok
-	end,
-	Sibling = wxTreeCtrl:getNextSibling(Tree, Node),
-	case wxTreeCtrl:isTreeItemIdOk(Sibling) of
-		true -> print_tree_debug(Tree, Sibling, Indent);
-		false -> ok
-	end.
 	
 
 %% =====================================================================
@@ -115,6 +65,17 @@ handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
 
+handle_cast({delete, Item}, State=#state{tree=Tree}) ->
+  wxTreeCtrl:delete(Tree, Item),
+  {noreply,State};
+handle_cast({add, Dir}, State=#state{tree=Tree}) ->
+	Root = wxTreeCtrl:getRootItem(Tree),
+	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
+	wxTreeCtrl:setItemImage(Tree, Item, 2),
+	build_tree(Tree, Item, Dir),
+	% ide:set_title(filename:basename(Dir)),
+	% doc_manager:set_active_project({Root, Dir}),
+  {noreply,State};
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
@@ -122,16 +83,23 @@ handle_cast(Msg, State) ->
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item}}, 
-						 State=#state{frame=Frame}) ->
-	io:format("~nTREE INVISIBLE ROOT: ~p~n", [wxTreeCtrl:getRootItem(Tree)]),
-	io:format("PROJECT ROOT: ~p~n", [get_project_root(Tree, Item)]),
-	ProjRoot = get_project_root(Tree, Item),
-	Data = wxTreeCtrl:getItemData(Tree, ProjRoot),
-	% ProjName = filename:basename(Data),
-	% ide:set_title(ProjName),
-	% ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjName ++ ")"),
-	doc_manager:set_active_project({ProjRoot, Data}),
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}}, 
+						 State=#state{frame=Frame, tree=Tree}) ->
+ 	% io:format("~n command_tree_sel_changed~n"),
+ 	% io:format("Old item: ~p, Data: ~p, Valid: ~p~n", [OldItem, wxTreeCtrl:getItemData(Tree, OldItem), wxTreeCtrl:isTreeItemIdOk(OldItem)]),
+ 	% io:format("New item: ~p, Data: ~p, Valid: ~p~n", [Item, wxTreeCtrl:getItemData(Tree, Item), wxTreeCtrl:isTreeItemIdOk(Item)]),
+	case wxTreeCtrl:isTreeItemIdOk(OldItem) of
+		false ->  %% Deleted item
+			ok;
+		true ->
+			ProjRoot = get_project_root(Tree, Item),
+			Data = wxTreeCtrl:getItemData(Tree, ProjRoot),
+			% ProjName = filename:basename(Data),
+			% ide:set_title(ProjName),
+			% ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjName ++ ")"),
+			doc_manager:set_active_project({ProjRoot, Data})
+	end,
+			
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}}, 
 						State=#state{frame=Frame}) ->
@@ -145,7 +113,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
 			try 
 				FileContents = ide_io:read_file(File),
 				doc_manager:new_document_from_existing(File, filename:basename(File), 
-					FileContents, [{project,{wxTreeCtrl:getRootItem(Tree), 
+					FileContents, [{project,{get_project_root(Tree, Item), 
 						wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item))}}])
 			catch
 				throw:_ -> lib_dialog_wx:error_msg(Frame, "The file could not be loaded.")
@@ -166,15 +134,7 @@ terminate(_Reason, #state{panel=Panel}) ->
 %% subdirectories.
 
 add_project(Dir) ->
-	Tree = wx_object:call(?MODULE, tree),
-	Root = wxTreeCtrl:getRootItem(Tree),
-	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
-	wxTreeCtrl:setItemImage(Tree, Item, 2),
-	build_tree(Tree, Item, Dir),
-	% ide:set_title(filename:basename(Dir)),
-	% doc_manager:set_active_project({Root, Dir}),
-	ok.
-	
+	Tree = wx_object:cast(?MODULE, {add, Dir}).
 	
 %% =====================================================================
 %% @doc Get a list of files in a given root directory then build its
@@ -266,5 +226,31 @@ get_project_root(Tree, Root, Parent, Item) ->
 			wxTreeCtrl:getItemParent(Tree, Item)).
 
 
+% delete_project(Id) ->
+% 	wxTreeCtrl:delete(wx_object:call(?MODULE, tree), Id).
+
 delete_project(Id) ->
-	wxTreeCtrl:delete(wx_object:call(?MODULE, tree), Id).
+	io:format("IN DELETE: ~p~n", [Id]),
+	wx_object:cast(?MODULE, {delete, Id}).
+	
+%% =====================================================================
+%% @doc Print the tree
+
+print_tree_debug(Tree) ->
+	Root = wxTreeCtrl:getRootItem(Tree),
+	print_tree_debug(Tree, Root, 0).
+	
+print_tree_debug(Tree, Node, Indent) ->
+	Spac = lists:duplicate(Indent + 1, "---"),
+	io:format(Spac ++ "Node: ~p~n", [wxTreeCtrl:getItemData(Tree, Node)]),
+	case wxTreeCtrl:itemHasChildren(Tree, Node) of
+		true ->
+			{Child, _} = wxTreeCtrl:getFirstChild(Tree, Node),
+			print_tree_debug(Tree, Child, Indent + 1);
+		false -> ok
+	end,
+	Sibling = wxTreeCtrl:getNextSibling(Tree, Node),
+	case wxTreeCtrl:isTreeItemIdOk(Sibling) of
+		true -> print_tree_debug(Tree, Sibling, Indent);
+		false -> ok
+	end.
