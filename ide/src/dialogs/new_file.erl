@@ -99,8 +99,7 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 %% @doc 
 
-dialog1() ->
-  Window = wxWindow:new(wx:null(), wx),
+dialog1(Panel) ->
   DialogSizer1 = wxFlexGridSizer:new(2, 2, 10, 10),
 
   wxSizer:add(DialogSizer1, wxStaticText:new(Panel, ?wxID_ANY, "Project:"),   []),
