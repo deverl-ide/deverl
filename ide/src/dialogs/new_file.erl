@@ -26,7 +26,8 @@ start(Parent) ->
   wx_object:start_link(?MODULE, Parent, []).
 
 init(Parent) ->
-  Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 460}}]),
+  Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 460}}, 
+		{style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}]),
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
 
   wxSizer:addSpacer(LRSizer, 20),
