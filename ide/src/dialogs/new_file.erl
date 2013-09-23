@@ -26,7 +26,7 @@ start(Parent) ->
   wx_object:start_link(?MODULE, Parent, []).
 
 init(Parent) ->
-  Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{600, 410}}, {style, ?wxRESIZE_BORDER}]),
+  Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{600, 550}}, {style, ?wxRESIZE_BORDER}]),
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
 
   wxSizer:addSpacer(LRSizer, 20),
@@ -34,12 +34,17 @@ init(Parent) ->
 
   MainSizer = wxBoxSizer:new(?wxVERTICAL),
   wxSizer:add(LRSizer, MainSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:addSpacer(MainSizer, 40),
+  wxSizer:add(MainSizer, wxStaticText:new(Dialog, ?wxID_ANY, "New File"), []),
+  wxSizer:addSpacer(MainSizer, 5),
+  wxSizer:add(MainSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 20),
 
   SwapSizer = wxBoxSizer:new(?wxVERTICAL),
   Dialog1 = dialog1(Dialog),
-  wxSizer:add(SwapSizer, Dialog1,   [{proportion, 0}, {flag, ?wxEXPAND}]),
+  wxSizer:add(SwapSizer, Dialog1,   [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(MainSizer, SwapSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:addSpacer(MainSizer, 20),
 
   %%%%%%%%
   
@@ -49,14 +54,16 @@ init(Parent) ->
   DescriptionPanel = wxPanel:new(Dialog),
   DescriptionSizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(DescriptionPanel, DescriptionSizer),
-  wxSizer:add(DescriptionSizer, wxStaticText:new(DescriptionPanel, ?wxID_ANY, "Description:"), []),
+  wxSizer:add(DescriptionSizer, wxStaticText:new(DescriptionPanel, ?wxID_ANY, "Description"), []),
+  wxSizer:addSpacer(DescriptionSizer, 5),
   wxSizer:add(DescriptionSizer, wxTextCtrl:new(DescriptionPanel, ?wxID_ANY, [{style, ?wxTE_MULTILINE bor ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-  wxSizer:add(MainSizer, DescriptionPanel, [{proportion, 0}, {flag, ?wxEXPAND}]),
-  wxSizer:addSpacer(MainSizer, 20),
+  wxSizer:add(MainSizer, DescriptionPanel, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:addSpacer(MainSizer, 40),
   
   %%%%%%%%
 
+  
   wxSizer:add(MainSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 20),
   ButtonPanel = wxPanel:new(Dialog),
@@ -155,6 +162,7 @@ dialog1(Parent) ->
   wxSizer:add(DialogSizer1, wxListBox:new(Dialog1, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
   
   wxFlexGridSizer:addGrowableCol(DialogSizer1, 1),
+  wxFlexGridSizer:addGrowableRow(DialogSizer1, 1),
  
   Dialog1.
 
