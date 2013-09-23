@@ -113,12 +113,8 @@ terminate(_Reason, #state{win=Dialog}) ->
 %% =====================================================================
 %% @doc 
 
-<<<<<<< HEAD
-dialog1(Panel) ->
-=======
 dialog1(Parent) -> 
 	Dialog1 = wxWindow:new(Parent, 555),
->>>>>>> aa117dacb8a334c919224c8d01994b6283a8c573
   DialogSizer1 = wxFlexGridSizer:new(2, 2, 10, 10),
 	wxPanel:setSizer(Dialog1, DialogSizer1),
 

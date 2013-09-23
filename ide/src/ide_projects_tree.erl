@@ -52,31 +52,36 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
 	wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
 	
-	% Dir1 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/priv",
-	% Dir2 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/include",
-	% Dir3 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/src",
+  Dir1 = "/home/qqq/projects/git/erlangIDE/ide/priv",
+	Dir2 = "/home/qqq/projects/git/erlangIDE/ide/include",
+	Dir3 = "/home/qqq/projects/git/erlangIDE/ide/src",
+	
+	Id1 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir1), [{data, Dir1}]),
+	wxTreeCtrl:setItemImage(Tree, Id1, 2),
+	build_tree(Tree, Id1, Dir1),
+	
+	Id2 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir2), [{data, Dir2}]),
+	wxTreeCtrl:setItemImage(Tree, Id2, 2),
+	build_tree(Tree, Id2, Dir2),
+	 
+	Id3 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir3), [{data, Dir3}]),
+	wxTreeCtrl:setItemImage(Tree, Id3, 2),
+	build_tree(Tree, Id3, Dir3),
+	 
+	io:format("Item1: ~p~n", [wxTreeCtrl:getItemText(Tree, Id1)]),
+	io:format("Item2: ~p~n", [wxTreeCtrl:getItemText(Tree, Id2)]),
+	io:format("Item3: ~p~n", [wxTreeCtrl:getItemText(Tree, Id3)]),
+	 
+	wxTreeCtrl:delete(Tree, Id1),
+  
+  Id4 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir1), [{data, Dir1}]),
+	wxTreeCtrl:setItemImage(Tree, Id4, 2),
+	build_tree(Tree, Id4, Dir1),
+  
 	% 
-	% Id1 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir1), [{data, Dir1}]),
-	% wxTreeCtrl:setItemImage(Tree, Id1, 2),
-	% build_tree(Tree, Id1, Dir1),
-	% 
-	% Id2 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir2), [{data, Dir2}]),
-	% wxTreeCtrl:setItemImage(Tree, Id2, 2),
-	% build_tree(Tree, Id2, Dir2),
-	% 
-	% Id3 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir3), [{data, Dir3}]),
-	% wxTreeCtrl:setItemImage(Tree, Id3, 2),
-	% build_tree(Tree, Id3, Dir3),
-	% 
-	% io:format("Item1: ~p~n", [wxTreeCtrl:getItemText(Tree, Id1)]),
+	% % io:format("Item1: ~p~n", [wxTreeCtrl:getItemText(Tree, Id1)]),
 	% io:format("Item2: ~p~n", [wxTreeCtrl:getItemText(Tree, Id2)]),
 	% io:format("Item3: ~p~n", [wxTreeCtrl:getItemText(Tree, Id3)]),
-	% 
-	% % wxTreeCtrl:delete(Tree, Id1),
-	% % 
-	% % % io:format("Item1: ~p~n", [wxTreeCtrl:getItemText(Tree, Id1)]),
-	% % io:format("Item2: ~p~n", [wxTreeCtrl:getItemText(Tree, Id2)]),
-	% % io:format("Item3: ~p~n", [wxTreeCtrl:getItemText(Tree, Id3)]),
 
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
 
