@@ -7,6 +7,7 @@
   set_savepoint/1,
   get_text/1,
   get_id/1,
+	get_ref/1,
   selected/2,
   find/2,
   find_all/2,
@@ -464,6 +465,10 @@ get_text(EditorPid) ->
 get_id(EditorPid) ->
   {_,Id,_,_} = wx_object:call(EditorPid, parent_panel),
 	Id.
+	
+
+get_ref(EditorPid) ->
+	wx_object:call(EditorPid, parent_panel).
 
 
 %% =====================================================================

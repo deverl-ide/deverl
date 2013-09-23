@@ -75,10 +75,13 @@ save_as(Parent, Contents) ->
 	Contents :: string().
 
 save(Path, Contents) ->
-	{ok, Fd} = file:open(Path, [read, write, raw]),
-	file:write(Fd, Contents),
-	file:close(Fd),
-	ok.
+	try
+		{ok, Fd} = file:open(Path, [read, write, raw]),
+		ok = file:write(Fd, Contents),
+		ok = file:close(Fd)
+	catch
+		error:E -> throw(E)
+	end.
 
 
 %% =====================================================================
