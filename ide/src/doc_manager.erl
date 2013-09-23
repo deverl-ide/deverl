@@ -20,6 +20,7 @@
 	close_active_document/0, 
 	close_all_documents/0,
 	get_active_document/0, 
+	set_active_project/1,
 	get_open_documents/0, 
 	update_styles/1, 
 	save_current_document/0,
@@ -48,7 +49,8 @@
 								status_bar,
 								manager,
              		workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
-                editor_pids :: {integer(), pid()}              %% A table containing the Id returned when an editor is created, and the associated pid
+                document_ets :: {integer(), pid()},              %% A table containing the Id returned when an editor is created, and the associated pid
+								active_project
                 }).
 
 
@@ -89,19 +91,23 @@ init(Config) ->
 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,DocEts}]),
 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),
 
-  {Workspace, #state{workspace=Workspace, manager=Manager, status_bar=Sb, editor_pids=DocEts}}.
+  {Workspace, #state{workspace=Workspace, manager=Manager, status_bar=Sb, document_ets=DocEts}}.
 
 handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
 
+handle_cast({active_project,Proj}, State) ->
+	io:format("ACTIVE PROJECT SET TO: ~p~n", [Proj]),
+	{noreply, State#state{active_project=Proj}};
 handle_cast(Msg, State) ->
 	io:format("Got cast ~p~n",[Msg]),
 	{noreply,State}.
 
-handle_call(workspace, _, State=#state{workspace=Ws, status_bar=Sb, editor_pids=Tb}) ->
+handle_call(workspace, _, State=#state{workspace=Ws, status_bar=Sb, document_ets=Tb}) ->
 	{reply, {Ws,Sb,Tb}, State};
-
+handle_call(active_project, _, State=#state{active_project=Proj}) ->
+	{reply, Proj, State};
 handle_call(Msg, _From, State) ->
 	io:format("Got Call ~p~n",[Msg]),
 	{reply,ok,State}.
@@ -121,16 +127,19 @@ terminate(_Reason, State=#state{manager=Manager, workspace=Ws}) ->
 %% =====================================================================
 
 handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinotebook_page_changed,
-			selection = Index}}, State) ->
+			selection = Index}}, State=#state{document_ets=Ets, workspace=Ws, status_bar=Sb}) ->
   %% Make sure editor knows (needs to update sb)
-  editor:selected(get_editor_pid(Index, State#state.workspace, State#state.editor_pids), State#state.status_bar),
+	Pid = get_editor_pid(Index, Ws, Ets),
+  editor:selected(Pid, Sb),
+	% Id = editor:get_id(Pid),
+	% [{_,_,_,Proj}] = ets:lookup(Ets, Id),
+	% io:format("page_changed Proj: ~p~n", [Proj]),
+  % {noreply, State#state{active_project=Proj}};
   {noreply, State};
-
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
   new_document(State#state.workspace, State#state.status_bar, 
-             State#state.editor_pids),
+             State#state.document_ets),
   {noreply, State};
-
 handle_event(Ev = #wx{}, State = #state{}) ->
   io:format("Got Event ~p~n",[Ev]),
   {noreply,State}.
@@ -206,33 +215,44 @@ close_project() ->
 	%% Check open files, save/close
 	case get_active_project() of
 		undefined -> ok;
-		Project ->
+		Project= {Item,Root} ->
 			{Workspace, Sb, DocEts} = wx_object:call(?MODULE, workspace), 
 			List = get_active_project_records(Project, DocEts),
 			io:format("LIST: ~p~n", [List]),
-			close_documents(List),
+			%% switch off page chanfe event handler here
+			close_project(Workspace, List),
+			%% switch on again
+			ide_projects_tree:delete_project(Item),
+			io:format("DELETED~n"),
+			set_active_project(undefined),
 			ok
-	end,
-	%% Delete from tree
-	ok.
+	end.
+	
+close_project(_,[]) -> 
+	io:format("LIST EMPTY 228~n");
+close_project(Workspace, [{Id,Pid,_,_}|T]) ->
+	close_document(Pid, get_document_index(Workspace, Pid)),
+	close_project(Workspace, T).
 	
 get_active_project() ->
-	ok.
+	wx_object:call(?MODULE, active_project).
+	
+set_active_project(Project) ->
+	wx_object:cast(?MODULE, {active_project, Project}).	
 	
 get_active_project_records(Project, DocEts) ->
 	ets:foldl(
-		fun({Id, Pid, {path, Path}, {project, undefined}}, Acc) ->
-			Acc;
-		(Record, Acc) ->
-			[Record | Acc] 
+		fun({Id, Pid, {path, Path}, Proj}=Record, Acc) when Proj =:= Project ->
+			[Record | Acc];
+		(_, Acc) ->
+			Acc
 		end, [], DocEts).
 	
-close_documents([]) -> ok;
-close_documents([{Id,Pid,_,_}|T]) ->
-	close_document(Pid, Id),
-	close_documents(T).
+
 	
-% get_document_index(Workspace,)
+get_document_index(Workspace, Pid) ->
+	wxAuiNotebook:getPageIndex(Workspace, editor:get_ref(Pid)).
+	
 
 %% =====================================================================
 %% @doc Get the Pid of an editor instance at position Index.
@@ -242,18 +262,18 @@ close_documents([{Id,Pid,_,_}|T]) ->
 	Result :: pid().
 
 get_editor_pid(Index) ->
-	{Workspace,_,PidTable} = wx_object:call(?MODULE, workspace),
-	get_editor_pid(Index, Workspace, PidTable).
+	{Workspace, _, DocEts} = wx_object:call(?MODULE, workspace),
+	get_editor_pid(Index, Workspace, DocEts).
 
--spec get_editor_pid(Index, Workspace, PidTable) -> Result when
+-spec get_editor_pid(Index, Workspace, DocEts) -> Result when
 	Index :: integer(),
 	Workspace :: wxAuiNotebook:wxAuiNotebook(),
-	PidTable :: term(),
+	DocEts :: term(),
 	Result :: pid().
 
-get_editor_pid(Index, Workspace, PidTable) ->
+get_editor_pid(Index, Workspace, DocEts) ->
 	{_,Key,_,_} = wxAuiNotebook:getPage(Workspace, Index),
-	[{_,Pid,_,_}] = ets:lookup(PidTable, Key),
+	[{_,Pid,_,_}] = ets:lookup(DocEts, Key),
 	Pid.
 
 
@@ -410,13 +430,14 @@ close_active_document() ->
 %% @doc Close the selected editor
 	
 close_document(EditorPid, Index) ->
-	{Workspace,_Sb,Tab} = wx_object:call(?MODULE, workspace),
+	{Workspace,_Sb,DocEts} = wx_object:call(?MODULE, workspace),
 	case editor:is_dirty(EditorPid) of
 		true ->
 			io:format("File modified since last save, display save/unsave dialog.~n");
 		_ -> %% Go ahead, close the editor
-			ets:delete(Tab, editor:get_id(EditorPid)),
-      wxAuiNotebook:deletePage(Workspace, Index)
+			ets:delete(DocEts, editor:get_id(EditorPid)),
+      wxAuiNotebook:deletePage(Workspace, Index),
+			io:format("DOC DELETED 435 ~p~n", [ets:tab2list(DocEts)])
 	end.
 
 
