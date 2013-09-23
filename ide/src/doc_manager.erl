@@ -73,6 +73,8 @@ init(Config) ->
 			),
 
 	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
+	wxAuiManager:addPane(Manager, Workspace, Pane),
+	
 	Editor = {_,Id,_,Pid} = editor:start([{parent, Workspace}, {status_bar, Sb},
                            {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
 
@@ -80,8 +82,6 @@ init(Config) ->
 	insert_record(DocEts, Id, Pid, undefined),
 
 	wxAuiNotebook:addPage(Workspace, Editor, ?DEFAULT_TAB_LABEL, []),
-
-	wxAuiManager:addPane(Manager, Workspace, Pane),
 
 	Close = fun(_,O) ->
             wxNotifyEvent:veto(O),
