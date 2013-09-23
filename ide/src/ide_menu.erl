@@ -276,7 +276,7 @@ init(Config) ->
 		{?MENU_ID_GOTO_LINE, {doc_manager,go_to_line,[Frame]}},
 		{?MENU_ID_UC_SEL, {doc_manager,transform_selection,[]}, [{send_event, true}]},
 		{?MENU_ID_LC_SEL, {doc_manager,transform_selection,[]}, [{send_event, true}]},			
-		{?MENU_ID_FOLD_ALL, {new_file,start,[Frame]}},
+		{?MENU_ID_FOLD_ALL, {doc_manager, new_file,[Frame]}},
 		{?MENU_ID_UNFOLD_ALL, {}},
 		
     {?MENU_ID_WRANGLER, {}},
