@@ -26,7 +26,7 @@ start(Parent) ->
   wx_object:start_link(?MODULE, Parent, []).
 
 init(Parent) ->
-  Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 460}}]),
+  Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{600, 410}}, {style, ?wxRESIZE_BORDER}]),
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
 
   wxSizer:addSpacer(LRSizer, 20),
@@ -38,7 +38,7 @@ init(Parent) ->
 
   SwapSizer = wxBoxSizer:new(?wxVERTICAL),
   Dialog1 = dialog1(Dialog),
-  wxSizer:add(SwapSizer, Dialog1,   [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(SwapSizer, Dialog1,   [{proportion, 0}, {flag, ?wxEXPAND}]),
   wxSizer:add(MainSizer, SwapSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   %%%%%%%%
@@ -52,7 +52,7 @@ init(Parent) ->
   wxSizer:add(DescriptionSizer, wxStaticText:new(DescriptionPanel, ?wxID_ANY, "Description:"), []),
   wxSizer:add(DescriptionSizer, wxTextCtrl:new(DescriptionPanel, ?wxID_ANY, [{style, ?wxTE_MULTILINE bor ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-  wxSizer:add(MainSizer, DescriptionPanel, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(MainSizer, DescriptionPanel, [{proportion, 0}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 20),
   
   %%%%%%%%
@@ -176,7 +176,7 @@ dialog2(Parent) ->
   wxSizer:add(DialogSizer2, 0, 0, []),
 
   wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Folder:"), []),
-  wxSizer:add(DialogSizer2, wxTextCtrl:new(Dialog2, ?wxID_ANY, [{style, ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(DialogSizer2, wxTextCtrl:new(Dialog2, ?wxID_ANY, []), [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(DialogSizer2, wxButton:new(Dialog2, ?BROWSE, [{label, "Browse"}])),
 
   wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Path:"), []),
