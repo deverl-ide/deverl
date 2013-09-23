@@ -53,43 +53,6 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
 	wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
 	
-<<<<<<< HEAD
-  Dir1 = "/home/qqq/projects/git/erlangIDE/ide/priv",
-	Dir2 = "/home/qqq/projects/git/erlangIDE/ide/include",
-	Dir3 = "/home/qqq/projects/git/erlangIDE/ide/src",
-
-	%Dir1 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/priv",
-	%Dir2 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/include",
-	%Dir3 = "/Users/tommo/Desktop/erlang/erlangIDE/ide/src",
-	
-	Id1 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir1), [{data, Dir1}]),
-	wxTreeCtrl:setItemImage(Tree, Id1, 2),
-	build_tree(Tree, Id1, Dir1),
-	
-	Id2 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir2), [{data, Dir2}]),
-	wxTreeCtrl:setItemImage(Tree, Id2, 2),
-	build_tree(Tree, Id2, Dir2),
-	 
-	Id3 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir3), [{data, Dir3}]),
-	wxTreeCtrl:setItemImage(Tree, Id3, 2),
-	build_tree(Tree, Id3, Dir3),
-	 
-	io:format("Item1: ~p~n", [wxTreeCtrl:getItemText(Tree, Id1)]),
-	io:format("Item2: ~p~n", [wxTreeCtrl:getItemText(Tree, Id2)]),
-	io:format("Item3: ~p~n", [wxTreeCtrl:getItemText(Tree, Id3)]),
-	 
-	wxTreeCtrl:delete(Tree, Id1),
-  
-  Id4 = wxTreeCtrl:appendItem(Tree, wxTreeCtrl:getRootItem(Tree), filename:basename(Dir1), [{data, Dir1}]),
-	wxTreeCtrl:setItemImage(Tree, Id4, 2),
-	build_tree(Tree, Id4, Dir1),
-  
-	% io:format("Item1: ~p~n", [wxTreeCtrl:getItemText(Tree, Id1)]),
-	% io:format("Item2: ~p~n", [wxTreeCtrl:getItemText(Tree, Id2)]),
-	% io:format("Item3: ~p~n", [wxTreeCtrl:getItemText(Tree, Id3)]),
-
-=======
->>>>>>> c55d52aeea49d14c86c6e611ee39621d8d44fb6f
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
 	
 
@@ -262,19 +225,10 @@ get_project_root(Tree, Root, Parent, Item) ->
 	get_project_root(Tree, Root, wxTreeCtrl:getItemParent(Tree, Parent), 
 			wxTreeCtrl:getItemParent(Tree, Item)).
 
-<<<<<<< HEAD
+
 delete_project(Id) ->
 	wxTreeCtrl:delete(wx_object:call(?MODULE, tree), Id).
 
-=======
-
-% delete_project(Id) ->
-% 	wxTreeCtrl:delete(wx_object:call(?MODULE, tree), Id).
-
-delete_project(Id) ->
-	io:format("IN DELETE: ~p~n", [Id]),
-	wx_object:cast(?MODULE, {delete, Id}).
-	
 %% =====================================================================
 %% @doc Print the tree
 
@@ -296,4 +250,4 @@ print_tree_debug(Tree, Node, Indent) ->
 		true -> print_tree_debug(Tree, Sibling, Indent);
 		false -> ok
 	end.
->>>>>>> c55d52aeea49d14c86c6e611ee39621d8d44fb6f
+
