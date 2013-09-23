@@ -28,6 +28,7 @@ start(Parent) ->
 init(Parent) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 460}}, 
 		{style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}]),
+
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
 
   wxSizer:addSpacer(LRSizer, 20),
@@ -156,6 +157,7 @@ dialog1(Parent) ->
   wxSizer:add(DialogSizer1, wxListBox:new(Dialog1, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
   
   wxFlexGridSizer:addGrowableCol(DialogSizer1, 1),
+  wxFlexGridSizer:addGrowableRow(DialogSizer1, 1),
  
   Dialog1.
 
@@ -177,7 +179,7 @@ dialog2(Parent) ->
   wxSizer:add(DialogSizer2, 0, 0, []),
 
   wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Folder:"), []),
-  wxSizer:add(DialogSizer2, wxTextCtrl:new(Dialog2, ?wxID_ANY, [{style, ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(DialogSizer2, wxTextCtrl:new(Dialog2, ?wxID_ANY, []), [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(DialogSizer2, wxButton:new(Dialog2, ?BROWSE, [{label, "Browse"}])),
 
   wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Path:"), []),
