@@ -32,7 +32,7 @@
 
 -define(SASH_VERTICAL, 1).
 -define(SASH_HORIZONTAL, 2).
--define(SASH_VERT_DEFAULT_POS, 200).
+-define(SASH_VERT_DEFAULT_POS, 240).
 -define(SASH_HOR_DEFAULT_POS, -250).
 
 -define(ID_DIALOG_TEXT, 9001).
@@ -374,12 +374,12 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 	Result :: wxPanel:wxPanel().
 
 create_utils(Parent) ->
-	UtilPanel = wxPanel:new(Parent, []),
+	Panel = wxPanel:new(Parent, []),
 
-	Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
+	Utils = wxNotebook:new(Panel, 8989, [{style, ?wxBORDER_NONE}]),
 
-	UtilSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxPanel:setSizer(UtilPanel, UtilSizer),
+	Sz = wxBoxSizer:new(?wxVERTICAL),
+	wxPanel:setSizer(Panel, Sz),
 
 	Console = ide_shell:new([{parent, Utils}]),
 	%% Start the port that communicates with the external ERTs
@@ -395,10 +395,10 @@ create_utils(Parent) ->
 	Debugger = wxPanel:new(Utils, []),
 	wxNotebook:addPage(Utils, Debugger, "Debugger", []),
 
-	wxSizer:addSpacer(UtilSizer, 1),
-	wxSizer:add(UtilSizer, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	wxSizer:addSpacer(Sz, 1),
+	wxSizer:add(Sz, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-	UtilPanel.
+	Panel.
 
 
 %% =====================================================================
