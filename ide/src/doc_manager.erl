@@ -216,13 +216,8 @@ close_project() ->
 		undefined -> ok;
 		Project={Item,Root} ->
 			{Workspace, Sb, DocEts} = wx_object:call(?MODULE, workspace), 
-			io:format("PROJECT: ~p~n", [Project]),
-			io:format("ETS: ~p~n", [ets:tab2list(DocEts)]),
 			List = get_active_project_records(Project, DocEts),
-			io:format("RECORDS: ~p~n", [List]),
-			%% switch off page change event handler here
 			close_project(Workspace, List),
-			%% switch on again
 			ide_projects_tree:delete_project(Item),
 			set_active_project(undefined)
 	end.
@@ -431,8 +426,7 @@ close_document(EditorPid, Index) ->
 			io:format("File modified since last save, display save/unsave dialog.~n");
 		_ -> %% Go ahead, close the editor
 			ets:delete(DocEts, editor:get_id(EditorPid)),
-      wxAuiNotebook:deletePage(Workspace, Index),
-			io:format("DOC DELETED 435 ~p~n", [ets:tab2list(DocEts)])
+      wxAuiNotebook:deletePage(Workspace, Index)
 	end.
 
 

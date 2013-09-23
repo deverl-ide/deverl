@@ -16,14 +16,9 @@
 -export([
         start/1,
 				add_project/1,
-				delete_project/1,
-        get_open_projects/0,
-        refresh_tree/0]).
+				delete_project/1]).
 
 -record(state, {frame, panel, tree}).
-
--define(FOLDER_IMAGE, 0).
--define(FILE_IMAGE, 1).
 
 start(Config) ->
 	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
@@ -73,8 +68,6 @@ handle_cast({add, Dir}, State=#state{tree=Tree}) ->
 	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
 	wxTreeCtrl:setItemImage(Tree, Item, 2),
 	build_tree(Tree, Item, Dir),
-	% ide:set_title(filename:basename(Dir)),
-	% doc_manager:set_active_project({Root, Dir}),
   {noreply,State};
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
@@ -85,18 +78,15 @@ handle_call(tree, _From, State) ->
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}}, 
 						 State=#state{frame=Frame, tree=Tree}) ->
- 	% io:format("~n command_tree_sel_changed~n"),
- 	% io:format("Old item: ~p, Data: ~p, Valid: ~p~n", [OldItem, wxTreeCtrl:getItemData(Tree, OldItem), wxTreeCtrl:isTreeItemIdOk(OldItem)]),
- 	% io:format("New item: ~p, Data: ~p, Valid: ~p~n", [Item, wxTreeCtrl:getItemData(Tree, Item), wxTreeCtrl:isTreeItemIdOk(Item)]),
 	case wxTreeCtrl:isTreeItemIdOk(OldItem) of
 		false ->  %% Deleted item
 			ok;
 		true ->
 			ProjRoot = get_project_root(Tree, Item),
 			Data = wxTreeCtrl:getItemData(Tree, ProjRoot),
-			% ProjName = filename:basename(Data),
-			% ide:set_title(ProjName),
-			% ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjName ++ ")"),
+			ProjName = filename:basename(Data),
+			ide:set_title(ProjName),
+			ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjName ++ ")"),
 			doc_manager:set_active_project({ProjRoot, Data})
 	end,
 			
@@ -130,11 +120,11 @@ terminate(_Reason, #state{panel=Panel}) ->
 
 
 %% =====================================================================
-%% @doc Get a list of files in a given root directory then build its
-%% subdirectories.
+%% @doc Add a project directory to the tree.
 
 add_project(Dir) ->
 	Tree = wx_object:cast(?MODULE, {add, Dir}).
+	
 	
 %% =====================================================================
 %% @doc Get a list of files in a given root directory then build its
@@ -159,57 +149,13 @@ add_files(Tree, Root, [File|Files]) ->
 	case IsDir of
 		true ->
 			Child = wxTreeCtrl:appendItem(Tree, Root, FileName, [{data, File}]),
-			wxTreeCtrl:setItemImage(Tree, Child, ?FOLDER_IMAGE),
+			wxTreeCtrl:setItemImage(Tree, Child, 0),
 			build_tree(Tree, Child, File);
 		_ ->
 			Child = wxTreeCtrl:prependItem(Tree, Root, FileName, [{data, File}]),
-			wxTreeCtrl:setItemImage(Tree, Child, ?FILE_IMAGE)
+			wxTreeCtrl:setItemImage(Tree, Child, 1)
 	end,
 	add_files(Tree, Root, Files).
-
-
-%% =====================================================================
-%% @doc Refresh projects tree.
-
-refresh_tree() ->
-  Tree = wx_object:call(?MODULE, tree),
-  wxTreeCtrl:deleteAllItems(Tree),
-  ProjectDir = user_prefs:get_user_pref({pref, project_dir}),
-  Root = wxTreeCtrl:addRoot(Tree, ProjectDir),
-  build_tree(Tree, Root, ProjectDir, main).
-
-
-%% =====================================================================
-%% @doc Get all open projects. Returns a list of tuples that contain 
-%% the tree id and path of the root folder.
-
--spec get_open_projects() -> Result when
-	Result :: [{integer(), string()}].
-
-get_open_projects() ->
-  Tree = wx_object:call(?MODULE, tree),
-  Root = wxTreeCtrl:getRootItem(Tree),
-  get_projects(Tree, Root).
-
-get_projects(Tree, Root) ->
-  {FirstChild, FirstCookie} = wxTreeCtrl:getFirstChild(Tree, Root),
-  case wxTreeCtrl:isTreeItemIdOk(FirstChild) of
-    true ->
-      Path = wxTreeCtrl:getItemData(Tree, FirstChild),
-      get_projects(Tree, Root, FirstCookie, [{FirstChild, Path}]);
-    false ->
-      []
-  end.
-
-get_projects(Tree, Root, Cookie, List) ->
-  {NextChild, NextCookie} = wxTreeCtrl:getNextChild(Tree, Root, Cookie),
-  case wxTreeCtrl:isTreeItemIdOk(NextChild) of
-    true ->
-      Path = wxTreeCtrl:getItemData(Tree, NextChild),
-      get_projects(Tree, Root, NextCookie, List ++ [{NextChild, Path}]);
-    false ->
-      List
-  end.
 
 
 %% =====================================================================
@@ -224,14 +170,14 @@ get_project_root(Tree, Root, Root, Item) ->
 get_project_root(Tree, Root, Parent, Item) ->
 	get_project_root(Tree, Root, wxTreeCtrl:getItemParent(Tree, Parent), 
 			wxTreeCtrl:getItemParent(Tree, Item)).
+	
 
-
-% delete_project(Id) ->
-% 	wxTreeCtrl:delete(wx_object:call(?MODULE, tree), Id).
+%% =====================================================================
+%% @doc Delete an item from the tree
 
 delete_project(Id) ->
-	io:format("IN DELETE: ~p~n", [Id]),
 	wx_object:cast(?MODULE, {delete, Id}).
+
 	
 %% =====================================================================
 %% @doc Print the tree
