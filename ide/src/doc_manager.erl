@@ -5,24 +5,29 @@
 
 -behaviour(wx_object).
 
--export([new/1, init/1, terminate/2,  code_change/3,
+-export([init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 % API
 -export([
+	start/1,
 	new_document/0, 
 	new_document/1, 
 	new_document_from_existing/3,
-	close_selected_editor/0, 
-	close_all_editors/0,
-	get_selected_editor/0, 
-	get_all_editors/0, 
+	new_document_from_existing/4,
+	new_project/1,
+	close_project/0,
+	close_active_document/0, 
+	close_all_documents/0,
+	get_active_document/0, 
+	get_open_documents/0, 
 	update_styles/1, 
 	save_current_document/0,
 	save_new_document/0, 
 	save_all/0,
 	save_document/2,
 	open_document/1,
+	open_project/1,
 	find_replace/1,
 	get_current_theme_name/0,
 	set_theme/1,
@@ -47,7 +52,7 @@
                 }).
 
 
-new(Config) ->
+start(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
 init(Config) ->
@@ -65,12 +70,11 @@ init(Config) ->
 			),
 
 	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
-	Editor = editor:start([{parent, Workspace}, {status_bar, Sb},
+	Editor = {_,Id,_,Pid} = editor:start([{parent, Workspace}, {status_bar, Sb},
                            {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
 
-	TabId = ets:new(editors, [public]),
-	{_,Id,_,Pid} = Editor,
-	ets:insert(TabId,{Id, Pid, {path, undefined}}),
+	DocEts = ets:new(editors, [public]),
+	insert_record(DocEts, Id, Pid, undefined),
 
 	wxAuiNotebook:addPage(Workspace, Editor, ?DEFAULT_TAB_LABEL, []),
 
@@ -78,14 +82,14 @@ init(Config) ->
 
 	Close = fun(_,O) ->
             wxNotifyEvent:veto(O),
-            close_selected_editor()
+            close_active_document()
           end,
 
 	wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
-	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,TabId}]),
+	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,DocEts}]),
 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),
 
-  {Workspace, #state{workspace=Workspace, manager=Manager, status_bar=Sb, editor_pids=TabId}}.
+  {Workspace, #state{workspace=Workspace, manager=Manager, status_bar=Sb, editor_pids=DocEts}}.
 
 handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
@@ -137,8 +141,8 @@ handle_event(Ev = #wx{}, State = #state{}) ->
 %%
 %% @private
 
-new_document(Workspace, Sb, TabId) ->
-	new_document(Workspace, ?DEFAULT_TAB_LABEL, Sb, TabId),
+new_document(Workspace, Sb, DocEts) ->
+	new_document(Workspace, ?DEFAULT_TAB_LABEL, Sb, DocEts),
 	Workspace.
 
 
@@ -150,34 +154,85 @@ new_document() ->
   
 %% @doc Create a new editor with specified documentname
 new_document(Filename) ->
-	{Workspace, Sb, TabId} = wx_object:call(?MODULE, workspace), 
-	new_document(Workspace, Filename, Sb, TabId),
+	{Workspace, Sb, DocEts} = wx_object:call(?MODULE, workspace), 
+	new_document(Workspace, Filename, Sb, DocEts),
 	ok.
 
 %% @private
-new_document(Workspace, Filename, Sb, TabId) ->
-	Editor = editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
+new_document(Workspace, Filename, Sb, DocEts) ->
+	Editor = {_,Id,_,Pid} =editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
 	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
-	{_,Id,_,Pid} = Editor,
-	ets:insert_new(TabId,{Id, Pid, {path, undefined}}),
-	ok.
+	insert_record(DocEts, Id, Pid, undefined).
 	
 	
 %% =====================================================================
 %% @doc Add an existing document to the workspace.
 		
 new_document_from_existing(Path, Filename, Contents) -> 
-	{Workspace, Sb, TabId} = wx_object:call(?MODULE, workspace), 
+	new_document_from_existing(Path, Filename, Contents, []).
+
+new_document_from_existing(Path, Filename, Contents, Options) -> 
+	{Workspace, Sb, DocEts} = wx_object:call(?MODULE, workspace), 
 	Editor = {_,Id,_,Pid} = editor:start([{parent, Workspace}, {status_bar, Sb}, 
 		{font,user_prefs:get_user_pref({pref, font})}]),
+	insert_record(DocEts, Id, Pid, Path, proplists:get_value(project, Options)),
 	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
-	ets:insert_new(TabId,{Id, Pid, {path, Path}}),
 	editor:set_text(Pid, Contents),
 	editor:empty_undo_buffer(Pid),
 	editor:set_savepoint(Pid),
 	editor:link_poller(Pid, Path),
 	ok.
-
+	
+new_project(Parent) ->
+	Dialog = new_project_wx:start(Parent),
+	case new_project_wx:showModal(Dialog) of
+		?wxID_CANCEL -> ok;
+		?wxID_OK ->
+			new_project(Parent, Dialog),
+			new_project_wx:close(Dialog)
+	end.
+	
+new_project(Parent, Dialog) ->
+  try
+		Path = ide_io:create_directory_structure(Parent, 
+			new_project_wx:get_name(Dialog), new_project_wx:get_path(Dialog)),
+		ide_projects_tree:add_project(Path)
+  catch
+    throw:E -> 
+			lib_dialog_wx:error_msg(Parent, E)
+  end.
+	
+close_project() ->
+	%% Check open files, save/close
+	case get_active_project() of
+		undefined -> ok;
+		Project ->
+			{Workspace, Sb, DocEts} = wx_object:call(?MODULE, workspace), 
+			List = get_active_project_records(Project, DocEts),
+			io:format("LIST: ~p~n", [List]),
+			close_documents(List),
+			ok
+	end,
+	%% Delete from tree
+	ok.
+	
+get_active_project() ->
+	ok.
+	
+get_active_project_records(Project, DocEts) ->
+	ets:foldl(
+		fun({Id, Pid, {path, Path}, {project, undefined}}, Acc) ->
+			Acc;
+		(Record, Acc) ->
+			[Record | Acc] 
+		end, [], DocEts).
+	
+close_documents([]) -> ok;
+close_documents([{Id,Pid,_,_}|T]) ->
+	close_document(Pid, Id),
+	close_documents(T).
+	
+% get_document_index(Workspace,)
 
 %% =====================================================================
 %% @doc Get the Pid of an editor instance at position Index.
@@ -198,18 +253,18 @@ get_editor_pid(Index) ->
 
 get_editor_pid(Index, Workspace, PidTable) ->
 	{_,Key,_,_} = wxAuiNotebook:getPage(Workspace, Index),
-	[{_,Pid,_}] = ets:lookup(PidTable, Key),
+	[{_,Pid,_,_}] = ets:lookup(PidTable, Key),
 	Pid.
 
 
 %% =====================================================================
 %% @doc Get the Pid of the currently selected editor.
 
--spec get_selected_editor() -> Result when
+-spec get_active_document() -> Result when
 	Result :: {'error', 'no_open_editor'} |
 			  {'ok', {integer(), pid()}}.
 
-get_selected_editor() ->
+get_active_document() ->
 	{Workspace,_,_} = wx_object:call(?MODULE, workspace),
 	case wxAuiNotebook:getSelection(Workspace) of %% Get the index of the tab
 		-1 -> %% no editor instance
@@ -224,19 +279,18 @@ get_selected_editor() ->
 %% Returns a list of tuples of the form: {Index, EditorPid}, where
 %% Index starts at 0.
 
--spec get_all_editors() -> Result when
+-spec get_open_documents() -> Result when
 	Result :: [{integer(), pid()}].
 
-get_all_editors() ->
+get_open_documents() ->
 	{Workspace,_,_} = wx_object:call(?MODULE, workspace),
 	Count = wxAuiNotebook:getPageCount(Workspace),
-	get_all_editors(Workspace, Count - 1, []).
+	get_open_documents(Workspace, Count - 1, []).
 
-get_all_editors(_, -1, Acc) ->
+get_open_documents(_, -1, Acc) ->
 	Acc;
-
-get_all_editors(Workspace, Count, Acc) ->
-	get_all_editors(Workspace, Count -1, [{Count, get_editor_pid(Count)} | Acc]).
+get_open_documents(Workspace, Count, Acc) ->
+	get_open_documents(Workspace, Count -1, [{Count, get_editor_pid(Count)} | Acc]).
 
 
 %% =====================================================================
@@ -249,7 +303,7 @@ get_all_editors(Workspace, Count, Acc) ->
 %% @doc Save the currently selected document to disk
 
 save_current_document() ->
-	case get_selected_editor() of
+	case get_active_document() of
 		{error, no_open_editor} ->
 			%% Toolbar/menubar buttons should be disabled to prevent this action
 			io:format("No editor open.~n");
@@ -268,9 +322,9 @@ save_document(Index, Pid) when is_pid(Pid)->
 		_ ->
 			save_document(Sb, hd(ets:lookup(Ets, editor:get_id(Pid))))
 	end;
-save_document(Sb, {_Id, Pid, {path, undefined}}) ->
+save_document(Sb, {_Id, Pid, {path, undefined}, _}) ->
 	save_new_document();
-save_document(Sb, {_Id, Pid, {path, Path}}) ->
+save_document(Sb, {_Id, Pid, {path, Path}, _}) ->
 	%% Document already exists, overwrite
 	ide_io:save(Path, editor:get_text(Pid)),
 	editor:set_savepoint(Pid),
@@ -282,7 +336,7 @@ save_document(Sb, {_Id, Pid, {path, Path}}) ->
 %% Index to disk. The user will be prompted for a save path.
 
 save_new_document() ->
-	case get_selected_editor() of
+	case get_active_document() of
 		{error, no_open_editor} -> ok;
 		{ok, {Index, Pid}} ->
 			save_new_document(Index,Pid)
@@ -311,7 +365,7 @@ save_all() ->
 	Fun = fun({Index, Pid}) ->
 		      save_document(Index, Pid)
 		  end,
-	lists:map(Fun, get_all_editors()).
+	lists:map(Fun, get_open_documents()).
 
 
 %% =====================================================================
@@ -330,25 +384,36 @@ open_document(Frame) ->
 
 
 %% =====================================================================
+%% @doc
+
+open_project(Frame) ->
+	case lib_dialog_wx:get_existing_dir(Frame) of
+		cancelled -> ok;
+		Path -> ide_projects_tree:add_project(Path)
+	end,
+	ok.
+
+
+%% =====================================================================
 %% @doc Close the selected editor
 
-close_selected_editor() ->
-	case get_selected_editor() of
+close_active_document() ->
+	case get_active_document() of
 		{error, _} ->
 			{error, no_open_editor};
 		{ok, {Index, EditorPid}} ->
-			close_editor(EditorPid, Index)
+			close_document(EditorPid, Index)
 	end.
 
 
 %% =====================================================================
 %% @doc Close the selected editor
 	
-close_editor(EditorPid, Index) ->
+close_document(EditorPid, Index) ->
 	{Workspace,_Sb,Tab} = wx_object:call(?MODULE, workspace),
 	case editor:is_dirty(EditorPid) of
 		true ->
-			io:format("Close dialog needs to be displayed.~n");
+			io:format("File modified since last save, display save/unsave dialog.~n");
 		_ -> %% Go ahead, close the editor
 			ets:delete(Tab, editor:get_id(EditorPid)),
       wxAuiNotebook:deletePage(Workspace, Index)
@@ -358,11 +423,11 @@ close_editor(EditorPid, Index) ->
 %% =====================================================================
 %% @doc Close all editor instances
 
-close_all_editors() ->
+close_all_documents() ->
 	Fun = fun({Index,Pid}) ->
-		      close_editor(Pid, Index)
+		      close_document(Pid, Index)
 		  end,
-	lists:map(Fun, lists:reverse(get_all_editors())),
+	lists:map(Fun, lists:reverse(get_open_documents())),
 	ok.
 
 
@@ -382,7 +447,7 @@ update_styles(Frame) ->
       Fun = fun({_, Pid}) ->
               editor:set_font_style(Pid, Font)
 					  end,
-      lists:map(Fun, get_all_editors()),
+      lists:map(Fun, get_open_documents()),
       ok;
     ?wxID_CANCEL ->
 				ok
@@ -413,7 +478,7 @@ set_theme(ThemeMenu) ->
   Fun = fun({_, Pid}) ->
           editor:set_theme(Pid, wxMenuItem:getLabel(Ckd), user_prefs:get_user_pref({pref, font}))
         end,
-  lists:map(Fun, get_all_editors()),
+  lists:map(Fun, get_open_documents()),
   user_prefs:set_user_pref(theme, wxMenuItem:getLabel(Ckd)).
 
 get_current_theme_name() ->
@@ -440,7 +505,7 @@ set_line_wrap(Menu) ->
   Fun = fun({_, Pid}) ->
           editor:set_line_wrap(Pid, Bool)
   end,
-  lists:map(Fun, get_all_editors()),
+  lists:map(Fun, get_open_documents()),
   user_prefs:set_user_pref(line_wrap, Bool).
 
 set_line_margin_visible(Menu) ->
@@ -448,7 +513,7 @@ set_line_margin_visible(Menu) ->
   Fun = fun({_, Pid}) ->
           editor:set_line_margin_visible(Pid, Bool)
   end,
-  lists:map(Fun, get_all_editors()),
+  lists:map(Fun, get_open_documents()),
   user_prefs:set_user_pref(show_line_no, Bool).
 
 set_indent_tabs(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
@@ -459,7 +524,7 @@ set_indent_tabs(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
   Fun = fun({_, Pid}) ->
           editor:set_use_tabs(Pid, Cmd)
   end,
-  lists:map(Fun, get_all_editors()),
+  lists:map(Fun, get_open_documents()),
   user_prefs:set_user_pref(use_tabs, Cmd).
 
 set_indent_guides(Menu) ->
@@ -467,30 +532,30 @@ set_indent_guides(Menu) ->
   Fun = fun({_, Pid}) ->
           editor:set_indent_guides(Pid, Bool)
   end,
-  lists:map(Fun, get_all_editors()),
+  lists:map(Fun, get_open_documents()),
   user_prefs:set_user_pref(indent_guides, Bool).
 
 indent_line_right() ->
-  {ok,{_,Pid}} = get_selected_editor(),
+  {ok,{_,Pid}} = get_active_document(),
   editor:indent_line_right(Pid),
   ok.
 
 indent_line_left() ->
-  {ok,{_,Pid}} = get_selected_editor(),
+  {ok,{_,Pid}} = get_active_document(),
   editor:indent_line_left(Pid),
   ok.
 
 comment() ->
-  {ok,{_,Pid}} = get_selected_editor(),
+  {ok,{_,Pid}} = get_active_document(),
   editor:comment(Pid),
   ok.
 
 zoom_in() ->
-  {ok,{_,Pid}} = get_selected_editor(),
+  {ok,{_,Pid}} = get_active_document(),
   editor:zoom_in(Pid).
 
 zoom_out() ->
-  {ok,{_,Pid}} = get_selected_editor(),
+  {ok,{_,Pid}} = get_active_document(),
   editor:zoom_out(Pid).
 
 go_to_line(Parent) ->
@@ -543,7 +608,7 @@ go_to_line(Parent) ->
       catch _:_ -> 0
       end,
       wxDialog:destroy(Dialog),
-      {ok,{_,Ed}} = doc_manager:get_selected_editor(),
+      {ok,{_,Ed}} = doc_manager:get_active_document(),
       editor:go_to_position(Ed, {L, C})
   end,
   ok.
@@ -554,5 +619,13 @@ transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 		?MENU_ID_UC_SEL -> uppercase;
 		?MENU_ID_LC_SEL -> lowercase
 	end,
-	{ok,{_,Ed}} = doc_manager:get_selected_editor(),
+	{ok,{_,Ed}} = doc_manager:get_active_document(),
 	editor:transform_selection(Ed, {transform, Cmd}).
+
+
+insert_record(DocEts, Id, Pid, Path) ->
+	insert_record(DocEts, Id, Pid, Path, undefined).
+	
+insert_record(DocEts, Id, Pid, Path, Project) ->
+	ets:insert(DocEts, {Id, Pid, {path, Path}, {project, Project}}),
+	ok.

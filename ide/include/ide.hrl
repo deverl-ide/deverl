@@ -31,6 +31,7 @@
 -define(MENU_ID_NEW_PROJECT,			 6001).
 -define(MENU_ID_OPEN_PROJECT,			 6002).
 -define(MENU_ID_SAVE_ALL,          6003).
+-define(MENU_ID_CLOSE_PROJECT,     6048).
 -define(MENU_ID_FONT,              6004).
 -define(MENU_ID_FONT_BIGGER,       6005).
 -define(MENU_ID_FONT_SMALLER,      6006).
