@@ -53,6 +53,7 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
 	wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
 	
+<<<<<<< HEAD
   Dir1 = "/home/qqq/projects/git/erlangIDE/ide/priv",
 	Dir2 = "/home/qqq/projects/git/erlangIDE/ide/include",
 	Dir3 = "/home/qqq/projects/git/erlangIDE/ide/src",
@@ -87,26 +88,9 @@ init(Config) ->
 	% io:format("Item2: ~p~n", [wxTreeCtrl:getItemText(Tree, Id2)]),
 	% io:format("Item3: ~p~n", [wxTreeCtrl:getItemText(Tree, Id3)]),
 
+=======
+>>>>>>> c55d52aeea49d14c86c6e611ee39621d8d44fb6f
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
-
-print_tree_debug(Tree) ->
-	Root = wxTreeCtrl:getRootItem(Tree),
-	print_tree_debug(Tree, Root, 0).
-	
-print_tree_debug(Tree, Node, Indent) ->
-	Spac = lists:duplicate(Indent + 1, "---"),
-	io:format(Spac ++ "Node: ~p~n", [wxTreeCtrl:getItemData(Tree, Node)]),
-	case wxTreeCtrl:itemHasChildren(Tree, Node) of
-		true ->
-			{Child, _} = wxTreeCtrl:getFirstChild(Tree, Node),
-			print_tree_debug(Tree, Child, Indent + 1);
-		false -> ok
-	end,
-	Sibling = wxTreeCtrl:getNextSibling(Tree, Node),
-	case wxTreeCtrl:isTreeItemIdOk(Sibling) of
-		true -> print_tree_debug(Tree, Sibling, Indent);
-		false -> ok
-	end.
 	
 
 %% =====================================================================
@@ -118,6 +102,17 @@ handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
 
+handle_cast({delete, Item}, State=#state{tree=Tree}) ->
+  wxTreeCtrl:delete(Tree, Item),
+  {noreply,State};
+handle_cast({add, Dir}, State=#state{tree=Tree}) ->
+	Root = wxTreeCtrl:getRootItem(Tree),
+	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
+	wxTreeCtrl:setItemImage(Tree, Item, 2),
+	build_tree(Tree, Item, Dir),
+	% ide:set_title(filename:basename(Dir)),
+	% doc_manager:set_active_project({Root, Dir}),
+  {noreply,State};
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
@@ -125,16 +120,23 @@ handle_cast(Msg, State) ->
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item}}, 
-						 State=#state{frame=Frame}) ->
-	io:format("~nTREE INVISIBLE ROOT: ~p~n", [wxTreeCtrl:getRootItem(Tree)]),
-	io:format("PROJECT ROOT: ~p~n", [get_project_root(Tree, Item)]),
-	ProjRoot = get_project_root(Tree, Item),
-	Data = wxTreeCtrl:getItemData(Tree, ProjRoot),
-	% ProjName = filename:basename(Data),
-	% ide:set_title(ProjName),
-	% ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjName ++ ")"),
-	doc_manager:set_active_project({ProjRoot, Data}),
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}}, 
+						 State=#state{frame=Frame, tree=Tree}) ->
+ 	% io:format("~n command_tree_sel_changed~n"),
+ 	% io:format("Old item: ~p, Data: ~p, Valid: ~p~n", [OldItem, wxTreeCtrl:getItemData(Tree, OldItem), wxTreeCtrl:isTreeItemIdOk(OldItem)]),
+ 	% io:format("New item: ~p, Data: ~p, Valid: ~p~n", [Item, wxTreeCtrl:getItemData(Tree, Item), wxTreeCtrl:isTreeItemIdOk(Item)]),
+	case wxTreeCtrl:isTreeItemIdOk(OldItem) of
+		false ->  %% Deleted item
+			ok;
+		true ->
+			ProjRoot = get_project_root(Tree, Item),
+			Data = wxTreeCtrl:getItemData(Tree, ProjRoot),
+			% ProjName = filename:basename(Data),
+			% ide:set_title(ProjName),
+			% ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjName ++ ")"),
+			doc_manager:set_active_project({ProjRoot, Data})
+	end,
+			
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}}, 
 						State=#state{frame=Frame}) ->
@@ -148,7 +150,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
 			try 
 				FileContents = ide_io:read_file(File),
 				doc_manager:new_document_from_existing(File, filename:basename(File), 
-					FileContents, [{project,{wxTreeCtrl:getRootItem(Tree), 
+					FileContents, [{project,{get_project_root(Tree, Item), 
 						wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item))}}])
 			catch
 				throw:_ -> lib_dialog_wx:error_msg(Frame, "The file could not be loaded.")
@@ -169,15 +171,7 @@ terminate(_Reason, #state{panel=Panel}) ->
 %% subdirectories.
 
 add_project(Dir) ->
-	Tree = wx_object:call(?MODULE, tree),
-	Root = wxTreeCtrl:getRootItem(Tree),
-	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
-	wxTreeCtrl:setItemImage(Tree, Item, 2),
-	build_tree(Tree, Item, Dir),
-	% ide:set_title(filename:basename(Dir)),
-	% doc_manager:set_active_project({Root, Dir}),
-	ok.
-	
+	Tree = wx_object:cast(?MODULE, {add, Dir}).
 	
 %% =====================================================================
 %% @doc Get a list of files in a given root directory then build its
@@ -268,6 +262,38 @@ get_project_root(Tree, Root, Parent, Item) ->
 	get_project_root(Tree, Root, wxTreeCtrl:getItemParent(Tree, Parent), 
 			wxTreeCtrl:getItemParent(Tree, Item)).
 
+<<<<<<< HEAD
 delete_project(Id) ->
 	wxTreeCtrl:delete(wx_object:call(?MODULE, tree), Id).
 
+=======
+
+% delete_project(Id) ->
+% 	wxTreeCtrl:delete(wx_object:call(?MODULE, tree), Id).
+
+delete_project(Id) ->
+	io:format("IN DELETE: ~p~n", [Id]),
+	wx_object:cast(?MODULE, {delete, Id}).
+	
+%% =====================================================================
+%% @doc Print the tree
+
+print_tree_debug(Tree) ->
+	Root = wxTreeCtrl:getRootItem(Tree),
+	print_tree_debug(Tree, Root, 0).
+	
+print_tree_debug(Tree, Node, Indent) ->
+	Spac = lists:duplicate(Indent + 1, "---"),
+	io:format(Spac ++ "Node: ~p~n", [wxTreeCtrl:getItemData(Tree, Node)]),
+	case wxTreeCtrl:itemHasChildren(Tree, Node) of
+		true ->
+			{Child, _} = wxTreeCtrl:getFirstChild(Tree, Node),
+			print_tree_debug(Tree, Child, Indent + 1);
+		false -> ok
+	end,
+	Sibling = wxTreeCtrl:getNextSibling(Tree, Node),
+	case wxTreeCtrl:isTreeItemIdOk(Sibling) of
+		true -> print_tree_debug(Tree, Sibling, Indent);
+		false -> ok
+	end.
+>>>>>>> c55d52aeea49d14c86c6e611ee39621d8d44fb6f

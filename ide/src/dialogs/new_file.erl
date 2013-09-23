@@ -28,6 +28,7 @@ start(Parent) ->
 init(Parent) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 460}}]),
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
+<<<<<<< HEAD
   wxSizer:addSpacer(LRSizer, 20),
   wxDialog:setSizer(Dialog, LRSizer),
 
@@ -39,6 +40,20 @@ init(Parent) ->
   Dialog1 = dialog1(Dialog),
   wxSizer:add(SwapSizer, Dialog1,   [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(MainSizer, SwapSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
+=======
+  wxDialog:setSizer(Dialog, LRSizer),
+  
+	wxSizer:addSpacer(LRSizer, 20),
+	MainSizer = wxBoxSizer:new(?wxVERTICAL),
+	wxSizer:addSpacer(MainSizer, 20),
+	
+	SwapSizer = wxBoxSizer:new(?wxVERTICAL),
+	Dialog1 = dialog1(Dialog),
+  wxSizer:add(SwapSizer, Dialog1, [{proportion, 0}, {flag, ?wxEXPAND}]),		
+	wxSizer:add(MainSizer, SwapSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),	
+	
+	wxSizer:add(LRSizer, MainSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
+>>>>>>> c55d52aeea49d14c86c6e611ee39621d8d44fb6f
 
   %%%%%%%%
   
@@ -142,19 +157,35 @@ terminate(_Reason, #state{win=Dialog}) ->
 %% =====================================================================
 %% @doc
 
+<<<<<<< HEAD
 dialog1(Parent) ->
   Dialog1 = wxPanel:new(Parent),
   DialogSizer1 = wxFlexGridSizer:new(2, 2, 20, 20),
   wxPanel:setSizer(Dialog1, DialogSizer1),
+=======
+dialog1(Parent) -> 
+	Dialog1 = wxWindow:new(Parent, 555),
+  DialogSizer1 = wxFlexGridSizer:new(2, 2, 10, 10),
+	wxWindow:setSizer(Dialog1, DialogSizer1),
+>>>>>>> c55d52aeea49d14c86c6e611ee39621d8d44fb6f
 
   wxSizer:add(DialogSizer1, wxStaticText:new(Dialog1, ?wxID_ANY, "Project:"),   []),
   wxSizer:add(DialogSizer1, wxChoice:new(Dialog1, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   wxSizer:add(DialogSizer1, wxStaticText:new(Dialog1, ?wxID_ANY, "File Type:"), []),
   wxSizer:add(DialogSizer1, wxListBox:new(Dialog1, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
+<<<<<<< HEAD
   
   wxFlexGridSizer:addGrowableCol(DialogSizer1, 1),
 
+=======
+
+  wxSizer:add(DialogSizer1, wxStaticText:new(Dialog1, ?wxID_ANY, "Description:"), []),
+  wxSizer:add(DialogSizer1, wxTextCtrl:new(Dialog1, ?wxID_ANY, [{style, ?wxTE_MULTILINE bor ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxFlexGridSizer:addGrowableCol(DialogSizer1, 1),
+  wxFlexGridSizer:addGrowableCol(DialogSizer1, 2),
+ 
+>>>>>>> c55d52aeea49d14c86c6e611ee39621d8d44fb6f
   Dialog1.
 
 

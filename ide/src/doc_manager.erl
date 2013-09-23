@@ -99,7 +99,6 @@ handle_info(Msg, State) ->
 	{noreply,State}.
 
 handle_cast({active_project,Proj}, State) ->
-	io:format("ACTIVE PROJECT SET TO: ~p~n", [Proj]),
 	{noreply, State#state{active_project=Proj}};
 handle_cast(Msg, State) ->
 	io:format("Got cast ~p~n",[Msg]),
@@ -127,16 +126,16 @@ terminate(_Reason, State=#state{manager=Manager, workspace=Ws}) ->
 %%
 %% =====================================================================
 
-handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type = command_auinotebook_page_changed,
+handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type=command_auinotebook_page_changed,
 			selection = Index}}, State=#state{document_ets=Ets, workspace=Ws, status_bar=Sb}) ->
   %% Make sure editor knows (needs to update sb)
 	Pid = get_editor_pid(Index, Ws, Ets),
   editor:selected(Pid, Sb),
-	% Id = editor:get_id(Pid),
-	% [{_,_,_,Proj}] = ets:lookup(Ets, Id),
-	% io:format("page_changed Proj: ~p~n", [Proj]),
-  % {noreply, State#state{active_project=Proj}};
-  {noreply, State};
+	Id = editor:get_id(Pid),
+	[{_,_,_,{project, Proj}}] = ets:lookup(Ets, Id),
+	io:format("PAGE CHANGED PROJ: ~p~n", [Proj]),
+  {noreply, State#state{active_project=Proj}};
+  % {noreply, State};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
   new_document(State#state.workspace, State#state.status_bar, 
              State#state.document_ets),
@@ -229,25 +228,34 @@ close_project() ->
 	%% Check open files, save/close
 	case get_active_project() of
 		undefined -> ok;
-		Project= {Item,Root} ->
+		Project={Item,Root} ->
 			{Workspace, Sb, DocEts} = wx_object:call(?MODULE, workspace), 
+			io:format("PROJECT: ~p~n", [Project]),
+			io:format("ETS: ~p~n", [ets:tab2list(DocEts)]),
 			List = get_active_project_records(Project, DocEts),
-			io:format("LIST: ~p~n", [List]),
-			%% switch off page chanfe event handler here
+			io:format("RECORDS: ~p~n", [List]),
+			%% switch off page change event handler here
 			close_project(Workspace, List),
 			%% switch on again
 			ide_projects_tree:delete_project(Item),
-			io:format("DELETED~n"),
-			set_active_project(undefined),
-			ok
+			set_active_project(undefined)
 	end.
 	
-close_project(_,[]) -> 
-	io:format("LIST EMPTY 228~n");
+close_project(_,[]) -> ok;
 close_project(Workspace, [{Id,Pid,_,_}|T]) ->
 	close_document(Pid, get_document_index(Workspace, Pid)),
 	close_project(Workspace, T).
-	
+
+%% =====================================================================
+%% @doc
+
+open_project(Frame) ->
+	case lib_dialog_wx:get_existing_dir(Frame) of
+		cancelled -> ok;
+		Path -> ide_projects_tree:add_project(Path)
+	end,
+	ok.
+
 get_active_project() ->
 	wx_object:call(?MODULE, active_project).
 	
@@ -256,7 +264,7 @@ set_active_project(Project) ->
 	
 get_active_project_records(Project, DocEts) ->
 	ets:foldl(
-		fun({Id, Pid, {path, Path}, Proj}=Record, Acc) when Proj =:= Project ->
+		fun({Id, Pid, {path, Path}, {project, Proj}}=Record, Acc) when Proj =:= Project ->
 			[Record | Acc];
 		(_, Acc) ->
 			Acc
@@ -413,17 +421,6 @@ open_document(Frame) ->
 		{Path, Filename, Contents} ->
 			new_document_from_existing(Path, Filename, Contents)
 	end.
-
-
-%% =====================================================================
-%% @doc
-
-open_project(Frame) ->
-	case lib_dialog_wx:get_existing_dir(Frame) of
-		cancelled -> ok;
-		Path -> ide_projects_tree:add_project(Path)
-	end,
-	ok.
 
 
 %% =====================================================================
