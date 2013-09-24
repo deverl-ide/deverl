@@ -374,12 +374,12 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 	Result :: wxPanel:wxPanel().
 
 create_utils(Parent) ->
-	Panel = wxPanel:new(Parent, []),
+	UtilPanel = wxPanel:new(Parent, []),
 
-	Utils = wxNotebook:new(Panel, 8989, [{style, ?wxBORDER_NONE}]),
+	Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
 
-	Sz = wxBoxSizer:new(?wxVERTICAL),
-	wxPanel:setSizer(Panel, Sz),
+	UtilSizer = wxBoxSizer:new(?wxVERTICAL),
+	wxPanel:setSizer(UtilPanel, UtilSizer),
 
 	Console = ide_shell:new([{parent, Utils}]),
 	%% Start the port that communicates with the external ERTs
@@ -395,10 +395,10 @@ create_utils(Parent) ->
 	Debugger = wxPanel:new(Utils, []),
 	wxNotebook:addPage(Utils, Debugger, "Debugger", []),
 
-	wxSizer:addSpacer(Sz, 1),
-	wxSizer:add(Sz, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	wxSizer:addSpacer(UtilSizer, 1),
+	wxSizer:add(UtilSizer, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-	Panel.
+	UtilPanel.
 
 
 %% =====================================================================

@@ -48,7 +48,6 @@
 
 -record(state, {
 								status_bar,
-								manager,
              		workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 document_ets :: {integer(), pid()},              %% A table containing the Id returned when an editor is created, and the associated pid
 								active_project
@@ -61,27 +60,23 @@ start(Config) ->
 init(Config) ->
 	{Parent, Sb} = proplists:get_value(config, Config),
 
-	Manager = wxAuiManager:new([{managed_wnd, Parent}]),
-	Pane = wxAuiPaneInfo:centrePane(wxAuiPaneInfo:new()),
-
 	Style = (0
 			bor ?wxAUI_NB_TOP
 			bor ?wxAUI_NB_WINDOWLIST_BUTTON
 			bor ?wxAUI_NB_TAB_MOVE
 			bor ?wxAUI_NB_SCROLL_BUTTONS
 			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
+			bor ?wxAUI_NB_TAB_SPLIT
 			),
 
 	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
-	wxAuiManager:addPane(Manager, Workspace, Pane),
-	
 	Editor = {_,Id,_,Pid} = editor:start([{parent, Workspace}, {status_bar, Sb},
-                           {font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
+		{font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
+	wxAuiNotebook:addPage(Workspace, Editor, ?DEFAULT_TAB_LABEL, []),
 
+	%% Create Ets table of open document
 	DocEts = ets:new(editors, [public]),
 	insert_record(DocEts, Id, Pid, undefined),
-
-	wxAuiNotebook:addPage(Workspace, Editor, ?DEFAULT_TAB_LABEL, []),
 
 	Close = fun(_,O) ->
             wxNotifyEvent:veto(O),
@@ -92,7 +87,7 @@ init(Config) ->
 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,DocEts}]),
 	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),
 
-  {Workspace, #state{workspace=Workspace, manager=Manager, status_bar=Sb, document_ets=DocEts}}.
+  {Workspace, #state{workspace=Workspace, status_bar=Sb, document_ets=DocEts}}.
 
 handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
@@ -115,10 +110,8 @@ handle_call(Msg, _From, State) ->
 code_change(_, _, State) ->
 	{stop, ignore, State}.
 
-terminate(_Reason, State=#state{manager=Manager, workspace=Ws}) ->
+terminate(_Reason, State=#state{workspace=Ws}) ->
 	io:format("TERMINATE DOC_MANAGER~n"),
-  wxAuiManager:unInit(Manager),
-  wxAuiManager:destroy(Manager),
 	wxAuiNotebook:destroy(Ws).
 
 %% =====================================================================
