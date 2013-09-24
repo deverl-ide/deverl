@@ -127,10 +127,9 @@ handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type=command_auinotebo
 	Id = editor:get_id(Pid),
 	[{_,_,_,{project, Proj}}] = ets:lookup(Ets, Id),
   {noreply, State#state{active_project=Proj}};
-  % {noreply, State};
-handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, State) ->
-  new_document(State#state.workspace, State#state.status_bar, 
-             State#state.document_ets),
+handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
+						 State#state{workspace=Ws, status_bar=Sb, document_ets=DocEts}) ->
+  new_document(Ws, Sb, DocEts),
   {noreply, State};
 handle_event(Ev = #wx{}, State = #state{}) ->
   io:format("Got Event ~p~n",[Ev]),
