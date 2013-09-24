@@ -128,7 +128,7 @@ handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type=command_auinotebo
 	[{_,_,_,{project, Proj}}] = ets:lookup(Ets, Id),
   {noreply, State#state{active_project=Proj}};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
-						 Stat=e#state{workspace=Ws, status_bar=Sb, document_ets=DocEts}) ->
+						 State=#state{workspace=Ws, status_bar=Sb, document_ets=DocEts}) ->
   new_document(Ws, Sb, DocEts),
   {noreply, State};
 handle_event(Ev = #wx{}, State = #state{}) ->
