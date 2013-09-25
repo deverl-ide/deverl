@@ -121,7 +121,6 @@ terminate(_Reason, State=#state{notebook=Nb}) ->
 
 handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_page_changed,
 			selection=Index}}, State=#state{document_ets=Ets, notebook=Nb, status_bar=Sb}) ->
-	io:format("OPEN PROJS: ~p~n", [ide_projects_tree:get_open_projects()]),
 	PageText = wxAuiNotebook:getPageText(Notebook, Index),
   %% Make sure editor knows (needs to update sb)
 	Pid = get_editor_pid(Index, Nb, Ets),
