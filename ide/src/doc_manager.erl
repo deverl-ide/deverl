@@ -128,9 +128,10 @@ handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_p
 	Id = editor:get_id(Pid),
 	[{_,_,_,{project, Proj}}] = ets:lookup(Ets, Id),
 	Str = case Proj of
-		undefined -> ok;
-		_ -> ok
+		undefined -> PageText;
+		{_, Path} -> PageText ++ " (" ++ filename:basename(Path) ++ filename:extension(Path) ++ ")"
 	end,
+	io:format("Title ~p~n", [Str]),
   {noreply, State#state{active_project=Proj}};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
 						 State=#state{notebook=Nb, status_bar=Sb, document_ets=DocEts}) ->

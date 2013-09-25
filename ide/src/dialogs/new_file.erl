@@ -54,7 +54,7 @@ init(Parent) ->
   wxSizer:addSpacer(MainSizer, 20),
   wxSizer:add(MainSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Description"), []),
   wxSizer:addSpacer(MainSizer, 5),
-  wxSizer:add(MainSizer, wxTextCtrl:new(Dialog, ?wxID_ANY, [{style, ?wxTE_MULTILINE bor ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(MainSizer, wxTextCtrl:new(Dialog, ?wxID_ANY, [{size,{-1, 70}}, {style, ?wxTE_MULTILINE bor ?wxTE_READONLY}]), [{proportion, 0}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 40),
 
   %% Buttons
@@ -151,10 +151,10 @@ dialog1(Parent) ->
   wxPanel:setSizer(Dialog1, DialogSizer1),
 
   ProjectSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  wxSizer:add(DialogSizer1, ProjectSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(DialogSizer1, ProjectSizer, [{proportion, 0}, {flag, ?wxEXPAND}]),
   wxSizer:add(ProjectSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "Project:"),   []),
-  wxSizer:addSpacer(ProjectSizer, 20),
-  wxSizer:add(ProjectSizer, wxChoice:new(Dialog1, ?wxID_ANY), [{proportion, 0}, {flag, ?wxEXPAND}]),
+  wxSizer:addSpacer(ProjectSizer, 40),
+  wxSizer:add(ProjectSizer, wxChoice:new(Dialog1, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(DialogSizer1, 20),
 
   FileSizer = wxFlexGridSizer:new(2, 2, 10, 10),
@@ -170,7 +170,6 @@ dialog1(Parent) ->
   wxListBox:insertItems(ModuleTypeList, ["Erlang Module", "OTP Gen Server"], 0),
   
   wxFlexGridSizer:addGrowableCol(FileSizer, 0),
-  wxFlexGridSizer:addGrowableRow(FileSizer, 0),
   wxFlexGridSizer:addGrowableCol(FileSizer, 1),
   wxFlexGridSizer:addGrowableRow(FileSizer, 1),
 
