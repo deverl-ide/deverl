@@ -16,7 +16,8 @@
 -export([
         start/1,
 				add_project/1,
-				delete_project/1]).
+				delete_project/1,
+				get_open_projects/0]).
 
 -record(state, {frame, sizer, panel, tree, placeholder}).
 
@@ -239,3 +240,17 @@ show_placeholder(Sz) ->
 hide_tree(Sz, Tree) ->
 	wxSizer:hide(Sz, Tree),
 	wxSizer:layout(Sz).
+	
+	
+get_open_projects() ->
+	Tree = wx_object:call(?MODULE, tree),
+	{Fc,_} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
+	get_open_projects(Tree, Fc, []).
+	
+get_open_projects(Tree, Item, Acc) ->
+	case wxTreeCtrl:isTreeItemIdOk(Item) of
+		true -> 
+			get_open_projects(Tree, wxTreeCtrl:getNextSibling(Tree, Item), 
+				[{Item,wxTreeCtrl:getItemData(Tree, Item)} | Acc]);
+		false -> Acc
+	end.
