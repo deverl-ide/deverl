@@ -38,7 +38,7 @@ init(Config) ->
 	T = wxStaticText:new(Placeholder, ?wxID_ANY, "No Open Projects", [{style, ?wxALIGN_CENTRE}]),
 	wxStaticText:setForegroundColour(T, {200,200,200}),
 	wxSizer:addStretchSpacer(PhSz),
-	wxSizer:add(PhSz, T, [{proportion, 1}, {flag, ?wxEXPAND bor ?wxALIGN_CENTRE}]),
+	wxSizer:add(PhSz, T, [{proportion, 1}, {flag, ?wxEXPAND}]),
 	wxSizer:addStretchSpacer(PhSz),
 	wxPanel:setSizer(Placeholder, PhSz),
 	wxSizer:fit(PhSz, Placeholder),

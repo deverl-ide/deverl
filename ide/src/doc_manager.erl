@@ -48,7 +48,7 @@
 
 -record(state, {
 								status_bar,
-             		workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
+             		notebook :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 document_ets :: {integer(), pid()},              %% A table containing the Id returned when an editor is created, and the associated pid
 								active_project
                 }).
@@ -69,10 +69,10 @@ init(Config) ->
 			bor ?wxAUI_NB_TAB_SPLIT
 			),
 
-	Workspace = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
-	Editor = {_,Id,_,Pid} = editor:start([{parent, Workspace}, {status_bar, Sb},
+	Notebook = wxAuiNotebook:new(Parent, [{id, ?ID_WORKSPACE}, {style, Style}]),
+	Editor = {_,Id,_,Pid} = editor:start([{parent, Notebook}, {status_bar, Sb},
 		{font, user_prefs:get_user_pref({pref, font})}]), %% Returns an editor instance inside a wxPanel
-	wxAuiNotebook:addPage(Workspace, Editor, ?DEFAULT_TAB_LABEL, []),
+	wxAuiNotebook:addPage(Notebook, Editor, ?DEFAULT_TAB_LABEL, []),
 
 	%% Create Ets table of open document
 	DocEts = ets:new(editors, [public]),
@@ -83,11 +83,11 @@ init(Config) ->
             close_active_document()
           end,
 
-	wxAuiNotebook:connect(Workspace, command_auinotebook_bg_dclick, []),
-	wxAuiNotebook:connect(Workspace, command_auinotebook_page_close, [{callback,Close},{userData,DocEts}]),
-	wxAuiNotebook:connect(Workspace, command_auinotebook_page_changed),
+	wxAuiNotebook:connect(Notebook, command_auinotebook_bg_dclick, []),
+	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [{callback,Close},{userData,DocEts}]),
+	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
 
-  {Workspace, #state{workspace=Workspace, status_bar=Sb, document_ets=DocEts}}.
+  {Notebook, #state{notebook=Notebook, status_bar=Sb, document_ets=DocEts}}.
 
 handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
@@ -99,8 +99,8 @@ handle_cast(Msg, State) ->
 	io:format("Got cast ~p~n",[Msg]),
 	{noreply,State}.
 
-handle_call(workspace, _, State=#state{workspace=Ws, status_bar=Sb, document_ets=Tb}) ->
-	{reply, {Ws,Sb,Tb}, State};
+handle_call(notebook, _, State=#state{notebook=Nb, status_bar=Sb, document_ets=Tb}) ->
+	{reply, {Nb,Sb,Tb}, State};
 handle_call(active_project, _, State=#state{active_project=Proj}) ->
 	{reply, Proj, State};
 handle_call(Msg, _From, State) ->
@@ -110,26 +110,31 @@ handle_call(Msg, _From, State) ->
 code_change(_, _, State) ->
 	{stop, ignore, State}.
 
-terminate(_Reason, State=#state{workspace=Ws}) ->
+terminate(_Reason, State=#state{notebook=Nb}) ->
 	io:format("TERMINATE DOC_MANAGER~n"),
-	wxAuiNotebook:destroy(Ws).
+	wxAuiNotebook:destroy(Nb).
 
 %% =====================================================================
 %% AUI handlers
 %%
 %% =====================================================================
 
-handle_event(#wx{obj = _Workspace, event = #wxAuiNotebook{type=command_auinotebook_page_changed,
-			selection = Index}}, State=#state{document_ets=Ets, workspace=Ws, status_bar=Sb}) ->
+handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_page_changed,
+			selection=Index}}, State=#state{document_ets=Ets, notebook=Nb, status_bar=Sb}) ->
+	PageText = wxAuiNotebook:getPageText(Notebook, Index),
   %% Make sure editor knows (needs to update sb)
-	Pid = get_editor_pid(Index, Ws, Ets),
+	Pid = get_editor_pid(Index, Nb, Ets),
   editor:selected(Pid, Sb),
 	Id = editor:get_id(Pid),
 	[{_,_,_,{project, Proj}}] = ets:lookup(Ets, Id),
+	Str = case Proj of
+		undefined -> ok;
+		_ -> ok
+	end,
   {noreply, State#state{active_project=Proj}};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
-						 State=#state{workspace=Ws, status_bar=Sb, document_ets=DocEts}) ->
-  new_document(Ws, Sb, DocEts),
+						 State=#state{notebook=Nb, status_bar=Sb, document_ets=DocEts}) ->
+  new_document(Nb, Sb, DocEts),
   {noreply, State};
 handle_event(Ev = #wx{}, State = #state{}) ->
   io:format("Got Event ~p~n",[Ev]),
@@ -141,9 +146,9 @@ handle_event(Ev = #wx{}, State = #state{}) ->
 %%
 %% @private
 
-new_document(Workspace, Sb, DocEts) ->
-	new_document(Workspace, ?DEFAULT_TAB_LABEL, Sb, DocEts),
-	Workspace.
+new_document(Notebook, Sb, DocEts) ->
+	new_document(Notebook, ?DEFAULT_TAB_LABEL, Sb, DocEts),
+	Notebook.
 
 
 %% =====================================================================
@@ -154,29 +159,29 @@ new_document() ->
   
 %% @doc Create a new editor with specified documentname
 new_document(Filename) ->
-	{Workspace, Sb, DocEts} = wx_object:call(?MODULE, workspace), 
-	new_document(Workspace, Filename, Sb, DocEts),
+	{Notebook, Sb, DocEts} = wx_object:call(?MODULE, notebook), 
+	new_document(Notebook, Filename, Sb, DocEts),
 	ok.
 
 %% @private
-new_document(Workspace, Filename, Sb, DocEts) ->
-	Editor = {_,Id,_,Pid} =editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
-	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, false}]),
+new_document(Notebook, Filename, Sb, DocEts) ->
+	Editor = {_,Id,_,Pid} =editor:start([{parent, Notebook}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
+	wxAuiNotebook:addPage(Notebook, Editor, Filename, [{select, false}]),
 	insert_record(DocEts, Id, Pid, undefined).
 	
 	
 %% =====================================================================
-%% @doc Add an existing document to the workspace.
+%% @doc Add an existing document to the notebook.
 		
 new_document_from_existing(Path, Filename, Contents) -> 
 	new_document_from_existing(Path, Filename, Contents, []).
 
 new_document_from_existing(Path, Filename, Contents, Options) -> 
-	{Workspace, Sb, DocEts} = wx_object:call(?MODULE, workspace), 
-	Editor = {_,Id,_,Pid} = editor:start([{parent, Workspace}, {status_bar, Sb}, 
+	{Notebook, Sb, DocEts} = wx_object:call(?MODULE, notebook), 
+	Editor = {_,Id,_,Pid} = editor:start([{parent, Notebook}, {status_bar, Sb}, 
 		{font,user_prefs:get_user_pref({pref, font})}]),
 	insert_record(DocEts, Id, Pid, Path, proplists:get_value(project, Options)),
-	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
+	wxAuiNotebook:addPage(Notebook, Editor, Filename, [{select, true}]),
 	editor:set_text(Pid, Contents),
 	editor:empty_undo_buffer(Pid),
 	editor:set_savepoint(Pid),
@@ -220,17 +225,17 @@ close_project() ->
 	case get_active_project() of
 		undefined -> ok;
 		Project={Item,Root} ->
-			{Workspace, Sb, DocEts} = wx_object:call(?MODULE, workspace), 
+			{Notebook, Sb, DocEts} = wx_object:call(?MODULE, notebook), 
 			List = get_active_project_records(Project, DocEts),
-			close_project(Workspace, List),
+			close_project(Notebook, List),
 			ide_projects_tree:delete_project(Item),
 			set_active_project(undefined)
 	end.
 	
 close_project(_,[]) -> ok;
-close_project(Workspace, [{Id,Pid,_,_}|T]) ->
-	close_document(Pid, get_document_index(Workspace, Pid)),
-	close_project(Workspace, T).
+close_project(Notebook, [{Id,Pid,_,_}|T]) ->
+	close_document(Pid, get_document_index(Notebook, Pid)),
+	close_project(Notebook, T).
 
 %% =====================================================================
 %% @doc
@@ -256,8 +261,8 @@ get_active_project_records(Project, DocEts) ->
 			Acc
 		end, [], DocEts).
 	
-get_document_index(Workspace, Pid) ->
-	wxAuiNotebook:getPageIndex(Workspace, editor:get_ref(Pid)).
+get_document_index(Notebook, Pid) ->
+	wxAuiNotebook:getPageIndex(Notebook, editor:get_ref(Pid)).
 	
 
 %% =====================================================================
@@ -268,17 +273,17 @@ get_document_index(Workspace, Pid) ->
 	Result :: pid().
 
 get_editor_pid(Index) ->
-	{Workspace, _, DocEts} = wx_object:call(?MODULE, workspace),
-	get_editor_pid(Index, Workspace, DocEts).
+	{Notebook, _, DocEts} = wx_object:call(?MODULE, notebook),
+	get_editor_pid(Index, Notebook, DocEts).
 
--spec get_editor_pid(Index, Workspace, DocEts) -> Result when
+-spec get_editor_pid(Index, Notebook, DocEts) -> Result when
 	Index :: integer(),
-	Workspace :: wxAuiNotebook:wxAuiNotebook(),
+	Notebook :: wxAuiNotebook:wxAuiNotebook(),
 	DocEts :: term(),
 	Result :: pid().
 
-get_editor_pid(Index, Workspace, DocEts) ->
-	{_,Key,_,_} = wxAuiNotebook:getPage(Workspace, Index),
+get_editor_pid(Index, Notebook, DocEts) ->
+	{_,Key,_,_} = wxAuiNotebook:getPage(Notebook, Index),
 	[{_,Pid,_,_}] = ets:lookup(DocEts, Key),
 	Pid.
 
@@ -291,8 +296,8 @@ get_editor_pid(Index, Workspace, DocEts) ->
 			  {'ok', {integer(), pid()}}.
 
 get_active_document() ->
-	{Workspace,_,_} = wx_object:call(?MODULE, workspace),
-	case wxAuiNotebook:getSelection(Workspace) of %% Get the index of the tab
+	{Notebook,_,_} = wx_object:call(?MODULE, notebook),
+	case wxAuiNotebook:getSelection(Notebook) of %% Get the index of the tab
 		-1 -> %% no editor instance
 				{error, no_open_editor};
 		Index ->
@@ -309,14 +314,14 @@ get_active_document() ->
 	Result :: [{integer(), pid()}].
 
 get_open_documents() ->
-	{Workspace,_,_} = wx_object:call(?MODULE, workspace),
-	Count = wxAuiNotebook:getPageCount(Workspace),
-	get_open_documents(Workspace, Count - 1, []).
+	{Notebook,_,_} = wx_object:call(?MODULE, notebook),
+	Count = wxAuiNotebook:getPageCount(Notebook),
+	get_open_documents(Notebook, Count - 1, []).
 
 get_open_documents(_, -1, Acc) ->
 	Acc;
-get_open_documents(Workspace, Count, Acc) ->
-	get_open_documents(Workspace, Count -1, [{Count, get_editor_pid(Count)} | Acc]).
+get_open_documents(Notebook, Count, Acc) ->
+	get_open_documents(Notebook, Count -1, [{Count, get_editor_pid(Count)} | Acc]).
 
 
 %% =====================================================================
@@ -342,7 +347,7 @@ save_current_document() ->
 %% @doc Save the contents of the editor Pid located at index Index.
 
 save_document(Index, Pid) when is_pid(Pid)->  
-	{Workspace,Sb,Ets} = wx_object:call(?MODULE, workspace), 
+	{Notebook,Sb,Ets} = wx_object:call(?MODULE, notebook), 
 	case editor:is_dirty(Pid) of
 		false -> ok;
 		_ ->
@@ -370,13 +375,13 @@ save_new_document() ->
 
 save_new_document(Index, Pid) ->
 	Contents = editor:get_text(Pid),
-	{Workspace,Sb,Ets} = wx_object:call(?MODULE, workspace), 
-	case ide_io:save_as(Workspace, Contents) of
+	{Notebook,Sb,Ets} = wx_object:call(?MODULE, notebook), 
+	case ide_io:save_as(Notebook, Contents) of
 		{cancel} ->
 			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document not saved.");
 		{ok, {Path, Filename}}  ->
 			ets:update_element(Ets, editor:get_id(Pid), {3, {path, Path}}),
-			wxAuiNotebook:setPageText(Workspace, Index, Filename),
+			wxAuiNotebook:setPageText(Notebook, Index, Filename),
 			editor:set_savepoint(Pid),
 			editor:link_poller(Pid, Path),
 			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.")
@@ -425,13 +430,13 @@ close_active_document() ->
 %% @doc Close the selected editor
 	
 close_document(EditorPid, Index) ->
-	{Workspace,_Sb,DocEts} = wx_object:call(?MODULE, workspace),
+	{Notebook,_Sb,DocEts} = wx_object:call(?MODULE, notebook),
 	case editor:is_dirty(EditorPid) of
 		true ->
 			io:format("File modified since last save, display save/unsave dialog.~n");
 		_ -> %% Go ahead, close the editor
 			ets:delete(DocEts, editor:get_id(EditorPid)),
-      wxAuiNotebook:deletePage(Workspace, Index)
+      wxAuiNotebook:deletePage(Notebook, Index)
 	end.
 
 
