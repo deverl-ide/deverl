@@ -35,11 +35,19 @@ init(Config) ->
 	
 	%% Placeholder (Ph) "No Open Projects"
 	Placeholder = wxPanel:new(Panel),
+	
 	PhSz = wxBoxSizer:new(?wxVERTICAL),
-	T = wxStaticText:new(Placeholder, ?wxID_ANY, "No Open Projects", [{style, ?wxALIGN_CENTRE}]),
+	
+	HSz = wxBoxSizer:new(?wxHORIZONTAL),
+	T = wxStaticText:new(Placeholder, ?wxID_ANY, "No Open Projects", []),
+	wxSizer:addStretchSpacer(HSz),
+	wxSizer:add(HSz, T, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	wxSizer:addStretchSpacer(HSz),
+	% wxSizer:add(PhSz, HSz, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	
 	wxStaticText:setForegroundColour(T, {200,200,200}),
 	wxSizer:addStretchSpacer(PhSz),
-	wxSizer:add(PhSz, T, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	wxSizer:add(PhSz, HSz, [{proportion, 1}, {flag, ?wxEXPAND}]),
 	wxSizer:addStretchSpacer(PhSz),
 	wxPanel:setSizer(Placeholder, PhSz),
 	wxSizer:fit(PhSz, Placeholder),
