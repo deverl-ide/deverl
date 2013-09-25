@@ -48,8 +48,8 @@
 
 -record(state, {
 								status_bar,
-             		workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
-                document_ets :: {integer(), pid()},              %% A table containing the Id returned when an editor is created, and the associated pid
+             		workspace :: wxAuiNotebook:wxAuiNotebook(),  %% Notebook
+                document_ets :: {integer(), pid()},          %% A table containing the Id returned when an editor is created, and the associated pid
 								active_project
                 }).
 
@@ -317,7 +317,7 @@ get_open_documents(_, -1, Acc) ->
 	Acc;
 get_open_documents(Workspace, Count, Acc) ->
 	get_open_documents(Workspace, Count -1, [{Count, get_editor_pid(Count)} | Acc]).
-
+  
 
 %% =====================================================================
 %% Open/save/close editor functions

@@ -26,11 +26,11 @@ start(Parent) ->
   wx_object:start_link(?MODULE, Parent, []).
 
 init(Parent) ->
-  Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 500}}, 
-		{style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}]),
-
+  Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 500}},
+                                                        {style, ?wxDEFAULT_DIALOG_STYLE bor
+                                                                ?wxRESIZE_BORDER bor
+                                                                ?wxDIALOG_EX_METAL}]),
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
-
   wxSizer:addSpacer(LRSizer, 20),
   wxDialog:setSizer(Dialog, LRSizer),
 
@@ -42,31 +42,22 @@ init(Parent) ->
   wxSizer:add(MainSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 20),
 
+  %% Swap dialog
   SwapSizer = wxBoxSizer:new(?wxVERTICAL),
   Dialog1 = dialog1(Dialog),
   wxSizer:add(SwapSizer, Dialog1,   [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(MainSizer, SwapSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 20),
 
-  %%%%%%%%
-  
+  %% Description Box
   wxSizer:add(MainSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 20),
-  
-  % DescriptionPanel = wxPanel:new(Dialog),
-  % DescriptionSizer = wxBoxSizer:new(?wxVERTICAL),
-  % wxPanel:setSizer(DescriptionPanel, DescriptionSizer),
   wxSizer:add(MainSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Description"), []),
   wxSizer:addSpacer(MainSizer, 5),
   wxSizer:add(MainSizer, wxTextCtrl:new(Dialog, ?wxID_ANY, [{style, ?wxTE_MULTILINE bor ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
-
-  % wxSizer:add(MainSizer, DescriptionPanel, [{proportion, 1}, {flag, ?wxEXPAND}]),
-
   wxSizer:addSpacer(MainSizer, 40),
-  
-  %%%%%%%%
 
-  
+  %% Buttons
   wxSizer:add(MainSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 20),
   ButtonPanel = wxPanel:new(Dialog),
@@ -78,8 +69,9 @@ init(Parent) ->
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxID_CANCEL, [{label, "Cancel"}]), [{border, 2}, {flag, ?wxALL}]),
 
   wxSizer:add(MainSizer, ButtonPanel, [{proportion, 0}, {flag, ?wxALIGN_RIGHT}]),
-  
+
   wxButton:disable(wxWindow:findWindow(Parent, ?BACK)),
+  %wxButton:disable(wxWindow:findWindow(Parent, ?NEXT)),
   wxButton:disable(wxWindow:findWindow(Parent, ?FINISH)),
 
   %%%%%%%%
@@ -151,7 +143,7 @@ terminate(_Reason, #state{win=Dialog}) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Create the first page of the New File dialog.
 
 dialog1(Parent) ->
   Dialog1 = wxPanel:new(Parent),
@@ -161,17 +153,32 @@ dialog1(Parent) ->
   wxSizer:add(DialogSizer1, wxStaticText:new(Dialog1, ?wxID_ANY, "Project:"),   []),
   wxSizer:add(DialogSizer1, wxChoice:new(Dialog1, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-  wxSizer:add(DialogSizer1, wxStaticText:new(Dialog1, ?wxID_ANY, "File Type:"), []),
-  wxSizer:add(DialogSizer1, wxListBox:new(Dialog1, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
+  FileSizer = wxFlexGridSizer:new(2, 1, 10, 10),
+  wxSizer:add(DialogSizer1, FileSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  ModuleSizer = wxFlexGridSizer:new(2, 1, 10, 10),
+  wxSizer:add(DialogSizer1, ModuleSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
   
+  %wxSizer:add(DialogSizer1, wxStaticText:new(Dialog1, ?wxID_ANY, "File Type:"), []),
+  wxSizer:add(FileSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "File Type:"), []),
+  FileTypeList = wxListBox:new(Dialog1, ?wxID_ANY),
+  %wxSizer:add(DialogSizer1, FileTypeList, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(FileSizer, FileTypeList, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxListBox:insertItems(FileTypeList, ["Erlang", "Plain Text"], 0),
+  
+  wxSizer:add(ModuleSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "Module Type:"), []),
+  ModuleTypeList = wxListBox:new(Dialog1, ?wxID_ANY),
+  %wxSizer:add(DialogSizer1, FileTypeList, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(ModuleSizer, ModuleTypeList, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxListBox:insertItems(ModuleTypeList, ["Erlang Module", "OTP Gen Server"], 0),
+
   wxFlexGridSizer:addGrowableCol(DialogSizer1, 1),
   wxFlexGridSizer:addGrowableRow(DialogSizer1, 1),
- 
+
   Dialog1.
 
 
 %% =====================================================================
-%% @doc
+%% @doc Create the second page of the New File dialog.
 
 dialog2(Parent) ->
   Dialog2 = wxPanel:new(Parent),
