@@ -147,32 +147,51 @@ terminate(_Reason, #state{win=Dialog}) ->
 
 dialog1(Parent) ->
   Dialog1 = wxPanel:new(Parent),
-  DialogSizer1 = wxFlexGridSizer:new(2, 2, 20, 20),
+  %DialogSizer1 = wxFlexGridSizer:new(2, 2, 20, 20),
+  DialogSizer1 = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Dialog1, DialogSizer1),
 
-  wxSizer:add(DialogSizer1, wxStaticText:new(Dialog1, ?wxID_ANY, "Project:"),   []),
-  wxSizer:add(DialogSizer1, wxChoice:new(Dialog1, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
+  ProjectSizer = wxBoxSizer:new(?wxHORIZONTAL),
+  wxSizer:add(DialogSizer1, ProjectSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(ProjectSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "Project:"),   []),
+  wxSizer:addSpacer(ProjectSizer, 20),
+  wxSizer:add(ProjectSizer, wxChoice:new(Dialog1, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:addSpacer(DialogSizer1, 20),
 
-  FileSizer = wxFlexGridSizer:new(2, 1, 10, 10),
+  FileSizer = wxFlexGridSizer:new(2, 2, 10, 10),
   wxSizer:add(DialogSizer1, FileSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  ModuleSizer = wxFlexGridSizer:new(2, 1, 10, 10),
-  wxSizer:add(DialogSizer1, ModuleSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  
-  %wxSizer:add(DialogSizer1, wxStaticText:new(Dialog1, ?wxID_ANY, "File Type:"), []),
   wxSizer:add(FileSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "File Type:"), []),
+  wxSizer:add(FileSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "Module Type:"), []),
   FileTypeList = wxListBox:new(Dialog1, ?wxID_ANY),
-  %wxSizer:add(DialogSizer1, FileTypeList, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(FileSizer, FileTypeList, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxListBox:insertItems(FileTypeList, ["Erlang", "Plain Text"], 0),
   
-  wxSizer:add(ModuleSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "Module Type:"), []),
   ModuleTypeList = wxListBox:new(Dialog1, ?wxID_ANY),
-  %wxSizer:add(DialogSizer1, FileTypeList, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(ModuleSizer, ModuleTypeList, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(FileSizer, ModuleTypeList, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxListBox:insertItems(ModuleTypeList, ["Erlang Module", "OTP Gen Server"], 0),
+  
+  wxFlexGridSizer:addGrowableCol(FileSizer, 0),
+  wxFlexGridSizer:addGrowableRow(FileSizer, 0),
+  wxFlexGridSizer:addGrowableCol(FileSizer, 1),
+  wxFlexGridSizer:addGrowableRow(FileSizer, 1),
+  
+  
+  %FileSizer = wxFlexGridSizer:new(2, 1, 10, 10),
+  %wxSizer:add(DialogSizer1, FileSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  %wxSizer:add(FileSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "File Type:"), []),
+  %FileTypeList = wxListBox:new(Dialog1, ?wxID_ANY),
+  %wxSizer:add(FileSizer, FileTypeList, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  %wxListBox:insertItems(FileTypeList, ["Erlang", "Plain Text"], 0),
+  
+  %ModuleSizer = wxFlexGridSizer:new(2, 1, 10, 10),
+  %wxSizer:add(DialogSizer1, ModuleSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  %wxSizer:add(ModuleSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "Module Type:"), []),
+  %ModuleTypeList = wxListBox:new(Dialog1, ?wxID_ANY),
+  %wxSizer:add(ModuleSizer, ModuleTypeList, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  %wxListBox:insertItems(ModuleTypeList, ["Erlang Module", "OTP Gen Server"], 0),
 
-  wxFlexGridSizer:addGrowableCol(DialogSizer1, 1),
-  wxFlexGridSizer:addGrowableRow(DialogSizer1, 1),
+  %wxFlexGridSizer:addGrowableCol(DialogSizer1, 1),
+  %wxFlexGridSizer:addGrowableRow(DialogSizer1, 1),
 
   Dialog1.
 
