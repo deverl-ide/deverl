@@ -146,6 +146,9 @@ terminate(_Reason, #state{win=Dialog}) ->
 %% @doc Create the first page of the New File dialog.
 
 dialog1(Parent) ->
+  Projects = ide_projects_tree:get_open_projects(),
+  ProjectNames = get_project_names(Projects),
+  
   Dialog1 = wxPanel:new(Parent),
   DialogSizer1 = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Dialog1, DialogSizer1),
@@ -154,7 +157,7 @@ dialog1(Parent) ->
   wxSizer:add(DialogSizer1, ProjectSizer, [{proportion, 0}, {flag, ?wxEXPAND}]),
   wxSizer:add(ProjectSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "Project:"),   []),
   wxSizer:addSpacer(ProjectSizer, 40),
-  wxSizer:add(ProjectSizer, wxChoice:new(Dialog1, ?wxID_ANY), [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(ProjectSizer, wxChoice:new(Dialog1, ?wxID_ANY, [{choices, ProjectNames}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(DialogSizer1, 20),
 
   FileSizer = wxFlexGridSizer:new(2, 2, 10, 10),
@@ -218,3 +221,11 @@ swap(Sizer, Dialog1, Dialog2) ->
   wxSizer:layout(Sizer).
 
 
+%% =====================================================================
+%% @doc
+get_project_names(List) ->
+  get_project_names(List, ["No Project"]).
+get_project_names([], Acc) ->
+  Acc;
+get_project_names([{_,_,Name}|T], Acc) ->
+  get_project_names(T, Acc ++ [Name]).
