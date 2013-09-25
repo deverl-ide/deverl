@@ -161,7 +161,7 @@ new_document(Filename) ->
 %% @private
 new_document(Workspace, Filename, Sb, DocEts) ->
 	Editor = {_,Id,_,Pid} =editor:start([{parent, Workspace}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
-	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, true}]),
+	wxAuiNotebook:addPage(Workspace, Editor, Filename, [{select, false}]),
 	insert_record(DocEts, Id, Pid, undefined).
 	
 	

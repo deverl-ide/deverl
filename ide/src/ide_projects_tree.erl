@@ -18,7 +18,7 @@
 				add_project/1,
 				delete_project/1]).
 
--record(state, {frame, panel, tree}).
+-record(state, {frame, sizer, panel, tree, placeholder}).
 
 start(Config) ->
 	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
@@ -26,29 +26,46 @@ start(Config) ->
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
 	Frame = proplists:get_value(frame, Config),
+	
 	Panel = wxPanel:new(Parent),
-	Sz = wxBoxSizer:new(?wxVERTICAL),
-	wxPanel:setSizer(Panel, Sz),
+	wxPanel:setBackgroundColour(Panel, {110,110,110}),
+	MainSz = wxBoxSizer:new(?wxVERTICAL),
+	wxPanel:setSizer(Panel, MainSz),
+	
+	%% Placeholder (Ph) "No Open Projects"
+	Placeholder = wxPanel:new(Panel),
+	PhSz = wxBoxSizer:new(?wxVERTICAL),
+	T = wxStaticText:new(Placeholder, ?wxID_ANY, "No Open Projects", [{style, ?wxALIGN_CENTRE}]),
+	wxStaticText:setForegroundColour(T, {200,200,200}),
+	wxSizer:addStretchSpacer(PhSz),
+	wxSizer:add(PhSz, T, [{proportion, 1}, {flag, ?wxEXPAND bor ?wxALIGN_CENTRE}]),
+	wxSizer:addStretchSpacer(PhSz),
+	wxPanel:setSizer(Placeholder, PhSz),
+	wxSizer:fit(PhSz, Placeholder),
+	wxSizer:layout(PhSz),
+		
+	wxSizer:add(MainSz, Placeholder, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	
 		
   Tree = wxTreeCtrl:new(Panel, [{style, ?wxTR_HAS_BUTTONS bor
-                                         ?wxTR_HIDE_ROOT bor
-                                         ?wxTR_FULL_ROW_HIGHLIGHT}]),
-  
+                                        ?wxTR_HIDE_ROOT bor
+                                        ?wxTR_FULL_ROW_HIGHLIGHT}]),
+	wxTreeCtrl:setBackgroundColour(Tree, {210,210,210}),
 	ImgList = wxImageList:new(24,24),
 	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER", [{client,"wxART_MENU"}])),
 	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_NORMAL_FILE", [{client,"wxART_MENU"}])),
 	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_HELP_BOOK", [{client,"wxART_MENU"}])),
 	wxTreeCtrl:assignImageList(Tree, ImgList),
-	
-  % ProjectDir = user_prefs:get_user_pref({pref, project_dir}),
-	
+		
   wxTreeCtrl:addRoot(Tree, "ProjectTreeRoot"),
-	wxSizer:add(Sz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	
+	hide_tree(MainSz, Tree),
 	
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
 	wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
 	
-	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
+	{Panel, #state{frame=Frame, sizer=MainSz, panel=Panel, tree=Tree, placeholder=Placeholder}}.
 	
 
 %% =====================================================================
@@ -60,10 +77,21 @@ handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
 
-handle_cast({delete, Item}, State=#state{tree=Tree}) ->
+handle_cast({delete, Item}, State=#state{sizer=Sz, panel=Panel, tree=Tree}) ->
+	wxPanel:freeze(Panel),
   wxTreeCtrl:delete(Tree, Item),
+	case wxTreeCtrl:getCount(Tree) of
+		0 -> show_placeholder(Sz);
+		_ -> ok
+	end,
+	wxPanel:thaw(Panel),
   {noreply,State};
-handle_cast({add, Dir}, State=#state{tree=Tree}) ->
+handle_cast({add, Dir}, State=#state{sizer=Sz, tree=Tree}) ->
+	case wxWindow:isShown(Tree) of
+		false -> 
+			show_tree(Sz);
+		true -> ok
+	end,
 	Root = wxTreeCtrl:getRootItem(Tree),
 	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
 	wxTreeCtrl:setItemImage(Tree, Item, 2),
@@ -130,9 +158,6 @@ add_project(Dir) ->
 %% @doc Get a list of files in a given root directory then build its
 %% subdirectories.
 
-build_tree(Tree, Parent, Dir, main) ->
-  Files = filelib:wildcard(Dir ++ "/*"),
-	add_files(Tree, Parent, Files).
 build_tree(Tree, Parent, Dir) ->
 	Files = filelib:wildcard(Dir ++ "/*"),
 	add_files(Tree, Parent, lists:reverse(Files)).
@@ -201,3 +226,16 @@ print_tree_debug(Tree, Node, Indent) ->
 		false -> ok
 	end.
 
+show_tree(Sz) ->
+	wxSizer:hide(Sz, 0),
+	wxSizer:show(Sz, 1),
+	wxSizer:layout(Sz).
+	
+show_placeholder(Sz) ->
+	wxSizer:hide(Sz, 1),
+	wxSizer:show(Sz, 0),
+	wxSizer:layout(Sz).
+	
+hide_tree(Sz, Tree) ->
+	wxSizer:hide(Sz, Tree),
+	wxSizer:layout(Sz).
