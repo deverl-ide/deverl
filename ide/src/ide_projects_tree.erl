@@ -257,7 +257,11 @@ get_open_projects() ->
 get_open_projects(Tree, Item, Acc) ->
 	case wxTreeCtrl:isTreeItemIdOk(Item) of
 		true -> 
+      Path = wxTreeCtrl:getItemData(Tree, Item),
+      Name = filename:basename(Path),
 			get_open_projects(Tree, wxTreeCtrl:getNextSibling(Tree, Item), 
-				[{Item,wxTreeCtrl:getItemData(Tree, Item)} | Acc]);
-		false -> Acc
+        [{Item, Path, Name} | Acc]);
+		false -> 
+      io:format("~p~n", [Acc]),
+      Acc
 	end.
