@@ -159,7 +159,11 @@ handle_call(Msg, _From, State) ->
   {reply,{error, nyi}, State}.
 
 handle_cast({title, Title}, State=#state{frame=Frame}) ->
-	wxFrame:setTitle(Frame, Title ++ " - " ++ ?FRAME_TITLE),
+	Str = case Title of
+		[] -> ?FRAME_TITLE;
+		T -> Title ++ " - " ++ ?FRAME_TITLE
+	end,
+	wxFrame:setTitle(Frame, Str),
   {noreply,State}.
 
 %% =====================================================================
