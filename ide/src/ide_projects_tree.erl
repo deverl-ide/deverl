@@ -29,7 +29,7 @@ init(Config) ->
 	Frame = proplists:get_value(frame, Config),
 	
 	Panel = wxPanel:new(Parent),
-	wxPanel:setBackgroundColour(Panel, {110,110,110}),
+	wxPanel:setBackgroundColour(Panel, {252, 252, 252}),
 	MainSz = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(Panel, MainSz),
 	
@@ -38,7 +38,7 @@ init(Config) ->
 	PhSz = wxBoxSizer:new(?wxVERTICAL),
 	HSz = wxBoxSizer:new(?wxHORIZONTAL),
 	T = wxStaticText:new(Placeholder, ?wxID_ANY, "No Open Projects", []),
-	wxStaticText:setForegroundColour(T, {200,200,200}),
+	wxStaticText:setForegroundColour(T, {160,160,160}),
 	wxSizer:addStretchSpacer(HSz),
 	wxSizer:add(HSz, T, [{proportion, 1}, {flag, ?wxEXPAND}]),
 	wxSizer:addStretchSpacer(HSz),	
@@ -54,11 +54,12 @@ init(Config) ->
   Tree = wxTreeCtrl:new(Panel, [{style, ?wxTR_HAS_BUTTONS bor
                                         ?wxTR_HIDE_ROOT bor
                                         ?wxTR_FULL_ROW_HIGHLIGHT}]),
-	wxTreeCtrl:setBackgroundColour(Tree, {210,210,210}),
-	ImgList = wxImageList:new(24,24),
+	wxTreeCtrl:setBackgroundColour(Tree, {252,252,252}),
+	wxTreeCtrl:setIndent(Tree, 10),
+	ImgList = wxImageList:new(16,16),
 	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER", [{client,"wxART_MENU"}])),
 	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_NORMAL_FILE", [{client,"wxART_MENU"}])),
-	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_HELP_BOOK", [{client,"wxART_MENU"}])),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/book.png"))),
 	wxTreeCtrl:assignImageList(Tree, ImgList),
 		
   wxTreeCtrl:addRoot(Tree, "ProjectTreeRoot"),
@@ -155,8 +156,8 @@ terminate(_Reason, #state{panel=Panel}) ->
 %% @doc Add a project directory to the tree.
 
 add_project(Dir) ->
-	Tree = wx_object:cast(?MODULE, {add, Dir}).
-	
+	wx_object:cast(?MODULE, {add, Dir}).
+	% alternate_background(wx_object:call(?MODULE, tree)	).
 	
 %% =====================================================================
 %% @doc Get a list of files in a given root directory then build its
@@ -264,4 +265,58 @@ get_open_projects(Tree, Item, Acc) ->
 		false -> 
       io:format("~p~n", [Acc]),
       Acc
+	end.
+
+alternate_background(Tree) ->
+	lists:foldl(
+	fun(Item, Acc) ->
+		set_item_background(Tree, Item, Acc),
+		Acc+1
+	end,
+	0, lists:reverse(get_all_items(Tree))).
+	
+set_item_background(Tree, Item, Index) ->
+	case Index rem 2 of
+	  0 ->
+			wxTreeCtrl:setItemBackgroundColour(Tree, Item, {23,45,100});
+	  _ ->
+	 		wxTreeCtrl:setItemBackgroundColour(Tree, Item, {43,67,11})
+	end.
+
+	
+get_visible(Tree) ->
+	get_visible(Tree, wxTreeCtrl:getNextVisible(Tree, wxTreeCtrl:getRootItem(Tree)), []).
+get_visible(Tree, Item, Acc) ->
+	case wxTreeCtrl:isTreeItemIdOk(Item) of
+		true ->
+			get_visible(Tree, wxTreeCtrl:getNextVisible(Tree, Item), [Item | Acc]);
+		false ->
+			Acc
+	end.
+	
+get_all_items(Tree) ->
+	{FirstChild,_} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
+	get_all_items(Tree, FirstChild, []).
+get_all_items(Tree, Item, Acc) ->
+	% case wxTreeCtrl:isTreeItemIdOk(Item) of
+	% 	false -> Acc;
+	% 	true ->
+	% 		Res = case wxTreeCtrl:itemHasChildren(Tree, Item) and wxTreeCtrl:isExpanded(Tree, Item) of
+	% 			true ->
+	% 				{FirstChild,_} = wxTreeCtrl:getFirstChild(Tree, Item),
+	% 				get_all_items(Tree, FirstChild, Acc);
+	% 			false -> Acc
+	% 		end,
+	% 		get_all_items(Tree, wxTreeCtrl:getNextSibling(Tree, Item), [Item|Res])
+	% end.
+	case wxTreeCtrl:isTreeItemIdOk(Item) of
+		false -> Acc;
+		true ->
+			Res = case wxTreeCtrl:itemHasChildren(Tree, Item) and wxTreeCtrl:isExpanded(Tree, Item) of
+				true ->
+					{FirstChild,_} = wxTreeCtrl:getFirstChild(Tree, Item),
+					get_all_items(Tree, FirstChild, Acc);
+				false -> Acc
+			end,
+			get_all_items(Tree, wxTreeCtrl:getNextSibling(Tree, Item), [Item|Res])
 	end.

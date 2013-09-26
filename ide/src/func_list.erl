@@ -186,6 +186,14 @@ set(Items) ->
 	% insert_items(ListCtrl, Items),
 	set_acc(ListCtrl, Items),
 	ok.
+	
+% set(Items) ->
+% 	Ref = doc_manager:get_active_document_ref(),
+% 	ListCtrl = wx_object:call(?MODULE, {list, Ref}),
+% 	wxListCtrl:deleteAllItems(ListCtrl),
+% 	% insert_items(ListCtrl, Items),
+% 	set_acc(ListCtrl, Items),
+% 	ok.
 
 set_acc(ListCtrl, Items) ->
 	lists:foldl(

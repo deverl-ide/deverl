@@ -25,14 +25,14 @@
                 status_bar :: wxPanel:wxPanel()
                 }).
 
--define(DEFAULT_FRAME_WIDTH,  1300).
+-define(DEFAULT_FRAME_WIDTH,  1100).
 -define(DEFAULT_FRAME_HEIGHT, 731).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
 
 -define(SASH_VERTICAL, 1).
 -define(SASH_HORIZONTAL, 2).
--define(SASH_VERT_DEFAULT_POS, 240).
+-define(SASH_VERT_DEFAULT_POS, 215).
 -define(SASH_HOR_DEFAULT_POS, -250).
 
 -define(ID_DIALOG_TEXT, 9001).
@@ -409,10 +409,10 @@ create_utils(Parent) ->
 %% @doc
 
 create_left_window(Frame, Parent) ->
-	ImgList = wxImageList:new(24,24),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-open.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/document-new.png"))),
+	ImgList = wxImageList:new(16,16),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/books-stack.png"))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/clipboard-task.png"))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/function.png"))),
 
 	Toolbook = wxToolbook:new(Parent, ?wxID_ANY, [{style, ?wxBK_BUTTONBAR}]),
 	wxToolbook:assignImageList(Toolbook, ImgList),
@@ -421,7 +421,7 @@ create_left_window(Frame, Parent) ->
 	wxToolbook:addPage(Toolbook, ProjectTrees, "Projects", [{imageId, 0}]),
 
 	TestPanel = wxPanel:new(Toolbook),
-	wxToolbook:addPage(Toolbook, TestPanel, "Tests", [{imageId, 1}]),
+	wxToolbook:addPage(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
 
 	FunctionsPanel = func_list:start([{parent, Toolbook}]),
 	wxToolbook:addPage(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
