@@ -69,6 +69,8 @@ init(Config) ->
 	
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
 	wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
+	wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
+	wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
 	
 	{Panel, #state{frame=Frame, sizer=MainSz, panel=Panel, tree=Tree, placeholder=Placeholder}}.
 	
@@ -89,6 +91,7 @@ handle_cast({delete, Item}, State=#state{sizer=Sz, panel=Panel, tree=Tree}) ->
 		0 -> show_placeholder(Sz);
 		_ -> ok
 	end,
+	alternate_background(Tree),
 	wxPanel:thaw(Panel),
   {noreply,State};
 handle_cast({add, Dir}, State=#state{sizer=Sz, tree=Tree}) ->
@@ -101,6 +104,7 @@ handle_cast({add, Dir}, State=#state{sizer=Sz, tree=Tree}) ->
 	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
 	wxTreeCtrl:setItemImage(Tree, Item, 2),
 	build_tree(Tree, Item, Dir),
+	alternate_background(Tree),
   {noreply,State};
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
@@ -109,8 +113,14 @@ handle_cast(Msg, State) ->
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded}}, State) ->
+	alternate_background(Tree),
+	{noreply, State};
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed}}, State) ->
+	alternate_background(Tree),
+	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}}, 
-						 State=#state{frame=Frame, tree=Tree}) ->
+						 State=#state{frame=Frame}) ->
 	case wxTreeCtrl:isTreeItemIdOk(OldItem) of
 		false ->  %% Deleted item
 			ok;
@@ -121,8 +131,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 			ide:set_title(ProjName),
 			ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjName ++ ")"),
 			doc_manager:set_active_project({ProjRoot, Data})
-	end,
-			
+	end,			
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}}, 
 						State=#state{frame=Frame}) ->
@@ -132,7 +141,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
 			wxTreeCtrl:toggle(Tree, Item),
 			ok;
 		_ ->
-			%% CHECK IF FILE CAN BE OPENED AS TEXT
+			%% CHECK IF FILE CAN BE OPENED AS TEXT (TO BE DONE IN IO MODULE, NOT HERE!!)
 			try 
 				FileContents = ide_io:read_file(File),
 				doc_manager:new_document_from_existing(File, filename:basename(File), 
@@ -151,13 +160,6 @@ terminate(_Reason, #state{panel=Panel}) ->
 	io:format("TERMINATE PROJECTS TREE~n"),
 	wxPanel:destroy(Panel).
 
-
-%% =====================================================================
-%% @doc Add a project directory to the tree.
-
-add_project(Dir) ->
-	wx_object:cast(?MODULE, {add, Dir}).
-	% alternate_background(wx_object:call(?MODULE, tree)	).
 	
 %% =====================================================================
 %% @doc Get a list of files in a given root directory then build its
@@ -210,7 +212,14 @@ delete_project(Id) ->
 
 
 %% =====================================================================
-%% @doc Print the tree
+%% @doc Add a project directory to the tree.
+
+add_project(Dir) ->
+	wx_object:cast(?MODULE, {add, Dir}),
+	
+	
+%% =====================================================================
+%% @doc Print the tree for debugging purposes
 
 print_tree_debug(Tree) ->
 	Root = wxTreeCtrl:getRootItem(Tree),
@@ -230,21 +239,38 @@ print_tree_debug(Tree, Node, Indent) ->
 		true -> print_tree_debug(Tree, Sibling, Indent);
 		false -> ok
 	end.
+	
+	
+%% =====================================================================
+%% @doc Show the tree ctrl.
 
 show_tree(Sz) ->
 	wxSizer:hide(Sz, 0),
 	wxSizer:show(Sz, 1),
 	wxSizer:layout(Sz).
 	
+	
+%% =====================================================================
+%% @doc Display the placeholder.
+%% This is displayed when no projects are open.
+
 show_placeholder(Sz) ->
 	wxSizer:hide(Sz, 1),
 	wxSizer:show(Sz, 0),
 	wxSizer:layout(Sz).
 	
+	
+%% =====================================================================
+%% @doc Hide the tree ctrl.
+
 hide_tree(Sz, Tree) ->
 	wxSizer:hide(Sz, Tree),
 	wxSizer:layout(Sz).
 	
+	
+%% =====================================================================
+%% @doc Get a list of tuples containing the item id and associated path
+%% for each project currently open.
 	
 -spec get_open_projects() -> Result when
 		Result :: []
@@ -263,9 +289,13 @@ get_open_projects(Tree, Item, Acc) ->
 			get_open_projects(Tree, wxTreeCtrl:getNextSibling(Tree, Item), 
         [{Item, Path, Name} | Acc]);
 		false -> 
-      io:format("~p~n", [Acc]),
       Acc
 	end.
+	
+	
+%% =====================================================================
+%% @doc Set the background colour for all visible items.
+%% Includes those items that are currently scrolled out of view.
 
 alternate_background(Tree) ->
 	lists:foldl(
@@ -274,49 +304,36 @@ alternate_background(Tree) ->
 		Acc+1
 	end,
 	0, lists:reverse(get_all_items(Tree))).
-	
+
+
+%% =====================================================================
+%% @doc Set the background colour for a single item.
+
 set_item_background(Tree, Item, Index) ->
 	case Index rem 2 of
 	  0 ->
-			wxTreeCtrl:setItemBackgroundColour(Tree, Item, {23,45,100});
+			wxTreeCtrl:setItemBackgroundColour(Tree, Item, ?ROW_BG_EVEN);
 	  _ ->
-	 		wxTreeCtrl:setItemBackgroundColour(Tree, Item, {43,67,11})
+	 		wxTreeCtrl:setItemBackgroundColour(Tree, Item, ?ROW_BG_ODD)
 	end.
-
 	
-get_visible(Tree) ->
-	get_visible(Tree, wxTreeCtrl:getNextVisible(Tree, wxTreeCtrl:getRootItem(Tree)), []).
-get_visible(Tree, Item, Acc) ->
-	case wxTreeCtrl:isTreeItemIdOk(Item) of
-		true ->
-			get_visible(Tree, wxTreeCtrl:getNextVisible(Tree, Item), [Item | Acc]);
-		false ->
-			Acc
-	end.
+	
+%% =====================================================================
+%% @doc Get every item in the tree which currently occupys a row.
+%% This ignores any children of a collapsed item.
 	
 get_all_items(Tree) ->
 	{FirstChild,_} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
 	get_all_items(Tree, FirstChild, []).
 get_all_items(Tree, Item, Acc) ->
-	% case wxTreeCtrl:isTreeItemIdOk(Item) of
-	% 	false -> Acc;
-	% 	true ->
-	% 		Res = case wxTreeCtrl:itemHasChildren(Tree, Item) and wxTreeCtrl:isExpanded(Tree, Item) of
-	% 			true ->
-	% 				{FirstChild,_} = wxTreeCtrl:getFirstChild(Tree, Item),
-	% 				get_all_items(Tree, FirstChild, Acc);
-	% 			false -> Acc
-	% 		end,
-	% 		get_all_items(Tree, wxTreeCtrl:getNextSibling(Tree, Item), [Item|Res])
-	% end.
 	case wxTreeCtrl:isTreeItemIdOk(Item) of
 		false -> Acc;
 		true ->
 			Res = case wxTreeCtrl:itemHasChildren(Tree, Item) and wxTreeCtrl:isExpanded(Tree, Item) of
 				true ->
 					{FirstChild,_} = wxTreeCtrl:getFirstChild(Tree, Item),
-					get_all_items(Tree, FirstChild, Acc);
-				false -> Acc
+					get_all_items(Tree, FirstChild, [Item|Acc]);
+				false -> [Item|Acc]
 			end,
-			get_all_items(Tree, wxTreeCtrl:getNextSibling(Tree, Item), [Item|Res])
+			get_all_items(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Res)
 	end.
