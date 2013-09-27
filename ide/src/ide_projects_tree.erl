@@ -215,7 +215,7 @@ delete_project(Id) ->
 %% @doc Add a project directory to the tree.
 
 add_project(Dir) ->
-	wx_object:cast(?MODULE, {add, Dir}),
+	wx_object:cast(?MODULE, {add, Dir}).
 	
 	
 %% =====================================================================

@@ -1,6 +1,7 @@
 -module(func_list).
 
 -include_lib("wx/include/wx.hrl").
+-include("../include/ide.hrl").
 
 -behaviour(wx_object).
 -export([
@@ -29,8 +30,7 @@
             	 }).
 
 -define(SEARCH_TEXT_DEFAULT, "Search symbols..").
--define(ROW_BG_EVEN, {250,250,250,255}).
--define(ROW_BG_ODD, {237,243,254,255}).
+
 
 start(Config) ->
 	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
