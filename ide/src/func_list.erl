@@ -60,34 +60,34 @@ init(Config) ->
 	wxListCtrl:setColumnWidth(List, 0, W),
 
 	%% Insert
-	Insert =
-	fun({Name, Ln}) ->
-		Index = wxListCtrl:insertItem(List, 0, Name),
-		wxListCtrl:setItemData(List, Index, Ln)
-	end,
-	L = [
-	{"goggle",2},{"record2",5},{"food",20},{"func2",30},
-	{"record3",32},{"record4",55},{"func3",60},{"func4",70},
-	{"record5",72},{"more",75},{"func5",80},{"func6",90},
-	{"record6",92},{"record8",95},{"func7",100},{"func8",130},
-	{"raaa",132},{"boob",135},{"nipp",140},{"bottom",143},
-	{"fool",152},{"record6",155},{"func5",160},{"func6",180},
-	{"record6",192},{"trap",195},{"func7",200},{"mong",230}
-	],
-	lists:foreach(Insert, L),
+	% Insert =
+	% fun({Name, Ln}) ->
+	% 	Index = wxListCtrl:insertItem(List, 0, Name),
+	% 	wxListCtrl:setItemData(List, Index, Ln)
+	% end,
+	% L = [
+	% {"goggle",2},{"record2",5},{"food",20},{"func2",30},
+	% {"record3",32},{"record4",55},{"func3",60},{"func4",70},
+	% {"record5",72},{"more",75},{"func5",80},{"func6",90},
+	% {"record6",92},{"record8",95},{"func7",100},{"func8",130},
+	% {"raaa",132},{"boob",135},{"nipp",140},{"bottom",143},
+	% {"fool",152},{"record6",155},{"func5",160},{"func6",180},
+	% {"record6",192},{"trap",195},{"func7",200},{"mong",230}
+	% ],
+	% lists:foreach(Insert, L),
 
 	%% Background
 
-  Fun =
-	fun(Item) ->
-		case Item rem 2 of
-		    0 ->
-					wxListCtrl:setItemBackgroundColour(List, Item, ?ROW_BG_EVEN);
-		    _ ->
-			 		wxListCtrl:setItemBackgroundColour(List, Item, ?ROW_BG_ODD)
-		end
-	end,
-	wx:foreach(Fun, lists:seq(0,length(L)-1)),
+	%   Fun =
+	% fun(Item) ->
+	% 	case Item rem 2 of
+	% 	    0 ->
+	% 				wxListCtrl:setItemBackgroundColour(List, Item, ?ROW_BG_EVEN);
+	% 	    _ ->
+	% 		 		wxListCtrl:setItemBackgroundColour(List, Item, ?ROW_BG_ODD)
+	% 	end
+	% end,
+	% wx:foreach(Fun, lists:seq(0,length(L)-1)),
 
 	wxListCtrl:connect(List, command_list_item_selected, []),
 
@@ -179,21 +179,21 @@ terminate(_Reason, #state{panel=Panel}) ->
   wxPanel:destroy(Panel),
   ok.
 
-set(Items) ->
-	{ok, {_,Pid}} = doc_manager:get_active_document(),
-	ListCtrl = wx_object:call(?MODULE, {list, Pid}),
-	wxListCtrl:deleteAllItems(ListCtrl),
-	% insert_items(ListCtrl, Items),
-	set_acc(ListCtrl, Items),
-	ok.
-	
 % set(Items) ->
-% 	Ref = doc_manager:get_active_document_ref(),
-% 	ListCtrl = wx_object:call(?MODULE, {list, Ref}),
+% 	{ok, {_,Pid}} = doc_manager:get_active_document(),
+% 	ListCtrl = wx_object:call(?MODULE, {list, Pid}),
 % 	wxListCtrl:deleteAllItems(ListCtrl),
 % 	% insert_items(ListCtrl, Items),
 % 	set_acc(ListCtrl, Items),
 % 	ok.
+	
+set(Items) ->
+	Ref = doc_manager:get_active_document_ref(),
+	ListCtrl = wx_object:call(?MODULE, {list, Ref}),
+	wxListCtrl:deleteAllItems(ListCtrl),
+	% insert_items(ListCtrl, Items),
+	set_acc(ListCtrl, Items),
+	ok.
 
 set_acc(ListCtrl, Items) ->
 	lists:foldl(

@@ -24,6 +24,7 @@
 	indent_line_right/1,
 	comment/1,
 	go_to_position/2,
+	get_current_pos/1,
 	zoom_in/1,
 	zoom_out/1,
 	transform_uc_selection/1,
@@ -218,8 +219,16 @@ handle_cast({link_poller, Path}, State) ->
 	file_sup:start_link([{editor_pid, self()}, {path, Path}]),
   {noreply,State};
 	
-handle_cast(Msg, State) ->
-io:format("Got cast ~p~n",[Msg]),
+handle_cast({goto_pos, {Line, Col}}, State=#state{stc=Stc}) ->
+	wxStyledTextCtrl:gotoLine(Stc, Line - 1),
+	NewPos = wxStyledTextCtrl:getCurrentPos(Stc),
+	EndPos = wxStyledTextCtrl:getLineEndPosition(Stc, Line - 1),
+	ColPos = case NewPos + Col of
+		Pos when Pos > EndPos -> EndPos;
+		Pos -> Pos
+	end,
+	wxStyledTextCtrl:gotoPos(Stc, ColPos),
+	flash_current_line(Stc, {255,0,0}, 500, 1),
   {noreply,State}.
 
 %% =====================================================================
@@ -902,12 +911,13 @@ parse_functions(Editor) ->
 %% =====================================================================
 %% Move the caret to the line Line and Column Col.
 
-go_to_position(EditorPid, {Line, Col}) ->
-	Editor = wx_object:call(EditorPid, stc),
-	wxStyledTextCtrl:gotoLine(Editor, Line - 1),
-	flash_current_line(Editor, {255,0,0}, 500, 1),
-	ok.
+go_to_position(This, Pos) ->
+	Editor = wx_object:cast(This, {goto_pos, Pos}).
 
+
+get_current_pos(This) ->
+	Stc = wx_object:call(This, stc),
+	position_to_x_y(Stc, wxStyledTextCtrl:getCurrentPos(Stc)).
 
 %% =====================================================================
 %% Highlight the current line to attract the user's attention.
