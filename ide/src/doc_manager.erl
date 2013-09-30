@@ -341,7 +341,6 @@ get_open_documents() ->
 	lists:seq(0, Count - 1).
 
 
-
 %% =====================================================================
 %% Open/save/close editor functions
 %%
@@ -478,14 +477,8 @@ close_document(Notebook, DocEts, Index) ->
 %% Note: must always delete documents starting with the highest index
 %% first, as the notebook shifts all indexes dwon when one is deleted.
 
-% close_all_documents() ->
-% 	lists:foreach(fun close_document/1, lists:reverse(get_open_documents())),
-% 	ok.
-% 	
 close_all_documents() ->
 	wx_object:call(?MODULE, close_all).
-	% lists:foreach(fun close_document/1, lists:reverse(get_open_documents())),
-	% ok.
 
 
 %% =====================================================================
