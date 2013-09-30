@@ -1,6 +1,7 @@
 -module(func_list).
 
 -include_lib("wx/include/wx.hrl").
+-include("../include/ide.hrl").
 
 -behaviour(wx_object).
 -export([
@@ -29,8 +30,7 @@
             	 }).
 
 -define(SEARCH_TEXT_DEFAULT, "Search symbols..").
--define(ROW_BG_EVEN, {250,250,250,255}).
--define(ROW_BG_ODD, {237,243,254,255}).
+
 
 start(Config) ->
 	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
@@ -186,6 +186,14 @@ set(Items) ->
 	% insert_items(ListCtrl, Items),
 	set_acc(ListCtrl, Items),
 	ok.
+	
+% set(Items) ->
+% 	Ref = doc_manager:get_active_document_ref(),
+% 	ListCtrl = wx_object:call(?MODULE, {list, Ref}),
+% 	wxListCtrl:deleteAllItems(ListCtrl),
+% 	% insert_items(ListCtrl, Items),
+% 	set_acc(ListCtrl, Items),
+% 	ok.
 
 set_acc(ListCtrl, Items) ->
 	lists:foldl(

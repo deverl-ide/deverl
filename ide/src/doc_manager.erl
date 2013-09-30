@@ -79,9 +79,13 @@ init(Config) ->
 	DocEts = ets:new(editors, [public]),
 	insert_record(DocEts, Id, Pid, undefined),
 
-	Close = fun(_,O) ->
+	Close = fun(E,O) ->
             wxNotifyEvent:veto(O),
-            close_active_document()
+            close_active_document(),
+						case wxAuiNotebookEvent:getSelection(O) of
+							0 -> no_documents_open();
+							_ -> ok
+						end
           end,
 
 	wxAuiNotebook:connect(Notebook, command_auinotebook_bg_dclick, []),
@@ -89,6 +93,8 @@ init(Config) ->
 	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
 
   {Notebook, #state{notebook=Notebook, status_bar=Sb, document_ets=DocEts}}.
+	
+	
 
 handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
@@ -132,7 +138,7 @@ handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_p
 		undefined -> PageText;
 		{_, Path} -> PageText ++ " (" ++ filename:basename(Path) ++ filename:extension(Path) ++ ")"
 	end,
-	io:format("Title ~p~n", [Str]),
+	ide:set_title(Str),
   {noreply, State#state{active_project=Proj}};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}},
 						 State=#state{notebook=Nb, status_bar=Sb, document_ets=DocEts}) ->
@@ -681,4 +687,12 @@ insert_record(DocEts, Id, Pid, Path) ->
 
 insert_record(DocEts, Id, Pid, Path, Project) ->
 	ets:insert(DocEts, {Id, Pid, {path, Path}, {project, Project}}),
+	ok.
+
+
+%% =====================================================================
+%% @doc Function called when the last document is closed
+
+no_documents_open() ->
+	ide:set_title([]),
 	ok.

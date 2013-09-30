@@ -100,5 +100,7 @@
 -define(DEFAULT_TAB_LABEL, "untitled").
 -define(ID_WORKSPACE, 3211).
 
-%% Global styling
--define(SYSTEM_BG_COLOUR, {150,150,150}).
+%% Global colours
+% -define(SYSTEM_BG_COLOUR, {150,150,150}).
+-define(ROW_BG_EVEN, {250,250,250,255}).
+-define(ROW_BG_ODD, {237,243,254,255}).
