@@ -20,7 +20,6 @@
 -define(FILE_TYPE_ERLANG, 0).
 -define(FILE_TYPE_TEXT,   1).
 
-
 -define(BACK_BUTTON,   9000).
 -define(NEXT_BUTTON,   9001).
 -define(FINISH_BUTTON, 9002).
@@ -31,10 +30,10 @@
 -define(MODULE_TYPE_CHOICE, 9006).
 -define(DESCRIPTION_BOX,    9007).
 
--define(FILENAME_BOX,  9008).
--define(PROJECT_TEXT,  9009).
--define(FOLDER_BOX,    9010).
--define(PATH_TEXT,     9011).
+-define(FILENAME_BOX, 9008).
+-define(PROJECT_TEXT, 9009).
+-define(FOLDER_BOX,   9010).
+-define(PATH_TEXT,    9011).
 
 -define(FILE_TYPES,   ["Erlang",
                        "Plain Text"]).
@@ -251,7 +250,7 @@ dialog2(Parent) ->
   wxSizer:add(DialogSizer2, 0, 0, []),
 
   wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Folder:"), []),
-  wxSizer:add(DialogSizer2, wxTextCtrl:new(Dialog2, ?FOLDER_BOX, []), [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(DialogSizer2, wxTextCtrl:new(Dialog2, ?FOLDER_BOX, [{style, ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(DialogSizer2, wxButton:new(Dialog2, ?BROWSE_BUTTON, [{label, "Browse"}])),
 
   wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Path:"), []),
@@ -307,26 +306,32 @@ set_path_text(Parent, ProjectPath) ->
 
 
 %% =====================================================================
-%% @doc Set the default folder depending on what file type is selected.
+%% @doc Get the default folder depending on what file type is selected.
 
-set_default_folder_text(Parent) ->
-  FileType = wx:typeCast(wxWindow:findWindow(Parent, ?FILE_TYPE_CHOICE), wxListBox),
-  FolderText = wx:typeCast(wxWindow:findWindow(Parent, ?FOLDER_BOX), wxTextCtrl),
+get_default_folder_text(Parent) ->
+  FileType   = wx:typeCast(wxWindow:findWindow(Parent, ?FILE_TYPE_CHOICE), wxListBox),
   case wxChoice:getSelection(FileType) of
     ?FILE_TYPE_ERLANG ->
       ModuleType = wx:typeCast(wxWindow:findWindow(Parent, ?MODULE_TYPE_CHOICE), wxListBox),
       case wxChoice:getSelection(ModuleType) of
         1 ->
-          wxTextCtrl:clear(FolderText),
-          wxTextCtrl:writeText(FolderText, "/include/");
+          "/include/";
         _ ->
-          wxTextCtrl:clear(FolderText),
-          wxTextCtrl:writeText(FolderText, "/src/")
+          "/src/"
       end;
     ?FILE_TYPE_TEXT ->
-      wxTextCtrl:clear(FolderText),
-      wxTextCtrl:writeText(FolderText, "/")
+      ""
   end.
+
+
+%% =====================================================================
+%% @doc Set the default folder depending on what file type is selected.
+
+set_default_folder_text(Parent) ->
+  Text = get_default_folder_text(Parent),
+  FolderText = wx:typeCast(wxWindow:findWindow(Parent, ?FOLDER_BOX), wxTextCtrl),
+  wxTextCtrl:clear(FolderText),
+  wxTextCtrl:writeText(FolderText, Text).
 
 
 %% =====================================================================
@@ -396,5 +401,37 @@ add_project_data(ProjectChoice, []) ->
 add_project_data(ProjectChoice, [Path|Projects]) ->
   wxChoice:append(ProjectChoice, filename:basename(Path), Path),
   add_project_data(ProjectChoice, Projects).
+
+
+%% =====================================================================
+%% @doc
+
+create_tree(Parent, Root) ->
+  Tree = wxTreeCtrl:new(Parent),
+  wxTreeCtrl:addRoot(Tree, filename:basename(Root), [{data, Root}]).
+  
+build_tree(Tree, Parent, Dir) ->
+  Files = filelib:wildcard(Dir ++ "/*"),
+  add_files(Tree, Root, Files).
+
+add_files(_, _, []) ->
+	ok;
+add_files(Tree, Root, [File|Files]) ->
+	FileName = filename:basename(File),
+	IsDir = filelib:is_dir(File),
+	case IsDir of
+		true ->
+			Child = wxTreeCtrl:appendItem(Tree, Root, FileName, [{data, File}]),
+			wxTreeCtrl:setItemImage(Tree, Child, 0),
+			build_tree(Tree, Child, File);
+		_ ->
+			Child = wxTreeCtrl:prependItem(Tree, Root, FileName, [{data, File}]),
+			wxTreeCtrl:setItemImage(Tree, Child, 1)
+	end,
+	add_files(Tree, Root, Files).
+
+
+
+
 
 

@@ -104,11 +104,8 @@ handle_cast({add, Dir}, State=#state{sizer=Sz, tree=Tree}) ->
 	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
 	wxTreeCtrl:setItemImage(Tree, Item, 2),
 	build_tree(Tree, Item, Dir),
-<<<<<<< HEAD
   wxTreeCtrl:selectItem(Tree, Item),
-=======
 	alternate_background(Tree),
->>>>>>> 5b266b3b4baab9bcfce04edc784f6c7bcd3abe7c
   {noreply,State};
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
