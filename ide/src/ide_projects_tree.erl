@@ -100,6 +100,7 @@ handle_cast({add, Dir}, State=#state{sizer=Sz, tree=Tree}) ->
 	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
 	wxTreeCtrl:setItemImage(Tree, Item, 2),
 	build_tree(Tree, Item, Dir),
+  wxTreeCtrl:selectItem(Tree, Item),
   {noreply,State};
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
@@ -258,10 +259,8 @@ get_open_projects(Tree, Item, Acc) ->
 	case wxTreeCtrl:isTreeItemIdOk(Item) of
 		true -> 
       Path = wxTreeCtrl:getItemData(Tree, Item),
-      Name = filename:basename(Path),
 			get_open_projects(Tree, wxTreeCtrl:getNextSibling(Tree, Item), 
-        [{Item, Path, Name} | Acc]);
+        [{Item, Path} | Acc]);
 		false -> 
-      io:format("~p~n", [Acc]),
       Acc
 	end.

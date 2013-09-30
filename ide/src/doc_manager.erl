@@ -12,20 +12,21 @@
 -export([
 	start/1,
   new_file/1,
-	new_document/0, 
-	new_document/1, 
+	new_document/0,
+	new_document/1,
 	new_document_from_existing/3,
 	new_document_from_existing/4,
 	new_project/1,
 	close_project/0,
-	close_active_document/0, 
+	close_active_document/0,
 	close_all_documents/0,
-	get_active_document/0, 
+	get_active_document/0,
+  get_active_project/0,
 	set_active_project/1,
-	get_open_documents/0, 
-	update_styles/1, 
+	get_open_documents/0,
+	update_styles/1,
 	save_current_document/0,
-	save_new_document/0, 
+	save_new_document/0,
 	save_all/0,
 	save_document/2,
 	open_document/1,
@@ -48,9 +49,9 @@
 
 -record(state, {
 								status_bar,
-             		notebook :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
-                document_ets :: {integer(), pid()},              %% A table containing the Id returned when an editor is created, and the associated pid
-								active_project
+             		notebook       :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
+                document_ets   :: {integer(), pid()},               %% A table containing the Id returned when an editor is created, and the associated pid
+								active_project :: {integer(), file:filename_all()}
                 }).
 
 
@@ -133,7 +134,7 @@ handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_p
 	end,
 	io:format("Title ~p~n", [Str]),
   {noreply, State#state{active_project=Proj}};
-handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
+handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}},
 						 State=#state{notebook=Nb, status_bar=Sb, document_ets=DocEts}) ->
   new_document(Nb, Sb, DocEts),
   {noreply, State};
@@ -155,12 +156,12 @@ new_document(Notebook, Sb, DocEts) ->
 %% =====================================================================
 %% @doc Create a new editor instance in the notebook
 
-new_document() -> 
+new_document() ->
 	new_document(?DEFAULT_TAB_LABEL).
-  
+
 %% @doc Create a new editor with specified documentname
 new_document(Filename) ->
-	{Notebook, Sb, DocEts} = wx_object:call(?MODULE, notebook), 
+	{Notebook, Sb, DocEts} = wx_object:call(?MODULE, notebook),
 	new_document(Notebook, Filename, Sb, DocEts),
 	ok.
 
@@ -169,17 +170,17 @@ new_document(Notebook, Filename, Sb, DocEts) ->
 	Editor = {_,Id,_,Pid} =editor:start([{parent, Notebook}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
 	wxAuiNotebook:addPage(Notebook, Editor, Filename, [{select, false}]),
 	insert_record(DocEts, Id, Pid, undefined).
-	
-	
+
+
 %% =====================================================================
 %% @doc Add an existing document to the notebook.
-		
-new_document_from_existing(Path, Filename, Contents) -> 
+
+new_document_from_existing(Path, Filename, Contents) ->
 	new_document_from_existing(Path, Filename, Contents, []).
 
-new_document_from_existing(Path, Filename, Contents, Options) -> 
-	{Notebook, Sb, DocEts} = wx_object:call(?MODULE, notebook), 
-	Editor = {_,Id,_,Pid} = editor:start([{parent, Notebook}, {status_bar, Sb}, 
+new_document_from_existing(Path, Filename, Contents, Options) ->
+	{Notebook, Sb, DocEts} = wx_object:call(?MODULE, notebook),
+	Editor = {_,Id,_,Pid} = editor:start([{parent, Notebook}, {status_bar, Sb},
 		{font,user_prefs:get_user_pref({pref, font})}]),
 	insert_record(DocEts, Id, Pid, Path, proplists:get_value(project, Options)),
 	wxAuiNotebook:addPage(Notebook, Editor, Filename, [{select, true}]),
@@ -188,51 +189,66 @@ new_document_from_existing(Path, Filename, Contents, Options) ->
 	editor:set_savepoint(Pid),
 	editor:link_poller(Pid, Path),
 	ok.
-  
-  
+
+
+%% =====================================================================
+%% @doc
+
 new_file(Parent) ->
-  Dialog = new_file:start(Parent),
+  OpenProjects = get_open_projects(),
+  case get_active_project() of
+    undefined ->
+      Dialog = new_file:start({Parent, OpenProjects, "No Project"});
+    {_, ActiveProject} ->
+      Dialog = new_file:start({Parent, OpenProjects, filename:basename(ActiveProject)})
+  end,
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       ok;
     ?wxID_OK ->
       ok
   end.
-      
+
+
+%% =====================================================================
+%% @doc
 
 new_project(Parent) ->
 	Dialog = new_project_wx:start(Parent),
 	case new_project_wx:showModal(Dialog) of
-		?wxID_CANCEL -> 
+		?wxID_CANCEL ->
       ok;
 		?wxID_OK ->
 			new_project(Parent, Dialog),
 			new_project_wx:close(Dialog)
 	end.
-	
+
 new_project(Parent, Dialog) ->
   try
-		Path = ide_io:create_directory_structure(Parent, 
+		Path = ide_io:create_directory_structure(Parent,
     new_project_wx:get_name(Dialog), new_project_wx:get_path(Dialog)),
 		ide_projects_tree:add_project(Path)
   catch
-    throw:E -> 
+    throw:E ->
 			lib_dialog_wx:error_msg(Parent, E)
   end.
-	
-  
+
+
+%% =====================================================================
+%% @doc
+
 close_project() ->
 	%% Check open files, save/close
 	case get_active_project() of
 		undefined -> ok;
 		Project={Item,Root} ->
-			{Notebook, Sb, DocEts} = wx_object:call(?MODULE, notebook), 
+			{Notebook, Sb, DocEts} = wx_object:call(?MODULE, notebook),
 			List = get_active_project_records(Project, DocEts),
 			close_project(Notebook, List),
 			ide_projects_tree:delete_project(Item),
 			set_active_project(undefined)
 	end.
-	
+
 close_project(_,[]) -> ok;
 close_project(Notebook, [{Id,Pid,_,_}|T]) ->
 	close_document(Pid, get_document_index(Notebook, Pid)),
@@ -250,10 +266,10 @@ open_project(Frame) ->
 
 get_active_project() ->
 	wx_object:call(?MODULE, active_project).
-	
+
 set_active_project(Project) ->
-	wx_object:cast(?MODULE, {active_project, Project}).	
-	
+	wx_object:cast(?MODULE, {active_project, Project}).
+
 get_active_project_records(Project, DocEts) ->
 	ets:foldl(
 		fun({Id, Pid, {path, Path}, {project, Proj}}=Record, Acc) when Proj =:= Project ->
@@ -261,10 +277,10 @@ get_active_project_records(Project, DocEts) ->
 		(_, Acc) ->
 			Acc
 		end, [], DocEts).
-	
+
 get_document_index(Notebook, Pid) ->
 	wxAuiNotebook:getPageIndex(Notebook, editor:get_ref(Pid)).
-	
+
 
 %% =====================================================================
 %% @doc Get the Pid of an editor instance at position Index.
@@ -326,6 +342,22 @@ get_open_documents(Notebook, Count, Acc) ->
 
 
 %% =====================================================================
+%% @doc
+
+-spec get_open_projects() -> Result when
+	Result :: [string()].
+
+get_open_projects() ->
+  OpenProjects = ide_projects_tree:get_open_projects(),
+  get_open_projects(OpenProjects, []).
+get_open_projects([], Acc) ->
+  Acc;
+get_open_projects([{_,Path}|Projects], Acc) ->
+  get_open_projects(Projects, Acc ++ [Path]).
+
+
+
+%% =====================================================================
 %% Open/save/close editor functions
 %%
 %% =====================================================================
@@ -347,8 +379,8 @@ save_current_document() ->
 %% =====================================================================
 %% @doc Save the contents of the editor Pid located at index Index.
 
-save_document(Index, Pid) when is_pid(Pid)->  
-	{Notebook,Sb,Ets} = wx_object:call(?MODULE, notebook), 
+save_document(Index, Pid) when is_pid(Pid)->
+	{Notebook,Sb,Ets} = wx_object:call(?MODULE, notebook),
 	case editor:is_dirty(Pid) of
 		false -> ok;
 		_ ->
@@ -362,7 +394,7 @@ save_document(Sb, {_Id, Pid, {path, Path}, _}) ->
 	editor:set_savepoint(Pid),
 	ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.").
 
-	
+
 %% =====================================================================
 %% @doc Save the erlang editor with pid Pid located at index position
 %% Index to disk. The user will be prompted for a save path.
@@ -376,7 +408,7 @@ save_new_document() ->
 
 save_new_document(Index, Pid) ->
 	Contents = editor:get_text(Pid),
-	{Notebook,Sb,Ets} = wx_object:call(?MODULE, notebook), 
+	{Notebook,Sb,Ets} = wx_object:call(?MODULE, notebook),
 	case ide_io:save_as(Notebook, Contents) of
 		{cancel} ->
 			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document not saved.");
@@ -388,7 +420,7 @@ save_new_document(Index, Pid) ->
 			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.")
 	end,
 	ok.
-	
+
 
 %% =====================================================================
 %% @doc Save all open editors.
@@ -429,7 +461,7 @@ close_active_document() ->
 
 %% =====================================================================
 %% @doc Close the selected editor
-	
+
 close_document(EditorPid, Index) ->
 	{Notebook,_Sb,DocEts} = wx_object:call(?MODULE, notebook),
 	case editor:is_dirty(EditorPid) of
@@ -646,7 +678,7 @@ transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 
 insert_record(DocEts, Id, Pid, Path) ->
 	insert_record(DocEts, Id, Pid, Path, undefined).
-	
+
 insert_record(DocEts, Id, Pid, Path, Project) ->
 	ets:insert(DocEts, {Id, Pid, {path, Path}, {project, Project}}),
 	ok.
