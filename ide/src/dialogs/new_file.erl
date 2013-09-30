@@ -412,7 +412,7 @@ create_tree(Parent, Root) ->
   
 build_tree(Tree, Parent, Dir) ->
   Files = filelib:wildcard(Dir ++ "/*"),
-  add_files(Tree, Root, Files).
+  add_files(Tree, Dir, Files).
 
 add_files(_, _, []) ->
 	ok;
