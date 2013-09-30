@@ -28,33 +28,16 @@ init(Config) ->
 	Parent = proplists:get_value(parent, Config),
 	Frame = proplists:get_value(frame, Config),
 	
-	Panel = wxPanel:new(Parent),
-	wxPanel:setBackgroundColour(Panel, {252, 252, 252}),
+	Panel = wxPanel:new(Parent),	
 	MainSz = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(Panel, MainSz),
-	
-	%% Placeholder (Ph) "No Open Projects"
-	Placeholder = wxPanel:new(Panel),
-	PhSz = wxBoxSizer:new(?wxVERTICAL),
-	HSz = wxBoxSizer:new(?wxHORIZONTAL),
-	T = wxStaticText:new(Placeholder, ?wxID_ANY, "No Open Projects", []),
-	wxStaticText:setForegroundColour(T, {160,160,160}),
-	wxSizer:addStretchSpacer(HSz),
-	wxSizer:add(HSz, T, [{proportion, 1}, {flag, ?wxEXPAND}]),
-	wxSizer:addStretchSpacer(HSz),	
-	wxSizer:addStretchSpacer(PhSz),
-	wxSizer:add(PhSz, HSz, [{proportion, 1}, {flag, ?wxEXPAND}]),
-	wxSizer:addStretchSpacer(PhSz),
-	wxPanel:setSizer(Placeholder, PhSz),
-	wxSizer:fit(PhSz, Placeholder),
-	wxSizer:layout(PhSz),
-		
+
+	Placeholder = lib_widgets:placeholder(Panel, "No Open Projects"),	
 	wxSizer:add(MainSz, Placeholder, [{proportion, 1}, {flag, ?wxEXPAND}]),
 		
   Tree = wxTreeCtrl:new(Panel, [{style, ?wxTR_HAS_BUTTONS bor
                                         ?wxTR_HIDE_ROOT bor
                                         ?wxTR_FULL_ROW_HIGHLIGHT}]),
-	wxTreeCtrl:setBackgroundColour(Tree, {252,252,252}),
 	wxTreeCtrl:setIndent(Tree, 10),
 	ImgList = wxImageList:new(16,16),
 	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER", [{client,"wxART_MENU"}])),
@@ -149,7 +132,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
 					FileContents, [{project,{get_project_root(Tree, Item), 
 						wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item))}}])
 			catch
-				throw:_ -> lib_dialog_wx:error_msg(Frame, "The file could not be loaded.")
+				throw:_ -> lib_dialog_wx:msg_error(Frame, "The file could not be loaded.")
 			end
 	end,
 	{noreply, State}.

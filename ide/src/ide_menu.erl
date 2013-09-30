@@ -4,7 +4,8 @@
 -export([
 	create/1, 
 	update_label/3,
-	toggle_item/2]). 
+	toggle_item/2,
+	get_checked_menu_item/1]). 
          
 -include_lib("wx/include/wx.hrl").
 -include("../include/ide.hrl").
@@ -186,21 +187,21 @@ init(Config) ->
 	%% Id, StatusBar help, filename/art id, args, add seperator
 	Tools = [
 		{?wxID_NEW, "ToolTip", {custom, "../icons/document_08.png"},    
-			[{shortHelp, "Create a new file"}], false},
+			[{shortHelp, "Create a new document"}], false},
 		{?MENU_ID_NEW_PROJECT, "ToolTip", {custom, "../icons/folders_08.png"},    
-			[{shortHelp, "Create a new file"}], false},
+			[{shortHelp, "Create a new project"}], false},
 		{?wxID_OPEN, "ToolTip", {custom, "../icons/document_06.png"},   
-			[{shortHelp, "Open existing document"}], false},
+			[{shortHelp, "Open an existing document"}], false},
 		{?MENU_ID_OPEN_PROJECT, "ToolTip", {custom, "../icons/folders_12.png"},   
-			[{shortHelp, "Open existing document"}], false},
+			[{shortHelp, "Open an existing project"}], false},
 		{?wxID_SAVE, "ToolTip", {custom, "../icons/document_12.png"},   
-			[{shortHelp, "Save the current file"}], false}, 
+			[{shortHelp, "Save the current document"}], false}, 
 		{?MENU_ID_SAVE_ALL, "ToolTip", {custom, "../icons/folders_06.png"},   
-			[{shortHelp, "Save the current file"}], false},
+			[{shortHelp, "Save the current project"}], false},
 		{?wxID_CLOSE, "ToolTip", {custom, "../icons/document_03.png"},  
-			[{shortHelp, "Close the current file"}], false},
+			[{shortHelp, "Close the current document"}], false},
 		{?MENU_ID_CLOSE_PROJECT, "ToolTip", {custom, "../icons/folders_03.png"},  
-			[{shortHelp, "Close the current file"}], true},
+			[{shortHelp, "Close the current project"}], true},
 		{?MENU_ID_COMPILE_FILE, "ToolTip", {custom, "../icons/document_10.png"},  
 			[{shortHelp, "Compile the current file"}],        true},
     {?MENU_ID_MAKE_PROJECT, "ToolTip", {custom, "../icons/folders_14.png"},  
@@ -365,3 +366,21 @@ update_label(Menubar, ItemId, Label) ->
 	
 toggle_item(Menubar, ItemId) ->
 	wxMenuBar:enable(Menubar, ItemId, not wxMenuBar:isEnabled(Menubar, ItemId)).
+
+
+%% =====================================================================
+%% @doc Get the checked item in a radio menu
+
+-spec get_checked_menu_item(MenuItems) -> Result when
+	MenuItems :: [wxMenuItem:wxMenuItem()],
+	Result :: {'ok', wxMenuItem:wxMenuItem()}.
+
+get_checked_menu_item([]) ->
+  {error, nomatch};
+get_checked_menu_item([H|T]) ->
+  case wxMenuItem:isChecked(H) of
+    true ->
+      {ok, H};
+    _ ->
+      get_checked_menu_item(T)
+  end.

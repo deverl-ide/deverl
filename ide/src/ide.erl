@@ -9,7 +9,7 @@
 -export([start/0, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 				 
--export([set_title/1]).
+-export([set_title/1, get_menubar/0]).
 
 %% The record containing the State.
 -record(state, {frame,
@@ -153,10 +153,7 @@ handle_info(Msg, State) ->
   {noreply,State}.
 
 handle_call(frame, _From, State) ->
-	{reply, State#state.frame, State};
-handle_call(Msg, _From, State) ->
-  demo:format(State#state{}, "Got Call ~p\n", [Msg]),
-  {reply,{error, nyi}, State}.
+	{reply, State#state.frame, State}.
 
 handle_cast({title, Title}, State=#state{frame=Frame}) ->
 	Str = case Title of
@@ -332,7 +329,6 @@ handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=com
 			{ok, {Mod,Func,Args}};
 		_ -> nomatch
 	end,
-	Env = wx:get_env(),
 	case Result of
 		{ok,{M,F,A}} -> 
 			erlang:apply(M,F,A);
@@ -471,6 +467,13 @@ toggle_menu_item(Mb, Mask, Id, Groups, Enable) ->
 		_ ->
 			wxMenuItem:enable(wxMenuBar:findItem(Mb, Id), [{enable, false}])
 	end.
+
+
+%% =====================================================================
+%% @doc Get the menubar.
+
+get_menubar() ->
+	wxFrame:getMenuBar(wx_object:call(?MODULE, frame)).
 
 
 %% =====================================================================
