@@ -225,7 +225,13 @@ new_document_from_existing(Path, Filename, Contents, Options) ->
 %% @doc Display the "New File" dialog.
   
 new_file(Parent) ->
-  Dialog = new_file:start(Parent),
+  OpenProjects = get_open_projects(),
+  case get_active_project() of
+    undefined ->
+      Dialog = new_file:start({Parent, OpenProjects, "No Project"});
+    {_, ActiveProject} ->
+      Dialog = new_file:start({Parent, OpenProjects, filename:basename(ActiveProject)})
+  end,
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       ok;
@@ -340,6 +346,20 @@ get_open_documents() ->
 	Count = wxAuiNotebook:getPageCount(Notebook),
 	lists:seq(0, Count - 1).
 
+
+%% =====================================================================
+%% @doc
+
+-spec get_open_projects() -> Result when
+	Result :: [string()].
+
+get_open_projects() ->
+  OpenProjects = ide_projects_tree:get_open_projects(),
+  get_open_projects(OpenProjects, []).
+get_open_projects([], Acc) ->
+  Acc;
+get_open_projects([{_,Path}|Projects], Acc) ->
+  get_open_projects(Projects, Acc ++ [Path]).
 
 
 %% =====================================================================
