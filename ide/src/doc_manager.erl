@@ -154,19 +154,21 @@ terminate(_Reason, State=#state{notebook=Nb}) ->
 
 handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_page_changed,
 			selection=Index}}, State=#state{document_ets=DocEts, notebook=Nb, status_bar=Sb}) ->
-				io:format("PAGE CHANGED~n"),
 	PageText = wxAuiNotebook:getPageText(Notebook, Index),
   % Make sure editor knows (needs to update sb)
   editor:selected(index_to_ref(DocEts, Notebook, Index), Sb),
 	Proj = lookup_project(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
 	Str = case Proj of
-		undefined -> PageText;
+		undefined -> 
+			ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project"),
+			PageText;
 		{_, Path} -> 
 			Name = filename:basename(Path),
 			ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ Name ++ ")"),
 			PageText ++ " (" ++ Name ++ filename:extension(Path) ++ ")"
 	end,
 	ide:set_title(Str),
+	
   {noreply, State#state{active_project=Proj}};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
 						 State=#state{notebook=Nb, status_bar=Sb, document_ets=DocEts, parent=Parent, sizer=Sz}) ->
@@ -225,7 +227,13 @@ new_document_from_existing(Path, Filename, Contents, Options) ->
 %% @doc Display the "New File" dialog.
   
 new_file(Parent) ->
-  Dialog = new_file:start(Parent),
+  OpenProjects = get_open_projects(),
+  case get_active_project() of
+    undefined ->
+      Dialog = new_file:start({Parent, OpenProjects, "No Project"});
+    {_, ActiveProject} ->
+      Dialog = new_file:start({Parent, OpenProjects, filename:basename(ActiveProject)})
+  end,
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       ok;
@@ -339,6 +347,21 @@ get_open_documents() ->
 	{Notebook,_,_} = wx_object:call(?MODULE, notebook),
 	Count = wxAuiNotebook:getPageCount(Notebook),
 	lists:seq(0, Count - 1).
+
+
+%% =====================================================================
+%% @doc
+
+-spec get_open_projects() -> Result when
+	Result :: [string()].
+
+get_open_projects() ->
+  OpenProjects = ide_projects_tree:get_open_projects(),
+  get_open_projects(OpenProjects, []).
+get_open_projects([], Acc) ->
+  Acc;
+get_open_projects([{_,Path}|Projects], Acc) ->
+  get_open_projects(Projects, Acc ++ [Path]).
 
 
 %% =====================================================================
