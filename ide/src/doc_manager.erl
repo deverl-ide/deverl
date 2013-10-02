@@ -154,19 +154,21 @@ terminate(_Reason, State=#state{notebook=Nb}) ->
 
 handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_page_changed,
 			selection=Index}}, State=#state{document_ets=DocEts, notebook=Nb, status_bar=Sb}) ->
-				io:format("PAGE CHANGED~n"),
 	PageText = wxAuiNotebook:getPageText(Notebook, Index),
   % Make sure editor knows (needs to update sb)
   editor:selected(index_to_ref(DocEts, Notebook, Index), Sb),
 	Proj = lookup_project(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
 	Str = case Proj of
-		undefined -> PageText;
+		undefined -> 
+			ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project"),
+			PageText;
 		{_, Path} -> 
 			Name = filename:basename(Path),
 			ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ Name ++ ")"),
 			PageText ++ " (" ++ Name ++ filename:extension(Path) ++ ")"
 	end,
 	ide:set_title(Str),
+	
   {noreply, State#state{active_project=Proj}};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
 						 State=#state{notebook=Nb, status_bar=Sb, document_ets=DocEts, parent=Parent, sizer=Sz}) ->
@@ -498,14 +500,8 @@ close_document(Notebook, DocEts, Index) ->
 %% Note: must always delete documents starting with the highest index
 %% first, as the notebook shifts all indexes dwon when one is deleted.
 
-% close_all_documents() ->
-% 	lists:foreach(fun close_document/1, lists:reverse(get_open_documents())),
-% 	ok.
-% 	
 close_all_documents() ->
 	wx_object:call(?MODULE, close_all).
-	% lists:foreach(fun close_document/1, lists:reverse(get_open_documents())),
-	% ok.
 
 
 %% =====================================================================
