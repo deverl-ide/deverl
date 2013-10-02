@@ -164,6 +164,10 @@ handle_event(#wx{id=?BACK_BUTTON, event=#wxCommand{type=command_button_clicked}}
   wxButton:disable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
   wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON)),
   {noreply, State};
+handle_event(#wx{id=?BROWSE_BUTTON, event=#wxCommand{type=command_button_clicked}},
+             State=#state{win=Parent, dialog1=_Dialog1, dialog2=_Dialog2, swap_sizer=_Sz}) ->
+  make_tree_dialog(Parent),
+  {noreply, State};
 handle_event(#wx{id=_Id, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=_Parent, swap_sizer=_Sz}) ->
   io:format("CLICKED~n"),
@@ -259,6 +263,8 @@ dialog2(Parent) ->
 
   wxFlexGridSizer:addGrowableCol(DialogSizer2, 1),
   wxFlexGridSizer:addGrowableRow(DialogSizer2, 3),
+  
+  wxPanel:connect(Dialog2, command_button_clicked, []),
 
   Dialog2.
 
@@ -407,9 +413,15 @@ add_project_data(ProjectChoice, [Path|Projects]) ->
 %% @doc
 
 create_tree(Parent, Root) ->
-  Tree = wxTreeCtrl:new(Parent),
-  wxTreeCtrl:addRoot(Tree, filename:basename(Root), [{data, Root}]).
-  
+  Tree = wxTreeCtrl:new(Parent, [{style, ?wxTR_HAS_BUTTONS bor
+                                         ?wxTR_FULL_ROW_HIGHLIGHT}]),
+  wxTreeCtrl:setIndent(Tree, 10),
+	ImgList = wxImageList:new(16,16),
+	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER", [{client,"wxART_MENU"}])),
+	wxTreeCtrl:assignImageList(Tree, ImgList),
+  Item = wxTreeCtrl:addRoot(Tree, filename:basename(Root), [{data, Root}]),
+  build_tree(Tree, Item, Root).
+
 build_tree(Tree, Parent, Dir) ->
   Files = filelib:wildcard(Dir ++ "/*"),
   add_files(Tree, Dir, Files).
@@ -425,13 +437,32 @@ add_files(Tree, Root, [File|Files]) ->
 			wxTreeCtrl:setItemImage(Tree, Child, 0),
 			build_tree(Tree, Child, File);
 		_ ->
-			Child = wxTreeCtrl:prependItem(Tree, Root, FileName, [{data, File}]),
-			wxTreeCtrl:setItemImage(Tree, Child, 1)
+			ok
 	end,
 	add_files(Tree, Root, Files).
 
-
-
+make_tree_dialog(Parent) ->
+  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size,{400, 300}},
+                                                        {style, ?wxDEFAULT_DIALOG_STYLE bor
+                                                                ?wxRESIZE_BORDER bor
+                                                                ?wxDIALOG_EX_METAL}]),
+  LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
+  wxSizer:addSpacer(LRSizer, 20),
+  wxDialog:setSizer(Dialog, LRSizer),
+  
+  MainSizer = wxBoxSizer:new(?wxVERTICAL),
+  wxSizer:add(LRSizer, MainSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:addSpacer(LRSizer, 20),
+  
+  ButtonPanel = wxPanel:new(Dialog),
+  ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+  wxPanel:setSizer(ButtonPanel, ButtonSizer),
+  wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxOK,     [{label, "OK"}]),     [{border, 2}, {flag, ?wxALL}]),
+  wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxCANCEL, [{label, "Cancel"}]), [{border, 2}, {flag, ?wxALL}]),
+  wxSizer:add(MainSizer, ButtonSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  
+  wxSizer:layout(LRSizer),
+  wxDialog:showModal(Dialog).
 
 
 
