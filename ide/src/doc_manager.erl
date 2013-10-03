@@ -467,19 +467,7 @@ close_active_document() ->
 	
 close_document(Index) ->
 	{Notebook,_Sb,DocEts} = wx_object:call(?MODULE, notebook),
-	Key = wxAuiNotebook:getPage(Notebook, Index),
-	case editor:is_dirty(get_ref(DocEts, Key)) of
-		true ->
-			io:format("File modified since last save, display save/unsave dialog.~n");
-		_ -> %% Go ahead, close the editor
-			delete_record(DocEts, Key),
-      wxAuiNotebook:deletePage(Notebook, Index)
-	end,
-	case wxAuiNotebook:getPageCount(Notebook) of
-		0 -> wx_object:cast(?MODULE, notebook_empty);
-		_ -> ok
-	end,
-	ok.
+	close_document(Notebook, DocEts, Index).
 
 close_document(Notebook, DocEts, Index) ->
  	Key = wxAuiNotebook:getPage(Notebook, Index),
