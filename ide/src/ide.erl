@@ -386,8 +386,8 @@ create_utils(Parent) ->
 	port:start(),
 	wxNotebook:addPage(Utils, Console, "Console", []),
 
-	Pman = wxPanel:new(Utils, []),
-	wxNotebook:addPage(Utils, Pman, "Observer", []),
+	Observer = ide_observer:start([{parent, Utils}]),
+	wxNotebook:addPage(Utils, Observer, "Observer", []),
 
 	Dialyser = wxPanel:new(Utils, []),
 	wxNotebook:addPage(Utils, Dialyser, "Dialyser", []),

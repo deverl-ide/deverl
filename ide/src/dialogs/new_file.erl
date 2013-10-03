@@ -441,21 +441,31 @@ add_files(Tree, Root, [File|Files]) ->
 	end,
 	add_files(Tree, Root, Files).
 
+
+
 make_tree_dialog(Parent) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size,{400, 300}},
                                                         {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                 ?wxRESIZE_BORDER bor
                                                                 ?wxDIALOG_EX_METAL}]),
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  wxSizer:addSpacer(LRSizer, 20),
+	% io:format("LRSIZER: ~p~n", [LRSizer]),
+  % wxSizer:addSpacer(LRSizer, 20),
+	
   wxDialog:setSizer(Dialog, LRSizer),
+	
+	wxSizer:add(LRSizer, wxTextCtrl:new(Dialog, ?wxID_ANY), [{flag, ?wxEXPAND}, {proportion, 1}]),
   
   MainSizer = wxBoxSizer:new(?wxVERTICAL),
+	io:format("MainSizer: ~p~n", [MainSizer]),
+	
   wxSizer:add(LRSizer, MainSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(LRSizer, 20),
   
   ButtonPanel = wxPanel:new(Dialog),
   ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
+	io:format("ButtonSizer: ~p~n", [ButtonSizer]),
+	
   wxPanel:setSizer(ButtonPanel, ButtonSizer),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxOK,     [{label, "OK"}]),     [{border, 2}, {flag, ?wxALL}]),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxCANCEL, [{label, "Cancel"}]), [{border, 2}, {flag, ?wxALL}]),
