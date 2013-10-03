@@ -46,7 +46,7 @@
 
 
 start(Config) ->
-  wx_object:start_link(?MODULE, Config, []).
+  wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
 init({Parent, Projects, ActiveProject}) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 500}},
@@ -89,7 +89,7 @@ init({Parent, Projects, ActiveProject}) ->
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?BACK_BUTTON,        [{label, "Back"}]),   [{border, 2}, {flag, ?wxALL}]),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?NEXT_BUTTON,        [{label, "Next"}]),   [{border, 2}, {flag, ?wxALL}]),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?FINISH_BUTTON,      [{label, "Finish"}]), [{border, 2}, {flag, ?wxALL}]),
-  wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxID_CANCEL, [{label, "Cancel"}]), [{border, 2}, {flag, ?wxALL}]),
+  wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxID_CANCEL,        [{label, "Cancel"}]), [{border, 2}, {flag, ?wxALL}]),
 
   wxSizer:add(MainSizer, ButtonPanel, [{proportion, 0}, {flag, ?wxALIGN_RIGHT}]),
 
@@ -166,7 +166,7 @@ handle_event(#wx{id=?BACK_BUTTON, event=#wxCommand{type=command_button_clicked}}
   {noreply, State};
 handle_event(#wx{id=?BROWSE_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=_Dialog1, dialog2=_Dialog2, swap_sizer=_Sz}) ->
-  make_tree_dialog(Parent),
+  %make_tree_dialog(Parent),
   {noreply, State};
 handle_event(#wx{id=_Id, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=_Parent, swap_sizer=_Sz}) ->
@@ -263,7 +263,7 @@ dialog2(Parent) ->
 
   wxFlexGridSizer:addGrowableCol(DialogSizer2, 1),
   wxFlexGridSizer:addGrowableRow(DialogSizer2, 3),
-  
+
   wxPanel:connect(Dialog2, command_button_clicked, []),
 
   Dialog2.
@@ -441,7 +441,7 @@ add_files(Tree, Root, [File|Files]) ->
 	end,
 	add_files(Tree, Root, Files).
 
-make_tree_dialog(Parent) ->
+make_tree_dialog(Parent, Root) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size,{400, 300}},
                                                         {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                 ?wxRESIZE_BORDER bor
@@ -449,20 +449,24 @@ make_tree_dialog(Parent) ->
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxSizer:addSpacer(LRSizer, 20),
   wxDialog:setSizer(Dialog, LRSizer),
-  
+
   MainSizer = wxBoxSizer:new(?wxVERTICAL),
   wxSizer:add(LRSizer, MainSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(LRSizer, 20),
-  
+
+  TreeSizer = wxBoxSizer:new(?wxVERTICAL),
+  wxSizer:add(TreeSizer, create_tree(Dialog, Root)),
+
   ButtonPanel = wxPanel:new(Dialog),
   ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(ButtonPanel, ButtonSizer),
-  wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxOK,     [{label, "OK"}]),     [{border, 2}, {flag, ?wxALL}]),
+  wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxOK,     [{label, "OK"}]), [{border, 2}, {flag, ?wxALL}]),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxCANCEL, [{label, "Cancel"}]), [{border, 2}, {flag, ?wxALL}]),
-  wxSizer:add(MainSizer, ButtonSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  
-  wxSizer:layout(LRSizer),
+  wxSizer:add(MainSizer, ButtonPanel, [{proportion, 1}, {flag, ?wxEXPAND}]),
+
   wxDialog:showModal(Dialog).
+
+
 
 
 
