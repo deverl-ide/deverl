@@ -9,12 +9,13 @@ compile() ->
   case doc_manager:get_active_document() of
     {error, _} ->
       ok;
-    {ok, {Index, Pid}} ->
-      doc_manager:save_document(Index, Pid),
-      Path = filename:rootname(editor:get_editor_path(Pid)),
-			ide_shell:load_response("Compiling module.. " ++ 
-				filename:basename(Path) ++ io_lib:nl()),
-      compile_file(Path)
+     Index ->
+      case doc_manager:save_document(Index) of
+				undefined -> ok;
+				Path ->			
+					ide_shell:load_response("Compiling module.. " ++ filename:basename(Path) ++ io_lib:nl()),
+		      compile_file(Path)
+			end
   end.
   
 

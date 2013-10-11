@@ -19,7 +19,9 @@
 								project_name,
 								project_path,
 								default_path,
-								default_cb
+								default_cb,
+								desc_panel,
+								finish
             	 }).
 							 
 -define(ID_BROWSE_PROJECTS, 200).
@@ -37,11 +39,22 @@ init(Parent) ->
 do_init(Parent) ->
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, "New Project", 
 		[{size,{640,460}}, {style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}]),
-  Panel = wxPanel:new(Dialog),    
+		
+  Panel = wxPanel:new(Dialog),  
+	
+	%% For MacOSX  
+	wxPanel:setWindowVariant(Panel, ?wxWINDOW_VARIANT_SMALL),
+	
+	%% For other platforms
+	SysFont = wxSystemSettings:getFont(?wxSYS_SYSTEM_FONT),
+	wxFont:setPointSize(SysFont, 7),
+	wxFont:setUnderlined(SysFont, true),
+	wxPanel:setFont(Panel, SysFont),
+	
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(Panel, LRSizer),
   wxSizer:addSpacer(LRSizer, 20),
-  
+
   VertSizer = wxBoxSizer:new(?wxVERTICAL),
   wxSizer:addSpacer(VertSizer, 40),
 	wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "New Project"), []),
@@ -81,10 +94,12 @@ do_init(Parent) ->
 
 	wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Description"), []),
 	wxSizer:addSpacer(VertSizer, 5),  
-	% Desc = wxTextCtrl:new(Panel, ?ID_DESCRIPTION, []),
 	Desc = wxPanel:new(Panel),
-	wxStaticText:new(Desc, ?wxID_ANY, "Define a project name"),
+	% Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
+  % StaticBitmap = wxStaticBitmap:new(Desc, ?wxID_ANY, Bitmap),
+	% wxStaticText:new(Desc, ?wxID_ANY, "Define a project name"),
 	wxPanel:setBackgroundColour(Desc, {255,255,255}),
+	insert_desc(Desc, "Create a new project."),
 	wxSizer:add(VertSizer, Desc, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(VertSizer, 40),
 	
@@ -111,7 +126,7 @@ do_init(Parent) ->
   wxDialog:connect(Dialog, close_window),
 	wxDialog:connect(Dialog, command_button_clicked, [{skip, true}]), 
 	wxDialog:connect(Dialog, command_checkbox_clicked, []),
-	wxDialog:connect(Dialog, command_text_updated, []),
+	wxDialog:connect(Dialog, command_text_updated, [{skip, false}]),
 	
 	State = #state{
 		dialog=Dialog, 
@@ -119,7 +134,9 @@ do_init(Parent) ->
 		project_name_text_ctrl=ProjName,
 		project_path_text_ctrl=ProjPath, 
 		default_path=Path,
-		default_cb=DefaultCb
+		default_cb=DefaultCb,
+		desc_panel=Desc,
+		finish=Finish
 	},
   
 	{Dialog, State}.
@@ -164,20 +181,30 @@ handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=1}},
 	{noreply, State};
 handle_event(#wx{id=?ID_PROJ_NAME, event=#wxCommand{type=command_text_updated, cmdString=Str}}, 
              State=#state{parent=Parent, project_path_text_ctrl=Path, default_path=DefPath, 
-						 							default_cb=Cb, project_name_text_ctrl=Name}) ->
+						 							default_cb=Cb, project_name_text_ctrl=Name, desc_panel=Desc, finish=Finish}) ->
 	N = wxTextCtrl:getValue(Name),
 	case wxCheckBox:isChecked(Cb) of
 		true when length(N) =:= 0 ->
 			StartPos = length(DefPath),
-			wxTextCtrl:replace(Path, StartPos, -1, Str);
+			wxTextCtrl:replace(Path, StartPos, -1, Str),
+			wxButton:enable(Finish);
 		true ->
 			StartPos = length(DefPath),
 			wxTextCtrl:replace(Path, StartPos, -1, filename:nativename("/") ++ Str);
 		false -> ok
 	end,
+	case validate_name(Str) of
+		nomatch -> wxButton:enable(Finish);
+		{match, [{Pos,_}]} -> 
+			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
+			insert_desc(Desc, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename."
+				, [{bitmap, Bitmap}]),
+			% name_error(Str, Pos + 1),
+			wxButton:disable(Finish)
+	end,
 	{noreply, State};
 handle_event(Ev = #wx{}, State = #state{}) ->
-  io:format("Got Event ~p~n",[Ev]),
+  % io:format("Got Event ~p~n",[Ev]),
   {noreply,State}.
 
 handle_info(Msg, State) ->
@@ -217,3 +244,28 @@ close(This) ->
 show(This) -> wxDialog:show(This).
 %% @hidden
 showModal(This) -> wxDialog:showModal(This).
+
+validate_name(Str) ->
+	re:run(Str, "[/]").
+	
+name_error(Str, Pos) ->
+	io:format("VALIDATION ERROR ON ~c~n", [lists:nth(Pos, Str)]). 
+	
+insert_desc(Parent, Msg) ->
+	insert_desc(Parent, Msg, []).
+
+insert_desc(Parent, Msg, Options) ->
+	SzFlags = wxSizerFlags:new([{proportion, 0}]),
+	wxSizerFlags:expand(wxSizerFlags:border(SzFlags, ?wxTOP, 10)),
+	
+	wxPanel:destroyChildren(Parent),
+	Sz = wxBoxSizer:new(?wxHORIZONTAL),
+	wxPanel:setSizer(Parent, Sz),
+	wxSizer:addSpacer(Sz, 10),
+	case proplists:get_value(bitmap, Options) of
+		undefined -> ok;
+		Bitmap -> wxSizer:add(Sz, wxStaticBitmap:new(Parent, ?wxID_ANY, Bitmap), SzFlags)
+	end,
+	wxSizer:add(Sz, wxStaticText:new(Parent, ?wxID_ANY, Msg), SzFlags),
+	wxPanel:layout(Parent),	
+	ok.

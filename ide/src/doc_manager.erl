@@ -28,7 +28,7 @@
 	save_current_document/0,
 	save_new_document/0, 
 	save_all/0,
-	save_document/2,
+	save_document/1,
 	open_document/1,
 	open_project/1,
 	find_replace/1,
@@ -44,6 +44,7 @@
 	zoom_in/0,
 	zoom_out/0,
 	transform_selection/1
+	
 	]).
 
 -record(state, {
@@ -386,20 +387,24 @@ save_current_document() ->
 save_document(Index) ->  
 	{Notebook,Sb,DocEts} = wx_object:call(?MODULE, notebook), 
 	case editor:is_dirty(index_to_ref(DocEts, Notebook, Index)) of
-		false -> ok;
+		false -> 
+			ok,
+			Record  = get_record(DocEts, index_to_key(Notebook, Index)),
+			record_get_path(Record);
 		_ ->
 			save_document(Sb, get_record(DocEts, index_to_key(Notebook, Index)))
 	end.
 	
 save_document(Sb, Record) ->
-	case record_get_path(Record) of
+	Result  = case record_get_path(Record) of
 		undefined -> save_new_document();
 		Path -> %% Document already exists, overwrite
 			ide_io:save(Path, editor:get_text(record_get_ref(Record))),
 			editor:set_savepoint(record_get_ref(Record)),
-			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.")
-	end.
-
+			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
+			Path
+	end,
+	Result.
 
 %% =====================================================================
 %% @doc Save the erlang editor with pid Pid located at index position
@@ -415,17 +420,19 @@ save_new_document() ->
 save_new_document(Index) ->
 	{Notebook,Sb,DocEts} = wx_object:call(?MODULE, notebook), 
 	Contents = editor:get_text(index_to_ref(DocEts, Notebook, Index)),
-	case ide_io:save_as(Notebook, Contents) of
+	Result = case ide_io:save_as(Notebook, Contents) of
 		{cancel} ->
-			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document not saved.");
+			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document not saved."),
+			undefined;
 		{ok, {Path, Filename}}  ->
 			update_path(DocEts, index_to_key(Notebook, Index), Path), 
 			wxAuiNotebook:setPageText(Notebook, Index, Filename),
 			editor:set_savepoint(index_to_ref(DocEts, Notebook, Index)),
 			editor:link_poller(index_to_ref(DocEts, Notebook, Index), Path),
-			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved.")
+			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
+			Path
 	end,
-	ok.
+	Result.
 	
 
 %% =====================================================================
