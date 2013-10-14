@@ -385,7 +385,7 @@ create_utils(Parent) ->
 	%% Start the port that communicates with the external ERTs
 	port:start(),
 	wxNotebook:addPage(Utils, Console, "Console", []),
-
+  
 	Observer = ide_observer:start([{parent, Utils}]),
 	wxNotebook:addPage(Utils, Observer, "Observer", []),
 
