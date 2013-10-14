@@ -171,7 +171,7 @@ handle_event(#wx{id=?BROWSE_BUTTON, event=#wxCommand{type=command_button_clicked
     "No Project" ->
       DirectoryChoice = lib_dialog_wx:get_existing_dir(Parent),
       case DirectoryChoice of
-        cancel ->
+        cancelled ->
           ok;
         _ ->
           set_path_text(Parent, DirectoryChoice),
@@ -324,14 +324,6 @@ set_default_path_text(Parent, Project) ->
 set_path_text(Parent, Path) ->
   PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_TEXT), wxStaticText),
   wxStaticText:setLabel(PathTextBox, Path).
-
-
-%% =====================================================================
-%% @doc
-
-get_path_text(Parent) ->
-  PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_TEXT), wxStaticText),
-  wxStaticText:getLabel(PathTextBox).
 
 
 %% =====================================================================

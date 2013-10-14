@@ -407,8 +407,8 @@ create_utils(Parent) ->
 	port:start(),
 	tabbed_book:add_page(TabbedWindow, Console, "Console"),
 	
-	Observer = ide_observer:start([{parent, TabbedWindow}]),
-	tabbed_book:add_page(TabbedWindow, Observer, "Observer"),
+	%Observer = ide_observer:start([{parent, TabbedWindow}]),
+	%tabbed_book:add_page(TabbedWindow, Observer, "Observer"),
 	
 	Dialyser = wxPanel:new(TabbedWindow, []),
 	tabbed_book:add_page(TabbedWindow, Dialyser, "Dialyser"),
