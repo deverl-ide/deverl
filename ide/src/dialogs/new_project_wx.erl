@@ -164,7 +164,6 @@ handle_event(#wx{id=?ID_BROWSE_PROJECTS, event=#wxCommand{type=command_button_cl
 handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=0}}, 
              State=#state{parent=Parent, project_path_text_ctrl=Path}) ->
 	wxTextCtrl:clear(Path),
-	io:format("WINDOW: ~p~n", [wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)]),
 	wxWindow:enable(wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)),
 	wxWindow:enable(wxWindow:findWindow(Parent, ?ID_PROJ_PATH)),
   {noreply, State};
@@ -177,7 +176,6 @@ handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=1}},
 		0 -> ok;
 		_ -> wxTextCtrl:appendText(Path, filename:nativename("/") ++ N)
 	end,
-	io:format("WINDOW: ~p~n", [wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)]),
 	wxWindow:disable(wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)),
 	wxWindow:disable(wxWindow:findWindow(Parent, ?ID_PROJ_PATH)),
 	{noreply, State};
@@ -189,14 +187,17 @@ handle_event(#wx{id=?ID_PROJ_NAME, event=#wxCommand{type=command_text_updated, c
 		true when length(N) =:= 0 ->
 			StartPos = length(DefPath),
 			wxTextCtrl:replace(Path, StartPos, -1, Str),
-			wxButton:enable(Finish);
+			wxWindow:disable(Finish);
 		true ->
 			StartPos = length(DefPath),
 			wxTextCtrl:replace(Path, StartPos, -1, filename:nativename("/") ++ Str);
 		false -> ok
 	end,
 	case validate_name(Str) of
-		nomatch -> wxButton:enable(Finish);
+		nomatch when length(N) =:= 0 -> ok;
+		nomatch -> 
+			insert_desc(Desc, "Create a new project."),
+			wxButton:enable(Finish);
 		{match, [{Pos,_}]} -> 
 			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
 			insert_desc(Desc, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename."
@@ -231,7 +232,7 @@ code_change(_, _, State) ->
 terminate(_Reason, #state{dialog=Dialog}) ->
   io:format("TERMINATE NEW DIALOG~n"),
 	wxDialog:endModal(Dialog, ?wxID_CANCEL),
-	ok.
+	wxDialog:destroy(Dialog).
 	
 get_name(This) ->
 	wx_object:call(This, name).
