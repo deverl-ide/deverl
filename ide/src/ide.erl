@@ -419,6 +419,7 @@ create_utils(Parent) ->
 	tabbed_book:set_selection(TabbedWindow, 1),
 	
 	TabbedWindow.
+  
 
 %% =====================================================================
 %% @doc
