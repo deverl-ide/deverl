@@ -126,21 +126,11 @@ handle_sync_event(#wx{obj=Btn, userData=Label, event=#wxPaint{}},_B,
 
 handle_event(#wx{obj=Btn, event=#wxMouse{type=enter_window}}, 
 						 State=#state{tabs={Tabs,_}, active_btn=ActiveBtn}) ->
-	case ActiveBtn of
-		Btn -> ok;
-		_ -> %% Trigger a paint event
-			wxWindow:refresh(Tabs), 
-			wxWindow:update(Tabs)
-	end,
+	trigger_tab_paint(Tabs, ActiveBtn, Btn),
 	{noreply, State#state{hover=Btn}};
 handle_event(#wx{obj=Btn, event=#wxMouse{type=leave_window}}, 
 						 State=#state{tabs={Tabs,_}, active_btn=ActiveBtn}) ->
- 	case ActiveBtn of
- 		Btn -> ok;
- 		_ -> %% Trigger a paint event
-			wxWindow:refresh(Tabs), 
-			wxWindow:update(Tabs)
-	end,
+	trigger_tab_paint(Tabs, ActiveBtn, Btn),
 	{noreply, State#state{hover=undefined}};
 handle_event(#wx{obj=Btn, event=#wxMouse{type=left_down}}, 
 						 State=#state{pages=Pages, tabs={Tabs,_}, active_btn=ActiveBtn, content={Cont,_}}) ->
@@ -252,6 +242,19 @@ draw_setup(DC, StrokeColour, BrushColour, FontColour) ->
 	wxGraphicsContext:setBrush(Canvas, Brush),
 	wxGraphicsContext:setFont(Canvas, Font, FontColour),
 	Canvas.
+	
+
+%% =====================================================================
+%% @doc Trigger a paint event for the tabs, if required.
+%% @private
+
+trigger_tab_paint(Tabs, ActiveBtn, Btn) ->
+ 	case ActiveBtn of
+ 		Btn -> ok;
+ 		_ -> %% Trigger a paint event
+			wxWindow:refresh(Tabs), 
+			wxWindow:update(Tabs)
+	end.
 	
 	
 %% =====================================================================
