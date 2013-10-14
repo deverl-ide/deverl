@@ -164,6 +164,7 @@ handle_event(#wx{id=?ID_BROWSE_PROJECTS, event=#wxCommand{type=command_button_cl
 handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=0}}, 
              State=#state{parent=Parent, project_path_text_ctrl=Path}) ->
 	wxTextCtrl:clear(Path),
+	io:format("WINDOW: ~p~n", [wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)]),
 	wxWindow:enable(wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)),
 	wxWindow:enable(wxWindow:findWindow(Parent, ?ID_PROJ_PATH)),
   {noreply, State};
@@ -176,6 +177,7 @@ handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=1}},
 		0 -> ok;
 		_ -> wxTextCtrl:appendText(Path, filename:nativename("/") ++ N)
 	end,
+	io:format("WINDOW: ~p~n", [wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)]),
 	wxWindow:disable(wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)),
 	wxWindow:disable(wxWindow:findWindow(Parent, ?ID_PROJ_PATH)),
 	{noreply, State};

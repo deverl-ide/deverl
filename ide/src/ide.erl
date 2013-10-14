@@ -409,7 +409,7 @@ create_utils(Parent) ->
 	
 	% Observer = ide_observer:start([{parent, TabbedWindow}]),
 	% tabbed_book:add_page(TabbedWindow, Observer, "Observer"),
-	
+
 	Dialyser = wxPanel:new(TabbedWindow, []),
 	tabbed_book:add_page(TabbedWindow, Dialyser, "Dialyser"),
 	

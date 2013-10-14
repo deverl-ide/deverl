@@ -327,14 +327,6 @@ set_path_text(Parent, Path) ->
 
 
 %% =====================================================================
-%% @doc
-
-get_path_text(Parent) ->
-  PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_TEXT), wxStaticText),
-  wxStaticText:getLabel(PathTextBox).
-
-
-%% =====================================================================
 %% @doc Get the default folder depending on what file type is selected.
 
 get_default_folder_text(Parent) ->
@@ -342,6 +334,7 @@ get_default_folder_text(Parent) ->
   Project  = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_CHOICE), wxChoice),
   case wxChoice:getSelection(Project) of
     0 -> %% No Project
+			io:format("NOOOOOO"),
       "/" ++ filename:basename(wx_misc:getHomeDir());
     _ ->
       case wxListBox:getSelection(FileType) of
