@@ -333,7 +333,6 @@ get_default_folder_text(Parent) ->
   Project = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_CHOICE), wxChoice),
   case wxChoice:getSelection(Project) of
     0 -> %% No Project
-			io:format("NOOOOOO"),
       "/" ++ filename:basename(wx_misc:getHomeDir());
     _ ->
       FileType = wx:typeCast(wxWindow:findWindow(Parent, ?FILE_TYPE_CHOICE), wxListBox),
@@ -358,8 +357,8 @@ get_default_folder_text(Parent) ->
 set_default_folder_text(Parent) ->
   Text = get_default_folder_text(Parent),
   FolderText = wx:typeCast(wxWindow:findWindow(Parent, ?FOLDER_BOX), wxTextCtrl),
-  wxTextCtrl:clear(FolderText),
-  wxTextCtrl:writeText(FolderText, Text).
+	wxTextCtrl:setValue(FolderText, Text),
+	ok.
   
 
 %% =====================================================================
