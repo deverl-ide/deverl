@@ -26,14 +26,14 @@
                 }).
 
 -define(DEFAULT_FRAME_WIDTH,  1100).
--define(DEFAULT_FRAME_HEIGHT, 731).
+-define(DEFAULT_FRAME_HEIGHT, 680).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
 
 -define(SASH_VERTICAL, 1).
 -define(SASH_HORIZONTAL, 2).
 -define(SASH_VERT_DEFAULT_POS, 215).
--define(SASH_HOR_DEFAULT_POS, -250).
+-define(SASH_HOR_DEFAULT_POS, -200).
 
 -define(ID_DIALOG_TEXT, 9001).
 
@@ -74,7 +74,7 @@ init(Options) ->
 	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},
 		{style, ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE}]),
 	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL},
-		{style, ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE}]),
+		{style, ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE}]),	
 
 	wxSplitterWindow:setSashGravity(SplitterTopBottom, 0.5),
 	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
@@ -375,15 +375,37 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 
 create_utils(Parent) ->
 	UtilPanel = wxPanel:new(Parent, []),
-
-	Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
-
-	UtilSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxPanel:setSizer(UtilPanel, UtilSizer),
-
-	Console = ide_shell:new([{parent, Utils}]),
+	% 
+	% Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
+	% 
+	% UtilSizer = wxBoxSizer:new(?wxVERTICAL),
+	% wxPanel:setSizer(UtilPanel, UtilSizer),
+	% 
+	% Console = ide_shell:new([{parent, Utils}]),
+	% %% Start the port that communicates with the external ERTs
+	% port:start(),
+	% wxNotebook:addPage(Utils, Console, "Console", []),
+	% 
+	% Observer = ide_observer:start([{parent, Utils}]),
+	% wxNotebook:addPage(Utils, Observer, "Observer", []),
+	% 
+	% Dialyser = wxPanel:new(Utils, []),
+	% wxNotebook:addPage(Utils, Dialyser, "Dialyser", []),
+	% 
+	% Debugger = wxPanel:new(Utils, []),
+	% wxNotebook:addPage(Utils, Debugger, "Debugger", []),
+	% 
+	% wxSizer:addSpacer(UtilSizer, 1),
+	% wxSizer:add(UtilSizer, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	% 
+	% UtilPanel.
+	
+	TabbedWindow = tabbed_book:new([{parent, Parent}]),
+	
+	Console = ide_shell:new([{parent, TabbedWindow}]),
 	%% Start the port that communicates with the external ERTs
 	port:start(),
+<<<<<<< HEAD
 	wxNotebook:addPage(Utils, Console, "Console", []),
   
 	Observer = ide_observer:start([{parent, Utils}]),
@@ -400,29 +422,64 @@ create_utils(Parent) ->
 
 	UtilPanel.
 
+=======
+	tabbed_book:add_page(TabbedWindow, Console, "Console"),
+	
+	Observer = ide_observer:start([{parent, TabbedWindow}]),
+	tabbed_book:add_page(TabbedWindow, Observer, "Observer"),
+	
+	Dialyser = wxPanel:new(TabbedWindow, []),
+	tabbed_book:add_page(TabbedWindow, Dialyser, "Dialyser"),
+	
+	Debugger = wxPanel:new(TabbedWindow, []),
+	tabbed_book:add_page(TabbedWindow, Debugger, "Debugger"),
+	
+	tabbed_book:set_selection(TabbedWindow, 1),
+	
+	TabbedWindow.
+>>>>>>> 04dfdcf30abde132998c6d9359b0a6f2164a3a84
 
 %% =====================================================================
 %% @doc
 
 create_left_window(Frame, Parent) ->
-	ImgList = wxImageList:new(16,16),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/books-stack.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/clipboard-task.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/function.png"))),
+	% ImgList = wxImageList:new(16,16),
+	% wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/books-stack.png"))),
+	% wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/clipboard-task.png"))),
+	% wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/function.png"))),
+	% 
+	% Toolbook = wxToolbook:new(Parent, ?wxID_ANY, [{style, ?wxBK_BUTTONBAR}]),
+	% wxToolbook:assignImageList(Toolbook, ImgList),
+	% 
+	% ProjectTrees = ide_projects_tree:start([{parent, Toolbook}, {frame, Frame}]),
+	% wxToolbook:addPage(Toolbook, ProjectTrees, "Projects", [{imageId, 0}]),
+	% 
+	% TestPanel = wxPanel:new(Toolbook),
+	% wxToolbook:addPage(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
+	% 
+	% FunctionsPanel = func_list:start([{parent, Toolbook}]),
+	% wxToolbook:addPage(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
+	% 
+	% wxToolbook:setSelection(Toolbook, 0), %% Default to projects
+	% Toolbook.
+	
+	% ImgList = wxImageList:new(16,16),
+	Bitmap1 =  wxBitmap:new(wxImage:new("../icons/books-stack.png")),
+	Bitmap2 =  wxBitmap:new(wxImage:new("../icons/clipboard-task.png")),
+	Bitmap3 =  wxBitmap:new(wxImage:new("../icons/function.png")),
 
-	Toolbook = wxToolbook:new(Parent, ?wxID_ANY, [{style, ?wxBK_BUTTONBAR}]),
-	wxToolbook:assignImageList(Toolbook, ImgList),
+	Toolbook = tabbed_book_img:start([{parent, Parent}]),
 
 	ProjectTrees = ide_projects_tree:start([{parent, Toolbook}, {frame, Frame}]),
-	wxToolbook:addPage(Toolbook, ProjectTrees, "Projects", [{imageId, 0}]),
+	tabbed_book_img:add_page(Toolbook, ProjectTrees, "Projects", [{bitmap, Bitmap1}]),
 
 	TestPanel = wxPanel:new(Toolbook),
-	wxToolbook:addPage(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
+	tabbed_book_img:add_page(Toolbook, TestPanel, " Tests ", [{bitmap, Bitmap2}]),
 
 	FunctionsPanel = func_list:start([{parent, Toolbook}]),
-	wxToolbook:addPage(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
+	tabbed_book_img:add_page(Toolbook, FunctionsPanel, "Functions", [{bitmap, Bitmap3}]),
 
-	wxToolbook:setSelection(Toolbook, 0), %% Default to projects
+	% wxToolbook:setSelection(Toolbook, 0), %% Default to projects
 	Toolbook.
 
 %% =====================================================================
