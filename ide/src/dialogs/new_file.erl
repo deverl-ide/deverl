@@ -171,7 +171,7 @@ handle_event(#wx{id=?BROWSE_BUTTON, event=#wxCommand{type=command_button_clicked
     "No Project" ->
       DirectoryChoice = lib_dialog_wx:get_existing_dir(Parent),
       case DirectoryChoice of
-        cancel ->
+        cancelled ->
           ok;
         _ ->
           set_path_text(Parent, DirectoryChoice),
