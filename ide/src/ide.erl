@@ -405,24 +405,6 @@ create_utils(Parent) ->
 	Console = ide_shell:new([{parent, TabbedWindow}]),
 	%% Start the port that communicates with the external ERTs
 	port:start(),
-<<<<<<< HEAD
-	wxNotebook:addPage(Utils, Console, "Console", []),
-  
-	Observer = ide_observer:start([{parent, Utils}]),
-	wxNotebook:addPage(Utils, Observer, "Observer", []),
-
-	Dialyser = wxPanel:new(Utils, []),
-	wxNotebook:addPage(Utils, Dialyser, "Dialyser", []),
-
-	Debugger = wxPanel:new(Utils, []),
-	wxNotebook:addPage(Utils, Debugger, "Debugger", []),
-
-	wxSizer:addSpacer(UtilSizer, 1),
-	wxSizer:add(UtilSizer, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
-
-	UtilPanel.
-
-=======
 	tabbed_book:add_page(TabbedWindow, Console, "Console"),
 	
 	Observer = ide_observer:start([{parent, TabbedWindow}]),
@@ -437,7 +419,7 @@ create_utils(Parent) ->
 	tabbed_book:set_selection(TabbedWindow, 1),
 	
 	TabbedWindow.
->>>>>>> 04dfdcf30abde132998c6d9359b0a6f2164a3a84
+  
 
 %% =====================================================================
 %% @doc
