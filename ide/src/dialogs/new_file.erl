@@ -149,13 +149,13 @@ handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}}
   {noreply, State#state{dialog2=Dialog2}};
 handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=Dialog1, dialog2=Dialog2, swap_sizer=Sz}) ->
-  swap(Sz, Dialog1, Dialog2),
   wxButton:enable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
   wxButton:disable(wxWindow:findWindow(Parent, ?NEXT_BUTTON)),
   {ProjectName, ProjectPath} = get_project_choice(Parent),
   set_project_text(Parent, ProjectName),
   set_default_folder_text(Parent),
   set_default_path_text(Parent, ProjectPath),
+  swap(Sz, Dialog1, Dialog2),
   {noreply, State};
 handle_event(#wx{id=?BACK_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=Dialog1, dialog2=Dialog2, swap_sizer=Sz}) ->
@@ -330,12 +330,12 @@ set_path_text(Parent, Path) ->
 %% @doc Get the default folder depending on what file type is selected.
 
 get_default_folder_text(Parent) ->
-  FileType = wx:typeCast(wxWindow:findWindow(Parent, ?FILE_TYPE_CHOICE), wxListBox),
-  Project  = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_CHOICE), wxChoice),
+  Project = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_CHOICE), wxChoice),
   case wxChoice:getSelection(Project) of
     0 -> %% No Project
       "/" ++ filename:basename(wx_misc:getHomeDir());
     _ ->
+      FileType = wx:typeCast(wxWindow:findWindow(Parent, ?FILE_TYPE_CHOICE), wxListBox),
       case wxListBox:getSelection(FileType) of
         ?FILE_TYPE_ERLANG ->
           ModuleType = wx:typeCast(wxWindow:findWindow(Parent, ?MODULE_TYPE_CHOICE), wxListBox),
