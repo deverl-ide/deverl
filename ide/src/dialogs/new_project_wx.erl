@@ -3,7 +3,7 @@
 -include_lib("wx/include/wx.hrl").
 				 
 %% API
--export([start/1, get_name/1, get_path/1, close/1]).
+-export([start/1, set_focus/1, get_name/1, get_path/1, close/1]).
 
 -behaviour(wx_object).
 -export([init/1, terminate/2, code_change/3,
@@ -15,12 +15,13 @@
 -record(state, {dialog,
             	  parent,
 								image_list,
+								info_messages,
 								project_name_text_ctrl,
 								project_path_text_ctrl,
 								project_name,
 								project_path,
 								default_path,
-								default_cb,
+								default_path_cb,
 								default_project_checked,
 								desc_panel,
 								finish
@@ -100,10 +101,8 @@ do_init(Parent) ->
 	wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Description"), []),
 	wxSizer:addSpacer(VertSizer, 5),  
 	Desc = wxPanel:new(Panel),
-	% Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
-  % StaticBitmap = wxStaticBitmap:new(Desc, ?wxID_ANY, Bitmap),
-	% wxStaticText:new(Desc, ?wxID_ANY, "Define a project name"),
-	wxPanel:setBackgroundColour(Desc, {255,255,255}),
+
+	wxPanel:setBackgroundColour(Desc, ?wxWHITE),
 	insert_desc(Desc, "Create a new project."),
 	wxSizer:add(VertSizer, Desc, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(VertSizer, 40),
@@ -130,20 +129,28 @@ do_init(Parent) ->
 	wxDialog:connect(Dialog, command_button_clicked, [{skip, true}]), 
 	wxDialog:connect(Dialog, command_checkbox_clicked, []),
 	wxDialog:connect(Dialog, command_text_updated, [{skip, false}]),
-	
+		
 	%% Setup the image list
 	ImageList = wxImageList:new(24,24),
 	wxImageList:add(ImageList, wxBitmap:new(wxImage:new("../icons/information.png"))),
 	wxImageList:add(ImageList, wxBitmap:new(wxImage:new("../icons/prohibition.png"))),
 	
+	%% Information messages
+	Info = [
+		{name, "Please specify a project name."}, 
+		{location, "Please specify a project location."}, 
+		{both, "Please specify a project name and location."}
+	],
+	
 	State = #state{
 		dialog=Dialog, 
 		parent=Parent,
 		image_list=ImageList,
+		info_messages=Info,
 		project_name_text_ctrl=ProjName,
-		project_path_text_ctrl=ProjPath, 
+		project_path_text_ctrl=ProjPath,
 		default_path=Path,
-		default_cb=DefaultCb,
+		default_path_cb=DefaultCb,
 		default_project_checked=true,
 		desc_panel=Desc,
 		finish=Finish
@@ -172,20 +179,19 @@ handle_event(#wx{id=?ID_BROWSE_PROJECTS, event=#wxCommand{type=command_button_cl
 	end,
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=0}}, 
-             State=#state{parent=Parent, image_list=ImageList, project_name_text_ctrl=Name, project_path_text_ctrl=Path, desc_panel=Desc}) ->
-	wxTextCtrl:clear(Path),
+             State=#state{parent=Parent, project_path_text_ctrl=Path, project_path=Input}) ->
+	case Input of %% Generates command_text_updated event for ?ID_PROJ_PATH
+		undefined -> wxTextCtrl:clear(Path);
+		Str -> wxTextCtrl:setValue(Path, Str)
+	end,
 	wxWindow:enable(wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)),
 	wxWindow:enable(wxWindow:findWindow(Parent, ?ID_PROJ_PATH)),
-	Msg = case wxTextCtrl:getValue(Name) of
-		[] -> "Please specify a project name and location";
-		_ -> "Please specify a project location"
-	end,
-	insert_desc(Desc, Msg, [{bitmap, wxImageList:getBitmap(ImageList, ?ID_BITMAP_INFO)}]),
   {noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=1}}, 
              State=#state{parent=Parent, project_path_text_ctrl=Path, default_path=DefPath,
 						 							project_name_text_ctrl=Name}) ->
-	wxTextCtrl:setValue(Path, DefPath),
+	Input = wxTextCtrl:getValue(Path),
+	wxTextCtrl:setValue(Path, DefPath), %% Generates command_text_updated event for ?ID_PROJ_PATH
 	N = wxTextCtrl:getValue(Name),
 	case length(N) of
 		0 -> ok;
@@ -193,60 +199,58 @@ handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=1}},
 	end,
 	wxWindow:disable(wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)),
 	wxWindow:disable(wxWindow:findWindow(Parent, ?ID_PROJ_PATH)),
-	{noreply, State};
+	{noreply, State#state{project_path=Input}};
 handle_event(#wx{id=?ID_PROJ_NAME, event=#wxCommand{type=command_text_updated, cmdString=Str}}, 
-             State=#state{parent=Parent, project_path_text_ctrl=Path, default_path=DefPath, 
-						 							default_cb=Cb, project_name_text_ctrl=Name, desc_panel=Desc, finish=Finish})  ->													
+             State=#state{image_list=ImageList, info_messages=Info, project_path_text_ctrl=Path, default_path=DefPath, 
+						 							default_path_cb=Cb, project_name_text_ctrl=Name, desc_panel=Desc, finish=Finish})  ->													
 	InputName = wxTextCtrl:getValue(Name),
 	InputPath = wxTextCtrl:getValue(Path),
-	case wxCheckBox:isChecked(Cb) of
+	Valid = case wxCheckBox:isChecked(Cb) of
 		true when length(InputName) =:= 0 ->
-			display_message(Desc, "Please specify a project name.", true),
+			insert_desc(Desc, get_message(Info, name), [{bitmap, wxImageList:getBitmap(ImageList, ?ID_BITMAP_INFO)}]),
 			StartPos = length(DefPath),
 			wxTextCtrl:replace(Path, StartPos, -1, Str),
-			wxWindow:disable(Finish);
+			false;
 		true ->
 			StartPos = length(DefPath),
 			wxTextCtrl:replace(Path, StartPos, -1, filename:nativename("/") ++ Str),
-			EnableFinish = validate(Str, Desc),
-			display_message(Desc, EnableFinish),
-			wxButton:enable(Finish, [{enable, EnableFinish}]);
-		false when length(InputName) =:= 0 , length(InputName) =:= 0 ->
-			Bitmap = wxBitmap:new(wxImage:new("../icons/information.png")),
-			insert_desc(Desc, "Please specify a project name and location.", [{bitmap, Bitmap}]),
-			wxWindow:disable(Finish);
+			validate_name(Str, Desc);
+		false when length(InputName) =:= 0, length(InputPath) =:= 0 ->
+			insert_desc(Desc, get_message(Info, both), [{bitmap, wxImageList:getBitmap(ImageList, ?ID_BITMAP_INFO)}]),
+			false;
 		false when length(InputName) =:= 0 ->
-			wxWindow:disable(Finish);
+			insert_desc(Desc, get_message(Info, name), [{bitmap, wxImageList:getBitmap(ImageList, ?ID_BITMAP_INFO)}]),
+			false;	
 		false when length(InputPath) =:= 0 ->
-			Bitmap = wxBitmap:new(wxImage:new("../icons/information.png")),
-			insert_desc(Desc, "Please specify a project location.", [{bitmap, Bitmap}]),
-			EnableFinish = validate(Str, Desc),
-			wxButton:enable(Finish, [{enable, EnableFinish}]);
+			insert_desc(Desc, get_message(Info, location), [{bitmap, wxImageList:getBitmap(ImageList, ?ID_BITMAP_INFO)}]),	
+			false;
 		false -> 
-			EnableFinish = validate(Str, Desc),
-			wxButton:enable(Finish, [{enable, EnableFinish}])
+			validate_name(Str, Desc)
 	end,
+	wxButton:enable(Finish, [{enable, Valid}]),
+	display_message(Desc, Valid),
 	{noreply, State};
-handle_event(Ev = #wx{}, State = #state{}) ->
-  % io:format("Got Event ~p~n",[Ev]),
-  {noreply,State}.
-
-%% @doc Display a default message if Display is true.
-display_message(Desc, Display) ->
-	display_message(Desc, "Create a new project.", Display).
-display_message(Desc, Msg, true) ->
-	insert_desc(Desc, Msg);
-display_message(Desc, Msg, false) -> ok.
-	
-validate(Str, Desc) ->
-	case validate_name(Str) of
-		nomatch -> 
-			true;
-		{match, [{Pos,_}]} -> 
-			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
-			insert_desc(Desc, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename.", [{bitmap, Bitmap}]),
-			false
-	end.
+handle_event(#wx{id=?ID_PROJ_PATH, event=#wxCommand{type=command_text_updated}}, 
+             State=#state{image_list=ImageList, info_messages=Info, project_path_text_ctrl=Path,
+						 							default_path_cb=Cb, project_name_text_ctrl=Name, desc_panel=Desc, finish=Finish})  ->													
+	InputPath = wxTextCtrl:getValue(Path),
+	InputName = wxTextCtrl:getValue(Name),
+	case wxCheckBox:isChecked(Cb) of
+		false when length(InputPath) =:= 0, length(InputName) =:= 0 ->
+			insert_desc(Desc, get_message(Info, both), [{bitmap, wxImageList:getBitmap(ImageList, ?ID_BITMAP_INFO)}]);
+		false when length(InputPath) =:= 0 -> %%
+			insert_desc(Desc, get_message(Info, location), [{bitmap, wxImageList:getBitmap(ImageList, ?ID_BITMAP_INFO)}]),
+			wxWindow:disable(Finish);
+		_ when length(InputName) =:= 0 ->
+			insert_desc(Desc, get_message(Info, name), [{bitmap, wxImageList:getBitmap(ImageList, ?ID_BITMAP_INFO)}]);
+		_ ->
+			EnableFinish = validate_path(Path, Desc),
+			ValidName = validate_name(InputName, Desc),
+			Bool = EnableFinish and ValidName,
+			display_message(Desc, Bool),
+			wxButton:enable(Finish, [{enable, Bool}])
+	end,	
+	{noreply, State}.
 	
 handle_info(Msg, State) ->
   io:format( "Got Info ~p~nMsg:~p",[State, Msg]),
@@ -260,8 +264,8 @@ handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State}.
 
 
-handle_cast(Msg, State) ->
-  io:format("Got cast ~p~n",[Msg]),
+handle_cast(setfocus, State=#state{project_name_text_ctrl=Tc}) ->
+  wxWindow:setFocus(Tc),
   {noreply,State}.
 
 code_change(_, _, State) ->
@@ -273,6 +277,91 @@ terminate(_Reason, #state{dialog=Dialog}) ->
 	wxDialog:destroy(Dialog),
 	ok.
 	
+	
+%% =====================================================================
+%% @doc Get message (Id) from Messages.	
+
+get_message(Messages, Id) ->
+	proplists:get_value(Id, Messages).
+
+	
+%% =====================================================================
+%% @doc Display the passed message if Display is true.
+
+display_message(Desc, Display) ->
+	display_message(Desc, "Create a new project.", [], Display).
+display_message(Desc, Msg, Display) ->
+	display_message(Desc, Msg, [], Display).
+display_message(_, _, _, false) -> ok;
+display_message(Desc, Msg, Options, true) -> 
+	insert_desc(Desc, Msg, Options).
+
+
+%% =====================================================================
+%% @doc Display information to the user within the 'Description' box.	
+
+insert_desc(Description, Msg) ->
+	insert_desc(Description, Msg, []).
+
+insert_desc(Description, Msg, Options) ->
+	SzFlags = wxSizerFlags:new([{proportion, 0}]),
+	wxSizerFlags:expand(wxSizerFlags:border(SzFlags, ?wxTOP, 10)),
+	wxWindow:freeze(Description),
+	wxPanel:destroyChildren(Description),
+	Sz = wxBoxSizer:new(?wxHORIZONTAL),
+	wxPanel:setSizer(Description, Sz),
+	wxSizer:addSpacer(Sz, 10),
+	case proplists:get_value(bitmap, Options) of
+		undefined -> ok;
+		Bitmap -> 
+			wxSizer:add(Sz, wxStaticBitmap:new(Description, ?wxID_ANY, Bitmap), [{border, 5}, {flag, ?wxTOP bor ?wxRIGHT}])
+	end,
+	wxSizer:add(Sz, wxStaticText:new(Description, ?wxID_ANY, Msg), SzFlags),
+	wxPanel:layout(Description),	
+	wxWindow:thaw(Description),
+	ok.
+
+	
+%% =====================================================================
+%% @doc Validate the input Path.
+
+validate_path(_Path, _Desc) ->
+	% case filelib:is_dir(Path) of 
+	% 	true -> true;
+	% 	false -> 
+	% 		Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
+	% 		insert_desc(Desc, "Invalid path.", [{bitmap, Bitmap}]),
+	% 		false
+	% end,
+	true. %% path not validated at the moment
+
+
+%% =====================================================================
+%% @doc Validate the input Name.
+
+validate_name([], _) -> false;
+validate_name(Str, Desc) ->
+	case validate_name(Str) of
+		nomatch -> 
+			true;
+		{match, [{Pos,_}]} -> 
+			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
+			insert_desc(Desc, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename.", [{bitmap, Bitmap}]),
+			false
+	end.
+validate_name(Str) ->
+	re:run(Str, "[/]").
+	
+%% Overidden
+%% @hidden
+show(This) -> wxDialog:show(This).
+%% @hidden
+showModal(This) -> wxDialog:showModal(This).
+	
+%% Client API
+set_focus(This) ->
+	wx_object:cast(This, setfocus).
+	
 get_name(This) ->
 	wx_object:call(This, name).
 	
@@ -281,33 +370,3 @@ get_path(This) ->
 	
 close(This) ->
 	wx_object:call(This, shutdown).
-	
-%% @hidden
-show(This) -> wxDialog:show(This).
-%% @hidden
-showModal(This) -> wxDialog:showModal(This).
-
-validate_name(Str) ->
-	re:run(Str, "[/]").
-	
-name_error(Str, Pos) ->
-	io:format("VALIDATION ERROR ON ~c~n", [lists:nth(Pos, Str)]). 
-	
-insert_desc(Parent, Msg) ->
-	insert_desc(Parent, Msg, []).
-
-insert_desc(Parent, Msg, Options) ->
-	SzFlags = wxSizerFlags:new([{proportion, 0}]),
-	wxSizerFlags:expand(wxSizerFlags:border(SzFlags, ?wxTOP, 10)),
-	
-	wxPanel:destroyChildren(Parent),
-	Sz = wxBoxSizer:new(?wxHORIZONTAL),
-	wxPanel:setSizer(Parent, Sz),
-	wxSizer:addSpacer(Sz, 10),
-	case proplists:get_value(bitmap, Options) of
-		undefined -> ok;
-		Bitmap -> wxSizer:add(Sz, wxStaticBitmap:new(Parent, ?wxID_ANY, Bitmap), SzFlags)
-	end,
-	wxSizer:add(Sz, wxStaticText:new(Parent, ?wxID_ANY, Msg), SzFlags),
-	wxPanel:layout(Parent),	
-	ok.
