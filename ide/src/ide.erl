@@ -374,6 +374,7 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 	Result :: wxPanel:wxPanel().
 
 create_utils(Parent) ->
+<<<<<<< HEAD
 	%UtilPanel = wxPanel:new(Parent, []),
 	% 
 	% Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
@@ -400,6 +401,8 @@ create_utils(Parent) ->
 	% 
 	% UtilPanel.
 	
+=======
+>>>>>>> aa380829c676cffda5f1f83f62ab0967b844910f
 	TabbedWindow = tabbed_book:new([{parent, Parent}]),
 	
 	Console = ide_shell:new([{parent, TabbedWindow}]),
@@ -407,9 +410,9 @@ create_utils(Parent) ->
 	port:start(),
 	tabbed_book:add_page(TabbedWindow, Console, "Console"),
 	
-	%Observer = ide_observer:start([{parent, TabbedWindow}]),
-	%tabbed_book:add_page(TabbedWindow, Observer, "Observer"),
-	
+	% Observer = ide_observer:start([{parent, TabbedWindow}]),
+	% tabbed_book:add_page(TabbedWindow, Observer, "Observer"),
+
 	Dialyser = wxPanel:new(TabbedWindow, []),
 	tabbed_book:add_page(TabbedWindow, Dialyser, "Dialyser"),
 	
@@ -425,26 +428,6 @@ create_utils(Parent) ->
 %% @doc
 
 create_left_window(Frame, Parent) ->
-	% ImgList = wxImageList:new(16,16),
-	% wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/books-stack.png"))),
-	% wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/clipboard-task.png"))),
-	% wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/function.png"))),
-	% 
-	% Toolbook = wxToolbook:new(Parent, ?wxID_ANY, [{style, ?wxBK_BUTTONBAR}]),
-	% wxToolbook:assignImageList(Toolbook, ImgList),
-	% 
-	% ProjectTrees = ide_projects_tree:start([{parent, Toolbook}, {frame, Frame}]),
-	% wxToolbook:addPage(Toolbook, ProjectTrees, "Projects", [{imageId, 0}]),
-	% 
-	% TestPanel = wxPanel:new(Toolbook),
-	% wxToolbook:addPage(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
-	% 
-	% FunctionsPanel = func_list:start([{parent, Toolbook}]),
-	% wxToolbook:addPage(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
-	% 
-	% wxToolbook:setSelection(Toolbook, 0), %% Default to projects
-	% Toolbook.
-
 	ImgList = wxImageList:new(16,16),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/books-stack.png"))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/clipboard-task.png"))),
@@ -455,13 +438,13 @@ create_left_window(Frame, Parent) ->
 
 	ProjectTrees = ide_projects_tree:start([{parent, Toolbook}, {frame, Frame}]),
 	tabbed_book_img:add_page(Toolbook, ProjectTrees, "Projects", [{imageId, 0}]),
-
+	
 	TestPanel = wxPanel:new(Toolbook),
 	tabbed_book_img:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
-
+	
 	FunctionsPanel = func_list:start([{parent, Toolbook}]),
 	tabbed_book_img:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
-
+	
 	tabbed_book_img:set_selection(Toolbook, 1), %% Default to projects
 	Toolbook.
 

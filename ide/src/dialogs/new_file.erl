@@ -428,6 +428,15 @@ get_path_text(Parent) ->
   PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_TEXT), wxStaticText),
   wxStaticText:getLabel(PathTextBox).
 
+<<<<<<< HEAD
+=======
+set_default_folder_text(Parent) ->
+  Text = get_default_folder_text(Parent),
+  FolderText = wx:typeCast(wxWindow:findWindow(Parent, ?FOLDER_BOX), wxTextCtrl),
+	wxTextCtrl:setValue(FolderText, Text),
+	ok.
+  
+>>>>>>> aa380829c676cffda5f1f83f62ab0967b844910f
 
 %% =====================================================================
 %% @doc

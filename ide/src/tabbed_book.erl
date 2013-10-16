@@ -110,18 +110,22 @@ handle_sync_event(#wx{obj=TabPanel, userData=tab_panel, event=#wxPaint{}},_,_Sta
 	ok;
 handle_sync_event(#wx{obj=Btn, userData=Label, event=#wxPaint{}},_B,
 		  						#state{pages=Pages, active_btn=ActiveBtn, hover=Hover}) ->
-	{FirstButton, _} = hd(lists:reverse(Pages)), %% This button is drawn slightly differently
-	Options = [],
+	First = try
+		{FirstButton, _} = hd(lists:reverse(Pages)), %% This button is drawn slightly differently (top border)
+		FirstButton
+	catch
+		_:_ -> ok
+	end,
+	Options = case Btn of
+		First -> [{first, true}];
+		_ -> []
+	end,
 	Options2 = case ActiveBtn of
 		Btn -> [{button_state, active} | Options];
 		_ when Hover =:= Btn -> [{button_state, hover} | Options];
 		_ -> Options %% Draw normal
 	end,
-	Options3 = case Btn of
-		FirstButton -> [{first, true} | Options2];
-		_ -> Options2
-	end,
-	draw(Btn, Label, wxPaintDC, Options3),
+	draw(Btn, Label, wxPaintDC, Options2),
 	ok.
 
 handle_event(#wx{obj=Btn, event=#wxMouse{type=enter_window}}, 
