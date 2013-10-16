@@ -374,7 +374,7 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 	Result :: wxPanel:wxPanel().
 
 create_utils(Parent) ->
-	UtilPanel = wxPanel:new(Parent, []),
+	%UtilPanel = wxPanel:new(Parent, []),
 	% 
 	% Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
 	% 

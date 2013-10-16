@@ -320,3 +320,10 @@ get_all_items(Tree, Item, Acc) ->
 			end,
 			get_all_items(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Res)
 	end.
+  
+  
+%% =====================================================================
+%% @doc
+
+refresh_tree() ->
+  ok.

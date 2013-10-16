@@ -3,9 +3,29 @@
 
 -module(ide_io).
 
--export([open_new/1, read_file/1, save_as/2, save/2, create_directory_structure/3]).
+-export([
+        create_directory_structure/3,
+        create_new_file/2,
+        open_new/1,
+        read_file/1,
+        save_as/2,
+        save/2
+        ]).
 
 -include_lib("wx/include/wx.hrl").
+
+
+%% =====================================================================
+%% @doc Create a new file on disc.
+
+create_new_file(Path, Filename) ->
+  case file:open(Path ++ "/" ++ Filename, [write, read]) of
+    {error, Reason} ->
+      io:format("~p~n", [Reason]);
+    File ->
+      doc_manager:new_document_from_existing(Path, Filename, []),
+      file:close(File)
+  end.
 
 
 %% =====================================================================
@@ -15,7 +35,7 @@
   Parent :: wxWindow:wxWindow(),
   Result :: {string(), string(), string()}
           | {'cancel'}.
-  
+
 open_new(Parent) ->
 	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_OPEN}]),
 	case wxFileDialog:showModal(Dialog) of
@@ -26,7 +46,7 @@ open_new(Parent) ->
 		?wxID_CANCEL ->
 			{cancel}
 	end.
-	
+
 
 %% =====================================================================
 %% @doc Read the file at Path.
@@ -36,33 +56,33 @@ read_file(Path) ->
 		{ok, Contents} = file:read_file(Path),
 		binary_to_list(Contents)
 	catch
-		error:E ->
+		error:_E ->
 			throw("Could not read file.")
 	end.
 
 
 %% =====================================================================
-%% @doc Write the data to the path specified by the user through a 
+%% @doc Write the data to the path specified by the user through a
 %% dialog.
 %% A new file will be created if the specified path doesn't exist, and
 %% an existing file will be overwritten.
-	
+
 -spec save_as(Parent, Contents) -> Result when
     Parent :: wxWindow:wxWindow(),
     Contents :: string(),
     Result :: {'ok', {string(), string()}}
             | {'cancel'}.
-    
+
 save_as(Parent, Contents) ->
-	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_SAVE bor 
-											   ?wxFD_OVERWRITE_PROMPT bor 
+	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_SAVE bor
+											   ?wxFD_OVERWRITE_PROMPT bor
 											   ?wxFD_CHANGE_DIR}]),
 	case wxFileDialog:showModal(Dialog) of
 		?wxID_OK ->
 			Path = wxFileDialog:getPath(Dialog),
 			save(Path, Contents),
 			{ok, {Path, wxFileDialog:getFilename(Dialog)}};
-		?wxID_CANCEL -> 
+		?wxID_CANCEL ->
 			{cancel}
 	end.
 
@@ -86,14 +106,14 @@ save(Path, Contents) ->
 
 %% =====================================================================
 %% @doc Create the directory structure for a new project.
-	
-create_directory_structure(Parent, Name, Path) ->
+
+create_directory_structure(_Parent, Name, Path) ->
 	Root = filename:join([Path, Name]),
   try
     create_dir(Root),
-    create_dir(filename:join([Root, "ebin"])),		
-    create_dir(filename:join([Root, "priv"])),		
-    create_dir(filename:join([Root, "include"])),		
+    create_dir(filename:join([Root, "ebin"])),
+    create_dir(filename:join([Root, "priv"])),
+    create_dir(filename:join([Root, "include"])),
     create_dir(filename:join([Root, "src"])),
 		copy_emakefile(Root),
 		Root
@@ -119,13 +139,13 @@ create_dir(Dir) ->
 			throw("An error occurred.");
 		ok -> ok
 	end.
-	
+
 copy_file(Source, Dest) ->
 	case file:copy(Source, Dest) of
 		{ok, _BytesCopied} -> ok;
 		{error, Reason} -> throw("Copy failed: " ++ atom_to_list(Reason))
 	end.
-	
+
 copy_emakefile(Root) ->
 	case filelib:is_file("../priv/templates/emakefile.txt") of
 		true ->
