@@ -235,12 +235,7 @@ new_file(Parent) ->
     {_, ActiveProject} ->
       Dialog = new_file:start({Parent, OpenProjects, filename:basename(ActiveProject)})
   end,
-  case wxDialog:showModal(Dialog) of
-    ?wxID_CANCEL ->
-      ok;
-    ?wxID_OK ->
-      ok
-  end.
+  wxDialog:showModal(Dialog).
       
 			
 %% =====================================================================
