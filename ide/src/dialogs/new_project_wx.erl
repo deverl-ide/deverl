@@ -14,12 +14,14 @@
 				 
 -record(state, {dialog,
             	  parent,
+								image_list,
 								project_name_text_ctrl,
 								project_path_text_ctrl,
 								project_name,
 								project_path,
 								default_path,
 								default_cb,
+								default_project_checked,
 								desc_panel,
 								finish
             	 }).
@@ -29,6 +31,9 @@
 -define(ID_PROJ_NAME, 202).
 -define(ID_DEFAULT_PATH_CB, 203).
 -define(ID_DESCRIPTION, 204).
+
+-define(ID_BITMAP_INFO, 0).
+-define(ID_BITMAP_STOP, 1).
 
 start(Parent) ->
   wx_object:start({local, ?MODULE}, ?MODULE, Parent, []).
@@ -120,21 +125,26 @@ do_init(Parent) ->
   wxSizer:addSpacer(LRSizer, 20),
 	
 	wxSizer:layout(LRSizer),
-	
-	% wxTextCtrl:connect(ProjName, char, [{skip, true}]),
-	
+		
   wxDialog:connect(Dialog, close_window),
 	wxDialog:connect(Dialog, command_button_clicked, [{skip, true}]), 
 	wxDialog:connect(Dialog, command_checkbox_clicked, []),
 	wxDialog:connect(Dialog, command_text_updated, [{skip, false}]),
 	
+	%% Setup the image list
+	ImageList = wxImageList:new(24,24),
+	wxImageList:add(ImageList, wxBitmap:new(wxImage:new("../icons/information.png"))),
+	wxImageList:add(ImageList, wxBitmap:new(wxImage:new("../icons/prohibition.png"))),
+	
 	State = #state{
 		dialog=Dialog, 
-		parent=Parent, 
+		parent=Parent,
+		image_list=ImageList,
 		project_name_text_ctrl=ProjName,
 		project_path_text_ctrl=ProjPath, 
 		default_path=Path,
 		default_cb=DefaultCb,
+		default_project_checked=true,
 		desc_panel=Desc,
 		finish=Finish
 	},
@@ -162,10 +172,15 @@ handle_event(#wx{id=?ID_BROWSE_PROJECTS, event=#wxCommand{type=command_button_cl
 	end,
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=0}}, 
-             State=#state{parent=Parent, project_path_text_ctrl=Path}) ->
+             State=#state{parent=Parent, image_list=ImageList, project_name_text_ctrl=Name, project_path_text_ctrl=Path, desc_panel=Desc}) ->
 	wxTextCtrl:clear(Path),
 	wxWindow:enable(wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)),
 	wxWindow:enable(wxWindow:findWindow(Parent, ?ID_PROJ_PATH)),
+	Msg = case wxTextCtrl:getValue(Name) of
+		[] -> "Please specify a project name and location";
+		_ -> "Please specify a project location"
+	end,
+	insert_desc(Desc, Msg, [{bitmap, wxImageList:getBitmap(ImageList, ?ID_BITMAP_INFO)}]),
   {noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=1}}, 
              State=#state{parent=Parent, project_path_text_ctrl=Path, default_path=DefPath,
@@ -181,35 +196,58 @@ handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=1}},
 	{noreply, State};
 handle_event(#wx{id=?ID_PROJ_NAME, event=#wxCommand{type=command_text_updated, cmdString=Str}}, 
              State=#state{parent=Parent, project_path_text_ctrl=Path, default_path=DefPath, 
-						 							default_cb=Cb, project_name_text_ctrl=Name, desc_panel=Desc, finish=Finish}) ->
-	N = wxTextCtrl:getValue(Name),
+						 							default_cb=Cb, project_name_text_ctrl=Name, desc_panel=Desc, finish=Finish})  ->													
+	InputName = wxTextCtrl:getValue(Name),
+	InputPath = wxTextCtrl:getValue(Path),
 	case wxCheckBox:isChecked(Cb) of
-		true when length(N) =:= 0 ->
+		true when length(InputName) =:= 0 ->
+			display_message(Desc, "Please specify a project name.", true),
 			StartPos = length(DefPath),
 			wxTextCtrl:replace(Path, StartPos, -1, Str),
 			wxWindow:disable(Finish);
 		true ->
 			StartPos = length(DefPath),
-			wxTextCtrl:replace(Path, StartPos, -1, filename:nativename("/") ++ Str);
-		false -> ok
-	end,
-	case validate_name(Str) of
-		nomatch when length(N) =:= 0 -> ok;
-		nomatch -> 
-			insert_desc(Desc, "Create a new project."),
-			wxButton:enable(Finish);
-		{match, [{Pos,_}]} -> 
-			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
-			insert_desc(Desc, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename."
-				, [{bitmap, Bitmap}]),
-			% name_error(Str, Pos + 1),
-			wxButton:disable(Finish)
+			wxTextCtrl:replace(Path, StartPos, -1, filename:nativename("/") ++ Str),
+			EnableFinish = validate(Str, Desc),
+			display_message(Desc, EnableFinish),
+			wxButton:enable(Finish, [{enable, EnableFinish}]);
+		false when length(InputName) =:= 0 , length(InputName) =:= 0 ->
+			Bitmap = wxBitmap:new(wxImage:new("../icons/information.png")),
+			insert_desc(Desc, "Please specify a project name and location.", [{bitmap, Bitmap}]),
+			wxWindow:disable(Finish);
+		false when length(InputName) =:= 0 ->
+			wxWindow:disable(Finish);
+		false when length(InputPath) =:= 0 ->
+			Bitmap = wxBitmap:new(wxImage:new("../icons/information.png")),
+			insert_desc(Desc, "Please specify a project location.", [{bitmap, Bitmap}]),
+			EnableFinish = validate(Str, Desc),
+			wxButton:enable(Finish, [{enable, EnableFinish}]);
+		false -> 
+			EnableFinish = validate(Str, Desc),
+			wxButton:enable(Finish, [{enable, EnableFinish}])
 	end,
 	{noreply, State};
 handle_event(Ev = #wx{}, State = #state{}) ->
   % io:format("Got Event ~p~n",[Ev]),
   {noreply,State}.
 
+%% @doc Display a default message if Display is true.
+display_message(Desc, Display) ->
+	display_message(Desc, "Create a new project.", Display).
+display_message(Desc, Msg, true) ->
+	insert_desc(Desc, Msg);
+display_message(Desc, Msg, false) -> ok.
+	
+validate(Str, Desc) ->
+	case validate_name(Str) of
+		nomatch -> 
+			true;
+		{match, [{Pos,_}]} -> 
+			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
+			insert_desc(Desc, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename.", [{bitmap, Bitmap}]),
+			false
+	end.
+	
 handle_info(Msg, State) ->
   io:format( "Got Info ~p~nMsg:~p",[State, Msg]),
   {noreply,State}.
@@ -232,7 +270,8 @@ code_change(_, _, State) ->
 terminate(_Reason, #state{dialog=Dialog}) ->
   io:format("TERMINATE NEW DIALOG~n"),
 	wxDialog:endModal(Dialog, ?wxID_CANCEL),
-	wxDialog:destroy(Dialog).
+	wxDialog:destroy(Dialog),
+	ok.
 	
 get_name(This) ->
 	wx_object:call(This, name).
