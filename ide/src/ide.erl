@@ -374,35 +374,6 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 	Result :: wxPanel:wxPanel().
 
 create_utils(Parent) ->
-<<<<<<< HEAD
-	%UtilPanel = wxPanel:new(Parent, []),
-	% 
-	% Utils = wxNotebook:new(UtilPanel, 8989, [{style, ?wxBORDER_NONE}]),
-	% 
-	% UtilSizer = wxBoxSizer:new(?wxVERTICAL),
-	% wxPanel:setSizer(UtilPanel, UtilSizer),
-	% 
-	% Console = ide_shell:new([{parent, Utils}]),
-	% %% Start the port that communicates with the external ERTs
-	% port:start(),
-	% wxNotebook:addPage(Utils, Console, "Console", []),
-	% 
-	% Observer = ide_observer:start([{parent, Utils}]),
-	% wxNotebook:addPage(Utils, Observer, "Observer", []),
-	% 
-	% Dialyser = wxPanel:new(Utils, []),
-	% wxNotebook:addPage(Utils, Dialyser, "Dialyser", []),
-	% 
-	% Debugger = wxPanel:new(Utils, []),
-	% wxNotebook:addPage(Utils, Debugger, "Debugger", []),
-	% 
-	% wxSizer:addSpacer(UtilSizer, 1),
-	% wxSizer:add(UtilSizer, Utils, [{proportion, 1}, {flag, ?wxEXPAND}]),
-	% 
-	% UtilPanel.
-	
-=======
->>>>>>> aa380829c676cffda5f1f83f62ab0967b844910f
 	TabbedWindow = tabbed_book:new([{parent, Parent}]),
 	
 	Console = ide_shell:new([{parent, TabbedWindow}]),
