@@ -101,7 +101,6 @@ handle_cast({add, Dir, Pos}, State=#state{sizer=Sz, tree=Tree}) ->
 			show_tree(Sz);
 		true -> ok
 	end,
-  io:format("DO TREE~n"),
 	Root = wxTreeCtrl:getRootItem(Tree),
 	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
 	% Item = wxTreeCtrl:insertItem(Tree, Root, Pos, filename:basename(Dir), [{data, Dir}]),
@@ -344,9 +343,6 @@ get_all_items(Tree, Item, Acc) ->
 			get_all_items(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Res)
 	end.
 
-
-<<<<<<< HEAD
-=======
 %% =====================================================================
 %% @doc
 
@@ -364,4 +360,4 @@ get_item_from_path(Tree, [H|T], Path) ->
 		Path -> H;
 		_ -> get_item_from_path(Tree, T, Path)
 	end.
->>>>>>> f903cdbd412b70e1126f7b8142221a33efc2c6f9
+
