@@ -1,11 +1,13 @@
 -module(user_prefs).
 
--export([new/1,
+-export([
+  new/1,
 	stop/0,
 	get_user_pref/1,
 	set_user_pref/2]).
 
--export([start/1, 
+-export([
+  start/1, 
 	init/1, 
 	terminate/2, 
 	code_change/3,
@@ -21,6 +23,7 @@
 -record(state, {theme,
 								font,
 								project_dir,
+                open_project_list,
 								show_line_no,
 								line_wrap :: integer(), %% 0/1
 								auto_indent,
@@ -97,6 +100,8 @@ handle_call(font, _From, State=#state{font=Font}) ->
 	{reply, Font, State};
 handle_call(project_dir, _From, State=#state{project_dir=ProjectDir}) ->
 	{reply, ProjectDir, State};
+handle_call(open_project_list, _From, State=#state{open_project_list=ProjectList}) ->
+	{reply, ProjectList, State};
 handle_call(show_line_no, _From, State=#state{show_line_no=Bool}) ->
 	{reply, Bool, State};
 handle_call(line_wrap, _From, State=#state{line_wrap=Bool}) ->

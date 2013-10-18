@@ -1,7 +1,7 @@
 -module(ide_status_bar).
 
 -include_lib("wx/include/wx.hrl").
--include("../include/ide.hrl").
+-include("ide.hrl").
 
 -behaviour(wx_object).
 
@@ -88,9 +88,6 @@ init(Config) ->
 %% =====================================================================
 %% @doc OTP behaviour callbacks
 
-handle_info({set_help, Str}, State=#state{fields=[_,_,{help,Help}]}) ->
-	wxStaticText:setLabel(Help, Str),
-	{noreply,State};
 handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
@@ -213,9 +210,7 @@ set_text_timeout(Sb, {field,Field}, Label) ->
 	% 	after ?TIMEOUT ->
 	% 		set_text(Sb, {field,Field}, "")
 	% end.
-	io:format("Sb: ~p~n", [Sb]),
-	io:format("Calling PID: ~p~n", [self()]),
-	wx_object:get_pid(Sb) ! {set_help, Label}.	
+	ok.	
 
 
 %% =====================================================================

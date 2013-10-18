@@ -31,6 +31,7 @@
 -define(MENU_ID_NEW_PROJECT,			 6001).
 -define(MENU_ID_OPEN_PROJECT,			 6002).
 -define(MENU_ID_SAVE_ALL,          6003).
+-define(MENU_ID_CLOSE_PROJECT,     6048).
 -define(MENU_ID_FONT,              6004).
 -define(MENU_ID_FONT_BIGGER,       6005).
 -define(MENU_ID_FONT_SMALLER,      6006).
@@ -55,9 +56,10 @@
 -define(MENU_ID_LC_SEL, 				 	 6026).
 -define(MENU_ID_FOLD_ALL,          6027).
 -define(MENU_ID_UNFOLD_ALL,        6028).
--define(MENU_ID_GOTO_LINE, 				 6029).
+-define(MENU_ID_GOTO_LINE, 		     6029).
 -define(MENU_ID_WRANGLER,          6030).
--define(MENU_ID_COMPILE,           6031).
+-define(MENU_ID_COMPILE_FILE,      6031).
+-define(MENU_ID_MAKE_PROJECT,      6047).
 -define(MENU_ID_RUN,               6032).
 -define(MENU_ID_DIALYZER,          6033).
 -define(MENU_ID_TESTS,             6034).
@@ -81,8 +83,8 @@
 -define(MENU_ID_THEME_LOWEST,			 7000).
 -define(MENU_ID_THEME_HIGHEST,		 7200).     
 
--define(MENU_ID_TAB_WIDTH_LOWEST,	7201).
--define(MENU_ID_TAB_WIDTH_HIGHEST,	7210).
+-define(MENU_ID_TAB_WIDTH_LOWEST,	 7201).
+-define(MENU_ID_TAB_WIDTH_HIGHEST, 7210).
 
 %% Menu groups
 % -define(MENU_GROUP_ED, 	1). %% Erlang bug? See ide_menu.erl
@@ -93,3 +95,14 @@
 -define(MENU_GROUP_WS, 	2).
 -define(MENU_GROUP_TC, 	4).
 -define(MENU_GROUP_GL, 	8).
+
+%% Documents
+-define(DEFAULT_TAB_LABEL, "untitled").
+-define(ID_WORKSPACE, 3211).
+
+%% Global colours
+% -define(SYSTEM_BG_COLOUR, {150,150,150}).
+-define(ROW_BG_EVEN, {250,250,250,255}).
+-define(ROW_BG_ODD, {237,243,254,255}).
+-define(PANEL_FG, {160,160,160}).
+-define(PANEL_BG, {252,252,252}).
