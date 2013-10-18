@@ -155,20 +155,25 @@ terminate(_Reason, State=#state{notebook=Nb}) ->
 
 handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_page_changed,
 			selection=Index}}, State=#state{document_ets=DocEts, notebook=Nb, status_bar=Sb}) ->
+				
+	io:format("ETS ~p~n", [ets:tab2list(DocEts)]),
+	io:format("Key: ~p~n", [wxAuiNotebook:getPage(Notebook, Index)]),
+	
 	PageText = wxAuiNotebook:getPageText(Notebook, Index),
   % Make sure editor knows (needs to update sb)
   editor:selected(index_to_ref(DocEts, Notebook, Index), Sb),
+		
 	Proj = lookup_project(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
 	Str = case Proj of
 		undefined -> 
-			ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project"),
+			% ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project"),
 			PageText;
 		{_, Path} -> 
 			Name = filename:basename(Path),
-			ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ Name ++ ")"),
+			% ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ Name ++ ")"),
 			PageText ++ " (" ++ Name ++ filename:extension(Path) ++ ")"
 	end,
-	ide:set_title(Str),
+	% ide:set_title(Str),
 	
   {noreply, State#state{active_project=Proj}};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
@@ -200,6 +205,7 @@ new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options)	->
 		true -> ok
 	end,
 	Editor = editor:start([{parent, Parent}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
+	% insert_rec(DocEts, Editor, proplists:get_value(path, Options), proplists:get_value(project, Options)),
 	Index = insert_page(Notebook, Editor, Filename), %% Page changed event not serviced until this completes
 	insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project, Options)),
 	Editor.
@@ -653,9 +659,35 @@ update_path(DocEts, Key, Path) ->
 
 %% =====================================================================
 %% @doc Insert a new record into the Ets table.
+%% We need to keep track of all open documents and their associated 
+%% properties. To do this we use an ETS table (irrelevant). 
+%% We need a unique index which is accessible during a page_changed
+%% event that acts as the key to the ETS table.
+%% We cannot use the index from wxAuiNotebook, as these are dynamic
+%% and we'd have to track them when tabs are removed/dragged.
+%% The only other option is to use the wx_object() reference
+%% returned from the call to editor:start(), and acknowledge the
+%% fact that in future wxErlang releases, this representation may change.
+%% The #wxRef{} returned from editor:start() is of the form:
+%% {wx_ref,515,wxPanel,<0.110.0>}, so you might think we coud use
+%% wx_object:get_pid/1, and use the pid as the index, but this gets
+%% stripped from the tuple when added to the notebook, meaning subsequent
+%% calls to wxAuiNotebook:getPage return a tuple of the form:
+%% {wx_ref,515,wxWindow,[]}.
+%% By having functions for inserting/retrieving/updating ETS records
+%% we hide the implementation/format of a single record, which
+%% means any future changes to the API can be easily adapted to.
 
-insert_rec(DocEts, Index, EditorRef, Path) ->
-	insert_rec(DocEts, Index, EditorRef, Path, undefined).
+insert_rec(DocEts, Editor, Path, Project) ->
+	Pid = wx_object:get_pid(Editor),
+	{A,B,C,_} = Editor,
+	Key = {A,B,C,[]},
+	New = wx:typeCast(Key, wxWindow),
+	ets:insert(DocEts, {New, Pid, {path, Path}, {project, Project}}).
+	
+
+% insert_rec(DocEts, Index, EditorRef, Path) ->
+% 	insert_rec(DocEts, Index, EditorRef, Path, undefined).
 	
 insert_rec(DocEts, Index, EditorRef, Path, Project) ->
 	ets:insert(DocEts, {Index, EditorRef, {path, Path}, {project, Project}}).
