@@ -151,4 +151,4 @@ copy_emakefile(Root) ->
 		true ->
 			copy_file("../priv/templates/emakefile.txt", filename:join([Root, "Emakefile"]));
 		false -> throw("Emakefile template not found.")
-	end.
+	end.	

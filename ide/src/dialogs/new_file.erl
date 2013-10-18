@@ -53,6 +53,10 @@ init({Parent, Projects, ActiveProject}) ->
                                                         {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                 ?wxRESIZE_BORDER bor
                                                                 ?wxDIALOG_EX_METAL}]),
+																																
+	%% For MacOSX  
+	wxPanel:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL),																				
+																																
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxSizer:addSpacer(LRSizer, 20),
   wxDialog:setSizer(Dialog, LRSizer),
