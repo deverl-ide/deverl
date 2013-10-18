@@ -105,7 +105,9 @@ handle_cast(Msg, State) ->
 handle_sync_event(#wx{obj=TabPanel, userData=tab_panel, event=#wxPaint{}},_,_State) ->
 	{W,H} = wxWindow:getSize(TabPanel),
 	DC = wxPaintDC:new(TabPanel),
-	wxDC:gradientFillLinear(DC, {0,0,W,H}, ?SYS_BG, {199,199,199}, [{nDirection, ?wxRIGHT}]),
+	Grad1 = wxWindow:getBackgroundColour(TabPanel),
+	Grad2 = lib_widgets:colour_shade(Grad1, 0.8),
+	wxDC:gradientFillLinear(DC, {0,0,W,H}, Grad1, Grad2, [{nDirection, ?wxRIGHT}]),
 	wxPaintDC:destroy(DC),
 	ok;
 handle_sync_event(#wx{obj=Btn, userData=Label, event=#wxPaint{}},_B,
