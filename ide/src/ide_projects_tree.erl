@@ -94,6 +94,7 @@ handle_cast({add, Dir}, State=#state{sizer=Sz, tree=Tree}) ->
   wxTreeCtrl:selectItem(Tree, Item),
 	alternate_background(Tree),
   {noreply,State};
+	
 handle_cast({add, Dir, Pos}, State=#state{sizer=Sz, tree=Tree}) ->
 	case wxWindow:isShown(Tree) of
 		false ->
@@ -102,12 +103,14 @@ handle_cast({add, Dir, Pos}, State=#state{sizer=Sz, tree=Tree}) ->
 	end,
   io:format("DO TREE~n"),
 	Root = wxTreeCtrl:getRootItem(Tree),
-	Item = wxTreeCtrl:insertItem(Tree, Root, Pos, filename:basename(Dir), [{data, Dir}]),
+	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
+	% Item = wxTreeCtrl:insertItem(Tree, Root, Pos, filename:basename(Dir), [{data, Dir}]),
 	wxTreeCtrl:setItemImage(Tree, Item, 2),
 	build_tree(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
 	alternate_background(Tree),
   {noreply,State};
+
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
@@ -342,3 +345,23 @@ get_all_items(Tree, Item, Acc) ->
 	end.
 
 
+<<<<<<< HEAD
+=======
+%% =====================================================================
+%% @doc
+
+refresh_project(Path) ->
+  Tree = wx_object:call(?MODULE, tree),
+  Root = wxTreeCtrl:getRootItem(Tree),
+	ProjectItem  = get_item_from_path(Tree, get_all_items(Tree), Path),
+  wxTreeCtrl:delete(Tree, ProjectItem),
+  wx_object:cast(?MODULE, {add, Path, 0}),
+	ok.
+
+get_item_from_path(Tree, [], Path) -> ok;
+get_item_from_path(Tree, [H|T], Path) ->
+	case wxTreeCtrl:getItemData(Tree, H) of
+		Path -> H;
+		_ -> get_item_from_path(Tree, T, Path)
+	end.
+>>>>>>> f903cdbd412b70e1126f7b8142221a33efc2c6f9
