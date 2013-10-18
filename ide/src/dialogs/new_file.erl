@@ -184,7 +184,14 @@ handle_event(#wx{id=?FINISH_BUTTON, event=#wxCommand{type=command_button_clicked
              State=#state{win=Parent, dialog1=_Dialog1, dialog2=_Dialog2}) ->
   Filename = get_filename(Parent) ++ get_file_extension(Parent),
   Path = get_path_text(Parent),
+  {_, ProjectPath} = get_project_choice(Parent),
   ide_io:create_new_file(Path, Filename),
+  case get_project_choice(Parent) of
+    {"No Project", _} ->
+      ok;
+    _ ->
+      ide_projects_tree:refresh_project(ProjectPath)
+  end,
   {stop, normal, State};
 handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_selected, commandInt=Index}},
              State=#state{win=Parent}) ->
@@ -205,7 +212,8 @@ code_change(_, _, State) ->
 
 terminate(_Reason, #state{win=Dialog}) ->
   io:format("TERMINATE NEW FILE DIALOG~n"),
-  wxDialog:endModal(Dialog, ?wxID_CANCEL).
+  wxDialog:endModal(Dialog, ?wxID_CANCEL),
+  wxDialog:destroy(Dialog).
 
 
 %% =====================================================================
@@ -221,7 +229,7 @@ dialog1(Parent, Projects, ActiveProject) ->
   wxSizer:add(ProjectSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "Project:"),   []),
   wxSizer:addSpacer(ProjectSizer, 20),
   ProjectChoice = wxChoice:new(Dialog1, ?PROJECT_CHOICE),
-  wxChoice:append(ProjectChoice, "No Project", "No Project"),
+  wxChoice:append(ProjectChoice, "No Project", wx_misc:getHomeDir()),
   add_project_data(ProjectChoice, Projects),
   wxSizer:add(ProjectSizer, ProjectChoice, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxChoice:setSelection(ProjectChoice, wxChoice:findString(ProjectChoice, ActiveProject)),
@@ -389,7 +397,7 @@ get_default_folder_text(Parent) ->
   Project = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_CHOICE), wxChoice),
   case wxChoice:getSelection(Project) of
     0 -> %% No Project
-      "/" ++ filename:basename(wx_misc:getHomeDir());
+      "/" ++ filename:basename(wxChoice:getClientData(Project, 0));
     _ ->
       FileType = wx:typeCast(wxWindow:findWindow(Parent, ?FILE_TYPE_CHOICE), wxListBox),
       case wxListBox:getSelection(FileType) of
