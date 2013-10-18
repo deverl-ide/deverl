@@ -346,7 +346,7 @@ get_all_items(Tree, Item, Acc) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Update the tree item (including children) whose data is Path.
 
 refresh_project(Path) ->
   Tree = wx_object:call(?MODULE, tree),
@@ -355,6 +355,10 @@ refresh_project(Path) ->
   wxTreeCtrl:delete(Tree, ProjectItem),
   wx_object:cast(?MODULE, {add, Path, 0}),
 	ok.
+
+
+%% =====================================================================
+%% @doc Get the tree item whose data (path) is Path.
 
 get_item_from_path(Tree, [], Path) -> ok;
 get_item_from_path(Tree, [H|T], Path) ->

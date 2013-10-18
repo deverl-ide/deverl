@@ -132,7 +132,7 @@ handle_call(dialog2, _From, State) ->
 handle_call(projects, _From, State) ->
     {reply, State#state.projects, State}.
 
-handle_event(#wx{event = #wxClose{}}, State) ->
+handle_event(#wx{event=#wxClose{}}, State) ->
   {stop, normal, State};
 handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Dialog}) ->
@@ -220,7 +220,8 @@ code_change(_, _, State) ->
 terminate(_Reason, #state{win=Dialog}) ->
   io:format("TERMINATE NEW FILE DIALOG~n"),
   wxDialog:endModal(Dialog, ?wxID_CANCEL),
-  wxDialog:destroy(Dialog).
+  wxDialog:destroy(Dialog),
+	ok.
 
 
 %% =====================================================================
