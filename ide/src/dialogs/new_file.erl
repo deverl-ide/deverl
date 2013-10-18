@@ -184,6 +184,7 @@ handle_event(#wx{id=?BROWSE_BUTTON, event=#wxCommand{type=command_button_clicked
       browse_dialog(Parent, ProjectPath ++ get_default_folder_text(Parent))
   end,
   {noreply, State};
+	
 handle_event(#wx{id=?FINISH_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=_Dialog1, dialog2=_Dialog2}) ->
   Filename = get_filename(Parent) ++ get_file_extension(Parent),
@@ -197,6 +198,8 @@ handle_event(#wx{id=?FINISH_BUTTON, event=#wxCommand{type=command_button_clicked
       ide_projects_tree:refresh_project(ProjectPath)
   end,
   {stop, normal, State};
+
+
 handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_selected, commandInt=Index}},
              State=#state{win=Parent}) ->
   case Index of

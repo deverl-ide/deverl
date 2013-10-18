@@ -94,6 +94,7 @@ handle_cast({add, Dir}, State=#state{sizer=Sz, tree=Tree}) ->
   wxTreeCtrl:selectItem(Tree, Item),
 	alternate_background(Tree),
   {noreply,State};
+	
 handle_cast({add, Dir, Pos}, State=#state{sizer=Sz, tree=Tree}) ->
 	case wxWindow:isShown(Tree) of
 		false ->
@@ -102,12 +103,14 @@ handle_cast({add, Dir, Pos}, State=#state{sizer=Sz, tree=Tree}) ->
 	end,
   io:format("DO TREE~n"),
 	Root = wxTreeCtrl:getRootItem(Tree),
-	Item = wxTreeCtrl:insertItem(Tree, Root, Pos, filename:basename(Dir), [{data, Dir}]),
+	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, Dir}]),
+	% Item = wxTreeCtrl:insertItem(Tree, Root, Pos, filename:basename(Dir), [{data, Dir}]),
 	wxTreeCtrl:setItemImage(Tree, Item, 2),
 	build_tree(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
 	alternate_background(Tree),
   {noreply,State};
+
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
@@ -348,36 +351,14 @@ get_all_items(Tree, Item, Acc) ->
 refresh_project(Path) ->
   Tree = wx_object:call(?MODULE, tree),
   Root = wxTreeCtrl:getRootItem(Tree),
-  {ProjectItem, ProjectName, Pos} = get_project_item(Tree, wxTreeCtrl:getFirstChild(Tree, Root), Path),
+	ProjectItem  = get_item_from_path(Tree, get_all_items(Tree), Path),
   wxTreeCtrl:delete(Tree, ProjectItem),
-  wx_object:cast(?MODULE, {add, Path, Pos}).
+  wx_object:cast(?MODULE, {add, Path, 0}),
+	ok.
 
-
-get_project_item(Tree, {Root, _}, Path) ->
-  Data = wxTreeCtrl:getItemData(Tree, Root),
-  io:format(Path ++ "DOH~n"),
-  io:format(Data ++ "DOH~n"),
-  case Data of
-    Path ->
-      io:format("FIRST"),
-      {Root, filename:basename(wxTreeCtrl:getItemData(Tree, Root)), 0};
-    _ ->
-      get_project_item(Tree, Root, Path, 1)
-  end.
-
-get_project_item(Tree, Root, Path, Index) ->
-  io:format("~p~n", [Root]),
-  Child = wxTreeCtrl:getNextSibling(Tree, Root),
-  Data = wxTreeCtrl:getItemData(Tree, Root),
-  io:format(Path ++ "~n"),
-  io:format(Data ++ "~n"),
-  case Data of
-    Path ->
-      io:format("CHILD~n"),
-      {Child, filename:basename(wxTreeCtrl:getItemData(Tree, Root)), Index};
-    _ ->
-      get_project_item(Tree, Child, Path, Index + 1)
-  end.
-
-
-
+get_item_from_path(Tree, [], Path) -> ok;
+get_item_from_path(Tree, [H|T], Path) ->
+	case wxTreeCtrl:getItemData(Tree, H) of
+		Path -> H;
+		_ -> get_item_from_path(Tree, T, Path)
+	end.
