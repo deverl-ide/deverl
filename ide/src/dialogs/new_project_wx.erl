@@ -103,6 +103,7 @@ do_init(Parent) ->
 	Desc = wxPanel:new(Panel),
 
 	wxPanel:setBackgroundColour(Desc, ?wxWHITE),
+	wxPanel:setForegroundColour(Desc, ?wxBLACK),
 	insert_desc(Desc, "Create a new project."),
 	wxSizer:add(VertSizer, Desc, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(VertSizer, 40),
