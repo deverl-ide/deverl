@@ -251,7 +251,7 @@ draw_setup(DC, StrokeColour, BrushColour, FontColour) ->
 	Pen = wxPen:new(StrokeColour, [{width, 1}]),
 	Brush = wxBrush:new(BrushColour),
 	Font = wxSystemSettings:getFont(?wxSYS_DEFAULT_GUI_FONT),
-	wxFont:setPointSize(Font, 8),
+	% wxFont:setPointSize(Font, 8),
 		
 	Canvas = wxGraphicsContext:create(DC),
 	wxGraphicsContext:setPen(Canvas, Pen),
