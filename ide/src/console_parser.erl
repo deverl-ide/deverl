@@ -9,9 +9,9 @@
 
 -module(console_parser).
 
--compile([start/0
-					parse_input/1,
-					parse_response/1]).
+-export([start/0,
+		  parse_input/1,
+		  parse_response/1]).
 
 
 %% =====================================================================
