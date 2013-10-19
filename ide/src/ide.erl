@@ -226,24 +226,8 @@ handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}},
 
 %% Handle menu highlight events
 handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}},
-<<<<<<< HEAD
-             State=#state{status_bar=Sb, editor_pids=Ed}) ->
-	% Help = case ets:lookup(TabId,Id) of
-	% 	% [{_,_,HelpString}] -> HelpString;
-	% 	_ -> "Help not available."
-	% end,
-	% Env = wx:get_env(),
-	% Pid = spawn(fun() -> 
-	% 	wx:set_env(Env),
-	K = ets:first(Ed), io:format("E: ~p~n", [ets:lookup(Ed, K)]),
-	[{_,Pid}] = ets:lookup(Ed, K),
-	editor:indent_line_right(Pid),
-		ide_status_bar:set_text_timeout(Sb, {field, help}, "testing"),
-  % end),
-=======
              State=#state{status_bar=Sb}) ->
-	% ide_status_bar:set_text(Sb, {field, help}, "testing"),
->>>>>>> 3c119aef5db3d3f546a790770fed85793e93de57
+	ide_status_bar:set_text(Sb, {field, help}, "testing"),
   {noreply, State};
 
 %% First handle the sub-menus
