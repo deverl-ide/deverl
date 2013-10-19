@@ -1,6 +1,6 @@
 -module(port).
 
--export([start/0, read/0, call_port/1, close_port/0]).
+-export([start/0, call_port/1, close_port/0]).
 
 
 %% =====================================================================
@@ -12,11 +12,32 @@ start()->
 
 %% =====================================================================
 %% @doc 
+%% @private
    
 read() ->
-	Port = open_port({spawn,"/usr/local/lib/erlang/erts-5.10.2/bin/erl"},[use_stdio]),
-	do_read(Port).
+	{Path, Options} = case os:type() of
+		{win32,_} ->
+			io:format("WINDOWS~n"),
+			{"C:\Program Files\erl5.10.2\erts-5.10.2\bin\erl", []};
+		Other ->
+			{"/usr/local/lib/erlang/erts-5.10.2/bin/erl", [use_stdio]}
+	end,
+	open(Path, Options).
 
+
+%% =====================================================================
+%% @doc Open the port.
+%% @throws 
+%% @private
+
+open(Path, Options) ->
+	try
+		Port = open_port({spawn,Path},Options),
+		do_read(Port)
+	catch
+		_:_ ->
+			throw("Could not open port.")
+	end.
 
 %% =====================================================================
 %% @doc 
