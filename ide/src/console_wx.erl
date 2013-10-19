@@ -250,7 +250,7 @@ prompt_or_not(_,_,_,EvObj) ->
 	
 call_parser(Message) ->
   % io:format("Message~p~n", [Message]),
-	parser:parse_input(Message).
+	console_parser:parse_input(Message).
 
 
 

@@ -32,11 +32,6 @@
 								buffer_responses :: boolean(),
 								queue :: list()}).
 
-%% This module generates a throw if the port cannot be opened.
-%% ATM this is not caught, but the exit is trapped in ide.erl.
-%% The error caught in ide.erl is a badarg, because spawn()
-%% fails, and so link has a badarg.
-
 
 %% =====================================================================
 %% Client API
@@ -93,7 +88,7 @@ handle_call({call, Msg}, _From, #state{port=Port}=State) ->
   port_command(Port, Msg),
 	{reply, ok, State};
 handle_call(flush_buffer, _From, #state{queue=Queue}=State) ->
-	lists:map(fun parser:parse_response/1, Queue),
+	lists:map(fun console_parser:parse_response/1, Queue),
 	{reply, ok, State#state{queue=[]}};
 handle_call({buffer_responses, Bool}, _From, #state{port=Port}=State) ->
 	{reply, response, State#state{buffer_responses=Bool}}.
@@ -109,7 +104,7 @@ handle_info({_Port, {data, Response}}, State=#state{buffer_responses=Buffer, que
 			Q = [Response | Queue],
 			State#state{queue=Q};
 		false -> 
-			parser:parse_response(Response), State
+			console_parser:parse_response(Response), State
 	end,
 	{noreply, State}.
 
