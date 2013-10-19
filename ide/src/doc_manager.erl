@@ -70,6 +70,7 @@ init(Config) ->
 			bor ?wxAUI_NB_SCROLL_BUTTONS
 			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
 			bor ?wxAUI_NB_TAB_SPLIT
+			bor ?wxBORDER_NONE
 			),
 			
 	Panel = wxPanel:new(Parent),
