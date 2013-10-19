@@ -355,8 +355,12 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
   %% This is a bit nasty - an OTP Application which allows
   %% components that can be started and stopped as a unit might
   %% be a better choice.
-  port:close_port(),
-  erlang:unregister(port),
+	case erlang:whereis(port) of
+		undefined -> ok;
+		_ ->
+		  port:close_port(),
+		  erlang:unregister(port)
+	end,
 	user_prefs:stop(),
   %% Below is the necessary cleanup
   io:format("TERMINATE IDE~n"),
@@ -376,9 +380,15 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 create_utils(Parent) ->
 	TabbedWindow = tabbed_book:new([{parent, Parent}]),
 	
-	Console = ide_shell:new([{parent, TabbedWindow}]),
 	%% Start the port that communicates with the external ERTs
-	port:start(),
+	Console = try
+		port:start(),
+		ide_shell:new([{parent, TabbedWindow}])
+	catch 
+		_:E ->
+			lib_widgets:placeholder(TabbedWindow, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}])
+			%% Disable console menu/toolbar items
+	end,
 	tabbed_book:add_page(TabbedWindow, Console, "Console"),
 	
 	% Observer = ide_observer:start([{parent, TabbedWindow}]),

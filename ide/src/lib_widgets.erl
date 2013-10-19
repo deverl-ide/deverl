@@ -5,6 +5,7 @@
 
 -export([
 	placeholder/2,
+	placeholder/3,
 	colour_shade/2
 ]).
 
@@ -14,6 +15,9 @@
 %% when the parent is otherwise empty.
 
 placeholder(Parent, Str) ->
+	placeholder(Parent, Str, []).
+	
+placeholder(Parent, Str, Options) ->
 	%% Linux needs an additional horizontal sizer (seems like it
 	%% ignores {style, ?wxALIGN_CENTRE}).
 	Panel = wxPanel:new(Parent),
@@ -23,7 +27,12 @@ placeholder(Parent, Str) ->
 	
 	HSz = wxBoxSizer:new(?wxHORIZONTAL),
 	Text = wxStaticText:new(Panel, ?wxID_ANY, Str, [{style, ?wxALIGN_CENTRE}]),
-	wxStaticText:setForegroundColour(Text, ?PANEL_FG),
+	
+	Fg = case proplists:get_value(fgColour, Options) of
+		undefined -> ?PANEL_FG;
+		C -> C
+	end,
+	wxStaticText:setForegroundColour(Text, Fg),
 	wxSizer:add(HSz, Text, [{proportion, 1}, {flag, ?wxEXPAND}]),
 	
 	wxSizer:addStretchSpacer(Sz),
