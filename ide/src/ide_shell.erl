@@ -32,7 +32,7 @@ init(Config) ->
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Panel, MainSizer),
 
-	ShellTextBox = ?stc:new(Panel, [{id, ?ID_SHELL_TEXT_BOX}]),
+	ShellTextBox = ?stc:new(Panel, [{id, ?ID_SHELL_TEXT_BOX}, {style, ?wxBORDER_NONE}]),
 	?stc:setMarginWidth(ShellTextBox, 0, 0),
 	?stc:setMarginWidth(ShellTextBox, 1, 0),
 	?stc:setMarginWidth(ShellTextBox, 2, 0),

@@ -49,14 +49,8 @@ do_init(Parent) ->
   % Panel = wxPanel:new(Dialog),  
   Panel = Dialog,  
 	
-	% %% For MacOSX  
+	%% Conditional compilation OSX
 	% wxPanel:setWindowVariant(Panel, ?wxWINDOW_VARIANT_SMALL),
-	% 
-	% %% For other platforms
-	% SysFont = wxSystemSettings:getFont(?wxSYS_SYSTEM_FONT),
-	% wxFont:setPointSize(SysFont, 7),
-	% wxFont:setUnderlined(SysFont, true),
-	% wxPanel:setFont(Panel, SysFont),
 	
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(Panel, LRSizer),
