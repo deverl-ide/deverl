@@ -1,31 +1,81 @@
--module(ide_shell).
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc This module initalises the console, which is currently 
+%% implemented as a wxStyledTextCtrl.
+%% @end
+%% =====================================================================
+
+-module(console_wx).
+
 -include_lib("wx/include/wx.hrl").
 
+%% wx_object
 -behaviour(wx_object).
+-export([init/1, 
+		 		 terminate/2, 
+				 code_change/3, 
+				 handle_info/2, 
+				 handle_call/3, 
+				 handle_cast/2, 
+				 handle_event/2,
+				 handle_sync_event/3]).
+
+%% API     
 -export([new/1,
-		 init/1, 
-		 terminate/2, 
-		 code_change/3, 
-		 handle_info/2, 
-		 handle_call/3, 
-		 handle_cast/2, 
-		 handle_event/2]).
-     
--export([load_response/1,
+				 load_response/1,
          set_theme/2]).
 
+%% Macros
 -define(ID_SHELL_TEXT_BOX, 1).
--define(PROMPT, "> ").
-
 -define(stc, wxStyledTextCtrl).
 
-%% The record containing the State.
--record(state, {win, textctrl, cmd_history, current_cmd, wx_env}).
+%% Server state
+-record(state, {win, 
+								textctrl, 
+								cmd_history, 
+								current_cmd, 
+								wx_env}).
+
+
+%% =====================================================================
+%% Client API
+%% =====================================================================	
+
+%% =====================================================================
+%% @doc
 
 new(Config) ->
 	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 	
-%% Initialise the server's state
+	
+%% =====================================================================
+%% @doc
+	
+load_response(Response) ->
+	{Env, Tc} = wx_object:call(?MODULE, text_ctrl),
+	wx:set_env(Env),
+	?stc:addText(Tc, Response).
+	
+		
+%% =====================================================================
+%% @doc Update the shell's theme
+
+set_theme(Fg, Bg) ->
+  {_, Tc} = wx_object:call(?MODULE, text_ctrl),
+  ?stc:styleSetBackground(Tc, ?wxSTC_STYLE_DEFAULT, Bg),
+  ?stc:styleSetForeground(Tc, ?wxSTC_STYLE_DEFAULT, Fg),
+  ?stc:setCaretForeground(Tc, Fg),
+  ?stc:styleClearAll(Tc),
+  ok.
+	
+
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
+
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
 	Panel = wxPanel:new(Parent, []),
@@ -51,8 +101,8 @@ init(Config) ->
 	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
                                           {proportion, 1}]),
                                           
-	% ?stc:connect(ShellTextBox, stc_change, [{callback, fun(E,O) -> io:format("EVENT~p~n", [O]) end}]),
-	?stc:connect(ShellTextBox, key_down, [{callback, fun(E,O) -> handle_key_event(E,O) end}]),
+	% ?stc:connect(ShellTextBox, key_down, [{callback, fun(E,O) -> handle_key_event(E,O) end}]),
+	?stc:connect(ShellTextBox, key_down, [callback]),
 
 	{Panel, #state{win=Panel, 
 				   textctrl=ShellTextBox, 
@@ -60,9 +110,6 @@ init(Config) ->
 				   current_cmd=0,
 				   wx_env=wx:get_env()}}. %% Maintained at server
 
-
-%% =====================================================================
-%% @doc OTP behaviour callbacks
 
 handle_info(Msg, State) ->
     io:format("Got Info ~p~n",[Msg]),
@@ -99,10 +146,10 @@ terminate(_Reason, #state{win=Frame}) ->
 
 
 %% =====================================================================
-%% Asynchronous event callbacks
+%% Callback Sync event handling
+%% =====================================================================
 
-%%--- Enter
-handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}},O) -> 
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Event, _State) ->
   {Prompt,Input} = split_line_at_prompt(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   case length(Input) of
@@ -118,7 +165,7 @@ handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}},O) ->
     _ ->      
       Last =   fun(46) -> %% keycode 46 = '.'
             %% Deal with the case where several '.'s are entered, '...'
-            prompt_or_not(Console, Input, Prompt, O);
+            prompt_or_not(Console, Input, Prompt, Event);
           (_) -> %% write the newline and prompt to the console
             prompt_2_console(Console, Prompt),
             ok
@@ -127,10 +174,10 @@ handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}},O) ->
       Last(lists:last(Input)),
       call_parser(Input),
       ok
-  end;
-	
+  end,
+	ok;
 %%--- Arrow keys
-handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}},_O) ->
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, _State) ->
   SuccessFun = fun() -> ok end,
   FailFun    = fun() -> ?stc:gotoPos(Console, ?stc:getLength(Console)) end,
   check_cursor(Console, SuccessFun, FailFun, -1),
@@ -139,9 +186,9 @@ handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}},
       ok;
     _ ->
       cycle_cmd_text(Console, -1)
-  end;
-  
-handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_DOWN}},_O) ->
+  end,
+	ok;
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_DOWN}}, _Event, _State) ->
   SuccessFun = fun() -> ok end,
   FailFun    = fun() -> ?stc:gotoPos(Console, ?stc:getLength(Console)) end,
   check_cursor(Console, SuccessFun, FailFun, -1),
@@ -156,26 +203,21 @@ handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_DOWN}
     _ ->
       cycle_cmd_text(Console, 1)
   end;
-  
-handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_LEFT}}, O) ->
-  check_cursor(Console, fun() -> wxEvent:skip(O) end, fun() -> ok end, 0);
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_LEFT}}, Event, _State) -> 
+  check_cursor(Console, fun() -> wxEvent:skip(Event) end, fun() -> ok end, 0);
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_RIGHT}}, Event, _State) -> 
+  check_cursor(Console, fun() -> wxEvent:skip(Event) end, fun() -> ok end, -1);
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=8}}, Event, _State) -> 
+  check_cursor(Console, fun() -> wxEvent:skip(Event) end, fun() -> ok end, 0);	
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) -> 
+  SuccessFun = fun() -> wxEvent:skip(Event) end,
+  FailFun    = fun() -> ?stc:gotoPos(Console, ?stc:getLength(Console)), wxEvent:skip(Event) end,
+  check_cursor(Console, SuccessFun, FailFun, -1).
 
-handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_RIGHT}}, O) ->
-  check_cursor(Console, fun() -> wxEvent:skip(O) end, fun() -> ok end, -1);
 	
-handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=8}}, O) -> 
-  check_cursor(Console, fun() -> wxEvent:skip(O) end, fun() -> ok end, 0);
-	
-handle_key_event(#wx{obj=Console, event=#wxKey{type=key_down}}, O) -> 
-  SuccessFun = fun() -> wxEvent:skip(O) end,
-  FailFun    = fun() -> ?stc:gotoPos(Console, ?stc:getLength(Console)), wxEvent:skip(O) end,
-  check_cursor(Console, SuccessFun, FailFun, -1);
-	
-%% For testing:
-handle_key_event(E,O) ->
-  io:format("Event: ~p~n Object: ~p~n", [E,O]),
-  ok.
-	
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
 	
 %% =====================================================================
 %% @doc Write a newline plus the repeated prompt to the console.
@@ -209,16 +251,7 @@ prompt_or_not(_,_,_,EvObj) ->
 call_parser(Message) ->
   % io:format("Message~p~n", [Message]),
 	parser:parse_input(Message).
-	
-	
-%% =====================================================================
-%% @doc
-	
-load_response(Response) ->
-  % io:format("Response~p~n", [Response]),
-	{Env, Tc} = wx_object:call(?MODULE, text_ctrl),
-	wx:set_env(Env),
-	?stc:addText(Tc, Response).
+
 
 
 %% =====================================================================
@@ -242,6 +275,7 @@ get_cur_prompt_length(Console) ->
 get_prompt_length(Line) ->
 	get_prompt_length(Line, 1).
 	
+get_prompt_length([], _) -> 0;
 get_prompt_length([Char|String], Count) ->
 	case Char of
 		62 -> % the prompt char '>'
@@ -371,16 +405,3 @@ check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
       FailFun()
   end,
   ok.
-	
-	
-%% =====================================================================
-%% @doc Update the shell's theme
-  
-set_theme(Fg, Bg) ->
-  {_, Tc} = wx_object:call(?MODULE, text_ctrl),
-  ?stc:styleSetBackground(Tc, ?wxSTC_STYLE_DEFAULT, Bg),
-  ?stc:styleSetForeground(Tc, ?wxSTC_STYLE_DEFAULT, Fg),
-  ?stc:setCaretForeground(Tc, Fg),
-  ?stc:styleClearAll(Tc),
-  ok.
-    

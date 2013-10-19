@@ -16,7 +16,7 @@ start()->
 
 parse_input(Message) ->
 	M = Message ++ io_lib:nl(),
-	port:call_port(M).
+	console_port:call_port(M).
 
 
 %% =====================================================================
@@ -24,5 +24,5 @@ parse_input(Message) ->
 
 parse_response(Response) ->
 	M = Response,
-	ide_shell:load_response(M).
+	console_wx:load_response(M).
   
