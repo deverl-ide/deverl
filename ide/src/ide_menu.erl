@@ -254,7 +254,7 @@ init(Config) ->
 		{?wxID_NEW,{doc_manager,new_document,[]}},
 		{?MENU_ID_NEW_PROJECT,{project_manager,new_project,[Frame]}},
     {?wxID_OPEN, {doc_manager,open_document,[Frame]}},
-		{?MENU_ID_OPEN_PROJECT,{doc_manager,open_project,[Frame]}},
+		{?MENU_ID_OPEN_PROJECT,{project_manager,open_project,[Frame]}},
     {?wxID_SAVE, {doc_manager,save_current_document,[]}},
     {?wxID_SAVEAS, {doc_manager,save_new_document,[]}},
     {?MENU_ID_SAVE_ALL, {}},

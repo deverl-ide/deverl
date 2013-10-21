@@ -23,7 +23,7 @@ create_new_file(Path, Filename) ->
     {error, Reason} ->
       io:format("~p~n", [Reason]);
     File ->
-      doc_manager:new_document_from_existing(Path, Filename, []),
+      doc_manager:new_document_from_existing(Path, []),
       file:close(File)
   end.
 

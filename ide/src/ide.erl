@@ -1,17 +1,26 @@
-%% This module is responsible for building all of the GUI components.
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc This module is responsible for building all of the GUI components. 
+%% @end
+%% =====================================================================
 
 -module(ide).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
 
+%% wx_object
 -behaviour(wx_object).
 -export([start/0, init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
-				 
+	
+%% API			 
 -export([set_title/1, get_menubar/0]).
 
-%% The record containing the State.
+%% Server state
 -record(state, {frame,
                 % env,                                           %% The wx environment
                 workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
@@ -356,11 +365,11 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
   %% This is a bit nasty - an OTP Application which allows
   %% components that can be started and stopped as a unit might
   %% be a better choice.
-	case erlang:whereis(port) of
+	case erlang:whereis(console_port) of
 		undefined -> ok;
 		_ ->
 		  console_port:close_port(),
-		  erlang:unregister(port)
+		  erlang:unregister(console_port)
 	end,
 	user_prefs:stop(),
   %% Below is the necessary cleanup

@@ -14,8 +14,8 @@
   new_file/1,
 	new_document/0, 
 	new_document/1, 
+	new_document_from_existing/2,
 	new_document_from_existing/3,
-	new_document_from_existing/4,
 	new_project/1,
 	close_project/0,
 	close_active_document/0, 
@@ -157,8 +157,8 @@ terminate(_Reason, State=#state{notebook=Nb}) ->
 handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_page_changed,
 			selection=Index}}, State=#state{document_ets=DocEts, notebook=Nb, status_bar=Sb}) ->
 				
-	io:format("ETS ~p~n", [ets:tab2list(DocEts)]),
-	io:format("Key: ~p~n", [wxAuiNotebook:getPage(Notebook, Index)]),
+	% io:format("ETS ~p~n", [ets:tab2list(DocEts)]),
+	% io:format("Key: ~p~n", [wxAuiNotebook:getPage(Notebook, Index)]),
 	
 	PageText = wxAuiNotebook:getPageText(Notebook, Index),
   % Make sure editor knows (needs to update sb)
@@ -215,15 +215,15 @@ new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options)	->
 %% =====================================================================
 %% @doc Add an existing document to the notebook.
 		
-new_document_from_existing(Path, Filename, Contents) -> 
-	new_document_from_existing(Path, Filename, Contents, []).
+new_document_from_existing(Path, Contents) -> 
+	new_document_from_existing(Path, Contents, []).
 
 
 %% =====================================================================
 %% @doc Add an existing document to the notebook.
 
-new_document_from_existing(Path, Filename, Contents, Options) -> 
-	Editor = wx_object:call(?MODULE, {new_document, Filename, [{path, Path}] ++ Options}),
+new_document_from_existing(Path, Contents, Options) -> 
+	Editor = wx_object:call(?MODULE, {new_document, filename:basename(Path), [{path, Path}] ++ Options}),
 	editor:set_text(Editor, Contents),
 	editor:empty_undo_buffer(Editor),
 	editor:set_savepoint(Editor),
@@ -235,7 +235,7 @@ new_document_from_existing(Path, Filename, Contents, Options) ->
 %% @doc Display the "New File" dialog.
   
 new_file(Parent) ->
-  OpenProjects = get_open_projects(),
+  OpenProjects = project_manager:get_open_projects(),
   case get_active_project() of
     undefined ->
       Dialog = new_file:start({Parent, OpenProjects, "No Project"});
@@ -461,7 +461,7 @@ open_document(Frame) ->
 		{cancel} ->
 			ok;
 		{Path, Filename, Contents} ->
-			new_document_from_existing(Path, Filename, Contents)
+			new_document_from_existing(Path, Contents)
 	end.
 
 
