@@ -253,26 +253,26 @@ new_file(Parent) ->
 %% =====================================================================
 %% @doc Add a new project.
 
-new_project(Parent) ->
-	Dialog = new_project_wx:start(Parent),
-	new_project_wx:set_focus(Dialog),
-	case new_project_wx:showModal(Dialog) of
-		?wxID_CANCEL -> 
-      ok;
-		?wxID_OK ->
-			new_project(Parent, Dialog),
-			new_project_wx:close(Dialog)
-	end.
+% new_project(Parent) ->
+% 	Dialog = new_project_wx:start(Parent),
+% 	new_project_wx:set_focus(Dialog),
+% 	case new_project_wx:showModal(Dialog) of
+% 		?wxID_CANCEL -> 
+%       ok;
+% 		?wxID_OK ->
+% 			new_project(Parent, Dialog),
+% 			new_project_wx:close(Dialog)
+% 	end.
 	
-new_project(Parent, Dialog) ->
-  try
-		Path = ide_io:create_directory_structure(Parent, 
-    	new_project_wx:get_name(Dialog), new_project_wx:get_path(Dialog)),
-		ide_projects_tree:add_project(Path)
-  catch
-    throw:E -> 
-			lib_dialog_wx:msg_error(Parent, E)
-  end.
+% new_project(Parent, Dialog) ->
+%   try
+% 		Path = ide_io:create_directory_structure(Parent, 
+%     	new_project_wx:get_name(Dialog), new_project_wx:get_path(Dialog)),
+% 		ide_projects_tree:add_project(Path)
+%   catch
+%     throw:E -> 
+% 			lib_dialog_wx:msg_error(Parent, E)
+%   end.
 	
 	
 %% =====================================================================
@@ -288,12 +288,12 @@ close_project() ->
 %% =====================================================================
 %% @doc Open an existing project.
 
-open_project(Frame) ->
-	case lib_dialog_wx:get_existing_dir(Frame) of
-		cancelled -> ok;
-		Path -> ide_projects_tree:add_project(Path)
-	end,
-	ok.
+% open_project(Frame) ->
+% 	case lib_dialog_wx:get_existing_dir(Frame) of
+% 		cancelled -> ok;
+% 		Path -> ide_projects_tree:add_project(Path)
+% 	end,
+% 	ok.
 
 
 %% =====================================================================
@@ -361,16 +361,16 @@ get_open_documents() ->
 %% =====================================================================
 %% @doc
 
--spec get_open_projects() -> Result when
-	Result :: [string()].
-
-get_open_projects() ->
-  OpenProjects = ide_projects_tree:get_open_projects(),
-  get_open_projects(OpenProjects, []).
-get_open_projects([], Acc) ->
-  Acc;
-get_open_projects([{_,Path}|Projects], Acc) ->
-  get_open_projects(Projects, Acc ++ [Path]).
+% -spec get_open_projects() -> Result when
+% 	Result :: [string()].
+% 
+% get_open_projects() ->
+%   OpenProjects = ide_projects_tree:get_open_projects(),
+%   get_open_projects(OpenProjects, []).
+% get_open_projects([], Acc) ->
+%   Acc;
+% get_open_projects([{_,Path}|Projects], Acc) ->
+%   get_open_projects(Projects, Acc ++ [Path]).
 
 
 %% =====================================================================
