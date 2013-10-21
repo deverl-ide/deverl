@@ -105,7 +105,9 @@ handle_cast(Msg, State) ->
 handle_sync_event(#wx{obj=TabPanel, userData=tab_panel, event=#wxPaint{}},_,_State) ->
 	{W,H} = wxWindow:getSize(TabPanel),
 	DC = wxPaintDC:new(TabPanel),
-	wxDC:gradientFillLinear(DC, {0,0,W,H}, ?SYS_BG, {199,199,199}, [{nDirection, ?wxRIGHT}]),
+	Grad1 = wxWindow:getBackgroundColour(TabPanel),
+	Grad2 = lib_widgets:colour_shade(Grad1, 0.8),
+	wxDC:gradientFillLinear(DC, {0,0,W,H}, Grad1, Grad2, [{nDirection, ?wxRIGHT}]),
 	wxPaintDC:destroy(DC),
 	ok;
 handle_sync_event(#wx{obj=Btn, userData=Label, event=#wxPaint{}},_B,
@@ -196,10 +198,17 @@ draw(Btn, Label, WxDc, Options) ->
 	%% wxDC must be created in a callback to work on windows.
 	DC = WxDc:new(Btn),
 	
+	%% Colours - could keep these in the state to save calculating on paint
+	StdBg = wxWindow:getBackgroundColour(Btn),
+	Dark1 = lib_widgets:colour_shade(StdBg, 0.7),
+	Dark2 = lib_widgets:colour_shade(StdBg, 0.4),
+	Hover = lib_widgets:colour_shade(StdBg, 0.75),
+	Font = lib_widgets:colour_shade(Dark2, 0.5), 
+	
 	Canvas = case proplists:get_value(button_state, Options) of
-		active -> draw_setup(DC, {100,100,100}, {100,100,100}, ?wxWHITE);
-		hover -> draw_setup(DC, {160,160,160}, {180,180,180}, {50, 50, 50});
-		_ -> draw_setup(DC, {160,160,160}, ?SYS_BG, {50, 50, 50})
+		active -> draw_setup(DC, Dark2, Dark2, ?wxWHITE);
+		hover -> draw_setup(DC, Dark1, Hover, Font);
+		_ -> draw_setup(DC, Dark1, StdBg, Font)
 	end,
 	
 	% Corner radius
@@ -209,12 +218,15 @@ draw(Btn, Label, WxDc, Options) ->
 		true -> 0;
 		_ 	 -> -1
 	end,
+	%% Problem with the arcs atm, so will come back to this
 	Path = wxGraphicsContext:createPath(Canvas),
-	wxGraphicsPath:moveToPoint(Path, {W-1, MinY}),
-	wxGraphicsPath:addLineToPoint(Path, {Radius, MinY}),
-	wxGraphicsPath:addArcToPoint(Path, 0, 0, 0, Radius, Radius),
-	wxGraphicsPath:addLineToPoint(Path, {0, H-Radius}),
-	wxGraphicsPath:addArcToPoint(Path, 0, H-1, Radius, H-1, Radius),
+	wxGraphicsPath:moveToPoint(Path, {W-1, MinY}), %% Temp
+	% wxGraphicsPath:addLineToPoint(Path, {Radius, MinY}),
+	% wxGraphicsPath:addArcToPoint(Path, 0, 0, 0, Radius, Radius),
+	wxGraphicsPath:addLineToPoint(Path, {0, MinY}), %% Temp
+	% wxGraphicsPath:addLineToPoint(Path, {0, H-Radius}),
+	% wxGraphicsPath:addArcToPoint(Path, 0, H-1, Radius, H-1, Radius),
+	wxGraphicsPath:addLineToPoint(Path, {0, H-1}),
 	wxGraphicsPath:addLineToPoint(Path, {W-1, H-1}),
 	wxGraphicsPath:closeSubpath(Path),
 	wxGraphicsContext:drawPath(Canvas, Path),
@@ -238,8 +250,7 @@ draw(Btn, Label, WxDc, Options) ->
 draw_setup(DC, StrokeColour, BrushColour, FontColour) ->
 	Pen = wxPen:new(StrokeColour, [{width, 1}]),
 	Brush = wxBrush:new(BrushColour),
-	Font = wxSystemSettings:getFont(?wxSYS_SYSTEM_FONT),
-	wxFont:setPointSize(Font, 11),
+	Font = wxSystemSettings:getFont(?wxSYS_DEFAULT_GUI_FONT),
 		
 	Canvas = wxGraphicsContext:create(DC),
 	wxGraphicsContext:setPen(Canvas, Pen),

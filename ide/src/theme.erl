@@ -110,13 +110,13 @@ hexstr_to_rgb([A,B | T], Acc) ->
 %% @private
 
 sax_print() ->	
-	xmerl_sax_parser:file("../priv/themes/Text.theme", 
+	xmerl_sax_console_parser:file("../priv/themes/Text.theme", 
 	[{event_fun, fun(Event, _Location, _State) ->
 	               io:format("~p~n", [Event])
                end}]).
 
 sax_parse() ->
-	xmerl_sax_parser:file("../priv/themes/Text.theme", 
+	xmerl_sax_console_parser:file("../priv/themes/Text.theme", 
 		[{event_fun, fun event/3},
      {event_state, [{default,[]},{fgColour,[]},{bgColour,[]},{style,[]},{size,[]}] 
 		 }]).

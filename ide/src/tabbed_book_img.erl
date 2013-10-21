@@ -27,13 +27,6 @@
 								pages
 }).
 
--define(BUTTON_NORMAL, {?wxWHITE, {150,150,150}}).
--define(BUTTON_HOVER, {?wxWHITE, {200,200,200}}).
--define(BUTTON_ACTIVE, {wxSystemSettings:getColour(?wxSYS_COLOUR_BACKGROUND), wxSystemSettings:getColour(?wxSYS_COLOUR_BACKGROUND)}).
--define(TAB_PANEL_BG, {100,100,100}).
--define(SYS_BG, wxSystemSettings:getColour(?wxSYS_COLOUR_BACKGROUND)).
-
-
 new(Config) ->
 	wx_object:start_link(?MODULE, Config, []).  
 
@@ -49,7 +42,7 @@ init(Options) ->
 	
 	% Tabs = wxPanel:new(MainPanel, [{size, {74,-1}}]),
 	Tabs = wxPanel:new(MainPanel, []),
-	wxPanel:setBackgroundColour(Tabs, ?SYS_BG),
+	% wxPanel:setBackgroundColour(Tabs, ?SYS_BG),
 	Font = wxPanel:getFont(Tabs),
 	wxFont:setPointSize(Font, 9),
 	wxPanel:setFont(Tabs, Font),
@@ -119,20 +112,20 @@ handle_cast(Msg, State) ->
 handle_sync_event(#wx{obj=Btn, userData={Label, Options}, event=#wxPaint{}}, _,
 		  						#state{tabs=Panel, active_btn=ActiveBtn, image_list=ImageList}) ->
 	case ActiveBtn of
-		Btn -> draw(Btn, Label, ImageList, wxPaintDC, ?BUTTON_ACTIVE, [{active, true} | Options]);
+		Btn -> draw(Btn, Label, ImageList, wxPaintDC, nogradient, [{active, true} | Options]);
 		% undefined -> draw(Btn, Label, wxPaintDC, ?BUTTON_ACTIVE, [{active, true}]);
-		_ -> draw(Btn, Label, ImageList, wxPaintDC, ?BUTTON_NORMAL, Options)
+		_ -> draw(Btn, Label, ImageList, wxPaintDC, nogradient, Options)
 	end,
 	ok.
 	
-handle_event(#wx{obj=Btn, userData={Label, Options}, event=#wxMouse{type=enter_window}}, 
-						 State=#state{active_btn=ActiveBtn, image_list=ImageList, tabs={Tabs, _}}) ->
-	trigger_tab_paint(Tabs, ActiveBtn, Btn),
-	{noreply, State};
-handle_event(#wx{obj=Btn, userData={Label, Options}, event=#wxMouse{type=leave_window}}, 
-						 State=#state{active_btn=ActiveBtn, image_list=ImageList, tabs={Tabs, _}}) ->
-	trigger_tab_paint(Tabs, ActiveBtn, Btn),	
-	{noreply, State};
+% handle_event(#wx{obj=Btn, userData={Label, Options}, event=#wxMouse{type=enter_window}}, 
+% 						 State=#state{active_btn=ActiveBtn, image_list=ImageList, tabs={Tabs, _}}) ->
+% 	trigger_tab_paint(Tabs, ActiveBtn, Btn),
+% 	{noreply, State};
+% handle_event(#wx{obj=Btn, userData={Label, Options}, event=#wxMouse{type=leave_window}}, 
+% 						 State=#state{active_btn=ActiveBtn, image_list=ImageList, tabs={Tabs, _}}) ->
+% 	trigger_tab_paint(Tabs, ActiveBtn, Btn),	
+% 	{noreply, State};
 handle_event(#wx{obj=Btn, userData={Label, Options}, event=#wxMouse{type=left_down}}, 
 						 State=#state{pages=Pages, active_btn=ActiveBtn, tabs={Tabs, _}, content={Cont,_}, 
 						 							image_list=ImageList}) ->
@@ -156,10 +149,6 @@ code_change(_, _, State) ->
 terminate(_Reason, _State) ->
     wx:destroy().
 		
--define(LINE_L, {155,155,155}).
--define(LINE_H, {100,100,100}).
--define(FILL, {190,190,190}).
-
 
 %% =====================================================================
 %% @doc Assign an image list to the control.
@@ -192,19 +181,22 @@ create_button(Parent, Sz, Label, Options) ->
 	wxSizer:add(Sz, Btn, SzFlags),
   wxPanel:connect(Btn, paint, [callback, {userData, {Label, Options}}]),
 	wxPanel:connect(Btn, left_down, [{skip, true}, {userData, {Label, Options}}]),
-	wxPanel:connect(Btn, enter_window, [{skip, true}, {userData, {Label, Options}}]),
-	wxPanel:connect(Btn, leave_window, [{skip, true}, {userData, {Label, Options}}]),
+	% wxPanel:connect(Btn, enter_window, [{skip, true}, {userData, {Label, Options}}]),
+	% wxPanel:connect(Btn, leave_window, [{skip, true}, {userData, {Label, Options}}]),
 	{Btn, Label}.
 	
 	
 %% =====================================================================
 %% @doc Draw the tab graphic.		
 %% Default {active, false}
-draw(Btn, Label, ImageList, WxDc, {Grad1, Grad2}, Options) ->
+draw(Btn, Label, ImageList, WxDc, _, Options) ->
 	{W,H} = wxWindow:getSize(Btn),
 	
-	SysBg = wxSystemSettings:getColour(?wxSYS_COLOUR_BACKGROUND),
-	wxWindow:setBackgroundColour(Btn, SysBg),
+	% SysBg = wxSystemSettings:getColour(?wxSYS_COLOUR_BACKGROUND),
+	SysBg = wxWindow:getBackgroundColour(Btn),
+	Grad2 = {190,190,190},
+	LineL = {155,155,155},
+	% wxWindow:setBackgroundColour(Btn, SysBg),
 	%% wxDC must be created in a callback to work on windows.
 	DC = WxDc:new(Btn),
 	
@@ -213,18 +205,19 @@ draw(Btn, Label, ImageList, WxDc, {Grad1, Grad2}, Options) ->
 	Brush = wxBrush:new(SysBg),
 	wxDC:setBrush(DC, Brush),
 	wxDC:drawRectangle(DC, {0, 0}, {W, H}),
+	
 
 	%% Add gradients if button is selected
 	Fg = case proplists:get_value(active, Options, false) of
 		true -> 
-			wxDC:gradientFillLinear(DC, {2,6,W-5,11}, SysBg, ?FILL, [{nDirection, ?wxDOWN}]),
-			wxDC:gradientFillLinear(DC, {2,17,W-5,11}, ?FILL, SysBg, [{nDirection, ?wxDOWN}]),
+			wxDC:gradientFillLinear(DC, {2,6,W-5,11}, SysBg, Grad2, [{nDirection, ?wxDOWN}]),
+			wxDC:gradientFillLinear(DC, {2,17,W-5,11}, Grad2, SysBg, [{nDirection, ?wxDOWN}]),
 
-			wxDC:gradientFillLinear(DC, {2,6,1,11}, SysBg, ?LINE_L, [{nDirection, ?wxDOWN}]),
-			wxDC:gradientFillLinear(DC, {2,17,1,11}, ?LINE_L, SysBg, [{nDirection, ?wxDOWN}]),
+			wxDC:gradientFillLinear(DC, {2,6,1,11}, SysBg, LineL, [{nDirection, ?wxDOWN}]),
+			wxDC:gradientFillLinear(DC, {2,17,1,11}, LineL, SysBg, [{nDirection, ?wxDOWN}]),
 	
-			wxDC:gradientFillLinear(DC, {W-4,6,1,11}, SysBg, ?LINE_L, [{nDirection, ?wxDOWN}]),
-			wxDC:gradientFillLinear(DC, {W-4,17,1,11}, ?LINE_L, SysBg, [{nDirection, ?wxDOWN}]);
+			wxDC:gradientFillLinear(DC, {W-4,6,1,11}, SysBg, LineL, [{nDirection, ?wxDOWN}]),
+			wxDC:gradientFillLinear(DC, {W-4,17,1,11}, LineL, SysBg, [{nDirection, ?wxDOWN}]);
 		false -> 	
 			wxDC:drawLine(DC, {W-1, 0}, {W-1, H}),
 			{60,60,60}
@@ -235,7 +228,7 @@ draw(Btn, Label, ImageList, WxDc, {Grad1, Grad2}, Options) ->
 			ok;
 		Id -> 
 			Bitmap = wxImageList:getBitmap(ImageList, Id),
-			wxDC:drawBitmap(DC, Bitmap, {9,9}),
+			wxDC:drawBitmap(DC, Bitmap, {9,9}, [{useMask, true}]),
 			ok
 	end,
 	

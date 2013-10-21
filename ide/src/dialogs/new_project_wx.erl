@@ -46,35 +46,33 @@ do_init(Parent) ->
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, "New Project", 
 		[{size,{640,460}}, {style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}]),
 		
-  Panel = wxPanel:new(Dialog),  
+  % Panel = wxPanel:new(Dialog),  
+  Panel = Dialog,  
 	
-	%% For MacOSX  
-	wxPanel:setWindowVariant(Panel, ?wxWINDOW_VARIANT_SMALL),
-	
-	%% For other platforms
-	SysFont = wxSystemSettings:getFont(?wxSYS_SYSTEM_FONT),
-	wxFont:setPointSize(SysFont, 7),
-	wxFont:setUnderlined(SysFont, true),
-	wxPanel:setFont(Panel, SysFont),
+	%% Conditional compilation OSX
+	% wxPanel:setWindowVariant(Panel, ?wxWINDOW_VARIANT_SMALL),
 	
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(Panel, LRSizer),
   wxSizer:addSpacer(LRSizer, 20),
 
   VertSizer = wxBoxSizer:new(?wxVERTICAL),
+	%% Header
   wxSizer:addSpacer(VertSizer, 40),
 	wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "New Project"), []),
 	wxSizer:addSpacer(VertSizer, 5),
   wxSizer:add(VertSizer, wxStaticLine:new(Panel, [{style, ?wxLI_HORIZONTAL}]), 
               [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(VertSizer, 20),
-
+	
+	%% Project name
   FlexGridSz = wxFlexGridSizer:new(3, 3, 10, 10),
   wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Project Name:"), []),
 	ProjName = wxTextCtrl:new(Panel, ?ID_PROJ_NAME, []),
   wxSizer:add(FlexGridSz, ProjName, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(FlexGridSz, 0, 0, []),
    
+	%% Project path
 	Path = wx_misc:getHomeDir(),
   wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Project Path:"), []),
 	ProjPath = wxTextCtrl:new(Panel, ?ID_PROJ_PATH, [{value, Path}]),
@@ -84,6 +82,7 @@ do_init(Parent) ->
 	wxButton:disable(Browse),
   wxSizer:add(FlexGridSz, Browse, [{proportion, 0}]),
 	
+	%% Project checkbox
   wxSizer:add(FlexGridSz, 0, 0, []),
 	DefaultCb = wxCheckBox:new(Panel, ?ID_DEFAULT_PATH_CB, "Use default location"),
 	wxCheckBox:setValue(DefaultCb, true),
@@ -98,6 +97,7 @@ do_init(Parent) ->
               [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(VertSizer, 20),
 
+	%% Decscription
 	wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Description"), []),
 	wxSizer:addSpacer(VertSizer, 5),  
 	Desc = wxPanel:new(Panel),
