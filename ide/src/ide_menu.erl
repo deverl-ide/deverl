@@ -251,8 +251,8 @@ init(Config) ->
   %% =====================================================================  
   TabId = ets:new(myTable, []),
   ets:insert(TabId, [
-		{?wxID_NEW,{doc_manager,new_document,[]}},
-		{?MENU_ID_NEW_PROJECT,{project_manager,new_project,[Frame]}},
+		{?wxID_NEW,{doc_manager,new_file,[Frame]}},
+		{?MENU_ID_NEW_PROJECT,{doc_manager,new_project,[Frame]}},
     {?wxID_OPEN, {doc_manager,open_document,[Frame]}},
 		{?MENU_ID_OPEN_PROJECT,{project_manager,open_project,[Frame]}},
     {?wxID_SAVE, {doc_manager,save_current_document,[]}},
@@ -288,7 +288,7 @@ init(Config) ->
 		{?MENU_ID_GOTO_LINE, {doc_manager,go_to_line,[Frame]}},
 		{?MENU_ID_UC_SEL, {doc_manager,transform_selection,[]}, [{send_event, true}]},
 		{?MENU_ID_LC_SEL, {doc_manager,transform_selection,[]}, [{send_event, true}]},			
-		{?MENU_ID_FOLD_ALL, {doc_manager,new_file,[Frame]}},
+		{?MENU_ID_FOLD_ALL, {}},
 		{?MENU_ID_UNFOLD_ALL, {}},
 		
     {?MENU_ID_WRANGLER, {}},
