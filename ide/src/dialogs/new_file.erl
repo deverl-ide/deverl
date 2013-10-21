@@ -97,12 +97,12 @@ init({Parent, Projects, ActiveProject}) ->
 
   wxSizer:add(MainSizer, ButtonPanel, [{proportion, 0}, {flag, ?wxALIGN_RIGHT}]),
 
-  wxButton:disable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
-  wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON)),
-
   wxSizer:addSpacer(LRSizer, 20),
   wxSizer:addSpacer(MainSizer, 20),
   wxDialog:connect(ButtonPanel, command_button_clicked, [{skip, true}]),
+  
+  wxButton:disable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
+  wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON)),
 
   {Dialog, #state{win=Dialog, dialog1=Dialog1, swap_sizer=SwapSizer, projects=Projects}}.
 
@@ -219,13 +219,7 @@ code_change(_, _, State) ->
 
 terminate(_Reason, #state{win=Dialog}) ->
   io:format("TERMINATE NEW FILE DIALOG~n"),
-<<<<<<< HEAD
   wxDialog:endModal(Dialog, ?wxID_CANCEL).
-=======
-  wxDialog:endModal(Dialog, ?wxID_CANCEL),
-  wxDialog:destroy(Dialog),
-	ok.
->>>>>>> c11a7aa41e9b835a2c8726811b0c26ea5073d90b
 
 
 %% =====================================================================
@@ -409,7 +403,8 @@ get_default_folder_text(Parent) ->
   Project = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_CHOICE), wxChoice),
   case wxChoice:getSelection(Project) of
     0 -> %% No Project
-      "/" ++ filename:basename(wxChoice:getClientData(Project, 0));
+      %"/" ++ filename:basename(wxChoice:getClientData(Project, 0));
+      "/";
     _ ->
       FileType = wx:typeCast(wxWindow:findWindow(Parent, ?FILE_TYPE_CHOICE), wxListBox),
       case wxListBox:getSelection(FileType) of
