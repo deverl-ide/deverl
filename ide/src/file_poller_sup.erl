@@ -1,4 +1,4 @@
--module(file_sup).
+-module(file_poller_sup).
 
 -behaviour(supervisor).
 -export([init/1]).

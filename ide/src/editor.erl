@@ -216,7 +216,7 @@ handle_call(Msg, _From, State) ->
   {reply,State,State}.
 
 handle_cast({link_poller, Path}, State) ->
-	file_sup:start_link([{editor_pid, self()}, {path, Path}]),
+	file_poller_sup:start_link([{editor_pid, self()}, {path, Path}]),
   {noreply,State};
 	
 handle_cast({goto_pos, {Line, Col}}, State=#state{stc=Stc}) ->

@@ -55,7 +55,7 @@
 								sizer,
 								parent
                 }).
-
+								
 
 start(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).

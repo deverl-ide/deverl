@@ -52,10 +52,7 @@ init({Parent, Projects, ActiveProject}) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 500}},
                                                         {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                 ?wxRESIZE_BORDER bor
-                                                                ?wxDIALOG_EX_METAL}]),
-																																
-	%% For MacOSX  
-	wxPanel:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL),																				
+                                                                ?wxDIALOG_EX_METAL}]),																		
 																																
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxSizer:addSpacer(LRSizer, 20),

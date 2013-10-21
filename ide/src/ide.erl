@@ -61,8 +61,9 @@ init(Options) ->
 	wx:new(Options),
 	process_flag(trap_exit, true),
 
-	%% Load user prefs - should be started by OTP Application and not here
+	%% Load modules that should be started by OTP Application and not here
 	user_prefs:new([{wxe_server, wx:get_env()}]),
+	project_manager:start(),
 
 	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
 	wxFrame:connect(Frame, close_window),

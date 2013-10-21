@@ -1,23 +1,32 @@
-%% editor_loader.erl
-%% Simple frame that loads an editor object
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc
+%% @end
+%% =====================================================================
 
 -module(tabbed_book).
+-include_lib("wx/include/wx.hrl").
 
+%% wx_object
+-behaviour(wx_object).
 -export([
 	init/1, terminate/2,  code_change/3,
 	handle_info/2, handle_call/3, handle_cast/2, 
 	handle_event/2, handle_sync_event/3]).
-	 
+	
+%% API 
 -export([
 	new/1, 
 	add_page/3,
 	set_selection/2]).
 
--include_lib("wx/include/wx.hrl").
+%% Macros
+-define(SYS_BG, wxSystemSettings:getColour(?wxSYS_COLOUR_BACKGROUND)).
 
--behaviour(wx_object).
-
-%% The record containing the State.
+%% Server state
 -record(state, {tabs, 
 								content,
 								active_btn,
@@ -25,11 +34,35 @@
 								hover
 }).
 
--define(SYS_BG, wxSystemSettings:getColour(?wxSYS_COLOUR_BACKGROUND)).
 
+%% =====================================================================
+%% Client API
+%% =====================================================================
+
+%% =====================================================================
+%% @doc Create a new tabbed notebook.
 
 new(Config) ->
 	wx_object:start_link(?MODULE, Config, []).  
+
+	
+%% =====================================================================
+%% @doc Add a page.
+		
+add_page(This, Page, Text) ->
+	wx_object:cast(This, {add_page, {Page, Text}}).
+
+
+%% =====================================================================
+%% @doc Set the selection to Index.
+
+set_selection(This, Index) ->
+	wx_object:cast(This, {set_selection, Index}).
+	
+	
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
 
 init(Options) ->
 	Parent = proplists:get_value(parent, Options),
@@ -64,7 +97,6 @@ init(Options) ->
   {MainPanel, State}.
 	
 
-%%%%% Callbacks %%%%%
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
@@ -99,14 +131,16 @@ handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Sync events i.e. from callbacks must return ok, it can not return a new state.
-%% Do the redrawing here.
+
+%% =====================================================================
+%% Callback Sync events
+%% =====================================================================
+
 handle_sync_event(#wx{obj=TabPanel, userData=tab_panel, event=#wxPaint{}},_,_State) ->
 	{W,H} = wxWindow:getSize(TabPanel),
 	DC = wxPaintDC:new(TabPanel),
 	Grad1 = wxWindow:getBackgroundColour(TabPanel),
-	Grad2 = lib_widgets:colour_shade(Grad1, 0.8),
+	Grad2 = lib_widgets:colour_shade(Grad1, 0.9),
 	wxDC:gradientFillLinear(DC, {0,0,W,H}, Grad1, Grad2, [{nDirection, ?wxRIGHT}]),
 	wxPaintDC:destroy(DC),
 	ok;
@@ -159,18 +193,12 @@ code_change(_, _, State) ->
 
 terminate(_Reason, _State) ->
     wx:destroy().
-	
-	
+
+
 %% =====================================================================
-%% @doc Add a page.
-		
-add_page(This, Page, Text) ->
-	wx_object:cast(This, {add_page, {Page, Text}}).
-	
-set_selection(This, Index) ->
-	wx_object:cast(This, {set_selection, Index}).
-	
-	
+%% Internal functions
+%% =====================================================================
+
 %% =====================================================================
 %% @doc Create a new button/tab.
 %% @private

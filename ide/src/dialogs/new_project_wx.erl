@@ -9,7 +9,7 @@
 -export([init/1, terminate/2, code_change/3,
 	       handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 			
-%% inherited exports
+%% inherited functions
 -export([show/1,showModal/1]).
 				 
 -record(state, {dialog,
@@ -275,7 +275,7 @@ code_change(_, _, State) ->
 terminate(_Reason, #state{dialog=Dialog}) ->
   io:format("TERMINATE NEW DIALOG~n"),
 	wxDialog:endModal(Dialog, ?wxID_CANCEL),
-	% wxDialog:destroy(Dialog),
+	wxDialog:destroy(Dialog),
 	ok.
 	
 	

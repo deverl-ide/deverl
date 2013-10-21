@@ -1,13 +1,24 @@
-%% editor_loader.erl
-%% Simple frame that loads an editor object
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc 
+%% @end
+%% =====================================================================
 
 -module(tabbed_book_img).
 
+-include_lib("wx/include/wx.hrl").
+
+%% wx_object
+-behaviour(wx_object).
 -export([
 	 init/1, terminate/2,  code_change/3,
 	 handle_info/2, handle_call/3, handle_cast/2, 
 	 handle_event/2, handle_sync_event/3]).
-	 
+	
+%% API 
 -export([
 	new/1,
 	add_page/4,
@@ -15,11 +26,7 @@
 	set_selection/2
 ]).
 
--include_lib("wx/include/wx.hrl").
-
--behaviour(wx_object).
-
-%% The record containing the State.
+%% Server state
 -record(state, {tabs, 
 								content,
 								image_list,
@@ -27,8 +34,39 @@
 								pages
 }).
 
+
+%% =====================================================================
+%% Client API
+%% =====================================================================
+
 new(Config) ->
 	wx_object:start_link(?MODULE, Config, []).  
+	
+
+%% =====================================================================
+%% @doc Add a page.	
+
+add_page(This, Page, Text, Options) ->
+	wx_object:cast(This, {add_page, {Page, Text, Options}}).
+
+
+%% =====================================================================
+%% @doc Assign an image list to the control.
+
+assign_image_list(This, ImgList) ->
+	wx_object:cast(This, {image_list, ImgList}).
+	
+
+%% =====================================================================
+%% @doc Set the selected page.		
+
+set_selection(This, Index) ->
+	wx_object:cast(This, {set_selection, Index}).
+
+
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
 
 init(Options) ->
 	Parent = proplists:get_value(parent, Options),
@@ -66,7 +104,6 @@ init(Options) ->
   {MainPanel, State}.
 
 
-%%%%% Callbacks %%%%%
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
@@ -106,7 +143,10 @@ handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%% =====================================================================
+%% Callback Sync event handling
+%% =====================================================================
 %% Sync events i.e. from callbacks must return ok, it can not return a new state.
 %% Do the redrawing here.
 handle_sync_event(#wx{obj=Btn, userData={Label, Options}, event=#wxPaint{}}, _,
@@ -148,28 +188,11 @@ code_change(_, _, State) ->
 
 terminate(_Reason, _State) ->
     wx:destroy().
-		
-
-%% =====================================================================
-%% @doc Assign an image list to the control.
-
-assign_image_list(This, ImgList) ->
-	wx_object:cast(This, {image_list, ImgList}).
-	
-
-%% =====================================================================
-%% @doc Add a page.	
-
-add_page(This, Page, Text, Options) ->
-	wx_object:cast(This, {add_page, {Page, Text, Options}}).
 
 
 %% =====================================================================
-%% @doc Set the selected page.		
-
-set_selection(This, Index) ->
-	wx_object:cast(This, {set_selection, Index}).
-
+%% Internal functions
+%% =====================================================================		
 
 %% =====================================================================
 %% @doc Create button.
