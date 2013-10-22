@@ -41,8 +41,7 @@
 %% @doc 
 
 start()->
-	gen_server:start({local, ?MODULE}, ?MODULE, [], []).
-
+	gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
 
 
 %% =====================================================================
@@ -70,6 +69,7 @@ close_port() ->
 %% =====================================================================
    
 init(Args) ->
+	process_flag(trap_exit, true), %% Die when the parent process dies
 	{Path, Options} = case os:type() of
 		{win32,_} ->
 			{"C:\\Program Files\\erl5.10.2\\erts-5.10.2\\bin\\erl", [use_stdio]};
@@ -113,7 +113,8 @@ code_change(_OldVsn, State, _Extra) ->
 
 terminate({port_terminated, _Reason}, _State) ->
   ok;
-terminate(_Reason, #state{port = Port} = _State) ->
+terminate(_Reason, #state{port=Port}) ->
+	io:format("TERMINATE CONSOLE~n"),
   port_close(Port).
 		
 

@@ -16,13 +16,13 @@
 	new_document/1, 
 	new_document_from_existing/2,
 	new_document_from_existing/3,
-	new_project/1,
+	% new_project/1,
 	close_project/0,
 	close_active_document/0, 
 	close_all_documents/0,
 	get_active_document/0, 
 	get_active_document_ref/0,
-	set_active_project/1,
+	% set_active_project/1,
 	get_open_documents/0, 
 	update_styles/1, 
 	save_current_document/0,
@@ -30,7 +30,7 @@
 	save_all/0,
 	save_document/1,
 	open_document/1,
-	open_project/1,
+	% open_project/1,
 	find_replace/1,
 	set_theme/1,
 	set_line_wrap/1,
@@ -151,7 +151,6 @@ terminate(_Reason, State=#state{notebook=Nb}) ->
 
 %% =====================================================================
 %% AUI handlers
-%%
 %% =====================================================================
 
 handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_page_changed,
@@ -164,17 +163,26 @@ handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_p
   % Make sure editor knows (needs to update sb)
   editor:selected(index_to_ref(DocEts, Notebook, Index), Sb),
 		
+	% Proj = lookup_project(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
+	% Str = case Proj of
+	% 	undefined -> 
+	% 	io:format("~nUNDEFINED~n"),
+	% 		% ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project"),
+	% 		PageText;
+	% 	{_, Path} -> 
+	% 		Name = filename:basename(Path),
+	% 		% ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ Name ++ ")"),
+	% 		PageText ++ " (" ++ Name ++ filename:extension(Path) ++ ")"
+	% end,
+	% ide:set_title(Str),
+	
 	Proj = lookup_project(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
 	Str = case Proj of
 		undefined -> 
-			% ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project"),
 			PageText;
-		{_, Path} -> 
-			Name = filename:basename(Path),
-			% ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ Name ++ ")"),
-			PageText ++ " (" ++ Name ++ filename:extension(Path) ++ ")"
+		ProjectId -> 
+			project_manager:set_active_project(ProjectId)
 	end,
-	% ide:set_title(Str),
 	
   {noreply, State#state{active_project=Proj}};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
@@ -208,7 +216,8 @@ new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options)	->
 	Editor = editor:start([{parent, Parent}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
 	% insert_rec(DocEts, Editor, proplists:get_value(path, Options), proplists:get_value(project, Options)),
 	Index = insert_page(Notebook, Editor, Filename), %% Page changed event not serviced until this completes
-	insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project, Options)),
+	% insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project, Options)),
+	insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project_id, Options)),
 	Editor.
 	
 	
@@ -234,21 +243,35 @@ new_document_from_existing(Path, Contents, Options) ->
 %% =====================================================================
 %% @doc Display the "New File" dialog.
   
+% new_file(Parent) ->
+%   OpenProjects = project_manager:get_open_projects(),
+%   case get_active_project() of
+%     undefined ->
+%       Dialog = new_file:start({Parent, OpenProjects, "No Project"});
+%     {_, ActiveProject} ->
+%       Dialog = new_file:start({Parent, OpenProjects, filename:basename(ActiveProject)})
+%   end,
+%   case wxDialog:showModal(Dialog) of
+%     ?wxID_CANCEL ->
+%       ok;
+%     ?wxID_OK ->
+%       ok
+%   end.
 new_file(Parent) ->
   OpenProjects = project_manager:get_open_projects(),
-  case get_active_project() of
+  case project_manager:get_active_project() of
     undefined ->
       Dialog = new_file:start({Parent, OpenProjects, "No Project"});
-    {_, ActiveProject} ->
-      Dialog = new_file:start({Parent, OpenProjects, filename:basename(ActiveProject)})
+    ProjectId ->
+      Dialog = new_file:start({Parent, OpenProjects, 
+				filename:basename(project_manager:get_root(ProjectId))})
   end,
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       ok;
     ?wxID_OK ->
       ok
-  end.
-      
+  end.      
 			
 %% =====================================================================
 %% @doc Add a new project.
@@ -301,15 +324,15 @@ close_project() ->
 %% This is either the project to which the active document belongs, or
 %% the last clicked item in the project tree if this is more recent.
 
-get_active_project() ->
-	wx_object:call(?MODULE, active_project).
-	
-	
-%% =====================================================================
-%% @doc Set the currently active project.
-
-set_active_project(Project) ->
-	wx_object:cast(?MODULE, {active_project, Project}).	
+% get_active_project() ->
+% 	wx_object:call(?MODULE, active_project).
+% 	
+% 	
+% %% =====================================================================
+% %% @doc Set the currently active project.
+% 
+% set_active_project(Project) ->
+% 	wx_object:cast(?MODULE, {active_project, Project}).	
 	
 	
 %% =====================================================================
@@ -646,9 +669,11 @@ get_record(DocEts, Key) ->
 delete_record(DocEts, Key) ->
 	ets:delete(DocEts, Key).
 	
+% lookup_project(DocEts, Key) ->
+% 	{project, Proj} = ets:lookup_element(DocEts, Key, 4),
+% 	Proj.
 lookup_project(DocEts, Key) ->
-	{project, Proj} = ets:lookup_element(DocEts, Key, 4),
-	Proj.
+	ets:lookup_element(DocEts, Key, 4).	
 	
 lookup_path(DocEts, Key) ->
 	{path, Path} = ets:lookup_element(DocEts, Key, 3),
@@ -679,20 +704,26 @@ update_path(DocEts, Key, Path) ->
 %% we hide the implementation/format of a single record, which
 %% means any future changes to the API can be easily adapted to.
 
-insert_rec(DocEts, Editor, Path, Project) ->
+% insert_rec(DocEts, Editor, Path, Project) ->
+% 	Pid = wx_object:get_pid(Editor),
+% 	{A,B,C,_} = Editor,
+% 	Key = {A,B,C,[]},
+% 	New = wx:typeCast(Key, wxWindow),
+% 	ets:insert(DocEts, {New, Pid, {path, Path}, {project_id, Project}}).
+insert_rec(DocEts, Editor, Path, ProjectId) ->
 	Pid = wx_object:get_pid(Editor),
 	{A,B,C,_} = Editor,
 	Key = {A,B,C,[]},
 	New = wx:typeCast(Key, wxWindow),
-	ets:insert(DocEts, {New, Pid, {path, Path}, {project, Project}}).
-	
+	ets:insert(DocEts, {New, Pid, {path, Path}, ProjectId}).
 
 % insert_rec(DocEts, Index, EditorRef, Path) ->
 % 	insert_rec(DocEts, Index, EditorRef, Path, undefined).
 	
-insert_rec(DocEts, Index, EditorRef, Path, Project) ->
-	ets:insert(DocEts, {Index, EditorRef, {path, Path}, {project, Project}}).
-	
+% insert_rec(DocEts, Index, EditorRef, Path, Project) ->
+% 	ets:insert(DocEts, {Index, EditorRef, {path, Path}, {project, Project}}).
+insert_rec(DocEts, Index, EditorRef, Path, ProjectId) ->
+	ets:insert(DocEts, {Index, EditorRef, {path, Path}, ProjectId}).
 
 %% =====================================================================
 %% The following functions access individuals elements from a single
@@ -703,7 +734,8 @@ insert_rec(DocEts, Index, EditorRef, Path, Project) ->
 record_get_key({Key,_,_,_}) -> Key.
 record_get_ref({_,Ref,_,_}) ->	Ref.
 record_get_path({_,_,{path,Path},_}) -> Path.
-record_get_project({_,_,_,{project, Project}}) -> Project.
+% record_get_project({_,_,_,{project, Project}}) -> Project.
+record_get_project({_,_,_,ProjectId}) -> ProjectId.
 
 	
 %% =====================================================================

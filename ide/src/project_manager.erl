@@ -4,6 +4,9 @@
 %% @title
 %% @version
 %% @doc
+%% The project_id() should be the only term that is passed to other
+%% modules. Any data relating to that project id should be retrieved
+%% from this module.
 %% @end
 %% =====================================================================
 
@@ -22,17 +25,20 @@
          terminate/2]).
 
 %% API
--export([start/0,
+-export([start/1,
 				 new_project/1,
 				 open_project/1,
+				 close_project/0,
 				 open_file/3,
-				 get_open_projects/0]).
+				 get_open_projects/0,
+				 get_active_project/0,
+				 set_active_project/1,
+				 get_root/1]).
 
 
 %% Records
 -record(project, {root :: path(),
-									open_files :: [{path(), term()}],
-									tree_item :: integer}).
+									open_files :: [{path(), term()}]}).
 
 %% Types
 -type project_id() :: {integer(), integer(), integer()}.
@@ -41,7 +47,8 @@
 
 %% Server state
 -record(state, {projects :: [project_record()],
-								active_project :: project_id()}).
+								active_project :: project_id(),
+								frame :: wxFrame:wxFrame()}).
 
 
 %% =====================================================================
@@ -51,8 +58,8 @@
 %% =====================================================================
 %% @doc 
 
-start()->
-	gen_server:start({local, ?MODULE}, ?MODULE, [], []).
+start(Config)->
+	gen_server:start_link({local, ?MODULE}, ?MODULE, Config, []).
 	    
 			
 %% =====================================================================
@@ -108,7 +115,7 @@ close_project() ->
 %% @doc Open an project file..
 
 open_file(Path, Contents, ProjectId) ->
-	doc_manager:new_document_from_existing(Path, Contents, [project_id, ProjectId]),
+	doc_manager:new_document_from_existing(Path, Contents, [{project_id, ProjectId}]),
 	gen_server:call(?MODULE, {add_open_project, ProjectId, Path}),
 	ok. 
 
@@ -119,21 +126,20 @@ open_file(Path, Contents, ProjectId) ->
 %% the last clicked item in the project tree if this is more recent.
 
 get_active_project() ->
-	wx_object:call(?MODULE, active_project).
+	gen_server:call(?MODULE, active_project).
 	
 	
 %% =====================================================================
 %% @doc Set the currently active project.
 
-set_active_project(Project) ->
-	wx_object:cast(?MODULE, {active_project, Project}).	
+set_active_project(ProjectId) ->
+	gen_server:cast(?MODULE, {active_project, ProjectId}).	
 	
 	
 %% =====================================================================
 %% @doc
 
-% -spec get_open_projects() -> Result when
-% 	Result :: [string()].
+-spec get_open_projects() -> [path()].
 % 
 % get_open_projects() ->
 %   OpenProjects = ide_projects_tree:get_open_projects(),
@@ -159,6 +165,10 @@ get_open_projects() ->
 % 				_ -> Acc
 % 			end
 % 		end, [], DocEts).
+-spec get_root(project_id()) -> path().
+
+get_root(ProjectId) ->
+	gen_server:call(?MODULE, {get_root, ProjectId}).
 		
 		
 %% =====================================================================
@@ -166,14 +176,17 @@ get_open_projects() ->
 %% =====================================================================
 
 init(Args) ->
-	{ok, #state{projects=[]}}.
+	process_flag(trap_exit, true), %% Die when the parent process dies
+	Frame = proplists:get_value(frame, Args),
+	WxEnv = proplists:get_value(wx_env, Args),
+	wx:set_env(WxEnv),
+	{ok, #state{frame=Frame, projects=[]}}.
 	
 handle_info(Msg, State) ->
-  io:format("Got Info (prefs) ~p~n",[Msg]),
+  io:format("Got Info (project manager) ~p~n",[Msg]),
   {noreply,State}.
     
 handle_call({new_project, Path}, _From, State=#state{projects=Projects}) ->
-	io:format("PROJECTS: ~p~n", [Projects]),
 	Id = generate_id(),
 	Record = {Id, #project{root=Path, open_files=[]}},
   {reply, Id, State#state{projects=[Record | Projects]}};
@@ -184,22 +197,27 @@ handle_call({add_open_project, Id, Path}, _From, State=#state{projects=Projects}
   {reply, ok, State#state{projects=[{Id, N} | D]}};
 handle_call(open_project_paths, _From, State=#state{projects=Projects}) ->
 	Paths = lists:map(fun({_Id, Path}) -> Path#project.root end, Projects),
-  {reply, Paths, State}.    
-	
-handle_cast(Msg, State) ->
-  io:format("Got cast ~p~n",[Msg]),
-  {noreply,State}.
+  {reply, Paths, State};
+handle_call(active_project, _From, State) ->
+  {reply, State#state.active_project, State};
+handle_call({get_root, ProjectId}, _From, State=#state{projects=Projects}) ->
+	#project{root=Root} = proplists:get_value(ProjectId, Projects),
+	{reply, Root, State}.
+
+handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Projects}) ->
+	update_ui(Frame, proplists:get_value(ProjectId, Projects)),
+  {noreply,State#state{active_project=ProjectId}}.
     
 %% Event catchall for testing
 handle_event(Ev = #wx{}, State) ->
-  io:format("Prefs event catchall: ~p\n", [Ev]),
+  io:format("Project manager event catchall: ~p\n", [Ev]),
   {noreply, State}.
     
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, State) ->
-  io:format("TERMINATE PREFS~n").
+  io:format("TERMINATE PROJECT MANAGER~n").
     
 		
 %% =====================================================================
@@ -209,6 +227,8 @@ terminate(_Reason, State) ->
 generate_id() ->
 	now().
 	
-insert_project() ->
-	
+update_ui(Frame, #project{root=Root}) ->
+	ProjectName = filename:basename(Root),
+	ide:set_title(ProjectName),
+	ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjectName ++ ")"),
 	ok.

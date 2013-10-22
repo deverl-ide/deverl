@@ -68,15 +68,16 @@ start(Args) ->
 
 init(Options) ->
 	wx:new(Options),
+	WxEnv = wx:get_env(),
 	process_flag(trap_exit, true),
-
-	%% Load modules that should be started by OTP Application and not here
-	user_prefs:new([{wxe_server, wx:get_env()}]),
-	project_manager:start(),
 
 	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
 	wxFrame:connect(Frame, close_window),
 	wxFrame:setMinSize(Frame, {300,200}),
+	
+	%% Load modules that should be started by OTP Application and not here
+	user_prefs:new([{wxe_server, wx:get_env()}]),
+	project_manager:start([{frame, Frame}, {wx_env, WxEnv}]),
 
 	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Frame, FrameSizer),
@@ -365,12 +366,12 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
   %% This is a bit nasty - an OTP Application which allows
   %% components that can be started and stopped as a unit might
   %% be a better choice.
-	case erlang:whereis(console_port) of
-		undefined -> ok;
-		_ ->
-		  console_port:close_port(),
-		  erlang:unregister(console_port)
-	end,
+	% case erlang:whereis(console_port) of
+	% 	undefined -> ok;
+	% 	_ ->
+	% 	  console_port:close_port(),
+	% 	  erlang:unregister(console_port)
+	% end,
 	user_prefs:stop(),
   %% Below is the necessary cleanup
   io:format("TERMINATE IDE~n"),
