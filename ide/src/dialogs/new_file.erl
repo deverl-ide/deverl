@@ -52,7 +52,14 @@ init({Parent, Projects, ActiveProject}) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 500}},
                                                         {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                 ?wxRESIZE_BORDER bor
-                                                                ?wxDIALOG_EX_METAL}]),																		
+                                                                ?wxDIALOG_EX_METAL}]),
+																																
+	%% Conditional compilation OSX
+	case os:type() of
+		{_, darwin} ->
+			wxWindow:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL);
+		 _ -> ok
+	end,																	
 																																
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxSizer:addSpacer(LRSizer, 20),

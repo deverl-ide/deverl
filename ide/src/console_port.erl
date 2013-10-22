@@ -73,7 +73,7 @@ init(Args) ->
 	{Path, Options} = case os:type() of
 		{win32,_} ->
 			{"C:\\Program Files\\erl5.10.2\\erts-5.10.2\\bin\\erl", [use_stdio]};
-		Other ->
+		_Other ->
 			{"/usr/local/lib/erlang/erts-5.10.2/bin/erl", [use_stdio]}
 	end,
 	try open(Path, Options) of

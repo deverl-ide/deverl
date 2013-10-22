@@ -83,7 +83,11 @@ do_init(Parent) ->
   Panel = Dialog,  
 	
 	%% Conditional compilation OSX
-	% wxPanel:setWindowVariant(Panel, ?wxWINDOW_VARIANT_SMALL),
+	case os:type() of
+		{_, darwin} ->
+			wxPanel:setWindowVariant(Panel, ?wxWINDOW_VARIANT_SMALL);
+		 _ -> ok
+	end,
 	
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(Panel, LRSizer),
