@@ -137,17 +137,10 @@ set_active_project(ProjectId) ->
 	
 	
 %% =====================================================================
-%% @doc
+%% @doc Get all currently open projects
+%% NOTE this currently returns paths and not project ids.
 
 -spec get_open_projects() -> [path()].
-% 
-% get_open_projects() ->
-%   OpenProjects = ide_projects_tree:get_open_projects(),
-%   get_open_projects(OpenProjects, []).
-% get_open_projects([], Acc) ->
-%   Acc;
-% get_open_projects([{_,Path}|Projects], Acc) ->
-%   get_open_projects(Projects, Acc ++ [Path]).
 
 get_open_projects() ->
 	gen_server:call(?MODULE, open_project_paths).
@@ -165,6 +158,8 @@ get_open_projects() ->
 % 				_ -> Acc
 % 			end
 % 		end, [], DocEts).
+
+
 -spec get_root(project_id()) -> path().
 
 get_root(ProjectId) ->

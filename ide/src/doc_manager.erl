@@ -1,10 +1,19 @@
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc This module manages documents in the notebook.
+%% @end
+%% =====================================================================
+
 -module(doc_manager).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
 
+%% wx_object
 -behaviour(wx_object).
-
 -export([init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
@@ -31,150 +40,44 @@
   apply_to_all_documents/2
 	]).
 
+%% Server state
 -record(state, {
 								status_bar,
              		notebook :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
-                document_ets,  %% A table containing data related to open editors (path/project etc.)
-								% active_project,
+                document_ets,  %% A table containing data related to open editors (path/project id etc.)
 								sizer,
 								parent
                 }).
+
 								
+%% =====================================================================
+%% Client API
+%% =====================================================================
 
 start(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
-
-init(Config) ->
-	{Parent, Sb} = proplists:get_value(config, Config),
-
-	Style = (0
-			bor ?wxAUI_NB_TOP
-			bor ?wxAUI_NB_WINDOWLIST_BUTTON
-			bor ?wxAUI_NB_TAB_MOVE
-			bor ?wxAUI_NB_SCROLL_BUTTONS
-			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
-			bor ?wxAUI_NB_TAB_SPLIT
-			bor ?wxBORDER_NONE
-			),
-			
-	Panel = wxPanel:new(Parent),
-	Sz = wxBoxSizer:new(?wxVERTICAL),
-	wxPanel:setSizer(Panel, Sz),
-
-	Notebook = wxAuiNotebook:new(Panel, [{id, ?ID_WORKSPACE}, {style, Style}]),
-	wxSizer:add(Sz, Notebook, [{flag, ?wxEXPAND}, {proportion, 1}]),
-	wxSizer:hide(Sz, 0),
-
-	%% Create Ets table to store data relating to any open documents
-	DocEts = ets:new(editors, [set, public, {keypos,1}]),
 	
-	Close = fun(E,O) ->
-            wxNotifyEvent:veto(O),
-            close_document(wxAuiNotebookEvent:getSelection(O))
-          end,
-					
-	Ph = lib_widgets:placeholder(Panel, "No Open Documents"),
-	wxSizer:add(Sz, Ph, [{flag, ?wxEXPAND}, {proportion, 1}]),
-
-	wxAuiNotebook:connect(Notebook, command_auinotebook_bg_dclick, []),
-	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [{callback,Close},{userData,DocEts}]),
-	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
-
-  {Panel, #state{notebook=Notebook, status_bar=Sb, document_ets=DocEts, sizer=Sz, parent=Parent}}.
 	
-
-handle_info(Msg, State) ->
-	io:format("Got Info ~p~n",[Msg]),
-	{noreply,State}.
-
-handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
-	%% Called when the last document is closed.
-	show_placeholder(Sz),
-	ide:set_title([]),
-	{noreply, State};
-% handle_cast({active_project,Proj}, State) ->
-% 	{noreply, State#state{active_project=Proj}}.
-
-handle_call(notebook, _, State=#state{notebook=Nb, status_bar=Sb, document_ets=Tb}) ->
-	{reply, {Nb,Sb,Tb}, State};
-handle_call({new_document, Filename, Options}, _, 
-						State=#state{notebook=Notebook, document_ets=DocEts, status_bar=Sb, sizer=Sz, parent=Parent}) ->
-	Editor = new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options),
-	{reply, Editor, State};
-% handle_call(active_project, _, State=#state{active_project=Proj}) ->
-% 	{reply, Proj, State};
-handle_call(close_project, _, 
-						State=#state{active_project=Proj, notebook=Notebook, document_ets=DocEts}) ->
-	%% Check open files, save/close
-	case Proj of
-		undefined -> ok;
-		Project={Item,Root} ->
-			wxAuiNotebook:disconnect(Notebook, command_auinotebook_page_changed),
-			Pages = get_active_project_documents(Project, DocEts, Notebook),
-			lists:foreach(fun(E) -> close_document(Notebook, DocEts, get_notebook_index(Notebook, E)) end, tl(Pages)),
-			wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
-			close_document(Notebook, DocEts, get_notebook_index(Notebook, hd(Pages))),
-			ide_projects_tree:delete_project(Item)
-	end,
-	{reply, ok, State};
-handle_call(close_all, _, State=#state{active_project=Proj, notebook=Notebook, document_ets=DocEts}) ->
-	%% CLOSE PROJECTS FIRST (CANT JUST DELETE PROJ TREE - USER MIGHT CANCEL A CLOSE IF NOT SAVED)
-	wxAuiNotebook:disconnect(Notebook, command_auinotebook_page_changed),
-	Count = wxAuiNotebook:getPageCount(Notebook),
-	lists:foreach(fun(E) -> close_document(Notebook, DocEts, E) end, 
-		lists:reverse(lists:seq(0, Count-1))),
-	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
-	{reply, ok, State}.
-
-code_change(_, _, State) ->
-	{stop, ignore, State}.
-
-terminate(_Reason, State=#state{notebook=Nb}) ->
-	io:format("TERMINATE DOC_MANAGER~n"),
-	wxAuiNotebook:destroy(Nb).
-
 %% =====================================================================
-%% AUI handlers
-%% =====================================================================
-
-handle_event(#wx{obj=Notebook, event = #wxAuiNotebook{type=command_auinotebook_page_changed,
-			selection=Index}}, State=#state{document_ets=DocEts, notebook=Nb, status_bar=Sb}) ->
-				
-	% io:format("ETS ~p~n", [ets:tab2list(DocEts)]),
-	% io:format("Key: ~p~n", [wxAuiNotebook:getPage(Notebook, Index)]),
+%% @doc Create a new file and load it into the notebook.
+  
+new_file(Parent) ->
+  OpenProjects = project_manager:get_open_projects(),
+  case project_manager:get_active_project() of
+    undefined ->
+      Dialog = new_file:start({Parent, OpenProjects, "No Project"});
+    ProjectId ->
+      Dialog = new_file:start({Parent, OpenProjects, 
+				filename:basename(project_manager:get_root(ProjectId))})
+  end,
+  case wxDialog:showModal(Dialog) of
+    ?wxID_CANCEL ->
+      ok;
+    ?wxID_OK ->
+      ok
+  end.  
 	
-	PageText = wxAuiNotebook:getPageText(Notebook, Index),
-  % Make sure editor knows (needs to update sb)
-  editor:selected(index_to_ref(DocEts, Notebook, Index), Sb),
-		
-	% Proj = lookup_project(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
-	% Str = case Proj of
-	% 	undefined -> 
-	% 	io:format("~nUNDEFINED~n"),
-	% 		% ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project"),
-	% 		PageText;
-	% 	{_, Path} -> 
-	% 		Name = filename:basename(Path),
-	% 		% ide_menu:update_label(ide:get_menubar(), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ Name ++ ")"),
-	% 		PageText ++ " (" ++ Name ++ filename:extension(Path) ++ ")"
-	% end,
-	% ide:set_title(Str),
 	
-	Proj = lookup_project(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
-	Str = case Proj of
-		undefined -> 
-			PageText;
-		ProjectId -> 
-			project_manager:set_active_project(ProjectId)
-	end,
-	
-  {noreply, State#state{active_project=Proj}};
-handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
-						 State=#state{notebook=Nb, status_bar=Sb, document_ets=DocEts, parent=Parent, sizer=Sz}) ->
-	new_document(Nb, DocEts, Sb, ?DEFAULT_TAB_LABEL, Parent, Sz, []),
-  {noreply, State}.
-
-
 %% =====================================================================
 %% @doc Add a new document to the notebook
 	
@@ -189,21 +92,6 @@ new_document(Filename) ->
 	wx_object:call(?MODULE, {new_document, Filename, []}),
 	ok.
 
-%% @private
-%% @hidden
-new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options)	->
-	case wxWindow:isShown(Notebook) of
-		false -> 
-			show_notebook(Sz);
-		true -> ok
-	end,
-	Editor = editor:start([{parent, Parent}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
-	% insert_rec(DocEts, Editor, proplists:get_value(path, Options), proplists:get_value(project, Options)),
-	Index = insert_page(Notebook, Editor, Filename), %% Page changed event not serviced until this completes
-	% insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project, Options)),
-	insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project_id, Options)),
-	Editor.
-	
 	
 %% =====================================================================
 %% @doc Add an existing document to the notebook.
@@ -225,114 +113,39 @@ new_document_from_existing(Path, Contents, Options) ->
 
 
 %% =====================================================================
-%% @doc Display the "New File" dialog.
-  
-% new_file(Parent) ->
-%   OpenProjects = project_manager:get_open_projects(),
-%   case get_active_project() of
-%     undefined ->
-%       Dialog = new_file:start({Parent, OpenProjects, "No Project"});
-%     {_, ActiveProject} ->
-%       Dialog = new_file:start({Parent, OpenProjects, filename:basename(ActiveProject)})
-%   end,
-%   case wxDialog:showModal(Dialog) of
-%     ?wxID_CANCEL ->
-%       ok;
-%     ?wxID_OK ->
-%       ok
-%   end.
-new_file(Parent) ->
-  OpenProjects = project_manager:get_open_projects(),
-  case project_manager:get_active_project() of
-    undefined ->
-      Dialog = new_file:start({Parent, OpenProjects, "No Project"});
-    ProjectId ->
-      Dialog = new_file:start({Parent, OpenProjects, 
-				filename:basename(project_manager:get_root(ProjectId))})
-  end,
-  case wxDialog:showModal(Dialog) of
-    ?wxID_CANCEL ->
-      ok;
-    ?wxID_OK ->
-      ok
-  end.      
-			
-%% =====================================================================
-%% @doc Add a new project.
+%% @doc Close the selected editor
 
-% new_project(Parent) ->
-% 	Dialog = new_project_wx:start(Parent),
-% 	new_project_wx:set_focus(Dialog),
-% 	case new_project_wx:showModal(Dialog) of
-% 		?wxID_CANCEL -> 
-%       ok;
-% 		?wxID_OK ->
-% 			new_project(Parent, Dialog),
-% 			new_project_wx:close(Dialog)
-% 	end.
-	
-% new_project(Parent, Dialog) ->
-%   try
-% 		Path = ide_io:create_directory_structure(Parent, 
-%     	new_project_wx:get_name(Dialog), new_project_wx:get_path(Dialog)),
-% 		ide_projects_tree:add_project(Path)
-%   catch
-%     throw:E -> 
-% 			lib_dialog_wx:msg_error(Parent, E)
-%   end.
-	
-	
-%% =====================================================================
-%% @doc Close an open project.
-%% This will close any files belonging to the project, and remove the
-%% tree from the project tree. 
-
-close_project() ->
-	%% Check open files, save/close
-	wx_object:call(?MODULE, close_project).
+close_active_document() ->
+	case get_active_document() of
+		{error, _} ->
+			{error, no_open_editor};
+		Index ->
+			close_document(Index)
+	end.
 
 
 %% =====================================================================
-%% @doc Open an existing project.
-
-% open_project(Frame) ->
-% 	case lib_dialog_wx:get_existing_dir(Frame) of
-% 		cancelled -> ok;
-% 		Path -> ide_projects_tree:add_project(Path)
-% 	end,
-% 	ok.
-
-
-%% =====================================================================
-%% @doc Get the currently active project.
-%% This is either the project to which the active document belongs, or
-%% the last clicked item in the project tree if this is more recent.
-
-% get_active_project() ->
-% 	wx_object:call(?MODULE, active_project).
-% 	
-% 	
-% %% =====================================================================
-% %% @doc Set the currently active project.
-% 
-% set_active_project(Project) ->
-% 	wx_object:cast(?MODULE, {active_project, Project}).	
+%% @doc Close the selected editor
 	
-	
-%% =====================================================================
-%% @doc Returns a list containing all open 
-%% documents belonging to the project Project.
-	
-get_active_project_documents(Project, DocEts, Notebook) ->
-	ets:foldl(
-		fun(Record, Acc) ->
-			case record_get_project(Record) of
-				Project ->
-					[record_get_key(Record) | Acc];
-				_ -> Acc
-			end
-		end, [], DocEts).
+close_document(Index) ->
+	{Notebook,_Sb,DocEts} = wx_object:call(?MODULE, notebook),
+	close_document(Notebook, DocEts, Index).
 
+close_document(Notebook, DocEts, Index) ->
+ 	Key = wxAuiNotebook:getPage(Notebook, Index),
+	io:format("REF: ~p~n", [get_ref(DocEts, Key)]),
+ 	case editor:is_dirty(get_ref(DocEts, Key)) of
+ 		true ->
+ 			io:format("File modified since last save, display save/unsave dialog.~n");
+ 		_ -> %% Go ahead, close the editor
+ 			delete_record(DocEts, Key),
+       wxAuiNotebook:deletePage(Notebook, Index)
+ 	end,
+ 	case wxAuiNotebook:getPageCount(Notebook) of
+ 		0 -> wx_object:cast(?MODULE, notebook_empty);
+ 		_ -> ok
+ 	end.	
+	
 
 %% =====================================================================
 %% @doc Gets the index of the currently active document, i.e. the 
@@ -364,26 +177,6 @@ get_open_documents() ->
 	Count = wxAuiNotebook:getPageCount(Notebook),
 	lists:seq(0, Count - 1).
 
-
-%% =====================================================================
-%% @doc
-
-% -spec get_open_projects() -> Result when
-% 	Result :: [string()].
-% 
-% get_open_projects() ->
-%   OpenProjects = ide_projects_tree:get_open_projects(),
-%   get_open_projects(OpenProjects, []).
-% get_open_projects([], Acc) ->
-%   Acc;
-% get_open_projects([{_,Path}|Projects], Acc) ->
-%   get_open_projects(Projects, Acc ++ [Path]).
-
-
-%% =====================================================================
-%% Open/save/close editor functions
-%%
-%% =====================================================================
 
 %% =====================================================================
 %% @doc Save the currently selected document to disk
@@ -421,9 +214,9 @@ save_document(Sb, Record) ->
 	end,
 	Result.
 
+
 %% =====================================================================
-%% @doc Save the erlang editor with pid Pid located at index position
-%% Index to disk. The user will be prompted for a save path.
+%% @doc
 
 save_new_document() ->
 	case get_active_document() of
@@ -473,39 +266,6 @@ open_document(Frame) ->
 
 
 %% =====================================================================
-%% @doc Close the selected editor
-
-close_active_document() ->
-	case get_active_document() of
-		{error, _} ->
-			{error, no_open_editor};
-		Index ->
-			close_document(Index)
-	end.
-
-
-%% =====================================================================
-%% @doc Close the selected editor
-	
-close_document(Index) ->
-	{Notebook,_Sb,DocEts} = wx_object:call(?MODULE, notebook),
-	close_document(Notebook, DocEts, Index).
-
-close_document(Notebook, DocEts, Index) ->
- 	Key = wxAuiNotebook:getPage(Notebook, Index),
- 	case editor:is_dirty(get_ref(DocEts, Key)) of
- 		true ->
- 			io:format("File modified since last save, display save/unsave dialog.~n");
- 		_ -> %% Go ahead, close the editor
- 			delete_record(DocEts, Key),
-       wxAuiNotebook:deletePage(Notebook, Index)
- 	end,
- 	case wxAuiNotebook:getPageCount(Notebook) of
- 		0 -> wx_object:cast(?MODULE, notebook_empty);
- 		_ -> ok
- 	end.
-
-%% =====================================================================
 %% @doc Close all editor instances,
 %% Note: must always delete documents starting with the highest index
 %% first, as the notebook shifts all indexes dwon when one is deleted.
@@ -513,6 +273,173 @@ close_document(Notebook, DocEts, Index) ->
 close_all_documents() ->
 	wx_object:call(?MODULE, close_all).
 
+
+%% =====================================================================
+%% @doc Apply the function Fun to the active document.
+%% Equivalent to apply_to_active_document(Fun, []), although this should
+%% be quicker.
+		
+apply_to_active_document(Fun) ->
+	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
+	try
+		Index = get_active_document(),
+		Fun(index_to_ref(DocEts, Notebook, Index))
+	catch
+		error:E ->
+			lib_dialog_wx:msg_notice(Notebook, "There are no documents currently open.")
+	end.
+	
+apply_to_active_document(Fun, Args) ->
+	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
+	try
+		Index = get_active_document(),
+		apply(Fun, [index_to_ref(DocEts, Notebook, Index) | Args])
+	catch
+		error:_ -> 
+			lib_dialog_wx:msg_notice(Notebook, "There are no documents currently open.")
+	end.
+
+
+%% =====================================================================
+%% @doc Close an open project.
+%% This will close any files belonging to the project, and remove the
+%% tree from the project tree. 
+
+close_project() ->
+	%% Check open files, save/close
+	wx_object:call(?MODULE, close_project).
+  
+	
+%% =====================================================================
+%% @doc Apply the function Fun to all open documents.
+
+apply_to_all_documents(Fun, Args) ->
+	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
+	Fun1 = fun(E) -> index_to_ref(DocEts, Notebook, E) end,
+  case get_open_documents() of
+		[] -> ok;
+		Docs ->
+			List = lists:map(Fun1, get_open_documents()),
+			Fun2 = fun(E) -> apply(Fun, [E | Args]) end,
+			lists:foreach(Fun2, List)
+	end.	
+	
+	
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
+
+init(Config) ->
+	{Parent, Sb} = proplists:get_value(config, Config),
+
+	Style = (0
+			bor ?wxAUI_NB_TOP
+			bor ?wxAUI_NB_WINDOWLIST_BUTTON
+			bor ?wxAUI_NB_TAB_MOVE
+			bor ?wxAUI_NB_SCROLL_BUTTONS
+			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
+			bor ?wxAUI_NB_TAB_SPLIT
+			bor ?wxBORDER_NONE
+			),
+			
+	Panel = wxPanel:new(Parent),
+	Sz = wxBoxSizer:new(?wxVERTICAL),
+	wxPanel:setSizer(Panel, Sz),
+
+	Notebook = wxAuiNotebook:new(Panel, [{id, ?ID_WORKSPACE}, {style, Style}]),
+	wxSizer:add(Sz, Notebook, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	wxSizer:hide(Sz, 0),
+
+	%% Create Ets table to store data relating to any open documents
+	DocEts = ets:new(editors, [set, public, {keypos,1}]),
+	
+	Close = fun(E,O) ->
+            wxNotifyEvent:veto(O),
+            close_document(wxAuiNotebookEvent:getSelection(O))
+          end,
+					
+	Ph = lib_widgets:placeholder(Panel, "No Open Documents"),
+	wxSizer:add(Sz, Ph, [{flag, ?wxEXPAND}, {proportion, 1}]),
+
+	wxAuiNotebook:connect(Notebook, command_auinotebook_bg_dclick, []),
+	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [{callback,Close},{userData,DocEts}]),
+	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
+
+  {Panel, #state{notebook=Notebook, status_bar=Sb, document_ets=DocEts, sizer=Sz, parent=Parent}}.
+	
+
+handle_info(Msg, State) ->
+	io:format("Got Info ~p~n",[Msg]),
+	{noreply,State}.
+
+handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
+	%% Called when the last document is closed.
+	show_placeholder(Sz),
+	ide:set_title([]),
+	{noreply, State}.
+
+handle_call(notebook, _, State=#state{notebook=Nb, status_bar=Sb, document_ets=Tb}) ->
+	{reply, {Nb,Sb,Tb}, State};
+handle_call({new_document, Filename, Options}, _, 
+						State=#state{notebook=Notebook, document_ets=DocEts, status_bar=Sb, sizer=Sz, parent=Parent}) ->
+	Editor = new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options),
+	{reply, Editor, State};
+% handle_call(close_project, _, 
+% 						State=#state{active_project=Proj, notebook=Notebook, document_ets=DocEts}) ->
+% 	%% Check open files, save/close
+% 	case Proj of
+% 		undefined -> ok;
+% 		Project={Item,Root} ->
+% 			wxAuiNotebook:disconnect(Notebook, command_auinotebook_page_changed),
+% 			Pages = get_active_project_documents(Project, DocEts, Notebook),
+% 			lists:foreach(fun(E) -> close_document(Notebook, DocEts, get_notebook_index(Notebook, E)) end, tl(Pages)),
+% 			wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
+% 			close_document(Notebook, DocEts, get_notebook_index(Notebook, hd(Pages))),
+% 			ide_projects_tree:delete_project(Item)
+% 	end,
+	% {reply, ok, State};
+handle_call(close_all, _, State=#state{notebook=Notebook, document_ets=DocEts}) ->
+	%% CLOSE PROJECTS FIRST (CANT JUST DELETE PROJ TREE - USER MIGHT CANCEL A CLOSE IF NOT SAVED)
+	wxAuiNotebook:disconnect(Notebook, command_auinotebook_page_changed),
+	Count = wxAuiNotebook:getPageCount(Notebook),
+	lists:foreach(fun(E) -> close_document(Notebook, DocEts, E) end, 
+		lists:reverse(lists:seq(0, Count-1))),
+	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
+	{reply, ok, State}.
+
+code_change(_, _, State) ->
+	{stop, ignore, State}.
+
+terminate(_Reason, State=#state{notebook=Nb}) ->
+	io:format("TERMINATE DOC_MANAGER~n"),
+	wxAuiNotebook:destroy(Nb).
+
+%% =====================================================================
+%% AUI handlers
+%% =====================================================================
+
+handle_event(#wx{obj=Notebook, event=#wxAuiNotebook{type=command_auinotebook_page_changed,
+			selection=Index}}, State=#state{document_ets=DocEts, notebook=Nb, status_bar=Sb}) ->
+	PageText = wxAuiNotebook:getPageText(Notebook, Index),
+  % Make sure editor knows (needs to update sb)
+  editor:selected(index_to_ref(DocEts, Notebook, Index), Sb),
+	Proj = lookup_project(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
+	Str = case Proj of
+		undefined -> 
+			PageText;
+		ProjectId -> 
+			project_manager:set_active_project(ProjectId)
+	end,	
+  {noreply, State};
+handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
+						 State=#state{notebook=Nb, status_bar=Sb, document_ets=DocEts, parent=Parent, sizer=Sz}) ->
+	new_document(Nb, DocEts, Sb, ?DEFAULT_TAB_LABEL, Parent, Sz, []),
+  {noreply, State}.
+    
+
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
 
 insert_page(Notebook, Page) ->
 	insert_page(Notebook, Page, ?DEFAULT_TAB_LABEL).
@@ -524,10 +451,8 @@ insert_page(Notebook, Page, Filename) ->
 get_notebook_index(Notebook, Page) ->
 	wxAuiNotebook:getPageIndex(Notebook, Page).
 	
-%% =====================================================================
 %% Functions for accessing/modifying the document Ets table.
 %% Always use these so that we can change the tables structure 
-%% =====================================================================
 
 index_to_key(Notebook, Index) ->
 	wxAuiNotebook:getPage(Notebook, Index).
@@ -548,10 +473,7 @@ get_record(DocEts, Key) ->
 
 delete_record(DocEts, Key) ->
 	ets:delete(DocEts, Key).
-	
-% lookup_project(DocEts, Key) ->
-% 	{project, Proj} = ets:lookup_element(DocEts, Key, 4),
-% 	Proj.
+
 lookup_project(DocEts, Key) ->
 	ets:lookup_element(DocEts, Key, 4).	
 	
@@ -584,12 +506,6 @@ update_path(DocEts, Key, Path) ->
 %% we hide the implementation/format of a single record, which
 %% means any future changes to the API can be easily adapted to.
 
-% insert_rec(DocEts, Editor, Path, Project) ->
-% 	Pid = wx_object:get_pid(Editor),
-% 	{A,B,C,_} = Editor,
-% 	Key = {A,B,C,[]},
-% 	New = wx:typeCast(Key, wxWindow),
-% 	ets:insert(DocEts, {New, Pid, {path, Path}, {project_id, Project}}).
 insert_rec(DocEts, Editor, Path, ProjectId) ->
 	Pid = wx_object:get_pid(Editor),
 	{A,B,C,_} = Editor,
@@ -597,11 +513,6 @@ insert_rec(DocEts, Editor, Path, ProjectId) ->
 	New = wx:typeCast(Key, wxWindow),
 	ets:insert(DocEts, {New, Pid, {path, Path}, ProjectId}).
 
-% insert_rec(DocEts, Index, EditorRef, Path) ->
-% 	insert_rec(DocEts, Index, EditorRef, Path, undefined).
-	
-% insert_rec(DocEts, Index, EditorRef, Path, Project) ->
-% 	ets:insert(DocEts, {Index, EditorRef, {path, Path}, {project, Project}}).
 insert_rec(DocEts, Index, EditorRef, Path, ProjectId) ->
 	ets:insert(DocEts, {Index, EditorRef, {path, Path}, ProjectId}).
 
@@ -614,7 +525,6 @@ insert_rec(DocEts, Index, EditorRef, Path, ProjectId) ->
 record_get_key({Key,_,_,_}) -> Key.
 record_get_ref({_,Ref,_,_}) ->	Ref.
 record_get_path({_,_,{path,Path},_}) -> Path.
-% record_get_project({_,_,_,{project, Project}}) -> Project.
 record_get_project({_,_,_,ProjectId}) -> ProjectId.
 
 	
@@ -634,45 +544,20 @@ show_placeholder(Sz) ->
 	wxSizer:hide(Sz, 0),
 	wxSizer:show(Sz, 1),
 	wxSizer:layout(Sz).
-  
+
 
 %% =====================================================================
-%% @doc Apply the function Fun to the active document.
-%% Equivalent to apply_to_active_document(Fun, []), although this should
-%% be quicker.
-		
-apply_to_active_document(Fun) ->
-	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
-	try
-		Index = get_active_document(),
-		Fun(index_to_ref(DocEts, Notebook, Index))
-	catch
-		error:E ->
-			lib_dialog_wx:msg_notice(Notebook, "There are no documents currently open.")
-	end.
-	
-apply_to_active_document(Fun, Args) ->
-	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
-	try
-		Index = get_active_document(),
-		apply(Fun, [index_to_ref(DocEts, Notebook, Index) | Args])
-	catch
-		error:_ -> 
-			lib_dialog_wx:msg_notice(Notebook, "There are no documents currently open.")
-	end.
-  
+%% @doc
+%% @private
+%% @hidden
 
-%% =====================================================================
-%% @doc Apply the function Fun to all open documents.
-
-apply_to_all_documents(Fun, Args) ->
-	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
-	Fun1 = fun(E) -> index_to_ref(DocEts, Notebook, E) end,
-  case get_open_documents() of
-		[] -> ok;
-		Docs ->
-			List = lists:map(Fun1, get_open_documents()),
-			Fun2 = fun(E) -> apply(Fun, [E | Args]) end,
-			lists:foreach(Fun2, List)
-	end.
-
+new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options)	->
+	case wxWindow:isShown(Notebook) of
+		false -> 
+			show_notebook(Sz);
+		true -> ok
+	end,
+	Editor = editor:start([{parent, Parent}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
+	Index = insert_page(Notebook, Editor, Filename), %% Page changed event not serviced until this completes
+	insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project_id, Options)),
+	Editor.

@@ -32,7 +32,6 @@
         add_project/2,
 				add_project/3,
 				delete_project/1,
-				% get_open_projects/0,
         refresh_project/1
         ]).
 
@@ -62,30 +61,6 @@ add_project(Id, Dir, Pos) ->
 
 delete_project(Id) ->
 	wx_object:cast(?MODULE, {delete, Id}).
-
-
-%% =====================================================================
-%% @doc Get a list of tuples containing the item id and associated path
-%% for each project currently open.
-
-% -spec get_open_projects() -> Result when
-% 		Result :: []
-% 						|	{integer(), string()}. % {ItemId, Path}
-% 
-% get_open_projects() ->
-% 	Tree = wx_object:call(?MODULE, tree),
-% 	{Fc,_} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
-% 	get_open_projects(Tree, Fc, []).
-% 
-% get_open_projects(Tree, Item, Acc) ->
-% 	case wxTreeCtrl:isTreeItemIdOk(Item) of
-% 		true ->
-%       Path = get_path(Tree, Item),
-% 			get_open_projects(Tree, wxTreeCtrl:getNextSibling(Tree, Item),
-%         [{Item, Path} | Acc]);
-% 		false ->
-%       Acc
-% 	end.
 
 
 %% =====================================================================
@@ -204,20 +179,12 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 			ok;
 		true ->
 			ProjRoot = get_project_root(Tree, Item),
-			% Data = wxTreeCtrl:getItemData(Tree, ProjRoot),
 			{ProjectId, _Path} = wxTreeCtrl:getItemData(Tree, ProjRoot),
-			% ProjName = filename:basename(Path),
-			
-			%% MOVE TO PROJECT MANAGER inside set_active_project
-			% ide:set_title(ProjName),
-			% ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjName ++ ")"),
-			% doc_manager:set_active_project({ProjRoot, Path})
 			project_manager:set_active_project(ProjectId)
 	end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
 						State=#state{frame=Frame}) ->
-	% File = wxTreeCtrl:getItemData(Tree, Item),
 	File = get_path(Tree, Item),
 	case filelib:is_dir(File) of
 		true ->
@@ -228,11 +195,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
 			try
 				FileContents = ide_io:read_file(File),
 				{Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
-				project_manager:open_file(File, FileContents, Id),
-				% doc_manager:new_document_from_existing(File, filename:basename(File),
-				% 	FileContents, [{project,{get_project_root(Tree, Item),
-				% 		wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item))}}])
-				ok
+				project_manager:open_file(File, FileContents, Id)
 			catch
 				throw:_ -> lib_dialog_wx:msg_error(Frame, "The file could not be loaded.")
 			end
@@ -246,10 +209,10 @@ terminate(_Reason, #state{panel=Panel}) ->
 	io:format("TERMINATE PROJECTS TREE~n"),
 	wxPanel:destroy(Panel).
 
+
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
-
 
 %% =====================================================================
 %% @doc Get the path associated to the tree item Item.
@@ -302,6 +265,7 @@ get_project_root(Tree, Root, Root, Item) ->
 get_project_root(Tree, Root, Parent, Item) ->
 	get_project_root(Tree, Root, wxTreeCtrl:getItemParent(Tree, Parent),
 			wxTreeCtrl:getItemParent(Tree, Item)).
+
 
 %% =====================================================================
 %% @doc Print the tree for debugging purposes
@@ -398,6 +362,7 @@ get_all_items(Tree, Item, Acc) ->
 			get_all_items(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Res)
 	end.
 
+
 %% =====================================================================
 %% @doc Get the tree item whose data (path) is Path.
 
@@ -407,4 +372,3 @@ get_item_from_path(Tree, [H|T], Path) ->
 		Path -> H;
 		_ -> get_item_from_path(Tree, T, Path)
 	end.
-

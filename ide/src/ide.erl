@@ -14,11 +14,11 @@
 
 %% wx_object
 -behaviour(wx_object).
--export([start/0, init/1, terminate/2,  code_change/3,
+-export([init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 	
 %% API			 
--export([set_title/1, get_menubar/0]).
+-export([start/0, set_title/1, get_menubar/0]).
 
 %% Server state
 -record(state, {frame,
@@ -33,23 +33,25 @@
                 sash_h_pos :: integer(),
                 status_bar :: wxPanel:wxPanel()
                 }).
-
+								
+%% Macros
 -define(DEFAULT_FRAME_WIDTH,  1100).
 -define(DEFAULT_FRAME_HEIGHT, 680).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
-
 -define(SASH_VERTICAL, 1).
 -define(SASH_HORIZONTAL, 2).
 -define(SASH_VERT_DEFAULT_POS, 215).
 -define(SASH_HOR_DEFAULT_POS, -200).
-
 -define(ID_DIALOG_TEXT, 9001).
-
 -define(LABEL_HIDE_UTIL, "Hide Utilities Pane\tShift+Alt+U").
 -define(LABEL_SHOW_UTIL, "Show Utilities Pane\tShift+Alt+U").
 -define(FRAME_TITLE, "Erlang IDE").
 
+
+%% =====================================================================
+%% Client API
+%% =====================================================================
 
 %% =====================================================================
 %% @doc Start the erlang IDE
@@ -64,7 +66,22 @@ start(Args) ->
 
 
 %% =====================================================================
-%% @doc Initialise the IDE
+%% @doc Update the frame's title.
+
+set_title(Title) ->
+	wx_object:cast(?MODULE, {title, Title}).
+
+
+%% =====================================================================
+%% @doc Get the menubar.
+
+get_menubar() ->
+	wxFrame:getMenuBar(wx_object:call(?MODULE, frame)).
+	
+		
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
 
 init(Options) ->
 	wx:new(Options),
@@ -144,10 +161,6 @@ init(Options) ->
 						workspace=Workspace
             }}.
 
-%% =====================================================================
-%% OTP callbacks
-%%
-%% =====================================================================
 
 %% Deal with trapped exit signals
 handle_info({'EXIT',_, wx_deleted}, State) ->
@@ -380,8 +393,11 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 
 
 %% =====================================================================
+%% Internal functions
+%% =====================================================================
+
+%% =====================================================================
 %% @doc Create the utilities panel
-%%
 %% @private
 
 -spec create_utils(Parent) -> Result when
@@ -442,6 +458,7 @@ create_left_window(Frame, Parent) ->
 	tabbed_book_img:set_selection(Toolbook, 1), %% Default to projects
 	Toolbook.
 
+
 %% =====================================================================
 %% @doc
 
@@ -484,17 +501,3 @@ toggle_menu_item(Mb, Mask, Id, Groups, Enable) ->
 		_ ->
 			wxMenuItem:enable(wxMenuBar:findItem(Mb, Id), [{enable, false}])
 	end.
-
-
-%% =====================================================================
-%% @doc Get the menubar.
-
-get_menubar() ->
-	wxFrame:getMenuBar(wx_object:call(?MODULE, frame)).
-
-
-%% =====================================================================
-%% @doc Update the frame's title.
-
-set_title(Title) ->
-	wx_object:cast(?MODULE, {title, Title}).

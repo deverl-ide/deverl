@@ -1,17 +1,28 @@
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc The new project dialog.
+%% @end
+%% =====================================================================
+
 -module(new_project_wx).
 
 -include_lib("wx/include/wx.hrl").
-				 
-%% API
--export([start/1, set_focus/1, get_name/1, get_path/1, close/1]).
 
+%% wx_object
 -behaviour(wx_object).
 -export([init/1, terminate/2, code_change/3,
 	       handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+				 
+%% API
+-export([start/1, set_focus/1, get_name/1, get_path/1, close/1]).
 			
 %% inherited functions
--export([show/1,showModal/1]).
-				 
+-export([show/1, showModal/1]).
+	
+%% Server state			 
 -record(state, {dialog,
             	  parent,
 								image_list,
@@ -26,18 +37,40 @@
 								desc_panel,
 								finish
             	 }).
-							 
+
+%% Macros							 
 -define(ID_BROWSE_PROJECTS, 200).
 -define(ID_PROJ_PATH, 201).
 -define(ID_PROJ_NAME, 202).
 -define(ID_DEFAULT_PATH_CB, 203).
 -define(ID_DESCRIPTION, 204).
-
 -define(ID_BITMAP_INFO, 0).
 -define(ID_BITMAP_STOP, 1).
 
+
+%% =====================================================================
+%% Client API
+%% =====================================================================
+
 start(Parent) ->
   wx_object:start({local, ?MODULE}, ?MODULE, Parent, []).
+
+set_focus(This) ->
+	wx_object:cast(This, setfocus).
+	
+get_name(This) ->
+	wx_object:call(This, name).
+	
+get_path(This) ->
+	wx_object:call(This, path).
+	
+close(This) ->
+	wx_object:call(This, shutdown).
+	
+	
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
 
 init(Parent) ->
   wx:batch(fun() -> do_init(Parent) end).
@@ -278,6 +311,10 @@ terminate(_Reason, #state{dialog=Dialog}) ->
 	wxDialog:destroy(Dialog),
 	ok.
 	
+
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
 	
 %% =====================================================================
 %% @doc Get message (Id) from Messages.	
@@ -358,16 +395,3 @@ validate_name(Str) ->
 show(This) -> wxDialog:show(This).
 %% @hidden
 showModal(This) -> wxDialog:showModal(This).
-	
-%% Client API
-set_focus(This) ->
-	wx_object:cast(This, setfocus).
-	
-get_name(This) ->
-	wx_object:call(This, name).
-	
-get_path(This) ->
-	wx_object:call(This, path).
-	
-close(This) ->
-	wx_object:call(This, shutdown).
