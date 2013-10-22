@@ -16,42 +16,26 @@
 	new_document/1, 
 	new_document_from_existing/2,
 	new_document_from_existing/3,
-	% new_project/1,
 	close_project/0,
 	close_active_document/0, 
 	close_all_documents/0,
 	get_active_document/0, 
 	get_active_document_ref/0,
-	% set_active_project/1,
 	get_open_documents/0, 
-	update_styles/1, 
 	save_current_document/0,
 	save_new_document/0, 
 	save_all/0,
 	save_document/1,
 	open_document/1,
-	% open_project/1,
-	find_replace/1,
-	set_theme/1,
-	set_line_wrap/1,
-	set_line_margin_visible/1,
-	set_indent_tabs/1,
-	set_indent_guides/1,
-	indent_line_right/0,
-	indent_line_left/0,
-	go_to_line/1,
-	comment/0,
-	zoom_in/0,
-	zoom_out/0,
-	transform_selection/1
-	
+  apply_to_active_document/1,
+  apply_to_all_documents/2
 	]).
 
 -record(state, {
 								status_bar,
              		notebook :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 document_ets,  %% A table containing data related to open editors (path/project etc.)
-								active_project,
+								% active_project,
 								sizer,
 								parent
                 }).
@@ -108,8 +92,8 @@ handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
 	show_placeholder(Sz),
 	ide:set_title([]),
 	{noreply, State};
-handle_cast({active_project,Proj}, State) ->
-	{noreply, State#state{active_project=Proj}}.
+% handle_cast({active_project,Proj}, State) ->
+% 	{noreply, State#state{active_project=Proj}}.
 
 handle_call(notebook, _, State=#state{notebook=Nb, status_bar=Sb, document_ets=Tb}) ->
 	{reply, {Nb,Sb,Tb}, State};
@@ -117,8 +101,8 @@ handle_call({new_document, Filename, Options}, _,
 						State=#state{notebook=Notebook, document_ets=DocEts, status_bar=Sb, sizer=Sz, parent=Parent}) ->
 	Editor = new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options),
 	{reply, Editor, State};
-handle_call(active_project, _, State=#state{active_project=Proj}) ->
-	{reply, Proj, State};
+% handle_call(active_project, _, State=#state{active_project=Proj}) ->
+% 	{reply, Proj, State};
 handle_call(close_project, _, 
 						State=#state{active_project=Proj, notebook=Notebook, document_ets=DocEts}) ->
 	%% Check open files, save/close
@@ -530,110 +514,6 @@ close_all_documents() ->
 	wx_object:call(?MODULE, close_all).
 
 
-%% =====================================================================
-%% @doc The following functions operate on all open documents.
-	
-set_theme(ThemeMenu) ->
-  {ok, Ckd} = ide_menu:get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
-	apply_to_all_documents(fun editor:set_theme/3, [wxMenuItem:getLabel(Ckd), 
-		user_prefs:get_user_pref({pref, font})]),
-  user_prefs:set_user_pref(theme, wxMenuItem:getLabel(Ckd)).
-	
-set_line_wrap(Menu) ->
-  Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LINE_WRAP)),
-	apply_to_all_documents(fun editor:set_line_wrap/2, [Bool]),
-  user_prefs:set_user_pref(line_wrap, Bool).
-
-set_line_margin_visible(Menu) ->
-  Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LN_TOGGLE)),
-	apply_to_all_documents(fun editor:set_line_margin_visible/2, [Bool]),
-  user_prefs:set_user_pref(show_line_no, Bool).
-
-set_indent_tabs(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
-  Cmd = case Id of
-    ?MENU_ID_INDENT_SPACES -> false;
-    ?MENU_ID_INDENT_TABS -> true
-  end,
-	apply_to_all_documents(fun editor:set_use_tabs/2, [Cmd]),
-  user_prefs:set_user_pref(use_tabs, Cmd).
-
-set_indent_guides(Menu) ->
-  Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_INDENT_GUIDES)),
-	apply_to_all_documents(fun editor:set_indent_guides/2, [Bool]),
-  user_prefs:set_user_pref(indent_guides, Bool).
-
-update_styles(Frame) ->
-  %% Display the system font picker
-  FD = wxFontData:new(),
-  wxFontData:setInitialFont(FD, user_prefs:get_user_pref({pref, font})),
-  Dialog = wxFontDialog:new(Frame, FD),
-  case wxDialog:showModal(Dialog) of
-    ?wxID_OK ->
-      %% Get the user selected font, and update the editors
-      Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
-      user_prefs:set_user_pref(font, Font),
-			apply_to_all_documents(fun editor:set_font_style/2, [Font]),		
-      ok;
-    ?wxID_CANCEL ->
-				ok
-	end.
-
-apply_to_all_documents(Fun, Args) ->
-	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
-	Fun1 = fun(E) -> index_to_ref(DocEts, Notebook, E) end,
-  case get_open_documents() of
-		[] -> ok;
-		Docs ->
-			List = lists:map(Fun1, get_open_documents()),
-			Fun2 = fun(E) -> apply(Fun, [E | Args]) end,
-			lists:foreach(Fun2, List)
-	end.
-	
-	
-%% =====================================================================
-%% @doc Apply the function Fun to the active document
-%% Equivalent to apply_to_active_document(Fun, []), although this should
-%% be quicker.
-		
-apply_to_active_document(Fun) ->
-	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
-	try
-		Index = get_active_document(),
-		Fun(index_to_ref(DocEts, Notebook, Index))
-	catch
-		error:E ->
-			lib_dialog_wx:msg_notice(Notebook, "There are no documents currently open.")
-	end.
-	
-apply_to_active_document(Fun, Args) ->
-	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
-	try
-		Index = get_active_document(),
-		apply(Fun, [index_to_ref(DocEts, Notebook, Index) | Args])
-	catch
-		error:_ -> 
-			lib_dialog_wx:msg_notice(Notebook, "There are no documents currently open.")
-	end.
-
-
-%% =====================================================================
-%% @doc The following functions operate on a single document.
-
-transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
-	Cmd = case Id of
-		?MENU_ID_UC_SEL -> uppercase;
-		?MENU_ID_LC_SEL -> lowercase
-	end,
-	apply_to_active_document(fun editor:transform_selection/2, [{transform, Cmd}]).
-		
-comment() -> apply_to_active_document(fun editor:comment/1).
-zoom_in() -> apply_to_active_document(fun editor:zoom_in/1).
-zoom_out() -> apply_to_active_document(fun editor:zoom_out/1).
-indent_line_left() -> apply_to_active_document(fun editor:indent_line_left/1).
-indent_line_right() -> apply_to_active_document(fun editor:indent_line_right/1).
-
-
-
 insert_page(Notebook, Page) ->
 	insert_page(Notebook, Page, ?DEFAULT_TAB_LABEL).
 	
@@ -754,47 +634,45 @@ show_placeholder(Sz) ->
 	wxSizer:hide(Sz, 0),
 	wxSizer:show(Sz, 1),
 	wxSizer:layout(Sz).
-	
-	
-%% =====================================================================
-%% @doc Show the find/replace dialog
-%% Might be better in editor.erl
-
-find_replace(Parent) ->
-  FindData = find_replace_data:new(),
-  find_replace_data:set_options(FindData, ?IGNORE_CASE bor ?WHOLE_WORD bor ?START_WORD),
-  find_replace_data:set_search_location(FindData, ?FIND_LOC_DOC),
-  case erlang:whereis(find_replace_dialog) of
-    undefined ->
-      find_replace_dialog:show(find_replace_dialog:new(Parent, FindData));
-    Pid ->
-      wxDialog:raise(find_replace_dialog:get_ref(Pid))
-  end.
-
+  
 
 %% =====================================================================
-%% @doc Display the goto line dialog
+%% @doc Apply the function Fun to the active document.
+%% Equivalent to apply_to_active_document(Fun, []), although this should
+%% be quicker.
+		
+apply_to_active_document(Fun) ->
+	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
+	try
+		Index = get_active_document(),
+		Fun(index_to_ref(DocEts, Notebook, Index))
+	catch
+		error:E ->
+			lib_dialog_wx:msg_notice(Notebook, "There are no documents currently open.")
+	end.
 	
-go_to_line(Parent) ->
-	Callback =
-	fun(#wx{obj=Dialog, id=?wxID_OK, userData=Input},O) -> %% OK clicked
-		wxEvent:skip(O),
-	  {Line, Column} = case string:tokens(wxTextCtrl:getValue(Input), ":") of
-			[] ->  {0, 0};
-	    [Ln | []] -> {Ln, 0};
-	    [Ln, Col | _ ] -> {Ln, Col}
-	  end,
-	  L = try
-	    list_to_integer(Line)
-	  catch _:_ -> 0
-	  end,
-	  C = try
-	    list_to_integer(Column)
-	  catch _:_ -> 0
-	  end,
-		editor:go_to_position(get_active_document_ref(), {L,C});
-	(_,O) -> wxEvent:skip(O) %% Cancel/Close
-	end,
-	{Ln, Col} = editor:get_current_pos(get_active_document_ref()),
-	lib_dialog_wx:text_input_dialog(Parent, "Go to Line", "Enter line:", "Go", 
-		[{callback, Callback}, {init_text, integer_to_list(Ln)++":"++integer_to_list(Col)}]).
+apply_to_active_document(Fun, Args) ->
+	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
+	try
+		Index = get_active_document(),
+		apply(Fun, [index_to_ref(DocEts, Notebook, Index) | Args])
+	catch
+		error:_ -> 
+			lib_dialog_wx:msg_notice(Notebook, "There are no documents currently open.")
+	end.
+  
+
+%% =====================================================================
+%% @doc Apply the function Fun to all open documents.
+
+apply_to_all_documents(Fun, Args) ->
+	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
+	Fun1 = fun(E) -> index_to_ref(DocEts, Notebook, E) end,
+  case get_open_documents() of
+		[] -> ok;
+		Docs ->
+			List = lists:map(Fun1, get_open_documents()),
+			Fun2 = fun(E) -> apply(Fun, [E | Args]) end,
+			lists:foreach(Fun2, List)
+	end.
+

@@ -246,7 +246,7 @@ handle_event(E=#wx{id=Id, userData={theme_menu,Menu}, event=#wxCommand{type=comm
              State=#state{status_bar=Sb}) ->
 	Env = wx:get_env(),
 	spawn(fun() -> wx:set_env(Env),
-		doc_manager:set_theme(Menu)
+		editor_settings:set_theme(Menu)
 	end),
 	{noreply, State};
 
