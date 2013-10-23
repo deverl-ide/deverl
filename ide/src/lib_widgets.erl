@@ -20,13 +20,24 @@ placeholder(Parent, Str) ->
 placeholder(Parent, Str, Options) ->
 	%% Linux needs an additional horizontal sizer (seems like it
 	%% ignores {style, ?wxALIGN_CENTRE}).
+	
 	Panel = wxPanel:new(Parent),
 	wxPanel:setBackgroundColour(Panel, ?PANEL_BG),
 	Sz = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(Panel, Sz),
 	
 	HSz = wxBoxSizer:new(?wxHORIZONTAL),
+	case os:type() of
+		{linux, _} ->
+			wxSizer:addStretchSpacer(HSz);
+			_ -> ok
+	end,
 	Text = wxStaticText:new(Panel, ?wxID_ANY, Str, [{style, ?wxALIGN_CENTRE}]),
+	case os:type() of
+		{linux, _} ->
+			wxSizer:addStretchSpacer(HSz);
+			_ -> ok
+	end,
 	
 	Fg = case proplists:get_value(fgColour, Options) of
 		undefined -> ?PANEL_FG;
