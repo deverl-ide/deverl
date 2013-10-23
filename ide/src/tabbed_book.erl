@@ -78,7 +78,14 @@ init(Options) ->
 	Font = wxPanel:getFont(Tabs),
 	wxFont:setPointSize(Font, 11),
 	wxPanel:setFont(Tabs, Font),
-	wxPanel:setWindowVariant(Tabs, ?wxWINDOW_VARIANT_SMALL),
+	
+	%% Conditional compilation OSX
+	case os:type() of
+		{_, darwin} ->
+			wxWindow:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL);
+		 _ -> ok
+	end,		
+	
 	Sz = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(Tabs, Sz),
 	wxSizer:add(MainSz, Tabs, [{proportion, 0}, {flag, ?wxEXPAND}]),
