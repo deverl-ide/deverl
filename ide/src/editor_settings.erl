@@ -1,8 +1,19 @@
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc
+%% A module of functions that provide text editor operations.
+%% @end
+%% =====================================================================
+
 -module(editor_settings).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
 
+%% API
 -export([
 	update_styles/1,
 	find_replace/1,
@@ -20,6 +31,9 @@
   go_to_line/1
 	]).
 
+
+%% =====================================================================
+%% @doc
 
 update_styles(Frame) ->
   %% Display the system font picker

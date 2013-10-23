@@ -63,12 +63,12 @@ start(Config) ->
   
 new_file(Parent) ->
   OpenProjects = project_manager:get_open_projects(),
+  
   case project_manager:get_active_project() of
     undefined ->
       Dialog = new_file:start({Parent, OpenProjects, "No Project"});
     ProjectId ->
-      Dialog = new_file:start({Parent, OpenProjects, 
-				filename:basename(project_manager:get_root(ProjectId))})
+      Dialog = new_file:start({Parent, OpenProjects, project_manager:get_name(ProjectId)})
   end,
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->

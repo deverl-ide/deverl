@@ -33,7 +33,8 @@
 				 get_open_projects/0,
 				 get_active_project/0,
 				 set_active_project/1,
-				 get_root/1]).
+				 get_root/1,
+         get_name/1]).
 
 
 %% Records
@@ -143,7 +144,7 @@ set_active_project(ProjectId) ->
 -spec get_open_projects() -> [path()].
 
 get_open_projects() ->
-	gen_server:call(?MODULE, open_project_paths).
+	gen_server:call(?MODULE, open_projects).
 	
 %% =====================================================================
 %% @doc Returns a list containing all open 
@@ -164,7 +165,9 @@ get_open_projects() ->
 
 get_root(ProjectId) ->
 	gen_server:call(?MODULE, {get_root, ProjectId}).
-		
+  
+get_name(ProjectId) ->
+      filename:basename(get_root(ProjectId)).
 		
 %% =====================================================================
 %% Callback functions
@@ -190,9 +193,12 @@ handle_call({add_open_project, Id, Path}, _From, State=#state{projects=Projects}
 	N = P#project{open_files=[Path | Open]},
 	D = proplists:delete(Id, Projects),
   {reply, ok, State#state{projects=[{Id, N} | D]}};
-handle_call(open_project_paths, _From, State=#state{projects=Projects}) ->
-	Paths = lists:map(fun({_Id, Path}) -> Path#project.root end, Projects),
-  {reply, Paths, State};
+handle_call(open_projects, _From, State=#state{projects=Projects}) ->
+	OpenProjects = lists:map(fun({Id, _Path}) -> Id end, Projects),
+  {reply, OpenProjects, State};
+%handle_call(open_project_paths, _From, State=#state{projects=Projects}) ->
+%	Paths = lists:map(fun({_Id, Path}) -> Path#project.root end, Projects),
+%  {reply, Paths, State};
 handle_call(active_project, _From, State) ->
   {reply, State#state.active_project, State};
 handle_call({get_root, ProjectId}, _From, State=#state{projects=Projects}) ->
