@@ -104,6 +104,7 @@ new_document_from_existing(Path, Contents) ->
 %% @doc Add an existing document to the notebook.
 
 new_document_from_existing(Path, Contents, Options) -> 
+	io:format("Path: ~p~n", [Path]),
 	Editor = wx_object:call(?MODULE, {new_document, filename:basename(Path), [{path, Path}] ++ Options}),
 	editor:set_text(Editor, Contents),
 	editor:empty_undo_buffer(Editor),
@@ -133,9 +134,9 @@ close_document(Index) ->
 
 close_document(Notebook, DocEts, Index) ->
  	Key = wxAuiNotebook:getPage(Notebook, Index),
-	io:format("REF: ~p~n", [get_ref(DocEts, Key)]),
  	case editor:is_dirty(get_ref(DocEts, Key)) of
  		true ->
+			%% For testing, for now
  			io:format("File modified since last save, display save/unsave dialog.~n");
  		_ -> %% Go ahead, close the editor
  			delete_record(DocEts, Key),
@@ -506,12 +507,15 @@ update_path(DocEts, Key, Path) ->
 %% we hide the implementation/format of a single record, which
 %% means any future changes to the API can be easily adapted to.
 
-insert_rec(DocEts, Editor, Path, ProjectId) ->
-	Pid = wx_object:get_pid(Editor),
-	{A,B,C,_} = Editor,
-	Key = {A,B,C,[]},
-	New = wx:typeCast(Key, wxWindow),
-	ets:insert(DocEts, {New, Pid, {path, Path}, ProjectId}).
+% insert_rec(DocEts, Editor, Path, ProjectId) ->
+% 	Pid = wx_object:get_pid(Editor),
+% 	{A,B,C,_} = Editor,
+% 	Key = {A,B,C,[]},
+% 	New = wx:typeCast(Key, wxWindow),
+% 	ets:insert(DocEts, {New, Pid, {path, Path}, ProjectId}).
+	
+insert_rec(DocEts, Index, EditorRef, Path) ->
+	insert_rec(DocEts, Index, EditorRef, Path, undefined).
 
 insert_rec(DocEts, Index, EditorRef, Path, ProjectId) ->
 	ets:insert(DocEts, {Index, EditorRef, {path, Path}, ProjectId}).
@@ -560,4 +564,5 @@ new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options)	->
 	Editor = editor:start([{parent, Parent}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
 	Index = insert_page(Notebook, Editor, Filename), %% Page changed event not serviced until this completes
 	insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project_id, Options)),
+		P = wxAuiNotebook:getPage(Notebook, 0),
 	Editor.

@@ -46,7 +46,7 @@
 
 
 start(Config) ->
-  wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
+  wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
 
 init({Parent, Projects, ActiveProject}) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 500}},

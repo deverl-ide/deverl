@@ -170,6 +170,7 @@ handle_info({'EXIT',_, shutdown}, State) ->
   io:format("Got Info 2~n"),
   {noreply,State};
 handle_info({'EXIT',A, normal}, State) ->
+	io:format("IN IDE INFO~n"),
   io:format("Got Info 3~n~p~n", [A]),
   {noreply,State};
 handle_info(Msg, State) ->
@@ -259,7 +260,7 @@ handle_event(E=#wx{id=Id, userData={theme_menu,Menu}, event=#wxCommand{type=comm
              State=#state{status_bar=Sb}) ->
 	Env = wx:get_env(),
 	spawn(fun() -> wx:set_env(Env),
-		editor_settings:set_theme(Menu)
+		editor_ops:set_theme(Menu)
 	end),
 	{noreply, State};
 

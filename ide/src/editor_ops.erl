@@ -1,4 +1,4 @@
--module(editor_settings).
+-module(editor_ops).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").

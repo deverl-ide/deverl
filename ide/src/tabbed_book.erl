@@ -82,7 +82,7 @@ init(Options) ->
 	%% Conditional compilation OSX
 	case os:type() of
 		{_, darwin} ->
-			wxWindow:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL);
+			wxWindow:setWindowVariant(MainPanel, ?wxWINDOW_VARIANT_SMALL);
 		 _ -> ok
 	end,		
 	

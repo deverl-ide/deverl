@@ -325,8 +325,8 @@ code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, State=#state{parent_panel=Panel}) ->
-	  io:format("TERMINATE EDITOR~n"),
-		  wxPanel:destroy(Panel).
+  io:format("TERMINATE EDITOR~n"),
+  wxPanel:destroy(Panel).
 
 
 to_indent(Input) ->
