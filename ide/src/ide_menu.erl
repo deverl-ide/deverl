@@ -278,9 +278,6 @@ init(Config) ->
             end,      
 
 	[AddTool(Tool) || Tool <- Tools],
-	
-	Search = wxTextCtrl:new(ToolBar, ?wxID_ANY),
-	wxToolBar:addControl(ToolBar, Search),
 
 	wxToolBar:realize(ToolBar),
 		

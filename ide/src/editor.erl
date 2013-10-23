@@ -1,13 +1,33 @@
-%% editor.erl
-%% Creates an instance of an editor in a wxPanel().
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc This module creates a code editor instance.
+%% @end
+%% =====================================================================
+
 - module(editor).
 
+-include_lib("wx/include/wx.hrl").
+
+%% wx_object
+-behaviour(wx_object).
 -export([
+  init/1, 
+  terminate/2,  
+  code_change/3,
+  handle_info/2,
+  handle_call/3,
+  handle_cast/2,
+  handle_event/2]).
+
+%% API
+-export([
+	start/1,
 	is_dirty/1,
   set_savepoint/1,
   get_text/1,
-  get_id/1,
-	get_ref/1,
   selected/2,
   find/2,
   find_all/2,
@@ -30,24 +50,16 @@
 	transform_uc_selection/1,
 	transform_lc_selection/1,
 	transform_selection/2,
-	get_editor_path/1,
 	fn_list/2,
 	link_poller/2,
 	empty_undo_buffer/1
 	]).
 
--export([
-	start/1,
-  init/1, 
-  terminate/2,  
-  code_change/3,
-  handle_info/2,
-  handle_call/3,
-  handle_cast/2,
-  handle_event/2]).
+%% Macros	
 
--include_lib("wx/include/wx.hrl").
--behaviour(wx_object).
+-define(LEFT_MARGIN_WIDTH, 6).
+-define(RIGHT_MARGIN_WIDTH, 6).
+-define(MARGIN_LN_PT_OFFSET, 0). %% The size (pts) to reduce margin text by
 
 %% For wx-2.9 usage
 -ifndef(wxSTC_ERLANG_COMMENT_FUNCTION).
@@ -64,14 +76,12 @@
 -define(wxSTC_ERLANG_MODULES_ATT, 24).
 -endif.
 
--define(LEFT_MARGIN_WIDTH, 6).
--define(RIGHT_MARGIN_WIDTH, 6).
--define(MARGIN_LN_PT_OFFSET, 0). %% The size (pts) to reduce margin text by
-
+%% Types
 -type path()      :: string().
 -type filename()  :: string().
 -type erlangEditor() :: wxWindow:wxWindow().
 
+%% Server state
 -record(state, {parent_panel    :: erlangEditor(), 
                 stc          :: wxStyledTextCtrl:wxStyledTextCtrl(),
 								dirty :: boolean(),
@@ -81,6 +91,10 @@
 
 
 %% =====================================================================
+%% Client API
+%% =====================================================================
+
+%% =====================================================================
 %% @doc Start a new editor process
 
 start(Config) ->
@@ -88,7 +102,288 @@ start(Config) ->
 
 
 %% =====================================================================
-%% @doc Initialise the editor
+%% @doc Get the status of the document
+
+is_dirty(Editor) ->
+  wx_object:call(Editor, is_dirty).
+	
+
+%% ===================================================================== 
+%% @doc Add a savepoint: update the document state to unmodified
+
+set_savepoint(EditorPid) ->
+	wxStyledTextCtrl:setSavePoint(wx_object:call(EditorPid, stc)).
+	
+
+%% ===================================================================== 
+%% @doc Get the text from the editor
+
+-spec get_text(EditorPid) -> Result when
+  EditorPid :: pid(),
+  Result :: string().
+
+get_text(EditorPid) ->
+  wx_object:call(EditorPid, text_content).  
+	
+
+%% =====================================================================  
+%% @doc Notify the editor it has been selected
+
+selected(EditorPid, Sb) ->
+	Editor = wx_object:call(EditorPid, stc),
+	update_sb_line(Editor, Sb).
+
+
+%% =====================================================================
+%% Find and replace
+%% =====================================================================
+
+find(EditorPid, Str) ->
+  TextCtrl = wx_object:call(EditorPid, stc),
+  Pos = wxStyledTextCtrl:findText(TextCtrl, 0, 
+		wxStyledTextCtrl:getLength(TextCtrl), Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]),
+	io:format("Pos: ~p~n", [position_to_x_y(TextCtrl, Pos)]).
+
+%% ===================================================================== 
+%% @doc Search/replace with next/prev
+
+% find(EditorPid, Str) ->
+%   TextCtrl = wx_object:call(EditorPid, stc),
+%   Pos = wxStyledTextCtrl:findText(TextCtrl, 0, 
+% 		wxStyledTextCtrl:getLength(TextCtrl), Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]),
+%   wxStyledTextCtrl:startStyling(TextCtrl, Pos, ?wxSTC_INDICS_MASK),
+%   wxStyledTextCtrl:setStyling(TextCtrl, length(Str), ?wxSTC_INDIC0_MASK).
+%   %% Bookmark line and add indicator to word
+
+
+%% ===================================================================== 
+%% @doc Find all occurrences of Str.
+
+find_all(EditorPid, Str) ->
+  Editor = wx_object:call(EditorPid, stc),
+  find(Editor, Str, 0, wxStyledTextCtrl:getLength(Editor)).
+
+
+%% ===================================================================== 
+%% @doc Replace all occurrences of str with RepStr.
+
+replace_all(EditorPid, Str, RepStr) ->
+    Editor = wx_object:call(EditorPid, stc),
+    replace_all(Editor, Str, RepStr, 0, wxStyledTextCtrl:getLength(Editor)).
+
+
+%% =====================================================================
+%% @doc Set the text.
+
+set_text(This, Text) ->
+	Editor = wx_object:call(This, stc),
+	wxStyledTextCtrl:setText(Editor, Text),	
+	update_line_margin(Editor).
+
+%% =====================================================================
+%% Styling
+%% =====================================================================
+
+%% =====================================================================
+%% @doc Change the theme of the editor.
+
+set_theme(Editor, Theme, Font) ->
+	case theme:load_theme(Theme) of
+		{error, load_theme} -> ok;
+		NewTheme -> setup_theme(wx_object:call(Editor, stc), NewTheme, Font)
+	end,
+	ok.
+
+
+%% =====================================================================
+%% @doc Update the font used in the editor
+
+-spec set_font_style(EditorPid, Font) -> 'ok' when
+  EditorPid :: pid(),
+  Font :: wxFont:wxFont().
+
+set_font_style(EditorPid, Font) when is_pid(EditorPid) -> 
+  Editor = wx_object:call(EditorPid, stc),
+  set_font_style(Editor, Font);
+
+%% @private
+set_font_style(Editor, Font) ->
+	Update = fun(Id) -> 
+		wxStyledTextCtrl:styleSetFont(Editor, Id, Font)
+		end,
+	Update(?wxSTC_STYLE_DEFAULT),
+	% wxStyledTextCtrl:styleClearAll(Editor), Needed to ensure all styles are resized
+	[Update(Id) || Id <- lists:seq(?wxSTC_ERLANG_DEFAULT, ?wxSTC_ERLANG_MODULES_ATT)],
+	update_line_margin(Editor),
+	ok.
+	
+
+%% =====================================================================
+%% @doc
+
+set_tab_width(EditorPid, Width) ->
+	wxStyledTextCtrl:setTabWidth(wx_object:call(EditorPid, stc), Width).
+
+	
+%% =====================================================================
+%% @doc
+
+set_use_tabs(EditorPid, Bool) ->
+	wxStyledTextCtrl:setUseTabs(wx_object:call(EditorPid, stc), Bool).
+
+
+%% =====================================================================
+%% @doc
+
+set_indent_guides(EditorPid, Bool) ->
+	wxStyledTextCtrl:setIndentationGuides(wx_object:call(EditorPid, stc), Bool),
+	ok.
+
+%% =====================================================================
+%% @doc
+
+set_line_wrap(EditorPid, Bool) ->
+	Result = case Bool of
+		true -> 1;
+		_ -> 0
+	end,
+	wxStyledTextCtrl:setWrapMode(wx_object:call(EditorPid, stc), Result).
+
+
+%% =====================================================================
+%% @doc
+
+set_line_margin_visible(EditorPid, Bool) ->
+	Editor = wx_object:call(EditorPid, stc),
+	case Bool of
+		true -> set_linenumber_default(Editor, user_prefs:get_user_pref({pref, font}));
+		false -> wxStyledTextCtrl:setMarginWidth(Editor, 0, 0)
+	end.			
+	
+	
+%% =====================================================================
+%% @doc
+
+indent_line_left(EditorPid) ->
+	Editor = wx_object:call(EditorPid, stc),
+	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_BACKTAB),
+	ok.
+
+
+%% =====================================================================
+%% @doc
+
+indent_line_right(EditorPid) ->
+	Editor = wx_object:call(EditorPid, stc),
+	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_TAB),
+	ok.
+
+
+%% =====================================================================
+%% @doc
+
+comment(EditorPid) ->
+	Editor = wx_object:call(EditorPid, stc),
+	case wxStyledTextCtrl:getSelection(Editor) of
+		{N,N} -> single_line_comment(Editor);
+		{N,M} ->
+			Sel = count_selected_lines(Editor),
+			{Result,Length} = case count_commented_lines_re(Editor) of
+				Sel -> remove_comments(wxStyledTextCtrl:getSelectedText(Editor));
+				_ -> insert_comments(wxStyledTextCtrl:getSelectedText(Editor))
+			end,
+			wxStyledTextCtrl:replaceSelection(Editor, Result),
+			wxStyledTextCtrl:setSelectionStart(Editor, N),
+			wxStyledTextCtrl:setSelectionEnd(Editor, N + Length),
+			correct_caret(Editor, wxStyledTextCtrl:getCurrentPos(Editor))
+	end,
+	ok.
+	
+	
+%% =====================================================================
+%% @doc Move the caret to the line Line and Column Col.
+
+go_to_position(This, Pos) ->
+	Editor = wx_object:cast(This, {goto_pos, Pos}).
+
+
+%% =====================================================================
+%% @doc
+
+get_current_pos(This) ->
+	Stc = wx_object:call(This, stc),
+	position_to_x_y(Stc, wxStyledTextCtrl:getCurrentPos(Stc)).	
+	
+
+%% =====================================================================
+%% @doc
+	
+zoom_in(EditorPid) ->
+	Editor = wx_object:call(EditorPid, stc),
+	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_ZOOMIN).
+
+
+%% =====================================================================
+%% @doc
+
+zoom_out(EditorPid) ->
+	Editor = wx_object:call(EditorPid, stc),
+	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_ZOOMOUT).
+
+
+%% =====================================================================
+%% @doc
+
+transform_uc_selection(EditorPid) ->
+	Editor = wx_object:call(EditorPid, stc),
+	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_UPPERCASE).
+
+
+%% =====================================================================
+%% @doc
+	
+transform_lc_selection(EditorPid) ->
+	Editor = wx_object:call(EditorPid, stc),
+	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_LOWERCASE).
+
+
+%% =====================================================================
+%% @doc
+	
+transform_selection(EditorPid, {transform, Type}) ->
+	Editor = wx_object:call(EditorPid, stc),
+	Cmd = case Type of 
+		uppercase -> ?wxSTC_CMD_UPPERCASE;
+		lowercase -> ?wxSTC_CMD_LOWERCASE
+	end,
+	wxStyledTextCtrl:cmdKeyExecute(Editor, Cmd).
+	
+	
+%% =====================================================================
+%% @doc
+	
+fn_list(EditorPid, Str) ->
+	get_focus(wx_object:call(EditorPid, stc)),
+	ok.
+	
+
+%% =====================================================================
+%% @doc
+
+link_poller(Pid, Path) ->
+	wx_object:cast(Pid, {link_poller, Path}).
+	
+
+%% =====================================================================
+%% @doc
+	
+empty_undo_buffer(This) ->
+	wxStyledTextCtrl:emptyUndoBuffer(wx_object:call(This, stc)).
+
+
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
 
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
@@ -101,8 +396,7 @@ init(Config) ->
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),
   Editor = wxStyledTextCtrl:new(Panel), 
-  wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND},
-                              {proportion, 1}]),              
+  wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND}, {proportion, 1}]),              
 
 	%% Immutable editor styles
   wxStyledTextCtrl:setLexer(Editor, ?wxSTC_LEX_ERLANG), %% This lexer needs a lot of work, e.g. better folding support, proper display of ctrl chars etc.
@@ -184,12 +478,6 @@ init(Config) ->
 
   {Panel, #state{parent_panel=Panel, stc=Editor}}.
 
-
-%% =====================================================================
-%% @doc OTP behaviour callbacks
-%% 
-%% =====================================================================
-
 handle_info(Msg, State) ->
   io:format("Got Info(Editor) ~p~n",[Msg]),
   {noreply,State}.
@@ -233,7 +521,6 @@ handle_cast({goto_pos, {Line, Col}}, State=#state{stc=Stc}) ->
 
 %% =====================================================================
 %% Mouse events
-%% 
 %% =====================================================================
 
 handle_event(_A=#wx{event=#wxMouse{type=left_down}, userData=Sb}, 
@@ -260,10 +547,8 @@ handle_event(_A=#wx{event=#wxMouse{}, userData=Sb},
              State = #state{stc=Editor}) ->
 	{noreply, State};
 
-
 %% =====================================================================
 %% Key events
-%% 
 %% =====================================================================
 
 handle_event(_A=#wx{event=#wxKey{type=key_down, keyCode=_Kc}, userData=Sb}, 
@@ -289,10 +574,8 @@ handle_event(_A=#wx{event=#wxStyledText{type=stc_charadded, key=Key}=_E, userDat
 	update_sb_line(Editor, Sb),
 	{noreply, State};
 
-
 %% =====================================================================
 %% Document events
-%% 
 %% =====================================================================
 
 handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position=Pos, margin=Margin}=_E},
@@ -306,10 +589,8 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position=Pos, margin=
   end,
   {noreply, State};
 
-
 %% =====================================================================
 %% Save events
-%% 
 %% =====================================================================
 
 handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State) ->
@@ -329,12 +610,9 @@ terminate(_Reason, State=#state{parent_panel=Panel}) ->
   wxPanel:destroy(Panel).
 
 
-to_indent(Input) ->
-	Regex = "^[^%]*((?:if|case|receive|after|fun|try|catch|begin|query)|(?:->))(?:\\s*%+.*)?$",
-	case re:run(Input, Regex, [unicode, {newline, anycrlf}]) of
-		nomatch -> false;
-		{_,_} -> true
-	end.
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
 
 %% =====================================================================
 %% @doc Defines the keywords in the Erlang language
@@ -348,12 +626,16 @@ keywords() ->
 	L = lists:flatten([KW ++ " " || KW <- KWS]).
 
 
-%% =====================================================================  
-%% @doc Notify the editor it has been selected
+%% =====================================================================
+%% @doc 
+%% @private	
 
-selected(EditorPid, Sb) ->
-	Editor = wx_object:call(EditorPid, stc),
-	update_sb_line(Editor, Sb).
+to_indent(Input) ->
+	Regex = "^[^%]*((?:if|case|receive|after|fun|try|catch|begin|query)|(?:->))(?:\\s*%+.*)?$",
+	case re:run(Input, Regex, [unicode, {newline, anycrlf}]) of
+		nomatch -> false;
+		{_,_} -> true
+	end.
 
 
 %% =====================================================================  
@@ -365,6 +647,10 @@ update_sb_line(Editor, Sb) ->
 	ide_status_bar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
 	ide_status_bar:set_text(Sb,{field,selection}, "").
 
+
+%% =====================================================================  
+%% @doc Update status bar line/col position
+%% @private
 
 update_sb_selection(Editor, Sb) ->
 	case wxStyledTextCtrl:getSelection(Editor) of
@@ -379,6 +665,7 @@ update_sb_selection(Editor, Sb) ->
 
 %% =====================================================================  
 %% @doc Convert a position to line and column number.
+%% @private	
 
 position_to_x_y(Editor, Pos) -> 
 Ln = wxStyledTextCtrl:lineFromPosition(Editor, Pos),
@@ -415,7 +702,6 @@ update_line_margin(Editor) ->
 %% =====================================================================  
 %% @doc Adjust the width of the line_number margin if necessary,
 %% dynamically (it doesn't currently decrease).
-%%
 %% @private
 
 -spec adjust_margin_width(Editor) -> Result when
@@ -438,73 +724,6 @@ adjust_margin_width(Editor) ->
     true -> ok
   end,
   ok.  
-
-
-%% =====================================================================
-%% @doc Get the status of the document
-
-is_dirty(Editor) ->
-  wx_object:call(Editor, is_dirty).
-
-
-%% ===================================================================== 
-%% @doc Add a savepoint: update the document state to unmodified
-
-set_savepoint(EditorPid) ->
-	wxStyledTextCtrl:setSavePoint(wx_object:call(EditorPid, stc)).
-	
-
-%% ===================================================================== 
-%% @doc Get the text from the editor
-
--spec get_text(EditorPid) -> Result when
-  EditorPid :: pid(),
-  Result :: string().
-
-get_text(EditorPid) ->
-  wx_object:call(EditorPid, text_content).  
-
-
-%% ===================================================================== 
-%% @doc Get the Id of the editor
-
--spec get_id(EditorPid) -> integer() when
-  EditorPid :: pid().
-
-get_id(EditorPid) ->
-  {_,Id,_,_} = wx_object:call(EditorPid, parent_panel),
-	Id.
-	
-
-get_ref(EditorPid) ->
-	wx_object:call(EditorPid, parent_panel).
-
-
-%% =====================================================================
-%% @doc Set the text.
-
-set_text(This, Text) ->
-	Editor = wx_object:call(This, stc),
-	wxStyledTextCtrl:setText(Editor, Text),	
-	update_line_margin(Editor).
-	
-empty_undo_buffer(This) ->
-	wxStyledTextCtrl:emptyUndoBuffer(wx_object:call(This, stc)).
-
-
-%% =====================================================================
-%% Styling
-%% 
-%% =====================================================================
-%% =====================================================================
-%% @doc Change the theme of the editor.
-
-set_theme(Editor, Theme, Font) ->
-	case theme:load_theme(Theme) of
-		{error, load_theme} -> ok;
-		NewTheme -> setup_theme(wx_object:call(Editor, stc), NewTheme, Font)
-	end,
-	ok.
 
 
 %% =====================================================================
@@ -557,9 +776,6 @@ set_theme_styles(Editor, Styles, Font) ->
 %% @private
 
 set_linenumber_default(Editor, Font) ->
-	% wxStyledTextCtrl:styleSetFont(Editor, ?wxSTC_STYLE_LINENUMBER,
-	% 	wxFont:new(wxFont:getPointSize(Font) - ?MARGIN_LN_PT_OFFSET, 
-	% 		?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
 	wxStyledTextCtrl:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER, 
 		(wxFont:getPointSize(Font) - ?MARGIN_LN_PT_OFFSET)),
 	adjust_margin_width(Editor),
@@ -578,33 +794,6 @@ apply_lexer_styles(Editor, Styles, Fg) ->
 	[ SetBg(Editor, Id, Rgb) || {Id, Rgb} <- proplists:get_value(bgColour, Styles)],
 	[ set_font_style(Editor, Id, Fs) || {Id, Fs} <- proplists:get_value(fontStyle, Styles)],
 	[ set_font_size(Editor, Id, N) || {Id, N} <- proplists:get_value(fontSize, Styles)],
-	ok.
-
-
-%% =====================================================================
-%% @doc Update the font used in the editor
-
--spec set_font_style(EditorPid, Font) -> 'ok' when
-  EditorPid :: pid(),
-  Font :: wxFont:wxFont().
-
-set_font_style(EditorPid, Font) when is_pid(EditorPid) -> 
-  Editor = wx_object:call(EditorPid, stc),
-  set_font_style(Editor, Font);
-
-
-%% =====================================================================
-%% @doc Set the font across the lexer.
-%% @private
-
-set_font_style(Editor, Font) ->
-	Update = fun(Id) -> 
-		wxStyledTextCtrl:styleSetFont(Editor, Id, Font)
-		end,
-	Update(?wxSTC_STYLE_DEFAULT),
-	% wxStyledTextCtrl:styleClearAll(Editor), Needed to ensure all styles are resized
-	[Update(Id) || Id <- lists:seq(?wxSTC_ERLANG_DEFAULT, ?wxSTC_ERLANG_MODULES_ATT)],
-	update_line_margin(Editor),
 	ok.
 
 
@@ -635,84 +824,163 @@ set_marker_colour(Editor, {Fg, Bg}) ->
 
 %% =====================================================================
 %% @doc
+%% @private
 
 set_font_size(Editor, Id, Size) ->
 	wxStyledTextCtrl:styleSetSize(Editor, Id, list_to_integer(Size)).
 
 
 %% =====================================================================
-%% @doc
+%% Selections, Indentations
+%% =====================================================================
 
-reset_styles_to_default(Editor, Styles) ->
-	%% switch lexer to null
-	% StyleResetDefault()
+%% =====================================================================
+%% @doc
+%% @private
+
+indent_line(Editor, Ln, Indent) ->
+	wxStyledTextCtrl:setLineIndentation(Editor, Ln, (wxStyledTextCtrl:getLineIndentation(Editor, Ln) + Indent)),
 	ok.
+	
+
+%% =====================================================================
+%% @doc
+%% @private
+
+lines(Editor, {Start, End}) ->
+	lists:seq(wxStyledTextCtrl:lineFromPosition(Editor, Start), 
+		wxStyledTextCtrl:lineFromPosition(Editor, End)).
 
 
 %% =====================================================================
 %% @doc
+%% @private
 
-set_tab_width(EditorPid, Width) ->
-	wxStyledTextCtrl:setTabWidth(wx_object:call(EditorPid, stc), Width).
-
-
-%% =====================================================================
-%% @doc
-
-set_use_tabs(EditorPid, Bool) ->
-	wxStyledTextCtrl:setUseTabs(wx_object:call(EditorPid, stc), Bool).
+count_selected_lines(Editor) ->
+	{N, M} = wxStyledTextCtrl:getSelection(Editor),
+	Start = wxStyledTextCtrl:lineFromPosition(Editor, N),
+	End = wxStyledTextCtrl:lineFromPosition(Editor, M),
+	(End - Start) + 1.
 
 
 %% =====================================================================
-%% @doc
-
-set_indent_guides(EditorPid, Bool) ->
-	wxStyledTextCtrl:setIndentationGuides(wx_object:call(EditorPid, stc), Bool),
-	ok.
+%% Commenting
+%% =====================================================================
 
 %% =====================================================================
 %% @doc
+%% @private
 
-set_line_wrap(EditorPid, Bool) ->
-	Result = case Bool of
-		true -> 1;
-		_ -> 0
+count_commented_lines_re(Editor) ->
+	Txt = wxStyledTextCtrl:getSelectedText(Editor),
+	Count = case re:run(Txt, "^\\s*%", [global, multiline]) of
+		{match, Captured} ->
+			length(Captured);
+		nomatch -> 0
 	end,
-	wxStyledTextCtrl:setWrapMode(wx_object:call(EditorPid, stc), Result).
+	Count.
 
 
 %% =====================================================================
-%% @doc
+%% Regex replace. Returns a list.
+%% @private
 
-set_line_margin_visible(EditorPid, Bool) ->
-	Editor = wx_object:call(EditorPid, stc),
-	case Bool of
-		true -> set_linenumber_default(Editor, user_prefs:get_user_pref({pref, font}));
-		false -> wxStyledTextCtrl:setMarginWidth(Editor, 0, 0)
+regex_replace(Subject, Search, Replace) ->
+	{ok, Regex} = re:compile(Search, [multiline]),
+	Result = re:replace(Subject, Regex, Replace, [global, {return, list}]),
+	{Result,length(Result)}.
+
+
+%% =====================================================================
+%% Regex replace. Returns a list.	
+%% @private
+
+remove_comments(Subject) ->
+	regex_replace(Subject, "(^\\s*)% ?", "\\g1").
+
+
+%% =====================================================================
+%% Regex replace. Returns a list.	
+%% @private
+
+insert_comments(Subject) ->
+	regex_replace(Subject, "^", "% ").
+
+
+%% =====================================================================
+%% Regex replace. Returns a list.
+%% @private
+
+single_line_comment(Editor) ->
+	Pos = wxStyledTextCtrl:getCurrentPos(Editor),
+	Start = wxStyledTextCtrl:positionFromLine(Editor, wxStyledTextCtrl:lineFromPosition(Editor, Pos)),
+	wxStyledTextCtrl:setTargetStart(Editor, Start),
+	End = wxStyledTextCtrl:getLineEndPosition(Editor, wxStyledTextCtrl:lineFromPosition(Editor, Pos)),
+	wxStyledTextCtrl:setTargetEnd(Editor, End),
+	Txt = wxStyledTextCtrl:getTextRange(Editor, Start, End),
+	{{Result,_},Offset} = case wxStyledTextCtrl:getCharAt(Editor, wxStyledTextCtrl:getTargetStart(Editor)) of
+		37 -> {remove_comments(Txt),-1};
+		_ -> {insert_comments(Txt),1}
+	end,	
+	wxStyledTextCtrl:replaceTarget(Editor, Result),
+	%% Force caret to be at the end of the last selected line
+	wxStyledTextCtrl:gotoPos(Editor, Pos + Offset),
+	ok.
+
+
+%% =====================================================================
+%% This moves the caret back onto the last line of the selection, rather
+%% @doc than the first position of the next line
+%% @private
+
+correct_caret(Editor, Pos) ->
+	{X,Y} = position_to_x_y(Editor, Pos),
+	case position_to_x_y(Editor, Pos) of
+		{_,0} -> %% Move the caret back one position
+			wxStyledTextCtrl:setCurrentPos(Editor, wxStyledTextCtrl:getCurrentPos(Editor) - 1);		
+		_ -> ok
 	end.
 
 
 %% =====================================================================
-%% Find and replace
-%% 
+%% @doc Parse the document for a list of current functions
+%% @private
+
+parse_functions(Editor) ->
+	Input = wxStyledTextCtrl:getText(Editor),
+	Regex = "^\\s*((?:[a-z]+[a-zA-Z\\d_@]*))(?:\\(.*\\))",
+	Result = case re:run(Input, Regex, [unicode, global, multiline, {capture, all_but_first, list}]) of
+		nomatch -> false, [];
+		{_,Captured} -> Captured
+	end,
+	func_list:set(Result),
+	ok.
+
+
 %% =====================================================================
+%% @doc Highlight the current line to attract the user's attention.
+%% NOTE: This was originally implemented using markerAdd() using a marker
+%% that wasn't in the margins mask. This caused a segmentation error on
+%% OSX wx294 erlang16b01
+%% @private
 
-find(EditorPid, Str) ->
-  TextCtrl = wx_object:call(EditorPid, stc),
-  Pos = wxStyledTextCtrl:findText(TextCtrl, 0, 
-		wxStyledTextCtrl:getLength(TextCtrl), Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]),
-	io:format("Pos: ~p~n", [position_to_x_y(TextCtrl, Pos)]).
+flash_current_line(Editor, _, _, 0) -> ok;
+flash_current_line(Editor, Colour, Interval, N) ->
+	wxStyledTextCtrl:setCaretLineBackground(Editor, Colour),
+	wxStyledTextCtrl:setCaretLineVisible(Editor, true),
+	receive
+	after Interval ->
+		wxStyledTextCtrl:setCaretLineVisible(Editor, false),
+		flash_current_line(Editor, Colour, Interval, N - 1)
+	end. 
 
-%% ===================================================================== 
-%% @doc Search/replace with next/prev
 
-% find(EditorPid, Str) ->
-%   TextCtrl = wx_object:call(EditorPid, stc),
-%   Pos = wxStyledTextCtrl:findText(TextCtrl, 0, 
-% 		wxStyledTextCtrl:getLength(TextCtrl), Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]),
-%   wxStyledTextCtrl:startStyling(TextCtrl, Pos, ?wxSTC_INDICS_MASK),
-%   wxStyledTextCtrl:setStyling(TextCtrl, length(Str), ?wxSTC_INDIC0_MASK).
-%   %% Bookmark line and add indicator to word
+%% =====================================================================
+%% @doc
+%% @private
+	
+get_focus(This) ->
+	wxStyledTextCtrl:setFocus(This).
 
 
 %% =====================================================================
@@ -727,25 +995,9 @@ find(Editor, Str, Start, End) ->
       wxStyledTextCtrl:setStyling(Editor, length(Str), ?wxSTC_INDIC0_MASK),
       % {last_pos, Pos + length(Str)}
       find(Editor, Str, Pos + length(Str), End)
-  end.
-
-
-%% ===================================================================== 
-%% @doc Find all occurrences of Str.
-
-find_all(EditorPid, Str) ->
-  Editor = wx_object:call(EditorPid, stc),
-  find(Editor, Str, 0, wxStyledTextCtrl:getLength(Editor)).
-
-
-%% ===================================================================== 
-%% @doc Replace all occurrences of str with RepStr.
-
-replace_all(EditorPid, Str, RepStr) ->
-    Editor = wx_object:call(EditorPid, stc),
-    replace_all(Editor, Str, RepStr, 0, wxStyledTextCtrl:getLength(Editor)).
-
-
+  end.	
+	
+	
 %% ===================================================================== 
 %% @doc Replace all occurrences of str with RepStr.
 
@@ -770,205 +1022,3 @@ replace(EditorPid, Str, Start, End) ->
   wxStyledTextCtrl:setTargetStart(Editor, Start),
   wxStyledTextCtrl:setTargetEnd(Editor, End),
   wxStyledTextCtrl:replaceTarget(Editor, Str).
-
-
-%% =====================================================================
-%% Selections, Indentations
-%% 
-%% =====================================================================
-
-indent_line_left(EditorPid) ->
-	Editor = wx_object:call(EditorPid, stc),
-	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_BACKTAB),
-	ok.
-
-indent_line_right(EditorPid) ->
-	Editor = wx_object:call(EditorPid, stc),
-	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_TAB),
-	ok.
-
-indent_line(Editor, Ln, Indent) ->
-	wxStyledTextCtrl:setLineIndentation(Editor, Ln, (wxStyledTextCtrl:getLineIndentation(Editor, Ln) + Indent)),
-	ok.
-
-lines(Editor, {Start, End}) ->
-	lists:seq(wxStyledTextCtrl:lineFromPosition(Editor, Start), 
-		wxStyledTextCtrl:lineFromPosition(Editor, End)).
-
-count_selected_lines(Editor) ->
-	{N, M} = wxStyledTextCtrl:getSelection(Editor),
-	Start = wxStyledTextCtrl:lineFromPosition(Editor, N),
-	End = wxStyledTextCtrl:lineFromPosition(Editor, M),
-	(End - Start) + 1.
-
-
-%% =====================================================================
-%% Commenting
-%% 
-%% =====================================================================
-
-comment(EditorPid) ->
-	Editor = wx_object:call(EditorPid, stc),
-	case wxStyledTextCtrl:getSelection(Editor) of
-		{N,N} -> single_line_comment(Editor);
-		{N,M} ->
-			Sel = count_selected_lines(Editor),
-			{Result,Length} = case count_commented_lines_re(Editor) of
-				Sel -> remove_comments(wxStyledTextCtrl:getSelectedText(Editor));
-				_ -> insert_comments(wxStyledTextCtrl:getSelectedText(Editor))
-			end,
-			wxStyledTextCtrl:replaceSelection(Editor, Result),
-			wxStyledTextCtrl:setSelectionStart(Editor, N),
-			wxStyledTextCtrl:setSelectionEnd(Editor, N + Length),
-			correct_caret(Editor, wxStyledTextCtrl:getCurrentPos(Editor))
-	end,
-	ok.
-
-
-%% =====================================================================
-%% Regex replace. Returns a list.	
-
-count_commented_lines_re(Editor) ->
-	Txt = wxStyledTextCtrl:getSelectedText(Editor),
-	Count = case re:run(Txt, "^\\s*%", [global, multiline]) of
-		{match, Captured} ->
-			length(Captured);
-		nomatch -> 0
-	end,
-	Count.
-
-
-%% =====================================================================
-%% Regex replace. Returns a list.
-
-regex_replace(Subject, Search, Replace) ->
-	{ok, Regex} = re:compile(Search, [multiline]),
-	Result = re:replace(Subject, Regex, Replace, [global, {return, list}]),
-	{Result,length(Result)}.
-
-
-%% =====================================================================
-%% Regex replace. Returns a list.	
-
-remove_comments(Subject) ->
-	regex_replace(Subject, "(^\\s*)% ?", "\\g1").
-
-
-%% =====================================================================
-%% Regex replace. Returns a list.	
-
-insert_comments(Subject) ->
-	regex_replace(Subject, "^", "% ").
-
-
-%% =====================================================================
-%% Regex replace. Returns a list.	
-
-single_line_comment(Editor) ->
-	Pos = wxStyledTextCtrl:getCurrentPos(Editor),
-	Start = wxStyledTextCtrl:positionFromLine(Editor, wxStyledTextCtrl:lineFromPosition(Editor, Pos)),
-	wxStyledTextCtrl:setTargetStart(Editor, Start),
-	End = wxStyledTextCtrl:getLineEndPosition(Editor, wxStyledTextCtrl:lineFromPosition(Editor, Pos)),
-	wxStyledTextCtrl:setTargetEnd(Editor, End),
-	Txt = wxStyledTextCtrl:getTextRange(Editor, Start, End),
-	{{Result,_},Offset} = case wxStyledTextCtrl:getCharAt(Editor, wxStyledTextCtrl:getTargetStart(Editor)) of
-		37 -> {remove_comments(Txt),-1};
-		_ -> {insert_comments(Txt),1}
-	end,	
-	wxStyledTextCtrl:replaceTarget(Editor, Result),
-	%% Force caret to be at the end of the last selected line
-	wxStyledTextCtrl:gotoPos(Editor, Pos + Offset),
-	ok.
-
-
-%% =====================================================================
-%% This moves the caret back onto the last line of the selection, rather
-%% than the first position of the next line
-
-correct_caret(Editor, Pos) ->
-	{X,Y} = position_to_x_y(Editor, Pos),
-	case position_to_x_y(Editor, Pos) of
-		{_,0} -> %% Move the caret back one position
-			wxStyledTextCtrl:setCurrentPos(Editor, wxStyledTextCtrl:getCurrentPos(Editor) - 1);		
-		_ -> ok
-	end.
-
-
-%% =====================================================================
-%% Parse the document for a list of current functions
-
-parse_functions(Editor) ->
-	Input = wxStyledTextCtrl:getText(Editor),
-	Regex = "^\\s*((?:[a-z]+[a-zA-Z\\d_@]*))(?:\\(.*\\))",
-	Result = case re:run(Input, Regex, [unicode, global, multiline, {capture, all_but_first, list}]) of
-		nomatch -> false, [];
-		{_,Captured} -> Captured
-	end,
-	func_list:set(Result),
-	ok.
-
-
-%% =====================================================================
-%% Move the caret to the line Line and Column Col.
-
-go_to_position(This, Pos) ->
-	Editor = wx_object:cast(This, {goto_pos, Pos}).
-
-
-get_current_pos(This) ->
-	Stc = wx_object:call(This, stc),
-	position_to_x_y(Stc, wxStyledTextCtrl:getCurrentPos(Stc)).
-
-%% =====================================================================
-%% Highlight the current line to attract the user's attention.
-%% NOTE: This was originally implemented using markerAdd() using a marker
-%% that wasn't in the margins mask. This caused a segmentation error on
-%% OSX wx294 erlang16b01
-%% 
-
-flash_current_line(Editor, _, _, 0) -> ok;
-flash_current_line(Editor, Colour, Interval, N) ->
-	wxStyledTextCtrl:setCaretLineBackground(Editor, Colour),
-	wxStyledTextCtrl:setCaretLineVisible(Editor, true),
-	receive
-	after Interval ->
-		wxStyledTextCtrl:setCaretLineVisible(Editor, false),
-		flash_current_line(Editor, Colour, Interval, N - 1)
-	end. 
-	
-zoom_in(EditorPid) ->
-	Editor = wx_object:call(EditorPid, stc),
-	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_ZOOMIN).
-
-zoom_out(EditorPid) ->
-	Editor = wx_object:call(EditorPid, stc),
-	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_ZOOMOUT).
-
-transform_uc_selection(EditorPid) ->
-	Editor = wx_object:call(EditorPid, stc),
-	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_UPPERCASE).
-	
-transform_lc_selection(EditorPid) ->
-	Editor = wx_object:call(EditorPid, stc),
-	wxStyledTextCtrl:cmdKeyExecute(Editor, ?wxSTC_CMD_LOWERCASE).
-	
-transform_selection(EditorPid, {transform, Type}) ->
-	Editor = wx_object:call(EditorPid, stc),
-	Cmd = case Type of 
-		uppercase -> ?wxSTC_CMD_UPPERCASE;
-		lowercase -> ?wxSTC_CMD_LOWERCASE
-	end,
-	wxStyledTextCtrl:cmdKeyExecute(Editor, Cmd).
-	
-get_editor_path(This) ->
-	wx_object:call(This, path).
-	
-fn_list(EditorPid, Str) ->
-	get_focus(wx_object:call(EditorPid, stc)),
-	ok.
-	
-get_focus(This) ->
-	wxStyledTextCtrl:setFocus(This).
-	
-link_poller(Pid, Path) ->
-	wx_object:cast(Pid, {link_poller, Path}).

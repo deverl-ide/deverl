@@ -104,7 +104,6 @@ new_document_from_existing(Path, Contents) ->
 %% @doc Add an existing document to the notebook.
 
 new_document_from_existing(Path, Contents, Options) -> 
-	io:format("Path: ~p~n", [Path]),
 	Editor = wx_object:call(?MODULE, {new_document, filename:basename(Path), [{path, Path}] ++ Options}),
 	editor:set_text(Editor, Contents),
 	editor:empty_undo_buffer(Editor),
