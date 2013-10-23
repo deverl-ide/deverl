@@ -98,11 +98,15 @@ init(Options) ->
 
 	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Frame, FrameSizer),
-
+	
+	SplitterStyle = case os:type() of
+		{_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
+		_ -> ?wxSP_3DSASH
+	end,
 	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},
-		{style, ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE}]),
+		{style, SplitterStyle}]),
 	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL},
-		{style, ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE}]),	
+		{style, SplitterStyle}]),	
 
 	wxSplitterWindow:setSashGravity(SplitterTopBottom, 0.5),
 	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
