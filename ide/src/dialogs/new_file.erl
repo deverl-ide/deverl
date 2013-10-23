@@ -62,8 +62,7 @@
 %% =====================================================================
 
 start(Config) ->
-  %wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
-  wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
+  wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
 
 %% =====================================================================
@@ -170,7 +169,7 @@ terminate(_Reason, #state{win=Dialog}) ->
 handle_event(#wx{event=#wxClose{}}, State) ->
   {stop, normal, State};
 handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}},
-             State=#state{win=Dialog}) ->
+             State) ->
   {stop, normal, State};
 handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=Dialog1, dialog2=undefined, swap_sizer=Sz}) ->
@@ -223,13 +222,13 @@ handle_event(#wx{id=?FINISH_BUTTON, event=#wxCommand{type=command_button_clicked
   Filename = get_filename(Parent) ++ get_file_extension(Parent),
   Path = get_path_text(Parent),
   {_, ProjectPath} = get_project_choice(Parent),
-  ide_io:create_new_file(Path, Filename),
   case get_project_choice(Parent) of
     {"No Project", _} ->
       ok;
     _ ->
       ide_projects_tree:refresh_project(ProjectPath)
   end,
+  ide_io:create_new_file(Path, Filename),
   {stop, normal, State};
 handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_selected, commandInt=Index}},
              State=#state{win=Parent}) ->

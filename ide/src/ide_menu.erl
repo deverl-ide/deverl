@@ -1,3 +1,12 @@
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc
+%% @end
+%% =====================================================================
+
 -module(ide_menu).
 
 %% Client API
@@ -12,14 +21,54 @@
 
 
 %% =====================================================================
-%% @doc Start/add a new menubar/toolbar to the frame
+%% Client API
+%% =====================================================================
+
+%% =====================================================================
+%% @doc Start/add a new menubar/toolbar to the frame.
 
 create(Config) ->
   init(Config).
 
+
+%% =====================================================================
+%% @doc Update the label of a menu item.
+
+update_label(Menubar, ItemId, Label) ->
+	wxMenuBar:setLabel(Menubar, ItemId, Label).
+
+
+%% =====================================================================
+%% @doc Toggle the enabled status of a menu item.
+	
+toggle_item(Menubar, ItemId) ->
+	wxMenuBar:enable(Menubar, ItemId, not wxMenuBar:isEnabled(Menubar, ItemId)).
+
+
+%% =====================================================================
+%% @doc Get the checked item in a radio menu
+
+-spec get_checked_menu_item(MenuItems) -> Result when
+	MenuItems :: [wxMenuItem:wxMenuItem()],
+	Result :: {'ok', wxMenuItem:wxMenuItem()}.
+
+get_checked_menu_item([]) ->
+  {error, nomatch};
+get_checked_menu_item([H|T]) ->
+  case wxMenuItem:isChecked(H) of
+    true ->
+      {ok, H};
+    _ ->
+      get_checked_menu_item(T)
+  end.
+    
     
 %% =====================================================================
-%% @doc Initialise the menubar/toolbar
+%% Internal functions
+%% =====================================================================
+
+%% =====================================================================
+%% @doc Initialise the menubar/toolbar.
 
 init(Config) ->
   Frame = proplists:get_value(parent, Config),
@@ -176,10 +225,9 @@ init(Config) ->
 		
 	wxFrame:setMenuBar(Frame, MenuBar),
     
-	%% =====================================================================
+	%% ===================================================================
 	%% Toolbar
-	%% 
-	%% =====================================================================
+	%% ===================================================================
 
 	ToolBar = wxFrame:createToolBar(Frame, []),
 	% wxToolBar:setMargins(ToolBar, 10, 10),
@@ -236,7 +284,7 @@ init(Config) ->
 
 	wxToolBar:realize(ToolBar),
 		
-  %% =====================================================================
+  %% ===================================================================
   %% ETS menu events table.
   %% Record format: {Id, {Module, Function, [Args]}, [Options]}
   %% When Options can be 0 or more of:
@@ -247,8 +295,8 @@ init(Config) ->
   %%		HelpString :: string(), % help string for status bar
   %%		Groups :: integer(), % any menu groups to which the menu item belongs (combine by adding)
   %%		Use send_event to forward the event record to Function
-  %%		
-  %% =====================================================================  
+  %% ===================================================================  
+  
   TabId = ets:new(myTable, []),
   ets:insert(TabId, [
 		{?wxID_NEW,{doc_manager,new_file,[Frame]}},
@@ -355,35 +403,3 @@ generate_radio_submenu(Menu, [Label|T], Label, StartId) ->
 generate_radio_submenu(Menu, [Label|T], ToCheck, StartId) ->
 	wxMenu:appendRadioItem(Menu, StartId, Label),
 	generate_radio_submenu(Menu, T, ToCheck, StartId + 1).
-  
-  
-%% =====================================================================
-%% @doc Update the label of a menu item
-
-update_label(Menubar, ItemId, Label) ->
-	wxMenuBar:setLabel(Menubar, ItemId, Label).
-
-
-%% =====================================================================
-%% @doc Toggle the enabled status of a menu item
-	
-toggle_item(Menubar, ItemId) ->
-	wxMenuBar:enable(Menubar, ItemId, not wxMenuBar:isEnabled(Menubar, ItemId)).
-
-
-%% =====================================================================
-%% @doc Get the checked item in a radio menu
-
--spec get_checked_menu_item(MenuItems) -> Result when
-	MenuItems :: [wxMenuItem:wxMenuItem()],
-	Result :: {'ok', wxMenuItem:wxMenuItem()}.
-
-get_checked_menu_item([]) ->
-  {error, nomatch};
-get_checked_menu_item([H|T]) ->
-  case wxMenuItem:isChecked(H) of
-    true ->
-      {ok, H};
-    _ ->
-      get_checked_menu_item(T)
-  end.
