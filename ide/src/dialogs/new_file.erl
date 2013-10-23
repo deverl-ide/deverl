@@ -1,10 +1,22 @@
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc
+%% A module that constructs and displays a modal dialog box for creating
+%% a new file. Handlers and internal functions deal with user input and
+%% functionality.
+%% @end
+%% =====================================================================
+
 -module(new_file).
 
 -include_lib("wx/include/wx.hrl").
 
 -behaviour(wx_object).
 
-%% wx_objects callbacks
+%% wx_object
 -export([init/1, terminate/2, code_change/3, handle_event/2,
          handle_call/3, handle_cast/2, handle_info/2]).
 %% API
@@ -14,7 +26,7 @@
                 dialog1    :: wxPanel:wxPanel(),
                 dialog2    :: wxPanel:wxPanel(),
                 swap_sizer :: wxSizer:wxSizer(),
-                projects   :: [string()]
+                projects   :: [project_manager:project_id()]
                }).
 
 -define(FILE_TYPE_ERLANG, 0).
@@ -45,22 +57,31 @@
                        "OTP Supervisor (.erl)"]).
 
 
+%% =====================================================================
+%% Client API
+%% =====================================================================
+
 start(Config) ->
   wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
+
+
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
+
 
 init({Parent, Projects, ActiveProject}) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 500}},
                                                         {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                 ?wxRESIZE_BORDER bor
                                                                 ?wxDIALOG_EX_METAL}]),
-																																
 	%% Conditional compilation OSX
 	case os:type() of
 		{_, darwin} ->
 			wxWindow:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL);
 		 _ -> ok
-	end,																	
-																																
+	end,
+
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxSizer:addSpacer(LRSizer, 20),
   wxDialog:setSizer(Dialog, LRSizer),
@@ -104,17 +125,13 @@ init({Parent, Projects, ActiveProject}) ->
   wxSizer:addSpacer(LRSizer, 20),
   wxSizer:addSpacer(MainSizer, 20),
   wxDialog:connect(ButtonPanel, command_button_clicked, [{skip, true}]),
-  
+  wxDialog:connect(Dialog, close_window, []),
+
   wxButton:disable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
   wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON)),
 
   {Dialog, #state{win=Dialog, dialog1=Dialog1, swap_sizer=SwapSizer, projects=Projects}}.
 
-
-%% =====================================================================
-%% OTP callbacks
-%%
-%% =====================================================================
 
 handle_cast(_Msg, State) ->
   io:format("handle_cast/2: NEW FILE DIALOG"),
@@ -136,11 +153,23 @@ handle_call(dialog2, _From, State) ->
 handle_call(projects, _From, State) ->
     {reply, State#state.projects, State}.
 
+code_change(_, _, State) ->
+  {stop, not_yet_implemented, State}.
+
+terminate(_Reason, #state{win=Dialog}) ->
+  io:format("TERMINATE NEW FILE DIALOG~n"),
+  wxDialog:endModal(Dialog, ?wxID_CANCEL),
+  wxDialog:destroy(Dialog).
+
+
+%% =====================================================================
+%% Event handlers
+%% =====================================================================
+
 handle_event(#wx{event=#wxClose{}}, State) ->
   {stop, normal, State};
 handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}},
-             State=#state{win=Dialog}) ->
-  wxDialog:destroy(Dialog),
+             State) ->
   {stop, normal, State};
 handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=Dialog1, dialog2=undefined, swap_sizer=Sz}) ->
@@ -188,22 +217,19 @@ handle_event(#wx{id=?BROWSE_BUTTON, event=#wxCommand{type=command_button_clicked
       browse_dialog(Parent, ProjectPath ++ get_default_folder_text(Parent))
   end,
   {noreply, State};
-	
 handle_event(#wx{id=?FINISH_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=_Dialog1, dialog2=_Dialog2}) ->
   Filename = get_filename(Parent) ++ get_file_extension(Parent),
   Path = get_path_text(Parent),
   {_, ProjectPath} = get_project_choice(Parent),
-  ide_io:create_new_file(Path, Filename),
   case get_project_choice(Parent) of
     {"No Project", _} ->
       ok;
     _ ->
       ide_projects_tree:refresh_project(ProjectPath)
   end,
+  ide_io:create_new_file(Path, Filename),
   {stop, normal, State};
-
-
 handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_selected, commandInt=Index}},
              State=#state{win=Parent}) ->
   case Index of
@@ -218,13 +244,10 @@ handle_event(#wx{id=?FILENAME_BOX, event=#wxCommand{type=command_text_updated}},
   check_if_finished(Parent),
   {noreply, State}.
 
-code_change(_, _, State) ->
-  {stop, not_yet_implemented, State}.
 
-terminate(_Reason, #state{win=Dialog}) ->
-  io:format("TERMINATE NEW FILE DIALOG~n"),
-  wxDialog:endModal(Dialog, ?wxID_CANCEL).
-
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
 
 %% =====================================================================
 %% @doc Create the first page of the New File dialog.
@@ -449,7 +472,7 @@ get_path_text(Parent) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Get the specified filename from the file name TextCtrl.
 
 get_filename(Parent) ->
   FilenameBox = wx:typeCast(wxWindow:findWindow(Parent, ?FILENAME_BOX), wxTextCtrl),
@@ -504,10 +527,14 @@ swap(Sizer, Dialog1, Dialog2) ->
 
 add_project_data(_, []) ->
   ok;
-add_project_data(ProjectChoice, [Path|Projects]) ->
-  wxChoice:append(ProjectChoice, filename:basename(Path), Path),
+add_project_data(ProjectChoice, [ProjectId|Projects]) ->
+  wxChoice:append(ProjectChoice, project_manager:get_name(ProjectId), project_manager:get_root(ProjectId)),
   add_project_data(ProjectChoice, Projects).
 
+
+%% =====================================================================
+%% Tree creation functions
+%% =====================================================================
 
 %% =====================================================================
 %% @doc Create the directory tree structure for the Browse Dialog.
@@ -524,10 +551,16 @@ create_tree(Parent, Root) ->
   wxTreeCtrl:expand(Tree, RootItem),
   Tree.
 
+%% =====================================================================
+%% @doc Build the tree structure for a given tree item.
+
 build_tree(Tree, Item) ->
   Root = wxTreeCtrl:getItemData(Tree, Item),
   Files = filelib:wildcard(Root ++ "/*"),
   add_files(Tree, Item, Files).
+
+%% =====================================================================
+%% @doc Add the files to the given tree item.
 
 add_files(_, _, []) ->
 	ok;

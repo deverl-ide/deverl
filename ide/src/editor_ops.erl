@@ -1,8 +1,19 @@
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc
+%% A module of functions that provide text editor operations.
+%% @end
+%% =====================================================================
+
 -module(editor_ops).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
 
+%% API
 -export([
 	update_styles/1,
 	find_replace/1,
@@ -20,6 +31,9 @@
   go_to_line/1
 	]).
 
+
+%% =====================================================================
+%% @doc
 
 update_styles(Frame) ->
   %% Display the system font picker
@@ -39,7 +53,7 @@ update_styles(Frame) ->
 
 
 %% =====================================================================
-%% @doc Show the find/replace dialog
+%% @doc Show the find/replace dialog.
 
 find_replace(Parent) ->
   FindData = find_replace_data:new(),
@@ -54,7 +68,8 @@ find_replace(Parent) ->
 
 
 %% =====================================================================
-%% @doc The following functions operate on all open documents.
+%% Functions for all open documents
+%% =====================================================================
 
 set_theme(ThemeMenu) ->
   {ok, Ckd} = ide_menu:get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
@@ -87,7 +102,8 @@ set_indent_guides(Menu) ->
 
 
 %% =====================================================================
-%% @doc The following functions operate on a single document.
+%% Functions for single documents
+%% =====================================================================
 
 transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 	Cmd = case Id of
@@ -96,15 +112,20 @@ transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 	end,
 	doc_manager:apply_to_active_document(fun editor:transform_selection/2, [{transform, Cmd}]).
 
-indent_line_right() -> doc_manager:apply_to_active_document(fun editor:indent_line_right/1).
-indent_line_left() -> doc_manager:apply_to_active_document(fun editor:indent_line_left/1).
-comment() -> doc_manager:apply_to_active_document(fun editor:comment/1).
-zoom_in() -> doc_manager:apply_to_active_document(fun editor:zoom_in/1).
-zoom_out() -> doc_manager:apply_to_active_document(fun editor:zoom_out/1).
+indent_line_right() -> 
+  doc_manager:apply_to_active_document(fun editor:indent_line_right/1).
+indent_line_left() -> 
+  doc_manager:apply_to_active_document(fun editor:indent_line_left/1).
+comment() -> 
+  doc_manager:apply_to_active_document(fun editor:comment/1).
+zoom_in() -> 
+  doc_manager:apply_to_active_document(fun editor:zoom_in/1).
+zoom_out() -> 
+  doc_manager:apply_to_active_document(fun editor:zoom_out/1).
 
 
 %% =====================================================================
-%% @doc Display the goto line dialog
+%% @doc Display the goto line dialog.
 
 go_to_line(Parent) ->
 	Callback =

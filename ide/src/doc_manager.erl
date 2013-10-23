@@ -63,12 +63,12 @@ start(Config) ->
   
 new_file(Parent) ->
   OpenProjects = project_manager:get_open_projects(),
+  
   case project_manager:get_active_project() of
     undefined ->
       Dialog = new_file:start({Parent, OpenProjects, "No Project"});
     ProjectId ->
-      Dialog = new_file:start({Parent, OpenProjects, 
-				filename:basename(project_manager:get_root(ProjectId))})
+      Dialog = new_file:start({Parent, OpenProjects, project_manager:get_name(ProjectId)})
   end,
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
@@ -564,5 +564,4 @@ new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options)	->
 	Editor = editor:start([{parent, Parent}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
 	Index = insert_page(Notebook, Editor, Filename), %% Page changed event not serviced until this completes
 	insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project_id, Options)),
-		P = wxAuiNotebook:getPage(Notebook, 0),
 	Editor.
