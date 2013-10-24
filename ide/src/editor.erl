@@ -467,7 +467,6 @@ init(Config) ->
   ?stc:connect(Editor, stc_charadded, [callback]),
   ?stc:connect(Editor, char, [{skip, true}, {userData, Sb}]),
 	?stc:connect(Editor, key_down, [callback, {userData, {self(), Sb}}]),
-	?stc:connect(Editor, stc_key, [{skip, true}, {userData, Sb}]),
 	?stc:connect(Editor, stc_savepointreached, [{skip, true}, {userData, Sb}]),
 	?stc:connect(Editor, stc_savepointleft, [{skip, true}, {userData, Sb}]),
 	?stc:connect(Editor, set_focus, [{skip, true}]),
@@ -867,8 +866,11 @@ set_font_size(Editor, Id, Size) ->
 
 indent(EditorPid, Cmd) ->
 	Editor = wx_object:call(EditorPid, stc),
-	case ?stc:getSelectedText(Editor) of
-		[] ->
+	{S, E} = ?stc:getSelection(Editor),
+	io:format("S: ~p E:~p~n", [S, E]),
+	R = ?stc:lineFromPosition(Editor, E),
+	case ?stc:lineFromPosition(Editor, S) of
+		R -> %% Single line
 			indent_line(Editor, Cmd);
 		_ ->
 			?stc:cmdKeyExecute(Editor, Cmd)
