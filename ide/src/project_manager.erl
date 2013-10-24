@@ -160,7 +160,6 @@ get_open_projects() ->
 % 			end
 % 		end, [], DocEts).
 
-
 -spec get_root(project_id()) -> path().
 
 get_root(ProjectId) ->
