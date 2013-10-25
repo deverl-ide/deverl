@@ -135,8 +135,7 @@ close_document(Notebook, DocEts, Index) ->
  	Key = wxAuiNotebook:getPage(Notebook, Index),
  	case editor:is_dirty(get_ref(DocEts, Key)) of
  		true ->
-			%% For testing, for now
- 			io:format("File modified since last save, display save/unsave dialog.~n");
+			goo(Notebook, wxAuiNotebook:getPageText(Notebook, Index));
  		_ -> %% Go ahead, close the editor
  			delete_record(DocEts, Key),
        wxAuiNotebook:deletePage(Notebook, Index)
@@ -146,6 +145,13 @@ close_document(Notebook, DocEts, Index) ->
  		_ -> ok
  	end.	
 	
+goo(Notebook, Name) ->
+	Dialog = lib_dialog_wx:save_changes_dialog(Notebook, Name),
+	case wxDialog:showModal(Dialog) of
+		Result ->
+			io:format("RESULT: ~p~n", [Result])
+	end.
+
 
 %% =====================================================================
 %% @doc Gets the index of the currently active document, i.e. the 

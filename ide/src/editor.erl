@@ -296,8 +296,6 @@ comment(EditorPid) ->
 				_ -> 
 					insert_comments(?stc:getSelectedText(Editor))
 			end,
-			io:format("No COM LINES ~p~n", [Sel]),
-			% io:format("COM LINES ~p~n", [Sel]);
 			?stc:replaceSelection(Editor, Result),
 			?stc:setSelectionStart(Editor, N),
 			?stc:setSelectionEnd(Editor, N + Length),
