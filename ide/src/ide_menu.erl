@@ -150,7 +150,7 @@ init(Config) ->
   wxMenu:append(View, ?MENU_ID_TAB_WIDTH, "Tab Width", IndentWidth),
 		
   {Theme, ThemeMax} = generate_radio_submenu(wxMenu:new([]),
-  theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), ?MENU_ID_THEME_LOWEST),
+  editor_theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), ?MENU_ID_THEME_LOWEST),
 		
   wxMenu:append(View, ?MENU_ID_INDENT_GUIDES, "Indent Guides\tCtrl+Alt+G", [{kind, ?wxITEM_CHECK}]),
   wxMenu:check(View, ?MENU_ID_INDENT_GUIDES, user_prefs:get_user_pref({pref, indent_guides})),

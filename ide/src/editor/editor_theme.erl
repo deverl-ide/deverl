@@ -1,4 +1,4 @@
--module(theme).
+-module(editor_theme).
 
 -export([get_theme_names/0,
 				 load_theme/1,
@@ -13,7 +13,6 @@
 %% @private
 
 get_themes(D) ->
-	
 	filelib:fold_files(D, ".+\.theme$", true, fun(F, L) -> [F|L] end, []).
 
 %% =====================================================================
@@ -126,4 +125,3 @@ event(E, Loc, State) ->
 	io:format("Loc: ~p~n", [Loc]),	
 	io:format("State: ~p~n", [State]),
 	State.
-	

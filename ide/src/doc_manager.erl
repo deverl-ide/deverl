@@ -15,7 +15,7 @@
 %% wx_object
 -behaviour(wx_object).
 -export([init/1, terminate/2,  code_change/3,
-         handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+         handle_info/2, handle_call/3, handle_cast/2, handle_event/2, handle_sync_event/3]).
 
 % API
 -export([
@@ -126,30 +126,37 @@ close_active_document() ->
 
 %% =====================================================================
 %% @doc Close the selected editor
-	
+
 close_document(Index) ->
-	{Notebook,_Sb,DocEts} = wx_object:call(?MODULE, notebook),
-	close_document(Notebook, DocEts, Index).
+	wx_object:cast(?MODULE, {close_document, Index}).
 
 close_document(Notebook, DocEts, Index) ->
  	Key = wxAuiNotebook:getPage(Notebook, Index),
  	case editor:is_dirty(get_ref(DocEts, Key)) of
  		true ->
-			goo(Notebook, wxAuiNotebook:getPageText(Notebook, Index));
+			save_changes_request(Notebook, DocEts, Index, wxAuiNotebook:getPageText(Notebook, Index));
  		_ -> %% Go ahead, close the editor
  			delete_record(DocEts, Key),
-       wxAuiNotebook:deletePage(Notebook, Index)
+      wxAuiNotebook:deletePage(Notebook, Index)
  	end,
  	case wxAuiNotebook:getPageCount(Notebook) of
  		0 -> wx_object:cast(?MODULE, notebook_empty);
  		_ -> ok
  	end.	
 	
-goo(Notebook, Name) ->
+save_changes_request(Notebook, DocEts, Index, Name) ->
 	Dialog = lib_dialog_wx:save_changes_dialog(Notebook, Name),
 	case wxDialog:showModal(Dialog) of
-		Result ->
-			io:format("RESULT: ~p~n", [Result])
+		?wxID_CANCEL -> %% Cancel close
+			ok;
+		?wxID_REVERT_TO_SAVED ->  %% Close without saving
+ 			delete_record(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
+      wxAuiNotebook:deletePage(Notebook, Index);
+		?wxID_SAVE -> %% Save the document
+			save_document(ok, get_record(DocEts, index_to_key(Notebook, Index))),
+			%% We need some knowledge of success of save
+			%% potential to enter a loop here			
+			close_document(Notebook, DocEts, Index)
 	end.
 
 
@@ -202,7 +209,6 @@ save_document(Index) ->
 	{Notebook,Sb,DocEts} = wx_object:call(?MODULE, notebook), 
 	case editor:is_dirty(index_to_ref(DocEts, Notebook, Index)) of
 		false -> 
-			ok,
 			Record  = get_record(DocEts, index_to_key(Notebook, Index)),
 			record_get_path(Record);
 		_ ->
@@ -215,7 +221,7 @@ save_document(Sb, Record) ->
 		Path -> %% Document already exists, overwrite
 			ide_io:save(Path, editor:get_text(record_get_ref(Record))),
 			editor:set_savepoint(record_get_ref(Record)),
-			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
+			% ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
 			Path
 	end,
 	Result.
@@ -359,16 +365,20 @@ init(Config) ->
 	%% Create Ets table to store data relating to any open documents
 	DocEts = ets:new(editors, [set, public, {keypos,1}]),
 	
-	Close = fun(E,O) ->
-            wxNotifyEvent:veto(O),
-            close_document(wxAuiNotebookEvent:getSelection(O))
-          end,
+	% Close = fun(E=#wx{userData=D},O) ->
+	%             wxNotifyEvent:veto(O),
+	% 					io:format("PID1: ~p~n", [D]),
+	% 					io:format("PID2: ~p~n", [self()]),						
+	% 					test_get_text()
+	%             % close_document(wxAuiNotebookEvent:getSelection(O))
+	%           end,
 					
 	Ph = lib_widgets:placeholder(Panel, "No Open Documents"),
 	wxSizer:add(Sz, Ph, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
 	wxAuiNotebook:connect(Notebook, command_auinotebook_bg_dclick, []),
-	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [{callback,Close},{userData,DocEts}]),
+	% wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [{callback,Close},{userData,self()}]),
+	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [callback]),
 	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
 
   {Panel, #state{notebook=Notebook, status_bar=Sb, document_ets=DocEts, sizer=Sz, parent=Parent}}.
@@ -382,6 +392,11 @@ handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
 	%% Called when the last document is closed.
 	show_placeholder(Sz),
 	ide:set_title([]),
+	{noreply, State};
+	
+handle_cast({close_document, Index}, State=#state{notebook=Nb, status_bar=Sb, document_ets=Tb}) ->
+	io:format("close_document handler~n"),
+	close_document(Nb, Tb, Index),
 	{noreply, State}.
 
 handle_call(notebook, _, State=#state{notebook=Nb, status_bar=Sb, document_ets=Tb}) ->
@@ -419,6 +434,15 @@ code_change(_, _, State) ->
 terminate(_Reason, State=#state{notebook=Nb}) ->
 	io:format("TERMINATE DOC_MANAGER~n"),
 	wxAuiNotebook:destroy(Nb).
+	
+%% =====================================================================
+%% Sync event handlers
+%% =====================================================================	
+
+handle_sync_event(#wx{}, Event, State=#state{notebook=Nb, document_ets=Ets}) ->
+	wxNotifyEvent:veto(Event),
+	close_document(wxAuiNotebook:getSelection(Nb)),
+	ok.
 
 %% =====================================================================
 %% AUI handlers

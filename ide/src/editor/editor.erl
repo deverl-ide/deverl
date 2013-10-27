@@ -108,23 +108,19 @@ start(Config) ->
 %% =====================================================================
 %% @doc Get the status of the document
 
-is_dirty(Editor) ->
-  wx_object:call(Editor, is_dirty).
+is_dirty(This) ->
+  wx_object:call(This, is_dirty).
 	
 
 %% ===================================================================== 
 %% @doc Add a savepoint: update the document state to unmodified
 
-set_savepoint(EditorPid) ->
-	?stc:setSavePoint(wx_object:call(EditorPid, stc)).
+set_savepoint(This) ->
+	?stc:setSavePoint(wx_object:call(This, stc)).
 	
 
 %% ===================================================================== 
 %% @doc Get the text from the editor
-
--spec get_text(EditorPid) -> Result when
-  EditorPid :: pid(),
-  Result :: string().
 
 get_text(EditorPid) ->
   wx_object:call(EditorPid, text_content).  
@@ -192,7 +188,7 @@ set_text(This, Text) ->
 %% @doc Change the theme of the editor.
 
 set_theme(Editor, Theme, Font) ->
-	case theme:load_theme(Theme) of
+	case editor_theme:load_theme(Theme) of
 		{error, load_theme} -> ok;
 		NewTheme -> setup_theme(wx_object:call(Editor, stc), NewTheme, Font)
 	end,
@@ -432,7 +428,7 @@ init(Config) ->
   ?stc:indicatorSetStyle(Editor,1,?wxSTC_INDIC_BOX),
   ?stc:indicatorSetStyle(Editor,2,?wxSTC_INDIC_PLAIN), %% underline
 
-	case theme:load_theme(user_prefs:get_user_pref({pref, theme})) of
+	case editor_theme:load_theme(user_prefs:get_user_pref({pref, theme})) of
 		{error, load_theme} -> ok; %% Default STC settings
 		Theme -> setup_theme(Editor, Theme, Font)
 	end,
@@ -493,8 +489,10 @@ handle_call(shutdown, _From, State=#state{parent_panel=Panel}) ->
 handle_call(is_dirty, _From, State=#state{dirty=Mod}) ->
   {reply,Mod,State};
 
-handle_call(text_content, _From, State) ->
-  Text = ?stc:getText(State#state.stc),
+handle_call(text_content, _From, State=#state{stc=Editor}) ->
+	io:format("IN text_content handler L494, PID: ~p~n", [self()]),
+	%% The following causes deadlock (CRASH) when called via the Save Changes dialog
+  Text = ?stc:getText(Editor),
   {reply,Text,State};
 
 handle_call(stc, _From, State) ->
@@ -750,9 +748,9 @@ adjust_margin_width(Editor) ->
 %% @private
 
 setup_theme(Editor, [Def | Lex], Font) ->
-	Fg = theme:hexstr_to_rgb(proplists:get_value(fgColour, Def)),
+	Fg = editor_theme:hexstr_to_rgb(proplists:get_value(fgColour, Def)),
 	set_default_styles(Editor, Fg,
-		theme:hexstr_to_rgb(proplists:get_value(bgColour, Def)), Font),
+		editor_theme:hexstr_to_rgb(proplists:get_value(bgColour, Def)), Font),
 	set_theme_styles(Editor, Def, Font),
 	apply_lexer_styles(Editor, Lex, Fg),
 	ok.
@@ -777,17 +775,17 @@ set_default_styles(Editor, Fg, Bg, Font) ->
 
 set_theme_styles(Editor, Styles, Font) ->
   ?stc:setCaretForeground(Editor, 
-		theme:hexstr_to_rgb(proplists:get_value(caret, Styles))),
+		editor_theme:hexstr_to_rgb(proplists:get_value(caret, Styles))),
   ?stc:setSelBackground(Editor, true, 
-		theme:hexstr_to_rgb(proplists:get_value(selection, Styles))),
+		editor_theme:hexstr_to_rgb(proplists:get_value(selection, Styles))),
 	?stc:styleSetBackground(Editor, ?wxSTC_STYLE_LINENUMBER, 
-		theme:hexstr_to_rgb(proplists:get_value(marginBg, Styles))),
+		editor_theme:hexstr_to_rgb(proplists:get_value(marginBg, Styles))),
 	?stc:styleSetForeground(Editor, ?wxSTC_STYLE_LINENUMBER, 
-		theme:hexstr_to_rgb(proplists:get_value(marginFg, Styles))),
+		editor_theme:hexstr_to_rgb(proplists:get_value(marginFg, Styles))),
 	update_line_margin(Editor),
  	set_font_style(Editor, Font),
-  set_marker_colour(Editor, {theme:hexstr_to_rgb(proplists:get_value(markers, Styles)), 
-		theme:hexstr_to_rgb(proplists:get_value(markers, Styles))}).
+  set_marker_colour(Editor, {editor_theme:hexstr_to_rgb(proplists:get_value(markers, Styles)), 
+		editor_theme:hexstr_to_rgb(proplists:get_value(markers, Styles))}).
 
 
 %% =====================================================================

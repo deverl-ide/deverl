@@ -21,4 +21,3 @@ compile() ->
 
 compile_file(Path) ->
 	console_port:call_port("c(\"" ++ Path ++ "\")." ++ io_lib:nl()).
-
