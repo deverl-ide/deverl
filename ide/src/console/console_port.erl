@@ -69,12 +69,12 @@ close_port() ->
 %% =====================================================================
    
 init(Args) ->
-	process_flag(trap_exit, true), %% Die when the parent process dies
+	% process_flag(trap_exit, true), %% Die when the parent process dies
 	{Path, Options} = case os:type() of
 		{win32,_} ->
 			{"C:\\Program Files\\erl5.10.2\\erts-5.10.2\\bin\\erl", [use_stdio]};
 		_Other ->
-			{"/usr/local/lib/erlang/erts-5.10.2/bin/erl", [use_stdio]}
+			{"/usr/local/lib/erlang/erts-5.10.2/bin/erl", [use_stdio, exit_status]}
 	end,
 	try open(Path, Options) of
 		Port -> 
@@ -96,7 +96,12 @@ handle_call({buffer_responses, Bool}, _From, #state{port=Port}=State) ->
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
-handle_info({'EXIT', Port, Reason}, #state{port = Port} = State) ->
+handle_info({Port,{exit_status,Status}}, State) ->
+	io:format("PORT CLOSED INFO 1~n"),
+  % {stop, {port_terminated, ok}, State};
+  {stop, {port_terminated, quit}, State};
+handle_info({'EXIT', Port, Reason}, #state{port=Port}=State) ->
+	io:format("PORT CLOSED~n"),
   {stop, {port_terminated, Reason}, State};
 handle_info({_Port, {data, Response}}, State=#state{buffer_responses=Buffer, queue=Queue}) ->
 	NewState = case Buffer of
@@ -112,10 +117,12 @@ code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
 terminate({port_terminated, _Reason}, _State) ->
+	io:format("TERMINATE CONSOLE YEAHHHH~n"),
   ok;
 terminate(_Reason, #state{port=Port}) ->
 	io:format("TERMINATE CONSOLE~n"),
-  port_close(Port).
+  % port_close(Port),
+	ok.
 		
 
 %% =====================================================================

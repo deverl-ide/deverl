@@ -3,5 +3,6 @@
 		   {i, "include"},
 		   {outdir, "ebin"}]}.
 {'src/preferences/*', [debug_info, {outdir, "ebin"}]}.
-{'src/editor/*', [debug_info, {outdir, "ebin"}]}.
+{'src/editor/*', [debug_info, {i, "include"}, {outdir, "ebin"}]}.
+{'src/console/*', [debug_info, {i, "include"}, {outdir, "ebin"}]}.
 {'src/dialogs/*', [debug_info, {outdir, "ebin"}]}.
