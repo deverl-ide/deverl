@@ -133,13 +133,13 @@ handle_cast({add, Id, Dir}, State=#state{sizer=Sz, tree=Tree}) ->
 	case wxWindow:isShown(Tree) of
 		false ->
 			show_tree(Sz);
-		true -> ok
+		true -> 
+      ok
 	end,
-	Root = wxTreeCtrl:getRootItem(Tree),
-	io:format("DIR: ~p~n", [Dir]),
-	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, {Id, Dir}}]),
-	wxTreeCtrl:setItemImage(Tree, Item, 2),
-	build_tree(Tree, Item, Dir),
+  Root = wxTreeCtrl:getRootItem(Tree),
+  Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, {Id, Dir}}]),
+  wxTreeCtrl:setItemImage(Tree, Item, 2),
+  check_dir_has_contents(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
 	alternate_background(Tree),
   {noreply,State};
@@ -152,9 +152,8 @@ handle_cast({add, Id, Dir, Pos}, State=#state{sizer=Sz, tree=Tree}) ->
 	end,
 	Root = wxTreeCtrl:getRootItem(Tree),
 	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, {Id, Dir}}]),
-	% Item = wxTreeCtrl:insertItem(Tree, Root, Pos, filename:basename(Dir), [{data, Dir}]),
 	wxTreeCtrl:setItemImage(Tree, Item, 2),
-	build_tree(Tree, Item, Dir),
+  check_dir_has_contents(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
 	alternate_background(Tree),
   {noreply,State};
@@ -168,9 +167,11 @@ handle_call(tree, _From, State) ->
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded}}, State) ->
 	alternate_background(Tree),
+  %print_tree_debug(Tree),
 	{noreply, State};
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed}}, State) ->
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
 	alternate_background(Tree),
+  %print_tree_debug(Tree),
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}},
 						 State=#state{frame=Frame}) ->
@@ -188,7 +189,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
 	File = get_path(Tree, Item),
 	case filelib:is_dir(File) of
 		true ->
-			wxTreeCtrl:toggle(Tree, Item),
+      check_tree_item_expanded(Tree, Item),
 			ok;
 		_ ->
 			%% CHECK IF FILE CAN BE OPENED AS TEXT (TO BE DONE IN IO MODULE, NOT HERE!!)
@@ -221,72 +222,6 @@ get_path(Tree, Item) ->
 	case wxTreeCtrl:getItemData(Tree, Item) of
 		{_Id, Path} -> Path;
 		Path -> Path
-	end.
-
-	
-%% =====================================================================
-%% @doc Get a list of files in a given root directory then build its
-%% subdirectories.
-
-build_tree(Tree, Parent, Dir) ->
-	Files = filelib:wildcard(Dir ++ "/*"),
-	add_files(Tree, Parent, lists:reverse(Files)).
-
-
-%% =====================================================================
-%% @doc Add files to the given directory.
-
-add_files(_, _, []) ->
-	ok;
-add_files(Tree, Root, [File|Files]) ->
-	FileName = filename:basename(File),
-	IsDir = filelib:is_dir(File),
-	case IsDir of
-		true ->
-			Child = wxTreeCtrl:appendItem(Tree, Root, FileName, [{data, File}]),
-			wxTreeCtrl:setItemImage(Tree, Child, 0),
-			build_tree(Tree, Child, File);
-		_ ->
-			Child = wxTreeCtrl:prependItem(Tree, Root, FileName, [{data, File}]),
-			wxTreeCtrl:setItemImage(Tree, Child, 1)
-	end,
-	add_files(Tree, Root, Files).
-
-
-%% =====================================================================
-%% @doc Get the project's root item when given any item.
-
-get_project_root(Tree, Item) ->
-	get_project_root(Tree, wxTreeCtrl:getRootItem(Tree),
-		wxTreeCtrl:getItemParent(Tree, Item), Item).
-
-get_project_root(Tree, Root, Root, Item) ->
-	Item;
-get_project_root(Tree, Root, Parent, Item) ->
-	get_project_root(Tree, Root, wxTreeCtrl:getItemParent(Tree, Parent),
-			wxTreeCtrl:getItemParent(Tree, Item)).
-
-
-%% =====================================================================
-%% @doc Print the tree for debugging purposes
-
-print_tree_debug(Tree) ->
-	Root = wxTreeCtrl:getRootItem(Tree),
-	print_tree_debug(Tree, Root, 0).
-
-print_tree_debug(Tree, Node, Indent) ->
-	Spac = lists:duplicate(Indent + 1, "---"),
-	io:format(Spac ++ "Node: ~p~n", [wxTreeCtrl:getItemData(Tree, Node)]),
-	case wxTreeCtrl:itemHasChildren(Tree, Node) of
-		true ->
-			{Child, _} = wxTreeCtrl:getFirstChild(Tree, Node),
-			print_tree_debug(Tree, Child, Indent + 1);
-		false -> ok
-	end,
-	Sibling = wxTreeCtrl:getNextSibling(Tree, Node),
-	case wxTreeCtrl:isTreeItemIdOk(Sibling) of
-		true -> print_tree_debug(Tree, Sibling, Indent);
-		false -> ok
 	end.
 
 
@@ -371,4 +306,112 @@ get_item_from_path(Tree, [H|T], Path) ->
 	case get_path(Tree, H) of
 		Path -> H;
 		_ -> get_item_from_path(Tree, T, Path)
+	end.
+  
+  
+  
+  
+  
+%% =====================================================================
+%% @doc Get a list of files in a given root directory then build its
+%% subdirectories.
+
+insert(Tree, Parent, Dir) ->
+	Files = filelib:wildcard(Dir ++ "/*"),
+	add_files(Tree, Parent, lists:reverse(Files)).
+
+
+add_files(_, _, []) ->
+  ok;
+add_files(Tree, Item, [File|Files]) ->
+  FileName = filename:basename(File),
+	IsDir = filelib:is_dir(File),
+  {Id, _} = wxTreeCtrl:getItemData(Tree, Item),
+	case IsDir of
+		true ->
+			Child = wxTreeCtrl:appendItem(Tree, Item, FileName, [{data, {Id, File}}]),
+			wxTreeCtrl:setItemImage(Tree, Child, 0),
+      Children = filelib:wildcard(File ++ "/*"),
+      check_dir_has_contents(Tree, Child, File);
+		_ ->
+			Child = wxTreeCtrl:prependItem(Tree, Item, FileName, [{data, {Id, File}}]),
+			wxTreeCtrl:setItemImage(Tree, Child, 1)
+	end,
+	add_files(Tree, Item, Files).
+
+
+%% =====================================================================
+%% @doc Get the project's root item when given any item.
+
+get_project_root(Tree, Item) ->
+	get_project_root(Tree, wxTreeCtrl:getRootItem(Tree),
+		wxTreeCtrl:getItemParent(Tree, Item), Item).
+
+get_project_root(Tree, Root, Root, Item) ->
+	Item;
+get_project_root(Tree, Root, Parent, Item) ->
+	get_project_root(Tree, Root, wxTreeCtrl:getItemParent(Tree, Parent),
+			wxTreeCtrl:getItemParent(Tree, Item)).
+
+
+%% =====================================================================
+%% @doc Check if tree item has children. If so, set item has children.
+
+check_dir_has_contents(Tree, Item, FilePath) ->
+  Children = filelib:wildcard(FilePath ++ "/*"),
+  case Children of
+    [] ->
+      ok;
+    _ ->
+      wxTreeCtrl:setItemHasChildren(Tree, Item, [])
+  end.
+
+
+%% =====================================================================
+%% @doc
+
+check_tree_item_expanded(Tree, Item) ->
+  case wxTreeCtrl:isExpanded(Tree, Item) of
+    true ->
+      wxTreeCtrl:toggle(Tree, Item),
+      wxTreeCtrl:deleteChildren(Tree, Item);
+    false ->
+      check_tree_item_has_children(Tree, Item)
+  end. 
+  
+  
+%% =====================================================================
+%% @doc
+
+check_tree_item_has_children(Tree, Item) ->
+  case wxTreeCtrl:itemHasChildren(Tree, Item) of
+    true ->
+      {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
+      insert(Tree, Item, FilePath),
+      wxTreeCtrl:toggle(Tree, Item);
+    false ->
+      ok
+  end.
+  
+      
+%% =====================================================================
+%% @doc Print the tree for debugging purposes
+
+print_tree_debug(Tree) ->
+	Root = wxTreeCtrl:getRootItem(Tree),
+	print_tree_debug(Tree, Root, 0).
+
+print_tree_debug(Tree, Node, Indent) ->
+	Spac = lists:duplicate(Indent + 1, "---"),
+	io:format(Spac ++ "Node: ~p~n", [wxTreeCtrl:getItemData(Tree, Node)]),
+	case wxTreeCtrl:itemHasChildren(Tree, Node) of
+		true ->
+			{Child, _} = wxTreeCtrl:getFirstChild(Tree, Node),
+			print_tree_debug(Tree, Child, Indent + 1);
+		false -> ok
+	end,
+	Sibling = wxTreeCtrl:getNextSibling(Tree, Node),
+	case wxTreeCtrl:isTreeItemIdOk(Sibling) of
+		true -> print_tree_debug(Tree, Sibling, Indent);
+		false -> ok
 	end.
