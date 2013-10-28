@@ -14,29 +14,21 @@
 
 -include_lib("wx/include/wx.hrl").
 
--behaviour(wx_object).
-
 %% wx_object
+-behaviour(wx_object).
 -export([init/1, terminate/2, code_change/3, handle_event/2,
          handle_call/3, handle_cast/2, handle_info/2]).
+
 %% API
 -export([start/1]).
 
--record(state, {win,
-                dialog1    :: wxPanel:wxPanel(),
-                dialog2    :: wxPanel:wxPanel(),
-                swap_sizer :: wxSizer:wxSizer(),
-                projects   :: [project_manager:project_id()]
-               }).
-
+%% Macros
 -define(FILE_TYPE_ERLANG, 0).
 -define(FILE_TYPE_TEXT,   1).
-
 -define(BACK_BUTTON,   9000).
 -define(NEXT_BUTTON,   9001).
 -define(FINISH_BUTTON, 9002).
 -define(BROWSE_BUTTON, 9003).
-
 -define(PROJECT_CHOICE,     9004).
 -define(FILE_TYPE_CHOICE,   9005).
 -define(MODULE_TYPE_CHOICE, 9006).
@@ -55,6 +47,14 @@
                        "OTP Application (.erl)",
                        "OTP Gen Server (.erl)",
                        "OTP Supervisor (.erl)"]).
+											 
+%% Server state
+-record(state, {win,
+                dialog1    :: wxPanel:wxPanel(),
+                dialog2    :: wxPanel:wxPanel(),
+                swap_sizer :: wxSizer:wxSizer(),
+                projects   :: [project_manager:project_id()]
+               }).
 
 
 %% =====================================================================
@@ -69,12 +69,13 @@ start(Config) ->
 %% Callback functions
 %% =====================================================================
 
-
 init({Parent, Projects, ActiveProject}) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "New File", [{size,{640, 500}},
                                                         {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                 ?wxRESIZE_BORDER bor
                                                                 ?wxDIALOG_EX_METAL}]),
+	wxDialog:centre(Dialog),
+	
 	%% Conditional compilation OSX
 	case os:type() of
 		{_, darwin} ->
@@ -160,7 +161,6 @@ terminate(_Reason, #state{win=Dialog}) ->
   io:format("TERMINATE NEW FILE DIALOG~n"),
   wxDialog:endModal(Dialog, ?wxID_CANCEL),
   wxDialog:destroy(Dialog).
-
 
 %% =====================================================================
 %% Event handlers

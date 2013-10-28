@@ -23,8 +23,8 @@
 	set_indent_tabs/1,
 	set_indent_guides/1,
   transform_selection/1,
-	indent_line_right/0,
-	indent_line_left/0,
+	indent_right/0,
+	indent_left/0,
 	comment/0,
 	zoom_in/0,
 	zoom_out/0,
@@ -112,10 +112,10 @@ transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 	end,
 	doc_manager:apply_to_active_document(fun editor:transform_selection/2, [{transform, Cmd}]).
 
-indent_line_right() -> 
-  doc_manager:apply_to_active_document(fun editor:indent_line_right/1).
-indent_line_left() -> 
-  doc_manager:apply_to_active_document(fun editor:indent_line_left/1).
+indent_right() -> 
+  doc_manager:apply_to_active_document(fun editor:indent_right/1).
+indent_left() -> 
+  doc_manager:apply_to_active_document(fun editor:indent_left/1).
 comment() -> 
   doc_manager:apply_to_active_document(fun editor:comment/1).
 zoom_in() -> 

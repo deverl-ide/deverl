@@ -104,7 +104,6 @@ new_document_from_existing(Path, Contents) ->
 %% @doc Add an existing document to the notebook.
 
 new_document_from_existing(Path, Contents, Options) -> 
-	io:format("Path: ~p~n", [Path]),
 	Editor = wx_object:call(?MODULE, {new_document, filename:basename(Path), [{path, Path}] ++ Options}),
 	editor:set_text(Editor, Contents),
 	editor:empty_undo_buffer(Editor),
@@ -136,8 +135,7 @@ close_document(Notebook, DocEts, Index) ->
  	Key = wxAuiNotebook:getPage(Notebook, Index),
  	case editor:is_dirty(get_ref(DocEts, Key)) of
  		true ->
-			%% For testing, for now
- 			io:format("File modified since last save, display save/unsave dialog.~n");
+			goo(Notebook, wxAuiNotebook:getPageText(Notebook, Index));
  		_ -> %% Go ahead, close the editor
  			delete_record(DocEts, Key),
        wxAuiNotebook:deletePage(Notebook, Index)
@@ -147,6 +145,13 @@ close_document(Notebook, DocEts, Index) ->
  		_ -> ok
  	end.	
 	
+goo(Notebook, Name) ->
+	Dialog = lib_dialog_wx:save_changes_dialog(Notebook, Name),
+	case wxDialog:showModal(Dialog) of
+		Result ->
+			io:format("RESULT: ~p~n", [Result])
+	end.
+
 
 %% =====================================================================
 %% @doc Gets the index of the currently active document, i.e. the 

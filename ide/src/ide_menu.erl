@@ -278,9 +278,6 @@ init(Config) ->
             end,      
 
 	[AddTool(Tool) || Tool <- Tools],
-	
-	Search = wxTextCtrl:new(ToolBar, ?wxID_ANY),
-	wxToolBar:addControl(ToolBar, Search),
 
 	wxToolBar:realize(ToolBar),
 		
@@ -330,8 +327,8 @@ init(Config) ->
     {?MENU_ID_INDENT_SPACES, {editor_ops,set_indent_tabs,[]}, [{send_event, true}]},
     {?MENU_ID_INDENT_GUIDES, {editor_ops,set_indent_guides,[View]}},		
       
-		{?MENU_ID_INDENT_RIGHT, {editor_ops, indent_line_right,[]}},
-		{?MENU_ID_INDENT_LEFT, {editor_ops, indent_line_left,[]}},
+		{?MENU_ID_INDENT_RIGHT, {editor_ops, indent_right,[]}},
+		{?MENU_ID_INDENT_LEFT, {editor_ops, indent_left,[]}},
 		{?MENU_ID_TOGGLE_COMMENT, {editor_ops, comment,[]}},
 		{?MENU_ID_GOTO_LINE, {editor_ops,go_to_line,[Frame]}},
 		{?MENU_ID_UC_SEL, {editor_ops,transform_selection,[]}, [{send_event, true}]},

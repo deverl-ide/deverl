@@ -141,7 +141,7 @@ set_active_project(ProjectId) ->
 %% @doc Get all currently open projects
 %% NOTE this currently returns paths and not project ids.
 
--spec get_open_projects() -> [path()].
+-spec get_open_projects() -> [project_id()].
 
 get_open_projects() ->
 	gen_server:call(?MODULE, open_projects).
@@ -159,7 +159,6 @@ get_open_projects() ->
 % 				_ -> Acc
 % 			end
 % 		end, [], DocEts).
-
 
 -spec get_root(project_id()) -> path().
 

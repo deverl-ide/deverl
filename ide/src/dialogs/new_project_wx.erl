@@ -78,50 +78,48 @@ init(Parent) ->
 do_init(Parent) ->
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, "New Project", 
 		[{size,{640,460}}, {style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}]),
-		
-  % Panel = wxPanel:new(Dialog),  
-  Panel = Dialog,  
+	wxDialog:centre(Dialog),
 	
 	%% Conditional compilation OSX
 	case os:type() of
 		{_, darwin} ->
-			wxPanel:setWindowVariant(Panel, ?wxWINDOW_VARIANT_SMALL);
+			wxPanel:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL);
 		 _ -> ok
 	end,
 	
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  wxPanel:setSizer(Panel, LRSizer),
+  wxPanel:setSizer(Dialog, LRSizer),
   wxSizer:addSpacer(LRSizer, 20),
 
   VertSizer = wxBoxSizer:new(?wxVERTICAL),
 	%% Header
   wxSizer:addSpacer(VertSizer, 40),
-	wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "New Project"), []),
+	wxSizer:add(VertSizer, wxStaticText:new(Dialog, ?wxID_ANY, "New Project"), []),
 	wxSizer:addSpacer(VertSizer, 5),
-  wxSizer:add(VertSizer, wxStaticLine:new(Panel, [{style, ?wxLI_HORIZONTAL}]), 
+  wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 
               [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(VertSizer, 20),
 	
 	%% Project name
   FlexGridSz = wxFlexGridSizer:new(3, 3, 10, 10),
-  wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Project Name:"), []),
-	ProjName = wxTextCtrl:new(Panel, ?ID_PROJ_NAME, []),
+  wxSizer:add(FlexGridSz, wxStaticText:new(Dialog, ?wxID_ANY, "Project Name:"), []),
+	ProjName = wxTextCtrl:new(Dialog, ?ID_PROJ_NAME, []),
   wxSizer:add(FlexGridSz, ProjName, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(FlexGridSz, 0, 0, []),
    
 	%% Project path
 	Path = wx_misc:getHomeDir(),
-  wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Project Path:"), []),
-	ProjPath = wxTextCtrl:new(Panel, ?ID_PROJ_PATH, [{value, Path}]),
+  wxSizer:add(FlexGridSz, wxStaticText:new(Dialog, ?wxID_ANY, "Project Path:"), []),
+	ProjPath = wxTextCtrl:new(Dialog, ?ID_PROJ_PATH, [{value, Path}]),
 	wxTextCtrl:disable(ProjPath),
   wxSizer:add(FlexGridSz, ProjPath, [{proportion, 1}, {flag, ?wxEXPAND}]),
-	Browse = wxButton:new(Panel, ?ID_BROWSE_PROJECTS, [{label, "Browse.."}]),
+	Browse = wxButton:new(Dialog, ?ID_BROWSE_PROJECTS, [{label, "Browse.."}]),
 	wxButton:disable(Browse),
   wxSizer:add(FlexGridSz, Browse, [{proportion, 0}]),
 	
 	%% Project checkbox
   wxSizer:add(FlexGridSz, 0, 0, []),
-	DefaultCb = wxCheckBox:new(Panel, ?ID_DEFAULT_PATH_CB, "Use default location"),
+	DefaultCb = wxCheckBox:new(Dialog, ?ID_DEFAULT_PATH_CB, "Use default location"),
 	wxCheckBox:setValue(DefaultCb, true),
   wxSizer:add(FlexGridSz, DefaultCb, []),
   wxSizer:add(FlexGridSz, 0, 0, []),
@@ -130,14 +128,14 @@ do_init(Parent) ->
   wxSizer:add(VertSizer, FlexGridSz, [{flag, ?wxEXPAND}, {proportion, 0}]),      
   wxSizer:addSpacer(VertSizer, 20),   
 	
-  wxSizer:add(VertSizer, wxStaticLine:new(Panel, [{style, ?wxLI_HORIZONTAL}]), 
+  wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 
               [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(VertSizer, 20),
 
 	%% Decscription
-	wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Description"), []),
+	wxSizer:add(VertSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Description"), []),
 	wxSizer:addSpacer(VertSizer, 5),  
-	Desc = wxPanel:new(Panel),
+	Desc = wxPanel:new(Dialog),
 
 	wxPanel:setBackgroundColour(Desc, ?wxWHITE),
 	wxPanel:setForegroundColour(Desc, ?wxBLACK),
@@ -145,16 +143,16 @@ do_init(Parent) ->
 	wxSizer:add(VertSizer, Desc, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(VertSizer, 40),
 	
-  wxSizer:add(VertSizer, wxStaticLine:new(Panel, [{style, ?wxLI_HORIZONTAL}]), 
+  wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 
               [{flag, ?wxEXPAND}]),
 	wxSizer:addSpacer(VertSizer, 20),
 	ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxSizer:addStretchSpacer(ButtonSz),
-	Finish = wxButton:new(Panel, ?wxID_OK, [{label, "Finish"}]),
+	Finish = wxButton:new(Dialog, ?wxID_OK, [{label, "Finish"}]),
 	wxButton:disable(Finish),
   wxSizer:add(ButtonSz, Finish, [{proportion, 0}]),
 	wxSizer:addSpacer(ButtonSz, 10),  
-  wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL, [{label, "Cancel"}]), [{proportion, 0}]),
+  wxSizer:add(ButtonSz, wxButton:new(Dialog, ?wxID_CANCEL, [{label, "Cancel"}]), [{proportion, 0}]),
 	wxSizer:add(VertSizer, ButtonSz, [{flag, ?wxEXPAND}, {proportion, 0}]),   
 	wxSizer:addSpacer(VertSizer, 20),     
   
