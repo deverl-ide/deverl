@@ -104,11 +104,14 @@ new_document_from_existing(Path, Contents) ->
 %% @doc Add an existing document to the notebook.
 
 new_document_from_existing(Path, Contents, Options) -> 
-	Editor = wx_object:call(?MODULE, {new_document, filename:basename(Path), [{path, Path}] ++ Options}),
-	editor:set_text(Editor, Contents),
-	editor:empty_undo_buffer(Editor),
-	editor:set_savepoint(Editor),
-	editor:link_poller(Editor, Path),
+	case wx_object:call(?MODULE, {new_document, filename:basename(Path), [{path, Path}] ++ Options}) of
+		already_open -> ok;
+		Editor ->
+			editor:set_text(Editor, Contents),
+			editor:empty_undo_buffer(Editor),
+			editor:set_savepoint(Editor),
+			editor:link_poller(Editor, Path)
+	end,
   ok.
 
 
@@ -585,12 +588,35 @@ show_placeholder(Sz) ->
 %% @hidden
 
 new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options)	->
+	%% WITH THE NEW IMPLEMENTATION THE PATH MUST ALWAYS EXIST,
+	%% SO NO NEED FOR THIS PROPLISTS
+	IsOpen = case proplists:get_value(path, Options) of
+		undefined -> false;
+		Path ->
+			is_already_open(ets:tab2list(DocEts), Path)
+	end,
+	case IsOpen of
+		false ->
+			ensure_notebook_visible(Notebook, Sz),
+			Editor = editor:start([{parent, Parent}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
+			Index = insert_page(Notebook, Editor, Filename), %% Page changed event not serviced until this completes
+			insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project_id, Options)),
+			Editor;
+		Key ->
+			wxAuiNotebook:setSelection(Notebook, get_notebook_index(Notebook, Key)),
+			already_open
+	end.
+	
+ensure_notebook_visible(Notebook, Sz) ->
 	case wxWindow:isShown(Notebook) of
 		false -> 
 			show_notebook(Sz);
 		true -> ok
-	end,
-	Editor = editor:start([{parent, Parent}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
-	Index = insert_page(Notebook, Editor, Filename), %% Page changed event not serviced until this completes
-	insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project_id, Options)),
-	Editor.
+	end.
+	
+is_already_open([], Path) ->
+	false;
+is_already_open([{Key,_,{path,Path},_} | T], Path) ->
+	Key;
+is_already_open([H | T], Path) ->
+	is_already_open(T, Path).

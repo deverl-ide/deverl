@@ -168,12 +168,12 @@ handle_call(tree, _From, State) ->
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
   {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
   insert(Tree, Item, FilePath),
-	%alternate_background(Tree),
+	alternate_background(Tree),
   print_tree_debug(Tree),
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
   wxTreeCtrl:deleteChildren(Tree, Item),
-	%alternate_background(Tree),
+	alternate_background(Tree),
   print_tree_debug(Tree),
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}},
