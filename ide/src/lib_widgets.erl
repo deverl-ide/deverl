@@ -28,14 +28,14 @@ placeholder(Parent, Str, Options) ->
 	
 	HSz = wxBoxSizer:new(?wxHORIZONTAL),
 	case os:type() of
-		{linux, _} ->
-			wxSizer:addStretchSpacer(HSz);
+		{_, linux} ->
+			ok; %wxSizer:addStretchSpacer(HSz);
 			_ -> ok
 	end,
 	Text = wxStaticText:new(Panel, ?wxID_ANY, Str, [{style, ?wxALIGN_CENTRE}]),
 	case os:type() of
-		{linux, _} ->
-			wxSizer:addStretchSpacer(HSz);
+		{_, linux} ->
+			ok; %wxSizer:addStretchSpacer(HSz);
 			_ -> ok
 	end,
 	

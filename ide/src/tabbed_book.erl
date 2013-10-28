@@ -32,7 +32,7 @@
 								active_btn,
 								pages,
 								hover
-}).
+               }).
 
 
 %% =====================================================================
@@ -75,9 +75,6 @@ init(Options) ->
 	%% Tab area
 	Tabs = wxPanel:new(MainPanel, []),
 	wxPanel:connect(Tabs, paint, [callback, {userData, tab_panel}]),
-	Font = wxPanel:getFont(Tabs),
-	wxFont:setPointSize(Font, 11),
-	wxPanel:setFont(Tabs, Font),
 	
 	%% Conditional compilation OSX
 	case os:type() of
@@ -286,6 +283,12 @@ draw_setup(DC, StrokeColour, BrushColour, FontColour) ->
 	Pen = wxPen:new(StrokeColour, [{width, 1}]),
 	Brush = wxBrush:new(BrushColour),
 	Font = wxSystemSettings:getFont(?wxSYS_DEFAULT_GUI_FONT),
+  case os:type() of
+    {_, linux} ->
+      wxFont:setPointSize(Font, 12);
+    _ ->
+      ok
+  end,
 		
 	Canvas = wxGraphicsContext:create(DC),
 	wxGraphicsContext:setPen(Canvas, Pen),
