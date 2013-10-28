@@ -144,7 +144,7 @@ handle_cast({add, Id, Dir}, State=#state{sizer=Sz, tree=Tree}) ->
 	alternate_background(Tree),
   {noreply,State};
 	
-handle_cast({add, Id, Dir, Pos}, State=#state{sizer=Sz, tree=Tree}) ->
+handle_cast({add, Id, Dir, _Pos}, State=#state{sizer=Sz, tree=Tree}) ->
 	case wxWindow:isShown(Tree) of
 		false ->
 			show_tree(Sz);
@@ -165,16 +165,19 @@ handle_cast(Msg, State) ->
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded}}, State) ->
-	alternate_background(Tree),
-  %print_tree_debug(Tree),
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
+  {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
+  insert(Tree, Item, FilePath),
+	%alternate_background(Tree),
+  print_tree_debug(Tree),
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
-	alternate_background(Tree),
-  %print_tree_debug(Tree),
+  wxTreeCtrl:deleteChildren(Tree, Item),
+	%alternate_background(Tree),
+  print_tree_debug(Tree),
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}},
-						 State=#state{frame=Frame}) ->
+						 State) ->
 	case wxTreeCtrl:isTreeItemIdOk(OldItem) of
 		false ->  %% Deleted item
 			ok;
@@ -186,22 +189,37 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
 						State=#state{frame=Frame}) ->
-	File = get_path(Tree, Item),
-	case filelib:is_dir(File) of
-		true ->
-      check_tree_item_expanded(Tree, Item),
-			ok;
-		_ ->
-			%% CHECK IF FILE CAN BE OPENED AS TEXT (TO BE DONE IN IO MODULE, NOT HERE!!)
-			try
-				FileContents = ide_io:read_file(File),
-				{Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
-				project_manager:open_file(File, FileContents, Id)
-			catch
-				throw:_ -> lib_dialog_wx:msg_error(Frame, "The file could not be loaded.")
-			end
-	end,
+  File = get_path(Tree, Item),
+  case filelib:is_dir(File) of
+    true ->
+      wxTreeCtrl:toggle(Tree, Item);
+    false ->
+      try
+        FileContents = ide_io:read_file(File),
+        {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
+        project_manager:open_file(File, FileContents, Id)
+      catch
+        throw:_ -> lib_dialog_wx:msg_error(Frame, "The file could not be loaded.")
+      end
+  end,
+      
+	%File = get_path(Tree, Item),
+	%case filelib:is_dir(File) of
+		%true ->
+      %check_tree_item_expanded(Tree, Item),
+			%ok;
+		%_ ->
+			%%% CHECK IF FILE CAN BE OPENED AS TEXT (TO BE DONE IN IO MODULE, NOT HERE!!)
+			%try
+				%FileContents = ide_io:read_file(File),
+				%{Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
+				%project_manager:open_file(File, FileContents, Id)
+			%catch
+				%throw:_ -> lib_dialog_wx:msg_error(Frame, "The file could not be loaded.")
+			%end
+	%end,
 	{noreply, State}.
+
 
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
@@ -301,15 +319,12 @@ get_all_items(Tree, Item, Acc) ->
 %% =====================================================================
 %% @doc Get the tree item whose data (path) is Path.
 
-get_item_from_path(Tree, [], Path) -> ok;
+get_item_from_path(_Tree, [], _Path) -> ok;
 get_item_from_path(Tree, [H|T], Path) ->
 	case get_path(Tree, H) of
 		Path -> H;
 		_ -> get_item_from_path(Tree, T, Path)
 	end.
-  
-  
-  
   
   
 %% =====================================================================
@@ -331,7 +346,7 @@ add_files(Tree, Item, [File|Files]) ->
 		true ->
 			Child = wxTreeCtrl:appendItem(Tree, Item, FileName, [{data, {Id, File}}]),
 			wxTreeCtrl:setItemImage(Tree, Child, 0),
-      Children = filelib:wildcard(File ++ "/*"),
+      %Children = filelib:wildcard(File ++ "/*"),
       check_dir_has_contents(Tree, Child, File);
 		_ ->
 			Child = wxTreeCtrl:prependItem(Tree, Item, FileName, [{data, {Id, File}}]),
@@ -347,7 +362,7 @@ get_project_root(Tree, Item) ->
 	get_project_root(Tree, wxTreeCtrl:getRootItem(Tree),
 		wxTreeCtrl:getItemParent(Tree, Item), Item).
 
-get_project_root(Tree, Root, Root, Item) ->
+get_project_root(_Tree, Root, Root, Item) ->
 	Item;
 get_project_root(Tree, Root, Parent, Item) ->
 	get_project_root(Tree, Root, wxTreeCtrl:getItemParent(Tree, Parent),
@@ -364,33 +379,6 @@ check_dir_has_contents(Tree, Item, FilePath) ->
       ok;
     _ ->
       wxTreeCtrl:setItemHasChildren(Tree, Item, [])
-  end.
-
-
-%% =====================================================================
-%% @doc
-
-check_tree_item_expanded(Tree, Item) ->
-  case wxTreeCtrl:isExpanded(Tree, Item) of
-    true ->
-      wxTreeCtrl:toggle(Tree, Item),
-      wxTreeCtrl:deleteChildren(Tree, Item);
-    false ->
-      check_tree_item_has_children(Tree, Item)
-  end. 
-  
-  
-%% =====================================================================
-%% @doc
-
-check_tree_item_has_children(Tree, Item) ->
-  case wxTreeCtrl:itemHasChildren(Tree, Item) of
-    true ->
-      {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
-      insert(Tree, Item, FilePath),
-      wxTreeCtrl:toggle(Tree, Item);
-    false ->
-      ok
   end.
   
       
