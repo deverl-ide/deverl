@@ -189,6 +189,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
 	File = get_path(Tree, Item),
 	case filelib:is_dir(File) of
 		true ->
+			io:format("EEWEQQWDQW~n"),
       check_tree_item_expanded(Tree, Item),
 			ok;
 		_ ->
