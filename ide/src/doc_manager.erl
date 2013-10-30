@@ -98,6 +98,7 @@
 %%% =====================================================================
 %%% @doc Add an existing document to the notebook.
 		
+<<<<<<< HEAD
 %new_document_from_existing(Path, Contents) -> 
 	%new_document_from_existing(Path, Contents, []).
 
@@ -295,6 +296,209 @@
 %%% @doc Apply the function Fun to the active document.
 %%% Equivalent to apply_to_active_document(Fun, []), although this should
 %%% be quicker.
+=======
+new_document_from_existing(Path, Contents) -> 
+	new_document_from_existing(Path, Contents, []).
+
+
+%% =====================================================================
+%% @doc Add an existing document to the notebook.
+
+new_document_from_existing(Path, Contents, Options) -> 
+	case wx_object:call(?MODULE, {new_document, filename:basename(Path), [{path, Path}] ++ Options}) of
+		already_open -> ok;
+		Editor ->
+			editor:set_text(Editor, Contents),
+			editor:empty_undo_buffer(Editor),
+			editor:set_savepoint(Editor),
+			editor:link_poller(Editor, Path)
+	end,
+  ok.
+
+
+%% =====================================================================
+%% @doc Close the selected editor
+
+close_active_document() ->
+	case get_active_document() of
+		{error, _} ->
+			{error, no_open_editor};
+		Index ->
+			close_document(Index)
+	end.
+
+
+%% =====================================================================
+%% @doc Close the selected editor
+
+close_document(Index) ->
+	wx_object:cast(?MODULE, {close_document, Index}).
+
+close_document(Notebook, DocEts, Index) ->
+ 	Key = wxAuiNotebook:getPage(Notebook, Index),
+ 	case editor:is_dirty(get_ref(DocEts, Key)) of
+ 		true ->
+			save_changes_request(Notebook, DocEts, Index, wxAuiNotebook:getPageText(Notebook, Index));
+ 		_ -> %% Go ahead, close the editor
+ 			delete_record(DocEts, Key),
+      wxAuiNotebook:deletePage(Notebook, Index)
+ 	end,
+ 	case wxAuiNotebook:getPageCount(Notebook) of
+ 		0 -> wx_object:cast(?MODULE, notebook_empty);
+ 		_ -> ok
+ 	end.	
+	
+save_changes_request(Notebook, DocEts, Index, Name) ->
+	Dialog = lib_dialog_wx:save_changes_dialog(Notebook, Name),
+	case wxDialog:showModal(Dialog) of
+		?wxID_CANCEL -> %% Cancel close
+			ok;
+		?wxID_REVERT_TO_SAVED ->  %% Close without saving
+ 			delete_record(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
+      wxAuiNotebook:deletePage(Notebook, Index);
+		?wxID_SAVE -> %% Save the document
+			save_document(ok, get_record(DocEts, index_to_key(Notebook, Index))),
+			%% We need some knowledge of success of save
+			%% potential to enter a loop here			
+			close_document(Notebook, DocEts, Index)
+	end.
+
+
+%% =====================================================================
+%% @doc Gets the index of the currently active document, i.e. the 
+%% document most recently in focus.
+
+get_active_document() ->
+	{Notebook,_,_} = wx_object:call(?MODULE, notebook),
+	case wxAuiNotebook:getSelection(Notebook) of %% Get the index of the tab
+		-1 -> %% no editor instance
+				{error, no_open_editor};
+		Index ->
+				Index
+	end.
+
+	
+%% =====================================================================
+%% @doc Gets the reference to the currently active document.
+
+get_active_document_ref() ->
+	{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
+	index_to_ref(DocEts, Notebook, get_active_document()).
+	
+
+%% =====================================================================
+%% @doc Get all open editor instances.
+
+get_open_documents() ->
+	{Notebook,_,_} = wx_object:call(?MODULE, notebook),
+	Count = wxAuiNotebook:getPageCount(Notebook),
+	lists:seq(0, Count - 1).
+
+
+%% =====================================================================
+%% @doc Save the currently selected document to disk
+
+save_current_document() ->
+	case get_active_document() of
+		{error, no_open_editor} -> ok;
+		Index ->
+			save_document(Index)
+	end.
+
+
+%% =====================================================================
+%% @doc Save the contents of the editor located at index Index.
+
+save_document(Index) ->  
+	{Notebook,Sb,DocEts} = wx_object:call(?MODULE, notebook), 
+	case editor:is_dirty(index_to_ref(DocEts, Notebook, Index)) of
+		false -> 
+			io:format("NOT MODIFIED~n"),
+			Record  = get_record(DocEts, index_to_key(Notebook, Index)),
+			record_get_path(Record);
+		_ ->
+			io:format("MODIFIED~n"),
+			save_document(Sb, get_record(DocEts, index_to_key(Notebook, Index)))
+	end.
+	
+save_document(Sb, Record) ->
+	Result  = case record_get_path(Record) of
+		undefined -> save_new_document();
+		Path -> %% Document already exists, overwrite
+			io:format("TEXT:~n~p~n", [editor:get_text(record_get_ref(Record))]),
+			ide_io:save(Path, editor:get_text(record_get_ref(Record))),
+			editor:set_savepoint(record_get_ref(Record)),
+			% ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
+			Path
+	end,
+	Result.
+
+
+%% =====================================================================
+%% @doc
+
+save_new_document() ->
+	case get_active_document() of
+		{error, no_open_editor} -> ok;
+		Index ->
+			save_new_document(Index)
+	end.
+
+save_new_document(Index) ->
+	{Notebook,Sb,DocEts} = wx_object:call(?MODULE, notebook), 
+	Contents = editor:get_text(index_to_ref(DocEts, Notebook, Index)),
+	Result = case ide_io:save_as(Notebook, Contents) of
+		{cancel} ->
+			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document not saved."),
+			undefined;
+		{ok, {Path, Filename}}  ->
+			update_path(DocEts, index_to_key(Notebook, Index), Path), 
+			wxAuiNotebook:setPageText(Notebook, Index, Filename),
+			editor:set_savepoint(index_to_ref(DocEts, Notebook, Index)),
+			%%UPDATE PATH FOR POLLER - DONT CREATE NEW ONE WITHOUT CLOSING THE OLD
+			editor:link_poller(index_to_ref(DocEts, Notebook, Index), Path),
+			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
+			Path
+	end,
+	Result.
+	
+
+%% =====================================================================
+%% @doc Save all open editors.
+
+save_all() ->
+	lists:map(fun save_document/1, get_open_documents()).
+
+
+%% =====================================================================
+%% @doc
+
+-spec open_document(Frame) -> 'ok' when
+	Frame :: wxWindow:wxWindow().
+
+open_document(Frame) ->
+	case ide_io:open_new(Frame) of
+		{cancel} ->
+			ok;
+		{Path, Filename, Contents} ->
+			new_document_from_existing(Path, Contents)
+	end.
+
+
+%% =====================================================================
+%% @doc Close all editor instances,
+%% Note: must always delete documents starting with the highest index
+%% first, as the notebook shifts all indexes dwon when one is deleted.
+
+close_all_documents() ->
+	wx_object:call(?MODULE, close_all).
+
+
+%% =====================================================================
+%% @doc Apply the function Fun to the active document.
+%% Equivalent to apply_to_active_document(Fun, []), although this should
+%% be quicker.
+>>>>>>> 74b8fc35a7b873193763061ac3a4bcadb98a9bfc
 		
 %apply_to_active_document(Fun) ->
 	%{Notebook,_,DocEts} = wx_object:call(?MODULE, notebook),
@@ -539,6 +743,7 @@
 %update_path(DocEts, Key, Path) ->
 	%ets:update_element(DocEts, Key, {3, {path, Path}}).
   
+<<<<<<< HEAD
 %get_files_in_project(DocEts, ProjectId) ->
   %ets:foldr(fun(Record, Acc) -> 
               %case record_get_project(Record) of 
@@ -661,3 +866,139 @@
 %is_already_open([H | T], Path) ->
 	%is_already_open(T, Path).
 %>>>>>>> 8ddbbc14d0323d56d4baf49c84ab66946d0b820c
+=======
+get_files_in_project(DocEts, ProjectId) ->
+  ets:foldr(fun(Record, Acc) -> 
+              case record_get_project(Record) of 
+                ProjectId -> 
+                  [Record | Acc];
+                _ ->
+                  Acc
+              end
+            end, 
+            [], DocEts).
+
+
+%% =====================================================================
+%% @doc Insert a new record into the Ets table.
+%% We need to keep track of all open documents and their associated 
+%% properties. To do this we use an ETS table (irrelevant). 
+%% We need a unique index which is accessible during a page_changed
+%% event that acts as the key to the ETS table.
+%% We cannot use the index from wxAuiNotebook, as these are dynamic
+%% and we'd have to track them when tabs are removed/dragged.
+%% The only other option is to use the wx_object() reference
+%% returned from the call to editor:start(), and acknowledge the
+%% fact that in future wxErlang releases, this representation may change.
+%% The #wxRef{} returned from editor:start() is of the form:
+%% {wx_ref,515,wxPanel,<0.110.0>}, so you might think we coud use
+%% wx_object:get_pid/1, and use the pid as the index, but this gets
+%% stripped from the tuple when added to the notebook, meaning subsequent
+%% calls to wxAuiNotebook:getPage return a tuple of the form:
+%% {wx_ref,515,wxWindow,[]}.
+%% By having functions for inserting/retrieving/updating ETS records
+%% we hide the implementation/format of a single record, which
+%% means any future changes to the API can be easily adapted to.
+
+% insert_rec(DocEts, Editor, Path, ProjectId) ->
+% 	Pid = wx_object:get_pid(Editor),
+% 	{A,B,C,_} = Editor,
+% 	Key = {A,B,C,[]},
+% 	New = wx:typeCast(Key, wxWindow),
+% 	ets:insert(DocEts, {New, Pid, {path, Path}, ProjectId}).
+	
+insert_rec(DocEts, Index, EditorRef, Path) ->
+	insert_rec(DocEts, Index, EditorRef, Path, undefined).
+
+insert_rec(DocEts, Index, EditorRef, Path, ProjectId) ->
+	ets:insert(DocEts, {Index, EditorRef, {path, Path}, ProjectId}).
+
+%% =====================================================================
+%% The following functions access individuals elements from a single
+%% record. 
+%% NOTE: Always use these functions to access a record's elements, as 
+%% the representation is internal and can be changed without notice.
+	
+record_get_key({Key,_,_,_}) -> Key.
+record_get_ref({_,Ref,_,_}) ->	Ref.
+record_get_path({_,_,{path,Path},_}) -> Path.
+record_get_project({_,_,_,ProjectId}) -> ProjectId.
+
+	
+%% =====================================================================
+%% @doc Display the notebook, hiding and other siblings.
+
+show_notebook(Sz) ->
+	wxSizer:hide(Sz, 1),
+	wxSizer:show(Sz, 0),
+	wxSizer:layout(Sz).
+
+
+%% =====================================================================
+%% @doc Display the placeholder, hiding any other siblings.
+	
+show_placeholder(Sz) ->
+	wxSizer:hide(Sz, 0),
+	wxSizer:show(Sz, 1),
+	wxSizer:layout(Sz).
+
+
+%% =====================================================================
+%% @doc
+%% @private
+%% @hidden
+
+new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options)	->
+	%% WITH THE NEW IMPLEMENTATION THE PATH MUST ALWAYS EXIST,
+	%% SO NO NEED FOR THIS PROPLISTS
+	IsOpen = case proplists:get_value(path, Options) of
+		undefined -> false;
+		Path ->
+			is_already_open(ets:tab2list(DocEts), Path)
+	end,
+	case IsOpen of
+		false ->
+			ensure_notebook_visible(Notebook, Sz),
+			Editor = editor:start([{parent, Parent}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
+			Index = insert_page(Notebook, Editor, Filename), %% Page changed event not serviced until this completes
+			insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project_id, Options)),
+			Editor;
+		Key ->
+			wxAuiNotebook:setSelection(Notebook, get_notebook_index(Notebook, Key)),
+			already_open
+	end.
+	
+	
+%% =====================================================================
+%% @doc Ensure the notebook is visible.
+%% @private
+%% @hidden
+
+ensure_notebook_visible(Notebook, Sz) ->
+	case wxWindow:isShown(Notebook) of
+		false -> 
+			show_notebook(Sz);
+		true -> ok
+<<<<<<< HEAD
+	end,
+	Editor = editor:start([{parent, Parent}, {status_bar, Sb}, {font,user_prefs:get_user_pref({pref, font})}]),
+	Index = insert_page(Notebook, Editor, Filename), %% Page changed event not serviced until this completes
+	insert_rec(DocEts, Index, Editor, proplists:get_value(path, Options), proplists:get_value(project_id, Options)),
+	Editor.
+=======
+	end.
+
+
+%% =====================================================================
+%% @doc Check whether a file is already open.
+%% @private
+%% @hidden
+
+is_already_open([], Path) ->
+	false;
+is_already_open([{Key,_,{path,Path},_} | T], Path) ->
+	Key;
+is_already_open([H | T], Path) ->
+	is_already_open(T, Path).
+>>>>>>> 8ddbbc14d0323d56d4baf49c84ab66946d0b820c
+>>>>>>> 74b8fc35a7b873193763061ac3a4bcadb98a9bfc

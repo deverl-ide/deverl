@@ -114,39 +114,85 @@ msg_notice(Parent, Msg) ->
 
 
 %% =====================================================================
-%% @doc Create a "Save changes" dialog.
+%% Display the save changes dialog.
 
 save_changes_dialog(Parent, Filename) ->
+	Heading = "The document \"" ++ Filename ++ "\" has been modified. Would you like to save the changes?",
+	SubHeading = "All changes will be lost if you don't save.",
+	Btn1 = {?wxID_REVERT_TO_SAVED, [{label, "Discard Changes"}], [{connect_handler, true}]},
+	Btn2 = {?wxID_CANCEL, [], []},
+	Btn3 = {?wxID_SAVE, [], [{connect_handler, true}]},
+	Buttons = [Btn1, Btn2, Btn3],
+	generic_dialog(Parent, Heading, Buttons, [{sub_heading, SubHeading}, {stretch_spacer, 1}]).
+
+
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
+
+%% =====================================================================
+%% @doc The standard message dialog for the application.
+%% Use this function to build all message dialogs for a regular look
+%% and feel.
+%% 
+%% Buttons :: [Button] A list of buttons where
+%% Button ::	{ButtonId, ButtonOptions, [ButtonConfig]}
+%% The first element is a wx_object id. The second element a list of
+%% options passed directly to wxButton:new(), the third is a list of
+%% options used to configure each button in the dialog. 
+%% ButtonConfig :: {connect_handler:, boolean()} Set to true if the ButtonId
+%% doesn't have a default handler.
+%%
+%% Options: 	{sub_heading, string()} Smaller, second level heading.
+%% 						{stretch_spacer, Index :: integer()} Add a stretch spacer at 
+%%						position Index between the buttons. Default is 0 (buttons 
+%%						aligned right). 
+%% @end
+%% @private
+
+-spec generic_dialog(Parent, Heading, [Button], [Option]) -> Result when
+	Parent :: wx:wx_object(),
+	Heading :: string(),
+	Button :: {integer(), list(), [ButtonOption]},
+	ButtonOption :: {connect_handler, boolean()},
+	Option :: {sub_heading, string()}
+		| {stretch_spacer, integer()},
+	Result :: wxDialog:wxDialog().
+
+generic_dialog(Parent, Heading, Buttons, Option) ->
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, []),
 	Sz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxDialog:setSizer(Dialog, Sz),
-	% wxSizer:addSpacer(Sz, 10),
 	wxSizer:addSpacer(Sz, 30),
-	% Sz2 = wxBoxSizer:new(?wxHORIZONTAL),
-	%% replace with icon
+	
+	%% Icon placeholder
 	Icon = wxPanel:new(Dialog, [{size, {70,70}}]),
 	wxPanel:setBackgroundColour(Icon, ?wxWHITE),
 	wxSizer:add(Sz, Icon, [{flag, ?wxTOP}, {border, 20}]),
 	wxSizer:addSpacer(Sz, 20),
-
 	
 	Sz2 = wxBoxSizer:new(?wxVERTICAL),
-	St = wxStaticText:new(Dialog, ?wxID_ANY, "The document \"" ++ Filename ++ "\" has been modified. Would you like to save the changes?", []),
+	St = wxStaticText:new(Dialog, ?wxID_ANY, Heading, []),
 	wxStaticText:wrap(St, 320),
 	Font = wxDialog:getFont(Dialog),
 	wxFont:setWeight(Font, ?wxFONTWEIGHT_BOLD),
 	wxStaticText:setFont(St, Font),
-	St2 = wxStaticText:new(Dialog, ?wxID_ANY, "All changes will be lost if you don't save."),
-	wxStaticText:wrap(St2, 320),
-	wxFont:setWeight(Font, ?wxFONTWEIGHT_NORMAL),
-	wxFont:setPointSize(Font, wxFont:getPointSize(Font) - 2),
-	wxStaticText:setFont(St2, Font),
 	wxSizer:add(Sz2, St, []),
 	wxSizer:addSpacer(Sz2, 10),
-	wxSizer:add(Sz2, St2, []),
-	wxSizer:addSpacer(Sz2, 20),
 	
-	ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
+	case proplists:get_value(sub_heading, Option) of
+		undefined -> ok;
+		SubHeading ->
+			St2 = wxStaticText:new(Dialog, ?wxID_ANY, SubHeading),
+			wxStaticText:wrap(St2, 320),
+			wxFont:setWeight(Font, ?wxFONTWEIGHT_NORMAL),
+			wxFont:setPointSize(Font, wxFont:getPointSize(Font) - 2),
+			wxStaticText:setFont(St2, Font),
+			wxSizer:add(Sz2, St2, []),
+			wxSizer:addSpacer(Sz2, 20)
+	end,
+	
+	%% Buttons
 	Handler = 
 	fun(Id) -> 
 		Fun = fun(_,_) -> 
@@ -154,16 +200,26 @@ save_changes_dialog(Parent, Filename) ->
 		end,
 		Fun
 	end,
-	ButtonSzFlags = wxSizerFlags:border(wxSizerFlags:new(), ?wxRIGHT, 15),
-	Discard = wxButton:new(Dialog, ?wxID_REVERT_TO_SAVED, [{label, "Discard Changes"}]),
-	wxSizer:add(ButtonSz, Discard, wxSizerFlags:align(ButtonSzFlags, ?wxALIGN_LEFT)),
-	wxSizer:addStretchSpacer(ButtonSz),
-	wxSizer:add(ButtonSz, wxButton:new(Dialog, ?wxID_CANCEL), ButtonSzFlags),
-	Save = wxButton:new(Dialog, ?wxID_SAVE, []),
-	wxButton:setDefault(Save),
-	wxSizer:add(ButtonSz, Save, []),
-	wxButton:connect(Discard, command_button_clicked, [{callback, Handler(?wxID_REVERT_TO_SAVED)}]),
-	wxButton:connect(Save, command_button_clicked, [{callback, Handler(?wxID_SAVE)}]),
+	
+	L = length(Buttons),
+	ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
+	lists:foldl(fun({Id, ButtonFlags, Config}, Acc) ->
+		Button = wxButton:new(Dialog, Id, ButtonFlags),
+		case proplists:get_value(connect_handler, Config) of
+			true ->
+				wxButton:connect(Button, command_button_clicked, [{callback, Handler(Id)}]);
+			_ -> ok
+		end,
+		wxSizer:add(ButtonSz, Button, [{flag, ?wxALIGN_RIGHT}]),
+		case Acc of 
+			L -> ok;
+			_ -> wxSizer:addSpacer(ButtonSz, 15)
+		end,
+		Acc + 1
+	end, 1, Buttons),
+	
+	wxSizer:insertStretchSpacer(ButtonSz, proplists:get_value(stretch_spacer, Option, 0)),
+		
 	wxSizer:add(Sz2, ButtonSz, [{flag, ?wxEXPAND}, {proportion, 1}]),
 	wxSizer:addSpacer(Sz2, 20),
 	
@@ -175,10 +231,6 @@ save_changes_dialog(Parent, Filename) ->
 	wxDialog:layout(Dialog),
 	Dialog.
 
-	
-%% =====================================================================
-%% Internal functions
-%% =====================================================================	
 
 %% =====================================================================
 %% @doc Display a choose directory dialog; gets a directory grom the 
