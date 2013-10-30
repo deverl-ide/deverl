@@ -54,7 +54,7 @@ add_project(Id, Dir) ->
 	wx_object:cast(?MODULE, {add, Id, Dir}).
 add_project(Id, Dir, Pos) ->
 	wx_object:cast(?MODULE, {add, Id, Dir, Pos}).
-
+  
 
 %% =====================================================================
 %% @doc Delete an item from the tree
@@ -117,8 +117,9 @@ init(Config) ->
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
-
-handle_cast({delete, Item}, State=#state{sizer=Sz, panel=Panel, tree=Tree}) ->
+  
+handle_cast({delete, ProjectId}, State=#state{sizer=Sz, panel=Panel, tree=Tree}) ->
+  Item = get_item_from_list(Tree, ProjectId, get_projects(Tree, wxTreeCtrl:getRootItem(Tree))),
 	wxPanel:freeze(Panel),
   wxTreeCtrl:delete(Tree, Item),
 	case wxTreeCtrl:getCount(Tree) of
@@ -169,12 +170,20 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
   {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
   insert(Tree, Item, FilePath),
 	alternate_background(Tree),
+<<<<<<< HEAD
+  %print_tree_debug(Tree),
+=======
   print_tree_debug(Tree),
+>>>>>>> 8ddbbc14d0323d56d4baf49c84ab66946d0b820c
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
   wxTreeCtrl:deleteChildren(Tree, Item),
 	alternate_background(Tree),
+<<<<<<< HEAD
+  %print_tree_debug(Tree),
+=======
   print_tree_debug(Tree),
+>>>>>>> 8ddbbc14d0323d56d4baf49c84ab66946d0b820c
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}},
 						 State) ->
@@ -351,7 +360,40 @@ get_project_root(_Tree, Root, Root, Item) ->
 get_project_root(Tree, Root, Parent, Item) ->
 	get_project_root(Tree, Root, wxTreeCtrl:getItemParent(Tree, Parent),
 			wxTreeCtrl:getItemParent(Tree, Item)).
+      
 
+%% =====================================================================
+%% @doc
+
+get_projects(Tree, Root) ->
+  {FirstChild, _} = wxTreeCtrl:getFirstChild(Tree, Root),
+  case wxTreeCtrl:isTreeItemIdOk(FirstChild) of
+    true ->
+      get_projects(Tree, FirstChild, [FirstChild]);
+    false ->
+      []
+  end.
+get_projects(Tree, Item, Acc) ->
+  Next = wxTreeCtrl:getNextSibling(Tree, Item),
+  case wxTreeCtrl:isTreeItemIdOk(Next) of
+    true ->
+      get_projects(Tree, Next, Acc ++ [Next]);
+    false ->
+      Acc
+  end.
+  
+
+%% =====================================================================
+%% @doc
+
+get_item_from_list(Tree, ProjectId, [Project|Projects]) ->
+  {Id, _} = wxTreeCtrl:getItemData(Tree, Project),
+  case Id of
+    ProjectId ->
+      Project;
+    _ ->
+      get_item_from_list(Tree, ProjectId, Projects)
+  end.
 
 %% =====================================================================
 %% @doc Check if tree item has children. If so, set item has children.

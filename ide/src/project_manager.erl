@@ -202,10 +202,19 @@ handle_call(active_project, _From, State) ->
   {reply, State#state.active_project, State};
 handle_call({get_root, ProjectId}, _From, State=#state{projects=Projects}) ->
 	#project{root=Root} = proplists:get_value(ProjectId, Projects),
-	{reply, Root, State}.
-
+	{reply, Root, State};
+handle_call(close_project, _From, State=#state{projects=Projects, active_project=ProjectId}) ->
+	doc_manager:close_project(ProjectId),
+  {reply, ProjectId, State}.
+  
 handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Projects}) ->
-	update_ui(Frame, proplists:get_value(ProjectId, Projects)),
+  case ProjectId of
+    undefined ->
+      io:format("UNDEFINED PROJECT~n"),
+      update_ui(Frame, undefined);
+    _ ->
+      update_ui(Frame, proplists:get_value(ProjectId, Projects))
+  end,
   {noreply,State#state{active_project=ProjectId}}.
     
 %% Event catchall for testing
@@ -227,6 +236,10 @@ terminate(_Reason, State) ->
 generate_id() ->
 	now().
 	
+update_ui(Frame, undefined) ->
+  ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project"),
+  ide:set_title([]),
+  ok;
 update_ui(Frame, #project{root=Root}) ->
 	ProjectName = filename:basename(Root),
 	ide:set_title(ProjectName),

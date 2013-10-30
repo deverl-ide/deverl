@@ -18,14 +18,23 @@
 %% =====================================================================
 %% @doc Create a new file on disc.
 
-create_new_file(Path, Filename) ->
-	
-  case file:open(Path ++ "/" ++ Filename, [write, read]) of
+%create_new_file(Path, Filename) ->
+%	
+%  case file:open(Path ++ "/" ++ Filename, [write, read]) of
+%    {error, Reason} ->
+%      io:format("~p~n", [Reason]);
+%    File ->
+%      doc_manager:new_document_from_existing(Path ++ "/" ++ Filename, []),
+%      file:close(File)
+%  end.
+
+create_new_file(Path) ->
+  case file:open(Path, [write, read]) of
     {error, Reason} ->
-      io:format("~p~n", [Reason]);
+      error;
     File ->
-      doc_manager:new_document_from_existing(Path ++ "/" ++ Filename, []),
-      file:close(File)
+      file:close(File),
+      ok
   end.
 
 
