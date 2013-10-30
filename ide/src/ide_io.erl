@@ -5,7 +5,7 @@
 
 -export([
         create_directory_structure/3,
-        create_new_file/2,
+        create_new_file/1,
         open_new/1,
         read_file/1,
         save_as/2,

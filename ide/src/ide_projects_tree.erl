@@ -170,20 +170,12 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
   {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
   insert(Tree, Item, FilePath),
 	alternate_background(Tree),
-<<<<<<< HEAD
   %print_tree_debug(Tree),
-=======
-  print_tree_debug(Tree),
->>>>>>> 8ddbbc14d0323d56d4baf49c84ab66946d0b820c
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
   wxTreeCtrl:deleteChildren(Tree, Item),
 	alternate_background(Tree),
-<<<<<<< HEAD
   %print_tree_debug(Tree),
-=======
-  print_tree_debug(Tree),
->>>>>>> 8ddbbc14d0323d56d4baf49c84ab66946d0b820c
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}},
 						 State) ->

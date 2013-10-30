@@ -296,7 +296,7 @@ init(Config) ->
   
   TabId = ets:new(myTable, []),
   ets:insert(TabId, [
-		{?wxID_NEW,{doc_manager,new_file,[Frame]}},
+		{?wxID_NEW,{doc_manager,new_document,[Frame]}},
 		{?MENU_ID_NEW_PROJECT,{project_manager,new_project,[Frame]}},
     {?wxID_OPEN, {doc_manager,open_document,[Frame]}},
 		{?MENU_ID_OPEN_PROJECT,{project_manager,open_project,[Frame]}},
