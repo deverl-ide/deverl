@@ -1,4 +1,4 @@
--module(doc_manager2).
+-module(doc_manager).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -7,6 +7,9 @@
 -behaviour(wx_object).
 -export([init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2, handle_sync_event/3]).
+				 
+-export([start/1,
+				 new_document/1]).
          
 -record(document, {path :: string(), 
                    file_poller :: file_poller:file_poller(), 
@@ -44,7 +47,7 @@ new_document(Parent) ->
     ?wxID_CANCEL ->
       ok;
     ?wxID_OK ->
-      create_document(new_file:get_path(Dialog), new_file:get_project(Dialog))
+      create_document(new_file:get_path(Dialog), new_file:get_project_id(Dialog))
   end.  
 
 
@@ -53,7 +56,34 @@ new_document(Parent) ->
 %% =====================================================================
 
 init(Config) ->
-  ok.
+	{Parent, Sb} = proplists:get_value(config, Config),
+
+	Style = (0
+			bor ?wxAUI_NB_TOP
+			bor ?wxAUI_NB_WINDOWLIST_BUTTON
+			bor ?wxAUI_NB_TAB_MOVE
+			bor ?wxAUI_NB_SCROLL_BUTTONS
+			bor ?wxAUI_NB_CLOSE_ON_ALL_TABS
+			bor ?wxAUI_NB_TAB_SPLIT
+			bor ?wxBORDER_NONE
+			),
+			
+	Panel = wxPanel:new(Parent),
+	Sz = wxBoxSizer:new(?wxVERTICAL),
+	wxPanel:setSizer(Panel, Sz),
+
+	Notebook = wxAuiNotebook:new(Panel, [{id, ?ID_WORKSPACE}, {style, Style}]),
+	wxSizer:add(Sz, Notebook, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	wxSizer:hide(Sz, 0),
+					
+	Ph = lib_widgets:placeholder(Panel, "No Open Documents"),
+	wxSizer:add(Sz, Ph, [{flag, ?wxEXPAND}, {proportion, 1}]),
+
+	wxAuiNotebook:connect(Notebook, command_auinotebook_bg_dclick, []),
+	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [callback]),
+	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
+
+  {Panel, #state{notebook=Notebook, page_to_doc_id=[], doc_records=[], sizer=Sz, parent=Parent}}.
 
 handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
@@ -63,9 +93,10 @@ handle_cast(_, State) ->
 	{noreply, State}.
   
 handle_call({create_doc, Path, ProjectId}, _From, 
-    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+    State=#state{notebook=Nb, sizer=Sz, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+	ensure_notebook_visible(Nb, Sz),
   Editor = editor:start([{parent, Nb}, {font, user_prefs:get_user_pref({pref, font})}]),
-  wxAuiNotebook:addPage(Nb, Editor, filename:basename(Path)),
+  Bool = wxAuiNotebook:addPage(Nb, Editor, filename:basename(Path)),
   DocId = generate_id(),
   Document = #document{path=Path, editor=Editor, project_id=ProjectId},
   NewDocRecords = [{DocId, Document}|DocRecords],
@@ -105,12 +136,37 @@ create_document(Path, ProjectId) ->
 close_document(DocId) ->
     ok.
 
-  
+%% =====================================================================
+%% @doc Generate a unique document id.
   
 generate_id() ->
 	now().
+	
   
-  
-  
-  
-  
+%% =====================================================================
+%% @doc Display the notebook, hiding and other siblings.
+
+show_notebook(Sz) ->
+wxSizer:hide(Sz, 1),
+wxSizer:show(Sz, 0),
+wxSizer:layout(Sz).
+
+
+%% =====================================================================
+%% @doc Display the placeholder, hiding any other siblings.
+
+show_placeholder(Sz) ->
+wxSizer:hide(Sz, 0),
+wxSizer:show(Sz, 1),
+wxSizer:layout(Sz).
+ 
+ 
+%% =====================================================================
+%% @doc Ensure the notebook is visible (placeholder hidden).
+ 
+ensure_notebook_visible(Notebook, Sz) ->
+	case wxWindow:isShown(Notebook) of
+		false -> 
+			show_notebook(Sz);
+		true -> ok
+	end.
