@@ -20,7 +20,9 @@
          handle_call/3, handle_cast/2, handle_info/2]).
 
 %% API
--export([start/1]).
+-export([start/1,
+         get_path/1,
+         get_project_id/1]).
 
 %% Macros
 -define(FILE_TYPE_ERLANG, 0).
@@ -53,6 +55,8 @@
                 dialog1    :: wxPanel:wxPanel(),
                 dialog2    :: wxPanel:wxPanel(),
                 swap_sizer :: wxSizer:wxSizer(),
+                path       :: string(),
+                project_id :: project_manager:project_id(),
                 projects   :: [project_manager:project_id()]
                }).
 
@@ -63,7 +67,12 @@
 
 start(Config) ->
   wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
-
+  
+get_path(This) ->
+  wx_object:call(This, get_path).
+  
+get_project_id(This) ->
+  wx_object:call(This, get_project_id).
 
 %% =====================================================================
 %% Callback functions
@@ -96,8 +105,14 @@ init({Parent, Projects, ActiveProject}) ->
   wxSizer:addSpacer(MainSizer, 20),
 
   %% Swap dialog
+  Project = case ActiveProject of
+    undefined ->
+      "No Project";
+    _ ->
+      project_manager:get_name(ActiveProject) 
+  end,
   SwapSizer = wxBoxSizer:new(?wxVERTICAL),
-  Dialog1 = dialog1(Dialog, Projects, ActiveProject),
+  Dialog1 = dialog1(Dialog, Projects, Project),
   wxSizer:add(SwapSizer, Dialog1,   [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(MainSizer, SwapSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 20),
@@ -131,7 +146,7 @@ init({Parent, Projects, ActiveProject}) ->
   wxButton:disable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
   wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON)),
 
-  {Dialog, #state{win=Dialog, dialog1=Dialog1, swap_sizer=SwapSizer, projects=Projects}}.
+  {Dialog, #state{win=Dialog, dialog1=Dialog1, swap_sizer=SwapSizer, project_id=ActiveProject, projects=Projects}}.
 
 
 handle_cast(_Msg, State) ->
@@ -152,14 +167,18 @@ handle_call(dialog1, _From, State) ->
 handle_call(dialog2, _From, State) ->
     {reply, State#state.dialog2, State};
 handle_call(projects, _From, State) ->
-    {reply, State#state.projects, State}.
-
+    {reply, State#state.projects, State};
+handle_call(get_path, _From, State) ->
+    {reply, State#state.path, State};
+handle_call(get_project_id, _From, State) ->
+    {reply, State#state.project_id, State};
+    
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{win=Dialog}) ->
   io:format("TERMINATE NEW FILE DIALOG~n"),
-  wxDialog:endModal(Dialog, ?wxID_CANCEL),
+  %wxDialog:endModal(Dialog, ?wxID_CANCEL),
   wxDialog:destroy(Dialog).
 
 %% =====================================================================
@@ -228,8 +247,9 @@ handle_event(#wx{id=?FINISH_BUTTON, event=#wxCommand{type=command_button_clicked
     _ ->
       ide_projects_tree:refresh_project(ProjectPath)
   end,
-  ide_io:create_new_file(Path, Filename),
-  {stop, normal, State};
+  %ide_io:create_new_file(Path, Filename),
+  wxDialog:endModal(Parent, ?wxID_OK),
+  {noreply, State#state{path=Path ++ Filename}};
 handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_selected, commandInt=Index}},
              State=#state{win=Parent}) ->
   case Index of
@@ -242,8 +262,13 @@ handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_sel
 handle_event(#wx{id=?FILENAME_BOX, event=#wxCommand{type=command_text_updated}},
              State=#state{win=Parent}) ->
   check_if_finished(Parent),
-  {noreply, State}.
-
+  {noreply, State};
+handle_event(#wx{id=?PROJECT_CHOICE, event=#wxCommand{type=command_choice_selected}},
+             State=#state{win=Parent}) ->
+  ProjectChoiceBox = wxWindow:findWindow(Parent, ?PROJECT_CHOICE),
+  ProjectChoice = wxChoice:getSelection(ProjectChoiceBox),
+  ProjectId = wxChoice:getClientData(ProjectChoiceBox, ProjectChoice),
+  {noreply, State#state{project_id=ProjectId}}.
 
 %% =====================================================================
 %% Internal functions
@@ -262,7 +287,7 @@ dialog1(Parent, Projects, ActiveProject) ->
   wxSizer:add(ProjectSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "Project:"),   []),
   wxSizer:addSpacer(ProjectSizer, 20),
   ProjectChoice = wxChoice:new(Dialog1, ?PROJECT_CHOICE),
-  wxChoice:append(ProjectChoice, "No Project", wx_misc:getHomeDir()),
+  wxChoice:append(ProjectChoice, "No Project", undefined),
   add_project_data(ProjectChoice, Projects),
   wxSizer:add(ProjectSizer, ProjectChoice, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxChoice:setSelection(ProjectChoice, wxChoice:findString(ProjectChoice, ActiveProject)),
@@ -419,7 +444,13 @@ set_path_text(Parent, Path) ->
 get_project_choice(Parent) ->
   ProjectChoice = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_CHOICE), wxChoice),
   Name = wxChoice:getString(ProjectChoice, wxChoice:getSelection(ProjectChoice)),
-  Path = wxChoice:getClientData(ProjectChoice, wxChoice:getSelection(ProjectChoice)),
+  ProjectId = wxChoice:getClientData(ProjectChoice, wxChoice:getSelection(ProjectChoice)),
+  Path = case ProjectId of
+    undefined ->
+      wx_misc:getHomeDir();
+    _ ->
+      project_manager:get_root(ProjectId)
+  end,
   {Name, Path}.
 
 
@@ -528,7 +559,7 @@ swap(Sizer, Dialog1, Dialog2) ->
 add_project_data(_, []) ->
   ok;
 add_project_data(ProjectChoice, [ProjectId|Projects]) ->
-  wxChoice:append(ProjectChoice, project_manager:get_name(ProjectId), project_manager:get_root(ProjectId)),
+  wxChoice:append(ProjectChoice, project_manager:get_name(ProjectId), ProjectId),
   add_project_data(ProjectChoice, Projects).
 
 
@@ -555,7 +586,7 @@ create_tree(Parent, Root) ->
 %% @doc Build the tree structure for a given tree item.
 
 build_tree(Tree, Item) ->
-  Root = wxTreeCtrl:getItemData(Tree, Item),
+  Root = project_manager:get_root(wxTreeCtrl:getItemData(Tree, Item)),
   Files = filelib:wildcard(Root ++ "/*"),
   add_files(Tree, Item, Files).
 

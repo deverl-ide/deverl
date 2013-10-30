@@ -387,7 +387,7 @@ empty_undo_buffer(This) ->
 
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
-  Sb = proplists:get_value(status_bar, Config),
+  %Sb = proplists:get_value(status_bar, Config),
   Font = proplists:get_value(font, Config),
   File = proplists:get_value(file, Config, false),
 

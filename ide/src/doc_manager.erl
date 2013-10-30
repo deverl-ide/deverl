@@ -25,7 +25,7 @@
 	new_document/1, 
 	new_document_from_existing/2,
 	new_document_from_existing/3,
-	close_project/0,
+	close_project/1,
 	close_active_document/0, 
 	close_all_documents/0,
 	get_active_document/0, 
@@ -72,8 +72,10 @@ new_file(Parent) ->
   end,
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
+      io:format("CANCEL~n"),
       ok;
     ?wxID_OK ->
+      io:format("OK~n"),
       ok
   end.  
 	
@@ -317,9 +319,8 @@ apply_to_active_document(Fun, Args) ->
 %% This will close any files belonging to the project, and remove the
 %% tree from the project tree. 
 
-close_project() ->
-	%% Check open files, save/close
-	wx_object:call(?MODULE, close_project).
+close_project(ProjectId) ->
+	wx_object:call(?MODULE, {close_project, ProjectId}).
   
 	
 %% =====================================================================
@@ -398,7 +399,7 @@ handle_cast({close_document, Index}, State=#state{notebook=Nb, status_bar=Sb, do
 	io:format("close_document handler~n"),
 	close_document(Nb, Tb, Index),
 	{noreply, State}.
-
+  
 handle_call(notebook, _, State=#state{notebook=Nb, status_bar=Sb, document_ets=Tb}) ->
 	{reply, {Nb,Sb,Tb}, State};
 handle_call({new_document, Filename, Options}, _, 
@@ -408,8 +409,9 @@ handle_call({new_document, Filename, Options}, _,
 % handle_call(close_project, _, 
 % 						State=#state{active_project=Proj, notebook=Notebook, document_ets=DocEts}) ->
 % 	%% Check open files, save/close
-% 	case Proj of
-% 		undefined -> ok;
+%   case Proj of
+% 		undefined -> 
+%       ok;
 % 		Project={Item,Root} ->
 % 			wxAuiNotebook:disconnect(Notebook, command_auinotebook_page_changed),
 % 			Pages = get_active_project_documents(Project, DocEts, Notebook),
@@ -418,7 +420,21 @@ handle_call({new_document, Filename, Options}, _,
 % 			close_document(Notebook, DocEts, get_notebook_index(Notebook, hd(Pages))),
 % 			ide_projects_tree:delete_project(Item)
 % 	end,
-	% {reply, ok, State};
+%   {reply, ok, State};
+handle_call({close_project, ProjectId}, _, State=#state{notebook=Notebook, document_ets=DocEts}) ->
+  case wxAuiNotebook:getPageCount(Notebook) of
+    0 ->
+      project_manager:set_active_project(undefined);
+    _ ->
+      FileRecords = get_files_in_project(DocEts, ProjectId),
+      io:format("FILE RECORDS~p~n", [FileRecords]),
+      lists:map(fun(Record) -> 
+                  close_document(Notebook, DocEts, get_notebook_index(Notebook, record_get_key(Record)))
+                end, FileRecords)
+  end,
+  ide_projects_tree:delete_project(ProjectId),
+  {reply, ok, State};
+  
 handle_call(close_all, _, State=#state{notebook=Notebook, document_ets=DocEts}) ->
 	%% CLOSE PROJECTS FIRST (CANT JUST DELETE PROJ TREE - USER MIGHT CANCEL A CLOSE IF NOT SAVED)
 	wxAuiNotebook:disconnect(Notebook, command_auinotebook_page_changed),
@@ -450,16 +466,22 @@ handle_sync_event(#wx{}, Event, State=#state{notebook=Nb, document_ets=Ets}) ->
 
 handle_event(#wx{obj=Notebook, event=#wxAuiNotebook{type=command_auinotebook_page_changed,
 			selection=Index}}, State=#state{document_ets=DocEts, notebook=Nb, status_bar=Sb}) ->
-	PageText = wxAuiNotebook:getPageText(Notebook, Index),
-  % Make sure editor knows (needs to update sb)
-  editor:selected(index_to_ref(DocEts, Notebook, Index), Sb),
-	Proj = lookup_project(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
-	Str = case Proj of
-		undefined -> 
-			PageText;
-		ProjectId -> 
-			project_manager:set_active_project(ProjectId)
-	end,	
+  io:format("PAGE CHANGED~n"),
+  case wxAuiNotebook:getPageCount(Nb) of
+    0 ->
+      project_manager:set_active_project(undefined);
+    _ ->
+      PageText = wxAuiNotebook:getPageText(Notebook, Index),
+      % Make sure editor knows (needs to update sb)
+      editor:selected(index_to_ref(DocEts, Notebook, Index), Sb),
+      Proj = lookup_project(DocEts, wxAuiNotebook:getPage(Notebook, Index)),
+      Str = case Proj of
+        undefined -> 
+          PageText;
+        ProjectId -> 
+          project_manager:set_active_project(ProjectId)
+      end
+  end,
   {noreply, State};
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_bg_dclick}}, 
 						 State=#state{notebook=Nb, status_bar=Sb, document_ets=DocEts, parent=Parent, sizer=Sz}) ->
@@ -513,6 +535,17 @@ lookup_path(DocEts, Key) ->
 	
 update_path(DocEts, Key, Path) ->
 	ets:update_element(DocEts, Key, {3, {path, Path}}).
+  
+get_files_in_project(DocEts, ProjectId) ->
+  ets:foldr(fun(Record, Acc) -> 
+              case record_get_project(Record) of 
+                ProjectId -> 
+                  [Record | Acc];
+                _ ->
+                  Acc
+              end
+            end, 
+            [], DocEts).
 
 
 %% =====================================================================
