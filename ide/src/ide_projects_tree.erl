@@ -170,12 +170,20 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
   {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
   insert(Tree, Item, FilePath),
 	alternate_background(Tree),
+<<<<<<< HEAD
   %print_tree_debug(Tree),
+=======
+  print_tree_debug(Tree),
+>>>>>>> 8ddbbc14d0323d56d4baf49c84ab66946d0b820c
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
   wxTreeCtrl:deleteChildren(Tree, Item),
 	alternate_background(Tree),
+<<<<<<< HEAD
   %print_tree_debug(Tree),
+=======
+  print_tree_debug(Tree),
+>>>>>>> 8ddbbc14d0323d56d4baf49c84ab66946d0b820c
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}},
 						 State) ->
@@ -203,22 +211,6 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
         throw:_ -> lib_dialog_wx:msg_error(Frame, "The file could not be loaded.")
       end
   end,
-      
-	%File = get_path(Tree, Item),
-	%case filelib:is_dir(File) of
-		%true ->
-      %check_tree_item_expanded(Tree, Item),
-			%ok;
-		%_ ->
-			%%% CHECK IF FILE CAN BE OPENED AS TEXT (TO BE DONE IN IO MODULE, NOT HERE!!)
-			%try
-				%FileContents = ide_io:read_file(File),
-				%{Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
-				%project_manager:open_file(File, FileContents, Id)
-			%catch
-				%throw:_ -> lib_dialog_wx:msg_error(Frame, "The file could not be loaded.")
-			%end
-	%end,
 	{noreply, State}.
 
 
