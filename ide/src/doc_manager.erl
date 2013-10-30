@@ -212,9 +212,11 @@ save_document(Index) ->
 	{Notebook,Sb,DocEts} = wx_object:call(?MODULE, notebook), 
 	case editor:is_dirty(index_to_ref(DocEts, Notebook, Index)) of
 		false -> 
+			io:format("NOT MODIFIED~n"),
 			Record  = get_record(DocEts, index_to_key(Notebook, Index)),
 			record_get_path(Record);
 		_ ->
+			io:format("MODIFIED~n"),
 			save_document(Sb, get_record(DocEts, index_to_key(Notebook, Index)))
 	end.
 	
@@ -222,6 +224,7 @@ save_document(Sb, Record) ->
 	Result  = case record_get_path(Record) of
 		undefined -> save_new_document();
 		Path -> %% Document already exists, overwrite
+			io:format("TEXT:~n~p~n", [editor:get_text(record_get_ref(Record))]),
 			ide_io:save(Path, editor:get_text(record_get_ref(Record))),
 			editor:set_savepoint(record_get_ref(Record)),
 			% ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
@@ -251,6 +254,7 @@ save_new_document(Index) ->
 			update_path(DocEts, index_to_key(Notebook, Index), Path), 
 			wxAuiNotebook:setPageText(Notebook, Index, Filename),
 			editor:set_savepoint(index_to_ref(DocEts, Notebook, Index)),
+			%%UPDATE PATH FOR POLLER - DONT CREATE NEW ONE WITHOUT CLOSING THE OLD
 			editor:link_poller(index_to_ref(DocEts, Notebook, Index), Path),
 			ide_status_bar:set_text_timeout(Sb, {field, help}, "Document saved."),
 			Path
@@ -607,13 +611,25 @@ new_document(Notebook, DocEts, Sb, Filename, Parent, Sz, Options)	->
 			already_open
 	end.
 	
+	
+%% =====================================================================
+%% @doc Ensure the notebook is visible.
+%% @private
+%% @hidden
+
 ensure_notebook_visible(Notebook, Sz) ->
 	case wxWindow:isShown(Notebook) of
 		false -> 
 			show_notebook(Sz);
 		true -> ok
 	end.
-	
+
+
+%% =====================================================================
+%% @doc Check whether a file is already open.
+%% @private
+%% @hidden
+
 is_already_open([], Path) ->
 	false;
 is_already_open([{Key,_,{path,Path},_} | T], Path) ->
