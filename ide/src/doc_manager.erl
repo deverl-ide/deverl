@@ -1,4 +1,4 @@
--module(doc_manager2).
+-module(doc_manager).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
