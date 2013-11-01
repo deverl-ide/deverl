@@ -190,15 +190,14 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
 						State=#state{frame=Frame}) ->
-  File = get_path(Tree, Item),
-  case filelib:is_dir(File) of
+  FilePath = get_path(Tree, Item),
+  case filelib:is_dir(FilePath) of
     true ->
       wxTreeCtrl:toggle(Tree, Item);
     false ->
       try
-        FileContents = ide_io:read_file(File),
         {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
-        project_manager:open_file(File, FileContents, Id)
+				doc_manager:create_document(FilePath, Id)
       catch
         throw:_ -> lib_dialog_wx:msg_error(Frame, "The file could not be loaded.")
       end

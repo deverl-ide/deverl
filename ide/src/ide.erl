@@ -123,6 +123,7 @@ init(Options) ->
                                         {proportion, 0}]),
 
 	Workspace = create_workspace(SplitterLeftRight, StatusBar),
+	io:format("WORKSPACE: ~p~n", [Workspace]),
 
 	%% The left window
 	LeftWindow = create_left_window(Frame, SplitterLeftRight),
