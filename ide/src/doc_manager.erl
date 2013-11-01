@@ -9,7 +9,8 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2, handle_sync_event/3]).
 				 
 -export([start/1,
-				 new_document/1]).
+				 new_document/1,
+				 create_document/2]).
          
 -record(document, {path :: string(), 
                    file_poller :: file_poller:file_poller(), 
@@ -79,7 +80,6 @@ init(Config) ->
 	Ph = lib_widgets:placeholder(Panel, "No Open Documents"),
 	wxSizer:add(Sz, Ph, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
-	wxAuiNotebook:connect(Notebook, command_auinotebook_bg_dclick, []),
 	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [callback]),
 	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
 
@@ -101,6 +101,7 @@ handle_call({create_doc, Path, ProjectId}, _From,
   Document = #document{path=Path, editor=Editor, project_id=ProjectId},
   NewDocRecords = [{DocId, Document}|DocRecords],
   Key = wxAuiNotebook:getPage(Nb, wxAuiNotebook:getPageCount(Nb)),
+	load_editor_contents(Editor, Path),
   {reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}}.
 
 handle_sync_event(#wx{}, Event, State=#state{notebook=Nb}) ->
@@ -132,6 +133,18 @@ create_document(Path, ProjectId) ->
       wx_object:call(?MODULE, {create_doc, Path, ProjectId})
   end.
   
+load_editor_contents(Editor, Path) ->
+	try 
+		editor:set_text(Editor, ide_io:read_file(Path)),
+		editor:empty_undo_buffer(Editor),
+		editor:set_savepoint(Editor),
+		editor:link_poller(Editor, Path)
+	catch
+		Throw ->
+			io:format("LOAD EDITOR ERROR~n")
+	end.
+			
+
 
 close_document(DocId) ->
     ok.
