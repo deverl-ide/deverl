@@ -120,7 +120,7 @@ handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords
   {NewDocRecords, NewPageToDocId} = case editor:is_dirty(Record#document.editor) of
     true ->
       %save_changes_prompt();
-      {undefined, undefined};
+      {undefined, undefined}; 
     _ ->
       remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, PageToDocId), DocRecords, PageToDocId)
   end,
@@ -166,7 +166,7 @@ handle_call({get_project_docs, ProjectId}, _From,
   {reply, DocList, State};
   
 handle_call({get_modified_docs, DocIdList}, _From, 
-    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+    State=#state{notebook=Nb, parent=Parent, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
   List = lists:foldl(
     fun(DocId, Acc) -> 
       Record = get_record(DocId, DocRecords), 
@@ -177,7 +177,7 @@ handle_call({get_modified_docs, DocIdList}, _From,
           Acc
       end
     end, [], DocIdList),
-  {reply, {List, parent}, State};
+  {reply, {List, Parent}, State};
   
 handle_call({get_doc_names, DocIdList}, _From, 
     State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
@@ -237,8 +237,15 @@ close_documents(Documents) ->
       close(Documents);
     {ModifiedDocs, Parent} ->
       DocNames = get_doc_names(ModifiedDocs),
-      lib_dialog_wx:save_changes_dialog(Parent, DocNames)
-      %close(ModifiedDocs)
+      Dialog = lib_dialog_wx:save_changes_dialog(Parent, DocNames),
+			case wxDialog:showModal(Dialog) of
+				?wxID_CANCEL -> %% Cancel close
+					ok;
+				?wxID_REVERT_TO_SAVED ->  %% Close without saving
+		 			ok;
+				?wxID_SAVE -> %% Save the document
+					ok
+			end
   end.
   
 close([]) ->
@@ -288,7 +295,7 @@ get_open_documents() ->
   
 get_active_document() ->
   wx_object:call(?MODULE, get_active_doc).
-  
+
 get_project_documents(ProjectId) ->
   wx_object:call(?MODULE, {get_project_docs, ProjectId}).
   
@@ -336,4 +343,3 @@ ensure_notebook_visible(Notebook, Sz) ->
 			show_notebook(Sz);
 		true -> ok
 	end.
-  

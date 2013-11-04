@@ -117,6 +117,7 @@ msg_notice(Parent, Msg) ->
 %% Display the save changes dialog.
 
 save_changes_dialog(Parent, Filenames) ->
+  io:format("PARENT IN DIALOG ~p~n", [Parent]),
 	Heading = "The following documents have been modified. Would you like to save the changes?",
   L = lists:flatten([Filename ++ io_lib:nl() || Filename <- Filenames]),
 	SubHeading = L ++ "All changes will be lost if you don't save.",
