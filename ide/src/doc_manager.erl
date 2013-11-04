@@ -117,13 +117,7 @@ handle_info(Msg, State) ->
 
 handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
   Record = get_record(DocId, DocRecords),
-  {NewDocRecords, NewPageToDocId} = case editor:is_dirty(Record#document.editor) of
-    true ->
-      %save_changes_prompt();
-      {undefined, undefined}; 
-    _ ->
-      remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, PageToDocId), DocRecords, PageToDocId)
-  end,
+  {NewDocRecords, NewPageToDocId} = remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, PageToDocId), DocRecords, PageToDocId),
   case wxAuiNotebook:getPageCount(Nb) of
  		0 -> wx_object:cast(?MODULE, notebook_empty);
  		_ -> ok 
@@ -237,20 +231,20 @@ close_documents(Documents) ->
       close(Documents),
       ok;
     {ModifiedDocs, Parent} ->
-      show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs))
+      show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs)
   end.
   
   
-show_save_changes_dialog(Parent, DocNames) ->
+show_save_changes_dialog(Parent, DocNames, DocIdList) ->
   Dialog = lib_dialog_wx:save_changes_dialog(Parent, DocNames),
   case wxDialog:showModal(Dialog) of
 		?wxID_CANCEL -> %% Cancel close
 			cancelled;
 		?wxID_REVERT_TO_SAVED ->  %% Close without saving
-			ok;
+			close(DocIdList);
 		?wxID_SAVE -> %% Save the document
       %% needs to save here
-			ok
+			close(DocIdList)
 	end.
   
   
