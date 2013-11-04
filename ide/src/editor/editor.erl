@@ -1001,7 +1001,7 @@ parse_functions(Editor) ->
 		nomatch -> false, [];
 		{_,Captured} -> Captured
 	end,
-	func_list:set(Result),
+	% func_list:set(Result),
 	ok.
 
 
