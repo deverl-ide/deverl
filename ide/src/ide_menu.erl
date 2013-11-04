@@ -306,7 +306,7 @@ init(Config) ->
     {?wxID_PRINT, {}},
     {?wxID_CLOSE, {doc_manager,close_active_document,[]}},
     {?wxID_CLOSE_ALL, {doc_manager,close_all,[]}},
-		{?MENU_ID_CLOSE_PROJECT, {project_manager,close_project,[]}},
+		{?MENU_ID_CLOSE_PROJECT, {doc_manager,close_active_project,[]}},
     {?wxID_EXIT, {}},
     {?wxID_PREFERENCES, {ide_prefs,start,[[{parent,Frame}]] }},
     

@@ -1,3 +1,12 @@
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc This module manages the open documents.
+%% @end
+%% =====================================================================
+
 -module(doc_manager).
 
 -include_lib("wx/include/wx.hrl").
@@ -8,19 +17,22 @@
 -export([init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2, handle_sync_event/3]).
 				 
+%% API
 -export([start/1,
 				 new_document/1,
 				 create_document/2,
          close_all/0,
-         close_active_document/0]).
-         
+         close_active_document/0,
+         close_active_project/0]).
+    
+%% Server state
 -record(document, {path :: string(), 
                    file_poller :: file_poller:file_poller(), 
                    editor :: editor:editor(), 
                    project_id :: project_manager:project_id()}).
-                   
+           
+%% Types
 -type document_id() :: {integer(), integer(), integer()}. 
-
 -type document_record() :: {document_id(), #document{}}.
 
 
@@ -59,7 +71,11 @@ close_all() ->
   
 
 close_active_document() ->
-  close_document(get_active_document()).
+  close_documents([get_active_document()]).
+  
+  
+close_active_project() ->
+  close_project(project_manager:get_active_project()).
   
 
 %% =====================================================================
@@ -110,7 +126,7 @@ handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords
   end,
   case wxAuiNotebook:getPageCount(Nb) of
  		0 -> wx_object:cast(?MODULE, notebook_empty);
- 		_ -> ok
+ 		_ -> ok 
  	end,
   {noreply, State#state{doc_records=NewDocRecords, page_to_doc_id=NewPageToDocId}};
 
@@ -141,8 +157,26 @@ handle_call(get_open_docs, _From, State=#state{notebook=Nb, doc_records=DocRecor
 handle_call(get_active_doc, _From, 
     State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
   DocId = proplists:get_value(wxAuiNotebook:getPage(Nb, wxAuiNotebook:getSelection(Nb)), PageToDocId),
-  io:format("DOCUMENT ID ~p~n", [DocId]),
-  {reply, DocId, State}.
+  {reply, DocId, State};
+  
+handle_call({get_project_docs, ProjectId}, _From, 
+    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+  DocList = lists:foldl(fun({DocId, #document{project_id=Project}}, Acc) when Project =:= ProjectId -> [DocId|Acc]; 
+                           (_, Acc) -> Acc end, [], DocRecords),
+  {reply, DocList, State};
+  
+handle_call({get_modified_docs, DocIdList}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+  List = lists:foldl(
+    fun(DocId, Acc) -> 
+      Record = get_record(DocId, DocRecords), 
+      case editor:is_dirty(Record#document.editor) of
+        true ->
+          [DocId|Acc];
+        _ ->
+          Acc
+      end
+    end, [], DocIdList),
+  {reply, List, State}.
 
 handle_sync_event(#wx{}, Event, State=#state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
@@ -179,8 +213,8 @@ load_editor_contents(Editor, Path) ->
 	try 
 		editor:set_text(Editor, ide_io:read_file(Path)),
 		editor:empty_undo_buffer(Editor),
-		editor:set_savepoint(Editor),
-		editor:link_poller(Editor, Path)
+		editor:set_savepoint(Editor)
+		%editor:link_poller(Editor, Path)
 	catch
 		Throw ->
 			io:format("LOAD EDITOR ERROR~n")
@@ -190,13 +224,30 @@ load_editor_contents(Editor, Path) ->
 close_document(DocId) ->
   wx_object:cast(?MODULE, {close_doc, DocId}).
   
+close_documents(Documents) ->
+  ModifiedDocs = get_modified_docs(Documents),
+  io:format("MODIFIED DOCS ~p~n", [ModifiedDocs]).
   
-close_documents([]) ->
+close([]) ->
   ok;
-close_documents([DocId|Documents]) ->
-  wx_object:cast(?MODULE, {close_doc, DocId}),
-  close_documents(Documents).
+close([DocId|Documents]) ->
+  close_document(DocId),
+  close(Documents).
   
+  
+%% Documents :: list of DocId
+get_modified_docs(Documents) ->
+  wx_object:call(?MODULE, {get_modified_docs, Documents}).
+  
+  
+close_project(ProjectId) ->
+  case close_documents(get_project_documents(ProjectId)) of
+    ok ->
+      ide_projects_tree:delete_project(ProjectId);
+    cancelled ->
+      ok
+  end. 
+    
     
 %% Remove document records from state and delete page from auinotebook
 remove_document(Nb, DocId, PageId, DocRecords, PageToDocId) ->
@@ -224,7 +275,10 @@ get_open_documents() ->
   
 get_active_document() ->
   wx_object:call(?MODULE, get_active_doc).
-
+  
+get_project_documents(ProjectId) ->
+  wx_object:call(?MODULE, {get_project_docs, ProjectId}).
+  
 
 %% =====================================================================
 %% @doc
