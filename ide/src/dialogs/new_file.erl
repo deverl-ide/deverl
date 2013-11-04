@@ -247,9 +247,8 @@ handle_event(#wx{id=?FINISH_BUTTON, event=#wxCommand{type=command_button_clicked
     _ ->
       ide_projects_tree:refresh_project(ProjectPath)
   end,
-  %ide_io:create_new_file(Path, Filename),
   wxDialog:endModal(Parent, ?wxID_OK),
-  {noreply, State#state{path=Path ++ Filename}};
+  {noreply, State#state{path=filename:join([Path, Filename])}};
 handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_selected, commandInt=Index}},
              State=#state{win=Parent}) ->
   case Index of
