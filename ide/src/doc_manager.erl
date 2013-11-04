@@ -83,7 +83,7 @@ close_active_project() ->
 %% =====================================================================
 
 init(Config) ->
-	{Parent, Sb} = proplists:get_value(config, Config),
+	Parent = proplists:get_value(parent, Config),
 
 	Style = (0
 			bor ?wxAUI_NB_TOP
@@ -183,7 +183,7 @@ handle_call({get_doc_names, DocIdList}, _From,
     State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
   DocNameList = lists:map(
     fun(DocId) -> 
-      Record = proplists:getValue(DocId, DocRecords),
+      Record = proplists:get_value(DocId, DocRecords),
       filename:basename(Record#document.path)
     end, DocIdList),
   {reply, DocNameList, State}.
@@ -191,7 +191,7 @@ handle_call({get_doc_names, DocIdList}, _From,
 handle_sync_event(#wx{}, Event, State=#state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
   DocId = page_id_to_doc_id(Nb, wxAuiNotebookEvent:getSelection(Event), PageToDoc),
-	close_document(DocId),
+	close_documents([DocId]),
 	ok.
 
 handle_event(#wx{}, State) ->
@@ -230,14 +230,11 @@ load_editor_contents(Editor, Path) ->
 			io:format("LOAD EDITOR ERROR~n")
 	end.
 
-
-close_document(DocId) ->
-  wx_object:cast(?MODULE, {close_doc, DocId}).
   
 close_documents(Documents) ->
   case get_modified_docs(Documents) of
     {[], _Parent} ->
-      ok;
+      close(Documents);
     {ModifiedDocs, Parent} ->
       DocNames = get_doc_names(ModifiedDocs),
       lib_dialog_wx:save_changes_dialog(Parent, DocNames)
@@ -247,7 +244,7 @@ close_documents(Documents) ->
 close([]) ->
   ok;
 close([DocId|Documents]) ->
-  close_document(DocId),
+  wx_object:cast(?MODULE, {close_doc, DocId}),
   close(Documents).
   
   
