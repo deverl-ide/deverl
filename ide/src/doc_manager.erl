@@ -165,6 +165,7 @@ close_document(DocId) ->
   wx_object:cast(?MODULE, {close_doc, DocId}).
   
     
+%% Remove document records from state and delete page from auinotebook
 remove_document(Nb, DocId, PageId, DocRecords, PageToDocId) ->
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageId, PageToDocId),
@@ -175,6 +176,7 @@ remove_document(Nb, DocId, PageId, DocRecords, PageToDocId) ->
 page_id_to_doc_id(Notebook, PageId, PageToDocId) ->
   Page = wxAuiNotebook:getPage(Notebook, PageId),
   proplists:get_value(Page, PageToDocId). 
+
 
 doc_id_to_page_id(Notebook, DocId, []) ->
   error("No Corresponding Page ID~n");
