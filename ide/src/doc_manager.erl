@@ -25,7 +25,7 @@
                   
 %% Server state
 -record(state, {
-             		notebook :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
+             	notebook :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 page_to_doc_id :: [{wxWindow:wxWindow(), document_id()}],
                 doc_records :: [document_record()],
 								sizer,
