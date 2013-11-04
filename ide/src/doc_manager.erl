@@ -103,6 +103,12 @@ handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords
  		_ -> ok
  	end,
   {noreply, State#state{doc_records=NewDocRecords, page_to_doc_id=NewPageToDocId}};
+
+handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
+	%% Called when the last document is closed.
+	show_placeholder(Sz),
+	ide:set_title([]),
+	{noreply, State};
   
 handle_cast(_, State) ->
 	{noreply, State}.
@@ -159,7 +165,7 @@ load_editor_contents(Editor, Path) ->
 		Throw ->
 			io:format("LOAD EDITOR ERROR~n")
 	end.
-			
+
 
 close_document(DocId) ->
   wx_object:cast(?MODULE, {close_doc, DocId}).
