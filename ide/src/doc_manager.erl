@@ -3,7 +3,7 @@
 %% @copyright
 %% @title
 %% @version
-%% @doc This module manages the open documents.
+%% @doc This module manages open documents.
 %% @end
 %% =====================================================================
 
@@ -23,23 +23,24 @@
 				 create_document/2,
          close_all/0,
          close_active_document/0,
-         close_active_project/0]).
+         close_active_project/0,       
+				 save_all/0,
+         save_active_document/0,
+         save_active_project/0]).
     
-%% Server state
+%% Records
 -record(document, {path :: string(), 
                    file_poller :: file_poller:file_poller(), 
                    editor :: editor:editor(), 
                    project_id :: project_manager:project_id()}).
-           
+         
 %% Types
 -type document_id() :: {integer(), integer(), integer()}. 
 -type document_record() :: {document_id(), #document{}}.
-
-
-                  
+               
 %% Server state
 -record(state, {
-                notebook :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
+                notebook :: wxAuiNotebook:wxAuiNotebook(), %% Notebook
                 page_to_doc_id :: [{wxWindow:wxWindow(), document_id()}],
                 doc_records :: [document_record()],
 								sizer,
@@ -54,6 +55,9 @@
 start(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
   
+	
+%% =====================================================================
+%% @doc
   
 new_document(Parent) ->
   OpenProjects = project_manager:get_open_projects(),
@@ -66,17 +70,47 @@ new_document(Parent) ->
   end.  
 
 
+%% =====================================================================
+%% @doc
+
 close_all() ->
   close_documents(get_open_documents()).
   
 
+%% =====================================================================
+%% @doc
+
 close_active_document() ->
   close_documents([get_active_document()]).
   
-  
+
+%% =====================================================================
+%% @doc
+ 
 close_active_project() ->
   close_project(project_manager:get_active_project()).
-  
+
+
+%% =====================================================================
+%% @doc
+
+save_all() ->
+	save_documents(get_open_documents()).
+	
+
+%% =====================================================================
+%% @doc
+	
+save_active_document() ->
+	save_documents([get_active_document()]).
+
+
+%% =====================================================================
+%% @doc
+	
+save_active_project() ->
+	save_project(project_manager:get_active_project()).
+
 
 %% =====================================================================
 %% Callbacks
@@ -198,10 +232,12 @@ terminate(_Reason, State=#state{notebook=Nb}) ->
 	ok.
          
 
-
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
+
+%% =====================================================================
+%% @doc
 
 create_document(Path, ProjectId) ->
   case ide_io:create_new_file(Path) of
@@ -212,6 +248,9 @@ create_document(Path, ProjectId) ->
       wx_object:call(?MODULE, {create_doc, Path, ProjectId})
   end.
   
+
+%% =====================================================================
+%% @doc
   
 load_editor_contents(Editor, Path) ->
 	try 
@@ -224,6 +263,9 @@ load_editor_contents(Editor, Path) ->
 			io:format("LOAD EDITOR ERROR~n")
 	end.
 
+
+%% =====================================================================
+%% @doc
   
 close_documents(Documents) ->
   case get_modified_docs(Documents) of
@@ -234,7 +276,10 @@ close_documents(Documents) ->
       show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs)
   end.
   
-  
+
+%% =====================================================================
+%% @doc
+ 
 show_save_changes_dialog(Parent, DocNames, DocIdList) ->
   Dialog = lib_dialog_wx:save_changes_dialog(Parent, DocNames),
   case wxDialog:showModal(Dialog) of
@@ -243,10 +288,13 @@ show_save_changes_dialog(Parent, DocNames, DocIdList) ->
 		?wxID_REVERT_TO_SAVED ->  %% Close without saving
 			close(DocIdList);
 		?wxID_SAVE -> %% Save the document
-      %% needs to save here
+			save_documents(DocIdList),
 			close(DocIdList)
 	end.
   
+
+%% =====================================================================
+%% @doc
   
 close([]) ->
   ok;
@@ -254,11 +302,19 @@ close([DocId|Documents]) ->
   wx_object:cast(?MODULE, {close_doc, DocId}),
   close(Documents).
   
+
+%% =====================================================================
+%% @doc Takes a lists of document ids and filters out the unmodified
+%% documents, returning a list of modified document id's.
   
-%% Documents :: list of DocId
+-spec get_modified_docs([document_id()]) -> [document_id()].
+
 get_modified_docs(Documents) ->
   wx_object:call(?MODULE, {get_modified_docs, Documents}).
   
+
+%% =====================================================================
+%% @doc
   
 close_project(ProjectId) ->
   case close_documents(get_project_documents(ProjectId)) of
@@ -266,10 +322,27 @@ close_project(ProjectId) ->
       ide_projects_tree:delete_project(ProjectId);
     cancelled ->
       ok
-  end. 
+  end.
+
+
+%% =====================================================================
+%% @doc
+	
+save_documents(DocIds) -> 
+	ok.
+	
+
+%% =====================================================================
+%% @doc
+
+save_project(ProjectId) -> 
+	ok.
+
     
-    
-%% Remove document records from state and delete page from auinotebook
+%% =====================================================================
+%% @doc Remove document records from state and delete page from the
+%% notebook.
+
 remove_document(Nb, DocId, PageId, DocRecords, PageToDocId) ->
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageId, PageToDocId),
@@ -277,10 +350,16 @@ remove_document(Nb, DocId, PageId, DocRecords, PageToDocId) ->
   {NewDocRecords, NewPageToDocId}.
   
 
+%% =====================================================================
+%% @doc
+
 page_id_to_doc_id(Notebook, PageId, PageToDocId) ->
   Page = wxAuiNotebook:getPage(Notebook, PageId),
   proplists:get_value(Page, PageToDocId). 
 
+
+%% =====================================================================
+%% @doc
 
 doc_id_to_page_id(Notebook, DocId, []) ->
   error("No Corresponding Page ID~n");
@@ -290,17 +369,33 @@ doc_id_to_page_id(Notebook, DocId, [{Page, _}|Rest]) ->
   doc_id_to_page_id(Notebook, DocId, Rest).
 
 
+%% =====================================================================
+%% @doc
+
 get_open_documents() ->
   wx_object:call(?MODULE, get_open_docs).
+
+
+%% =====================================================================
+%% @doc
   
 get_active_document() ->
   wx_object:call(?MODULE, get_active_doc).
 
+
+%% =====================================================================
+%% @doc
+
 get_project_documents(ProjectId) ->
   wx_object:call(?MODULE, {get_project_docs, ProjectId}).
-  
+
+
+%% =====================================================================
+%% @doc
+
 get_doc_names(DocIdList) ->
   wx_object:call(?MODULE, {get_doc_names, DocIdList}).
+
 
 %% =====================================================================
 %% @doc
@@ -315,7 +410,7 @@ get_record(DocId, DocRecords) ->
 generate_id() ->
 	now().
 	
-  
+	
 %% =====================================================================
 %% @doc Display the notebook, hiding and other siblings.
 
