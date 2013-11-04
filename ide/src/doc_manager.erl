@@ -234,19 +234,25 @@ load_editor_contents(Editor, Path) ->
 close_documents(Documents) ->
   case get_modified_docs(Documents) of
     {[], _Parent} ->
-      close(Documents);
+      close(Documents),
+      ok;
     {ModifiedDocs, Parent} ->
-      DocNames = get_doc_names(ModifiedDocs),
-      Dialog = lib_dialog_wx:save_changes_dialog(Parent, DocNames),
-			case wxDialog:showModal(Dialog) of
-				?wxID_CANCEL -> %% Cancel close
-					ok;
-				?wxID_REVERT_TO_SAVED ->  %% Close without saving
-		 			ok;
-				?wxID_SAVE -> %% Save the document
-					ok
-			end
+      show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs))
   end.
+  
+  
+show_save_changes_dialog(Parent, DocNames) ->
+  Dialog = lib_dialog_wx:save_changes_dialog(Parent, DocNames),
+  case wxDialog:showModal(Dialog) of
+		?wxID_CANCEL -> %% Cancel close
+			cancelled;
+		?wxID_REVERT_TO_SAVED ->  %% Close without saving
+			ok;
+		?wxID_SAVE -> %% Save the document
+      %% needs to save here
+			ok
+	end.
+  
   
 close([]) ->
   ok;
