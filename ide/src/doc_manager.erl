@@ -140,7 +140,7 @@ handle_call(get_open_docs, _From, State=#state{notebook=Nb, doc_records=DocRecor
   
 handle_call(get_active_doc, _From, 
     State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
-  DocId = proplists:get_value(wxAuiNotebook:getSelection(Nb), PageToDocId),
+  DocId = proplists:get_value(wxAuiNotebook:getPage(Nb, wxAuiNotebook:getSelection(Nb)), PageToDocId),
   io:format("DOCUMENT ID ~p~n", [DocId]),
   {reply, DocId, State}.
 
