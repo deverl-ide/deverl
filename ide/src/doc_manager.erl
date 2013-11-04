@@ -10,7 +10,9 @@
 				 
 -export([start/1,
 				 new_document/1,
-				 create_document/2]).
+				 create_document/2,
+         close_all/0,
+         close_active_document/0]).
          
 -record(document, {path :: string(), 
                    file_poller :: file_poller:file_poller(), 
@@ -51,6 +53,14 @@ new_document(Parent) ->
       create_document(new_file:get_path(Dialog), new_file:get_project_id(Dialog))
   end.  
 
+
+close_all() ->
+  close_documents(get_open_documents()).
+  
+
+close_active_document() ->
+  close_document(get_active_document()).
+  
 
 %% =====================================================================
 %% Callbacks
@@ -123,7 +133,16 @@ handle_call({create_doc, Path, ProjectId}, _From,
   NewDocRecords = [{DocId, Document}|DocRecords],
   Key = wxAuiNotebook:getPage(Nb, wxAuiNotebook:getPageCount(Nb)-1),
 	load_editor_contents(Editor, Path),
-  {reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}}.
+  {reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}};
+  
+handle_call(get_open_docs, _From, State=#state{notebook=Nb, doc_records=DocRecords}) ->
+  {reply, lists:map(fun({DocId, _}) -> DocId end, DocRecords), State};
+  
+handle_call(get_active_doc, _From, 
+    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+  DocId = proplists:get_value(wxAuiNotebook:getSelection(Nb), PageToDocId),
+  io:format("DOCUMENT ID ~p~n", [DocId]),
+  {reply, DocId, State}.
 
 handle_sync_event(#wx{}, Event, State=#state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
@@ -155,6 +174,7 @@ create_document(Path, ProjectId) ->
       wx_object:call(?MODULE, {create_doc, Path, ProjectId})
   end.
   
+  
 load_editor_contents(Editor, Path) ->
 	try 
 		editor:set_text(Editor, ide_io:read_file(Path)),
@@ -169,6 +189,13 @@ load_editor_contents(Editor, Path) ->
 
 close_document(DocId) ->
   wx_object:cast(?MODULE, {close_doc, DocId}).
+  
+  
+close_documents([]) ->
+  ok;
+close_documents([DocId|Documents]) ->
+  wx_object:cast(?MODULE, {close_doc, DocId}),
+  close_documents(Documents).
   
     
 %% Remove document records from state and delete page from auinotebook
@@ -190,6 +217,13 @@ doc_id_to_page_id(Notebook, DocId, [{Page, DocId}|Rest]) ->
   wxAuiNotebook:getPageIndex(Notebook, Page);
 doc_id_to_page_id(Notebook, DocId, [{Page, _}|Rest]) ->
   doc_id_to_page_id(Notebook, DocId, Rest).
+
+
+get_open_documents() ->
+  wx_object:call(?MODULE, get_open_docs).
+  
+get_active_document() ->
+  wx_object:call(?MODULE, get_active_doc).
 
 
 %% =====================================================================
