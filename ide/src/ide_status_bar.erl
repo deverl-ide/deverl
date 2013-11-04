@@ -12,8 +12,8 @@
 %% Client API         
 -export([
 	new/1, 
-	set_text/3, 
-	set_text_timeout/3
+	set_text/2, 
+	set_text_timeout/2
 	% set_func_list/2
 	]).
 
@@ -36,7 +36,7 @@ new(Config) ->
 	start(Config).
   
 start(Config) ->
-	wx_object:start(?MODULE, Config, [{debug, [log]}]).
+	wx_object:start({local, ?MODULE}, ?MODULE, Config, [{debug, [log]}]).
   
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
@@ -94,7 +94,7 @@ handle_info(Msg, State) ->
 
 handle_cast({settext, {Field,Label}}, State=#state{fields=Fields, sb=Sb}) ->
 	T = proplists:get_value(Field, Fields),
-	set_text(T, Label),
+	set_label(T, Label),
 	wxSizer:layout(wxPanel:getSizer(Sb)),
   {noreply,State}.
 
@@ -189,21 +189,20 @@ add_label(Sb, Id, Sizer, Label) ->
 %% @doc Set the text in the specified field.
 %% @see init Fields for field names.
 
--spec ide_status_bar:set_text(Sb, Field, Label) -> Result when
-      Sb :: wxStatusBar:wxStatusBar(),
+-spec ide_status_bar:set_text(Field, Label) -> Result when
       Field :: {field, atom()},
       Label :: unicode:chardata(),
       Result :: atom().
       
-set_text(Sb, {field, Field}, Label) ->
-	wx_object:cast(Sb, {settext, {Field, Label}}).
+set_text({field, Field}, Label) ->
+	wx_object:cast(?MODULE, {settext, {Field, Label}}).
 
 
 %% =====================================================================
 %% @doc Set the text in the specified field, for the period specified
 %% in TIMEOUT, after which the field will be cleared.
     
-set_text_timeout(Sb, {field,Field}, Label) ->
+set_text_timeout({field,Field}, Label) ->
 	% set_text(Sb, {field,Field}, Label),
 	% io:format("PID: ~p~n", [self()]),
 	% receive 
@@ -217,7 +216,7 @@ set_text_timeout(Sb, {field,Field}, Label) ->
 %% @doc Set the text
 %% @private
 
-set_text(Field, Label) ->
+set_label(Field, Label) ->
 	wxStaticText:setLabel(Field, Label).  
 	
 	

@@ -29,7 +29,7 @@
 	is_dirty/1,
   set_savepoint/1,
   get_text/1,
-  selected/2,
+  selected/1,
   find/2,
   find_all/2,
   replace_all/3,
@@ -129,9 +129,9 @@ get_text(EditorPid) ->
 %% =====================================================================  
 %% @doc Notify the editor it has been selected
 
-selected(EditorPid, Sb) ->
+selected(EditorPid) ->
 	Editor = wx_object:call(EditorPid, stc),
-	update_sb_line(Editor, Sb).
+	update_sb_line(Editor).
 
 
 %% =====================================================================
@@ -387,7 +387,6 @@ empty_undo_buffer(This) ->
 
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
-  %Sb = proplists:get_value(status_bar, Config),
   Font = proplists:get_value(font, Config),
   File = proplists:get_value(file, Config, false),
 
@@ -453,14 +452,14 @@ init(Config) ->
 
 	%% Attach events
   ?stc:connect(Editor, stc_marginclick, []),
-  % ?stc:connect(Editor, stc_modified, [{userData, Sb}]),
+  % ?stc:connect(Editor, stc_modified, []),
   ?stc:connect(Editor, left_down, [{skip, true}]),
   ?stc:connect(Editor, left_up, [{skip, true}]),
   ?stc:connect(Editor, motion, [{skip, true}]),
-  % ?stc:connect(Editor, stc_charadded, [{skip, false}, {userData, Sb}]),
+  % ?stc:connect(Editor, stc_charadded, [{skip, false}]),
   ?stc:connect(Editor, stc_charadded, [callback]),
   ?stc:connect(Editor, char, [{skip, true}]),
-	?stc:connect(Editor, key_down, [callback, {userData, {self(), ok}}]),
+	?stc:connect(Editor, key_down, [callback, {userData, self()}]),
 	?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
 	?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
 	?stc:connect(Editor, set_focus, [{skip, true}]),
@@ -521,8 +520,8 @@ handle_cast({goto_pos, {Line, Col}}, State=#state{stc=Stc}) ->
 	flash_current_line(Stc, {255,0,0}, 500, 1),
   {noreply,State};
 
-handle_cast({ref, Sb}, State=#state{stc=Editor}) ->
-	update_sb_line(Editor, Sb),
+handle_cast(ref, State=#state{stc=Editor}) ->
+	update_sb_line(Editor),
 	update_line_margin(Editor),
 	parse_functions(Editor),	
   {noreply,State}.
@@ -531,9 +530,9 @@ handle_cast({ref, Sb}, State=#state{stc=Editor}) ->
 %% Sync events
 %% =====================================================================
 
-handle_sync_event(#wx{event=#wxKey{}, userData={This, Sb}}, Event, State=#state{stc=Editor}) ->
+handle_sync_event(#wx{event=#wxKey{}, userData=This}, Event, State=#state{stc=Editor}) ->
 	wxEvent:skip(Event),
-	wx_object:cast(This, {ref, Sb}), %% Serviced when caret has moved
+	wx_object:cast(This, ref), %% Serviced when caret has moved
 	?stc:setCaretWidth(Editor, 1),
 	ok;
 	
@@ -560,33 +559,33 @@ handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
 %% Mouse events
 %% =====================================================================
 
-handle_event(_A=#wx{event=#wxMouse{type=left_down}, userData=Sb}, 
+handle_event(_A=#wx{event=#wxMouse{type=left_down}}, 
              State = #state{stc=Editor}) ->
 	?stc:setCaretWidth(Editor, 1),
 	case ?stc:getSelectedText(Editor) of
-		[] -> update_sb_line(Editor, Sb);
+		[] -> update_sb_line(Editor);
 		_ -> ok
 	end,
 	{noreply, State};
 
-handle_event(_A=#wx{event=#wxMouse{type=motion, leftDown=true}, userData=Sb}, 
+handle_event(_A=#wx{event=#wxMouse{type=motion, leftDown=true}}, 
              State = #state{stc=Editor}) ->
 	?stc:setCaretWidth(Editor, 0), % Hide the caret during selection
 	%% Update status bar selection info
-	update_sb_selection(Editor, Sb),
+	update_sb_selection(Editor),
 	{noreply, State};
 
-handle_event(_A=#wx{event=#wxMouse{type=left_up}, userData=Sb}, 
+handle_event(_A=#wx{event=#wxMouse{type=left_up}}, 
              State = #state{stc=Editor}) ->
 	%% Update status bar selection info
 	case ?stc:getSelectedText(Editor) of
-		[] -> update_sb_line(Editor, Sb);
-		_ -> update_sb_selection(Editor, Sb)
+		[] -> update_sb_line(Editor);
+		_ -> update_sb_selection(Editor)
 	end,
 	{noreply, State};
 
 %% For testing:
-handle_event(_A=#wx{event=#wxMouse{}, userData=Sb}, 
+handle_event(_A=#wx{event=#wxMouse{}}, 
              State = #state{stc=Editor}) ->
 	{noreply, State};
 
@@ -659,24 +658,24 @@ to_indent(Input) ->
 %% @doc Update status bar line/col position
 %% @private
 
-update_sb_line(Editor, Sb) ->
+update_sb_line(Editor) ->
 	{X,Y} = get_caret_position(Editor),
-	ide_status_bar:set_text(Sb,{field,line}, io_lib:format("~w:~w",[X, Y])),
-	ide_status_bar:set_text(Sb,{field,selection}, "").
+	ide_status_bar:set_text({field,line}, io_lib:format("~w:~w",[X, Y])),
+	ide_status_bar:set_text({field,selection}, "").
 
 
 %% =====================================================================  
 %% @doc Update status bar line/col position
 %% @private
 
-update_sb_selection(Editor, Sb) ->
+update_sb_selection(Editor) ->
 	case ?stc:getSelection(Editor) of
 	{X,X} -> ok;
 	{X,Y} -> 
 	{X1,Y1} = position_to_x_y(Editor, X),
 	{X2,Y2} = position_to_x_y(Editor, Y),
-	ide_status_bar:set_text(Sb,{field,selection}, io_lib:format("~w:~w-~w:~w",[X1,Y1,X2,Y2])),
-	ide_status_bar:set_text(Sb,{field,line}, "")
+	ide_status_bar:set_text({field,selection}, io_lib:format("~w:~w-~w:~w",[X1,Y1,X2,Y2])),
+	ide_status_bar:set_text({field,line}, "")
 	end.
 
 
