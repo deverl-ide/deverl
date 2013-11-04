@@ -239,7 +239,7 @@ close_documents(Documents) ->
     {[], _Parent} ->
       ok;
     {ModifiedDocs, Parent} ->
-      DocNames = wx_object:call(?MODULE, {get_doc_names, ModifiedDocs}),
+      DocNames = get_doc_names(ModifiedDocs),
       lib_dialog_wx:save_changes_dialog(Parent, DocNames)
       %close(ModifiedDocs)
   end.
@@ -296,7 +296,7 @@ get_project_documents(ProjectId) ->
   wx_object:call(?MODULE, {get_project_docs, ProjectId}).
   
 get_doc_names(DocIdList) ->
-  
+  wx_object:call(?MODULE, {get_doc_names, DocIdList}).
 
 %% =====================================================================
 %% @doc
