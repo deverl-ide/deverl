@@ -89,6 +89,27 @@ handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
 
+handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+  Record = get_record(DocId, DocRecords),
+  {NewDocRecords, NewPageToDocId} = case editor:is_dirty(Record#document.editor) of
+    true ->
+      %save_changes_prompt();
+      {undefined, undefined};
+    _ ->
+      remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, PageToDocId), DocRecords, PageToDocId)
+  end,
+  case wxAuiNotebook:getPageCount(Nb) of
+ 		0 -> wx_object:cast(?MODULE, notebook_empty);
+ 		_ -> ok
+ 	end,
+  {noreply, State#state{doc_records=NewDocRecords, page_to_doc_id=NewPageToDocId}};
+
+handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
+	%% Called when the last document is closed.
+	show_placeholder(Sz),
+	ide:set_title([]),
+	{noreply, State};
+  
 handle_cast(_, State) ->
 	{noreply, State}.
   
@@ -100,13 +121,14 @@ handle_call({create_doc, Path, ProjectId}, _From,
   DocId = generate_id(),
   Document = #document{path=Path, editor=Editor, project_id=ProjectId},
   NewDocRecords = [{DocId, Document}|DocRecords],
-  Key = wxAuiNotebook:getPage(Nb, wxAuiNotebook:getPageCount(Nb)),
+  Key = wxAuiNotebook:getPage(Nb, wxAuiNotebook:getPageCount(Nb)-1),
 	load_editor_contents(Editor, Path),
   {reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}}.
 
-handle_sync_event(#wx{}, Event, State=#state{notebook=Nb}) ->
-	wxNotifyEvent:veto(Event),
-	close_document(wxAuiNotebook:getSelection(Nb)),
+handle_sync_event(#wx{}, Event, State=#state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
+  wxNotifyEvent:veto(Event),
+  DocId = page_id_to_doc_id(Nb, wxAuiNotebookEvent:getSelection(Event), PageToDoc),
+	close_document(DocId),
 	ok.
 
 handle_event(#wx{}, State) ->
@@ -143,11 +165,37 @@ load_editor_contents(Editor, Path) ->
 		Throw ->
 			io:format("LOAD EDITOR ERROR~n")
 	end.
-			
 
 
 close_document(DocId) ->
-    ok.
+  wx_object:cast(?MODULE, {close_doc, DocId}).
+  
+    
+remove_document(Nb, DocId, PageId, DocRecords, PageToDocId) ->
+  NewDocRecords = proplists:delete(DocId, DocRecords),
+  NewPageToDocId = proplists:delete(PageId, PageToDocId),
+  wxAuiNotebook:deletePage(Nb, PageId),
+  {NewDocRecords, NewPageToDocId}.
+  
+
+page_id_to_doc_id(Notebook, PageId, PageToDocId) ->
+  Page = wxAuiNotebook:getPage(Notebook, PageId),
+  proplists:get_value(Page, PageToDocId). 
+
+doc_id_to_page_id(Notebook, DocId, []) ->
+  error("No Corresponding Page ID~n");
+doc_id_to_page_id(Notebook, DocId, [{Page, DocId}|Rest]) ->
+  wxAuiNotebook:getPageIndex(Notebook, Page);
+doc_id_to_page_id(Notebook, DocId, [{Page, _}|Rest]) ->
+  doc_id_to_page_id(Notebook, DocId, Rest).
+
+
+%% =====================================================================
+%% @doc
+
+get_record(DocId, DocRecords) ->
+  proplists:get_value(DocId, DocRecords).
+
 
 %% =====================================================================
 %% @doc Generate a unique document id.
@@ -183,3 +231,4 @@ ensure_notebook_visible(Notebook, Sz) ->
 			show_notebook(Sz);
 		true -> ok
 	end.
+  
