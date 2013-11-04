@@ -39,7 +39,7 @@
                   
 %% Server state
 -record(state, {
-             	notebook :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
+                notebook :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 page_to_doc_id :: [{wxWindow:wxWindow(), document_id()}],
                 doc_records :: [document_record()],
 								sizer,
@@ -165,7 +165,8 @@ handle_call({get_project_docs, ProjectId}, _From,
                            (_, Acc) -> Acc end, [], DocRecords),
   {reply, DocList, State};
   
-handle_call({get_modified_docs, DocIdList}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+handle_call({get_modified_docs, DocIdList}, _From, 
+    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
   List = lists:foldl(
     fun(DocId, Acc) -> 
       Record = get_record(DocId, DocRecords), 
@@ -176,8 +177,17 @@ handle_call({get_modified_docs, DocIdList}, _From, State=#state{notebook=Nb, doc
           Acc
       end
     end, [], DocIdList),
-  {reply, List, State}.
-
+  {reply, {List, parent}, State};
+  
+handle_call({get_doc_names, DocIdList}, _From, 
+    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+  DocNameList = lists:map(
+    fun(DocId) -> 
+      Record = proplists:getValue(DocId, DocRecords),
+      filename:basename(Record#document.path)
+    end, DocIdList),
+  {reply, DocNameList, State}.
+  
 handle_sync_event(#wx{}, Event, State=#state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
   DocId = page_id_to_doc_id(Nb, wxAuiNotebookEvent:getSelection(Event), PageToDoc),
@@ -225,8 +235,14 @@ close_document(DocId) ->
   wx_object:cast(?MODULE, {close_doc, DocId}).
   
 close_documents(Documents) ->
-  ModifiedDocs = get_modified_docs(Documents),
-  io:format("MODIFIED DOCS ~p~n", [ModifiedDocs]).
+  case get_modified_docs(Documents) of
+    {[], _Parent} ->
+      ok;
+    {ModifiedDocs, Parent} ->
+      DocNames = wx_object:call(?MODULE, {get_doc_names, ModifiedDocs}),
+      lib_dialog_wx:save_changes_dialog(Parent, DocNames)
+      %close(ModifiedDocs)
+  end.
   
 close([]) ->
   ok;
@@ -278,6 +294,8 @@ get_active_document() ->
   
 get_project_documents(ProjectId) ->
   wx_object:call(?MODULE, {get_project_docs, ProjectId}).
+  
+get_doc_names(DocIdList) ->
   
 
 %% =====================================================================
