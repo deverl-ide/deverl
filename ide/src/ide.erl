@@ -472,7 +472,7 @@ create_left_window(Frame, Parent) ->
 %% @doc
 
 create_workspace(Parent, StatusBar) ->
-	doc_manager:start([{config, {Parent, StatusBar}}]).
+	doc_manager:start([{parent, Parent}]).
 
 
 %% =====================================================================
