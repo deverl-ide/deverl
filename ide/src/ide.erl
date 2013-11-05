@@ -31,7 +31,6 @@
                 sash_h :: wxSpliiterWindow:wxSplitterWindow(), %% The horizontal splitter
                 sash_v_pos :: integer(),
                 sash_h_pos :: integer(),
-                status_bar :: wxPanel:wxPanel()
                 }).
 								
 %% Macros
@@ -122,7 +121,7 @@ init(Options) ->
 	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),
 
-	Workspace = create_workspace(SplitterLeftRight, StatusBar),
+	Workspace = create_workspace(SplitterLeftRight),
 	io:format("WORKSPACE: ~p~n", [Workspace]),
 
 	%% The left window
@@ -158,7 +157,6 @@ init(Options) ->
 						frame=Frame,
             left_pane=LeftWindow,
             utilities=Utilities,
-            status_bar=StatusBar,
             sash_v_pos=?SASH_VERT_DEFAULT_POS,
             sash_h_pos=?SASH_HOR_DEFAULT_POS,
             sash_v=SplitterLeftRight,
@@ -249,20 +247,18 @@ handle_event(#wx{event = #wxSplitter{type = command_splitter_doubleclicked} = _E
 %% See ticket #5
 %% Although a temporary fix has been implemented for ticket #5, using this handler
 %% would be the preferred option
-handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}},
-           State=#state{status_bar=Sb}) ->
-  ide_status_bar:set_text(Sb, {field, help}, ?STATUS_BAR_HELP_DEFAULT),
+handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}}, State) ->
+  ide_status_bar:set_text({field, help}, ?STATUS_BAR_HELP_DEFAULT),
 {noreply, State};
 
 %% Handle menu highlight events
-handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}},
-             State=#state{status_bar=Sb}) ->
-	ide_status_bar:set_text(Sb, {field, help}, "testing"),
+handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}}, State) ->
+	ide_status_bar:set_text({field, help}, "testing"),
   {noreply, State};
 
 %% First handle the sub-menus
 handle_event(E=#wx{id=Id, userData={theme_menu,Menu}, event=#wxCommand{type=command_menu_selected}},
-             State=#state{status_bar=Sb}) ->
+             State) ->
 	Env = wx:get_env(),
 	spawn(fun() -> wx:set_env(Env),
 		editor_ops:set_theme(Menu)
@@ -270,7 +266,7 @@ handle_event(E=#wx{id=Id, userData={theme_menu,Menu}, event=#wxCommand{type=comm
 	{noreply, State};
 
 handle_event(E=#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_selected}},
-             State=#state{status_bar=Sb}) when Id >= ?MENU_ID_TAB_WIDTH_LOWEST,
+             State) when Id >= ?MENU_ID_TAB_WIDTH_LOWEST,
 						 Id =< ?MENU_ID_TAB_WIDTH_HIGHEST  ->
 	Env = wx:get_env(),
 	spawn(fun() -> wx:set_env(Env),
@@ -348,7 +344,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UT
 
 %% The menu items from the ETS table
 handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=command_menu_selected}},
-             State=#state{status_bar=Sb, frame=Frame}) ->
+             State=#state{frame=Frame}) ->
 	Result = case ets:lookup(TabId, Id) of
 		[{MenuItemID, {Mod, Func, Args}, Options}] ->
 			case proplists:get_value(send_event, Options) of
@@ -471,7 +467,7 @@ create_left_window(Frame, Parent) ->
 %% =====================================================================
 %% @doc
 
-create_workspace(Parent, StatusBar) ->
+create_workspace(Parent) ->
 	doc_manager:start([{parent, Parent}]).
 
 
