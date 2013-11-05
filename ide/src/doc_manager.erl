@@ -223,7 +223,7 @@ handle_call({save, DocId}, _From,
   Contents = editor:get_text(Record#document.editor),
   Result = try 
     ide_io:save(Path, Contents),
-    ok
+    {ok, DocRecords}
   catch
     _:Msg -> 
       io:format("ERROOOOR MESSAAAAAAGE!!!!!!!! ~p~n", [Msg]),
@@ -358,7 +358,9 @@ save_documents([], Acc) ->
   Acc;
 save_documents([DocId|DocIdList], Acc) ->
 	Result = case wx_object:call(?MODULE, {save, DocId}) of
-    ok ->
+    {ok, DocRecords} ->
+      %Record = get_record(DocId, DocRecords),
+      %editor:set_savepoint(Record#document.editor),
       [DocId|Acc];
     {Msg, Parent} ->
       lib_dialog_wx:msg_error(Parent, Msg),
