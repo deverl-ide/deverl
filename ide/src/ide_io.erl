@@ -110,7 +110,8 @@ save(Path, Contents) ->
 		ok = file:write(Fd, Contents),
 		ok = file:close(Fd)
 	catch
-		error:E -> throw(E)
+		error:E -> 
+      get_error_message(E, Path)
 	end.
 
 
@@ -149,6 +150,22 @@ create_dir(Dir) ->
 			throw("An error occurred.");
 		ok -> ok
 	end.
+  
+get_error_message({badmatch, Error}, Path) ->
+  Filename = filename:basename(Path),
+  case Error of
+    {error, eacces} ->
+			throw("Cannot modify " ++ Filename ++ ", check your permissions.");
+		{error, eexist} ->
+			throw(Filename ++ " already exists.");
+		{error, enoent} ->
+			throw("The path " ++ Path ++ " is invalid.");
+		{error, enospc} ->
+			throw("There is a no space left on the device.");
+		{error, _} ->
+			throw("An error occurred.")
+  end.
+
 
 copy_file(Source, Dest) ->
 	case file:copy(Source, Dest) of

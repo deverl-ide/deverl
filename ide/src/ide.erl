@@ -114,7 +114,7 @@ init(Options) ->
 	wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
 	%% Status bar %%
-	StatusBar = ide_status_bar:new([{parent, Frame}]),
+	StatusBar = ide_status_bar:start([{parent, Frame}]),
 
 	%% Menubar %%
   {Menu, MenuTab} = ide_menu:create([{parent, Frame}]),

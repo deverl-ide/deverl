@@ -214,7 +214,22 @@ handle_call({get_doc_names, DocIdList}, _From,
       Record = proplists:get_value(DocId, DocRecords),
       filename:basename(Record#document.path)
     end, DocIdList),
-  {reply, DocNameList, State}.
+  {reply, DocNameList, State};
+  
+handle_call({save, DocId}, _From, 
+    State=#state{notebook=Nb, parent=Parent, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+  Record = proplists:get_value(DocId, DocRecords),
+  Path = Record#document.path,
+  Contents = editor:get_text(Record#document.editor),
+  Result = try 
+    ide_io:save(Path, Contents),
+    ok
+  catch
+    _:Msg -> 
+      io:format("ERROOOOR MESSAAAAAAGE!!!!!!!! ~p~n", [Msg]),
+      {Msg, Parent}
+  end,
+{reply, Result, State}.
   
 handle_sync_event(#wx{}, Event, State=#state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
@@ -288,9 +303,17 @@ show_save_changes_dialog(Parent, DocNames, DocIdList) ->
 		?wxID_REVERT_TO_SAVED ->  %% Close without saving
 			close(DocIdList);
 		?wxID_SAVE -> %% Save the document
-			save_documents(DocIdList),
-			close(DocIdList)
+      do_save(DocIdList)
 	end.
+  
+do_save(DocIdList) ->
+  case save_documents(DocIdList) of
+    [] ->
+			ok;
+    DocsToClose -> 
+      io:format("DOCS TO CLOSE!!!!! ~p~n", [DocsToClose]),
+      close(DocIdList)
+  end.
   
 
 %% =====================================================================
@@ -328,15 +351,28 @@ close_project(ProjectId) ->
 %% =====================================================================
 %% @doc
 	
-save_documents(DocIds) -> 
-	ok.
+save_documents(DocIdList) -> 
+  save_documents(DocIdList, []).
+  
+save_documents([], Acc) ->
+  Acc;
+save_documents([DocId|DocIdList], Acc) ->
+	Result = case wx_object:call(?MODULE, {save, DocId}) of
+    ok ->
+      [DocId|Acc];
+    {Msg, Parent} ->
+      lib_dialog_wx:msg_error(Parent, Msg),
+      Acc
+  end,
+  save_documents(DocIdList, Result).
 	
 
 %% =====================================================================
 %% @doc
 
 save_project(ProjectId) -> 
-	ok.
+	save_documents(get_project_documents(ProjectId)).
+
 
     
 %% =====================================================================
