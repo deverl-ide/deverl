@@ -30,7 +30,7 @@
                 sash_v :: wxSpliiterWindow:wxSplitterWindow(), %% The vertical splitter
                 sash_h :: wxSpliiterWindow:wxSplitterWindow(), %% The horizontal splitter
                 sash_v_pos :: integer(),
-                sash_h_pos :: integer(),
+                sash_h_pos :: integer()
                 }).
 								
 %% Macros
