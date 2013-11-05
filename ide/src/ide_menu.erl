@@ -302,7 +302,7 @@ init(Config) ->
     {?wxID_OPEN, {doc_manager,open_document,[Frame]}},
 		{?MENU_ID_OPEN_PROJECT,{project_manager,open_project,[Frame]}},
     {?wxID_SAVE, {doc_manager,save_active_document,[]}},
-    {?wxID_SAVEAS, {doc_manager,save_new_document,[]}},
+    {?wxID_SAVEAS, {doc_manager,save_as,[]}},
     {?MENU_ID_SAVE_ALL, {}},
     {?MENU_ID_SAVE_PROJECT, {doc_manager, save_active_project, []}},
     {?wxID_PRINT, {}},

@@ -23,7 +23,8 @@
 				 create_document/2,
          close_all/0,
          close_active_document/0,
-         close_active_project/0,       
+         close_active_project/0,     
+				 save_as/0,  
 				 save_all/0,
          save_active_document/0,
          save_active_project/0]).
@@ -90,6 +91,12 @@ close_active_document() ->
 close_active_project() ->
   close_project(project_manager:get_active_project()).
 
+
+%% =====================================================================
+%% @doc
+
+save_as() ->
+	save_as(get_active_document()).
 
 %% =====================================================================
 %% @doc
@@ -226,10 +233,26 @@ handle_call({save, DocId}, _From,
     {ok, DocRecords}
   catch
     _:Msg -> 
-      io:format("ERROOOOR MESSAAAAAAGE!!!!!!!! ~p~n", [Msg]),
       {Msg, Parent}
   end,
-{reply, Result, State}.
+{reply, Result, State};
+
+handle_call({save_as, DocId}, _From, 
+    State=#state{notebook=Nb, parent=Parent, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+  Record = proplists:get_value(DocId, DocRecords),
+	Editor = Record#document.editor,
+	Contents = editor:get_text(Editor),
+	Result = case ide_io:save_as(Nb, Contents) of
+		{cancel} ->
+			DocRecords;
+		{ok, {Path, Filename}}  ->
+			wxAuiNotebook:setPageText(Nb, Filename),
+			proplists:delete(DocId, PageToDocId),
+			proplists:delete(DocId, DocRecords),
+			NewRecord = #document{path=Path, editor=Editor},
+			[{generate_id(), NewRecord} | DocRecords]
+	end,
+{reply, Result, State#state{doc_records=Result}}.
   
 handle_sync_event(#wx{}, Event, State=#state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
@@ -288,7 +311,8 @@ close_documents(Documents) ->
       close(Documents),
       ok;
     {ModifiedDocs, Parent} ->
-      show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs)
+      show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs),
+			close(lists:subtract(Documents, ModifiedDocs))
   end.
   
 
@@ -350,6 +374,12 @@ close_project(ProjectId) ->
 
 %% =====================================================================
 %% @doc
+
+save_as(DocId) ->
+	wx_object:call(?MODULE, {save_as, DocId}).
+
+%% =====================================================================
+%% @doc
 	
 save_documents(DocIdList) -> 
   save_documents(DocIdList, []).
@@ -374,7 +404,6 @@ save_documents([DocId|DocIdList], Acc) ->
 
 save_project(ProjectId) -> 
 	save_documents(get_project_documents(ProjectId)).
-
 
     
 %% =====================================================================
