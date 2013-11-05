@@ -359,8 +359,8 @@ save_documents([], Acc) ->
 save_documents([DocId|DocIdList], Acc) ->
 	Result = case wx_object:call(?MODULE, {save, DocId}) of
     {ok, DocRecords} ->
-      %Record = get_record(DocId, DocRecords),
-      %editor:set_savepoint(Record#document.editor),
+      Record = get_record(DocId, DocRecords),
+      editor:set_savepoint(Record#document.editor),
       [DocId|Acc];
     {Msg, Parent} ->
       lib_dialog_wx:msg_error(Parent, Msg),
