@@ -93,7 +93,7 @@ init(Options) ->
 	
 	%% Load modules that should be started by OTP Application and not here
   sys_pref_manager:start([{wx_env, WxEnv}]),
-  [{_, ProjDir}] = sys_pref_manager:get_preference(project_directory),
+  ProjDir = sys_pref_manager:get_preference(project_directory),
   case filelib:is_dir(ProjDir) of
     false ->
       io:format("CREATE DIR ~p~n", [ProjDir]),
