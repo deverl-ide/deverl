@@ -58,7 +58,7 @@ handle_call(Key, _From, State=#state{prefs_table=Table}) ->
 	{reply, ets:lookup(Table, Key), State}.
 	
 handle_cast({Key, Value}, State=#state{prefs_table=Table}) ->
-  %io:format("ETS UPDATE ~p~n", [ets:update_element(Table, Key, {2, Value})]),
+  ets:update_element(Table, Key, {2, Value}),
   %io:format("ETS TAB ~p~n", [ets:tab2list(Table)]),
   write_dets(Table),
 	{noreply, State}.
@@ -104,7 +104,7 @@ create_dets() ->
   
   
 %% =====================================================================
-%% @doc 
+%% @doc Write the preferences to disk.
 
 write_dets(PrefsTable) ->
   case dets:open_file(system_prefs, []) of
