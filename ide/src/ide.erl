@@ -92,6 +92,7 @@ init(Options) ->
 	wxFrame:setMinSize(Frame, {300,200}),
 	
 	%% Load modules that should be started by OTP Application and not here
+  sys_pref_manager:start(),
 	user_prefs:new([{wxe_server, wx:get_env()}]),
 	project_manager:start([{frame, Frame}, {wx_env, WxEnv}]),
 
