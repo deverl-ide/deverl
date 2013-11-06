@@ -6,7 +6,7 @@
 %% @doc
 %% The project_id() should be the only term that is passed to other
 %% modules. Any data relating to that project id should be retrieved
-%% from this module.
+%% from this module by passing in the project id.
 %% @end
 %% =====================================================================
 
@@ -227,7 +227,7 @@ code_change(_, _, State) ->
 
 terminate(_Reason, State) ->
   io:format("TERMINATE PROJECT MANAGER~n").
-    
+     
 		
 %% =====================================================================
 %% Internal functions
