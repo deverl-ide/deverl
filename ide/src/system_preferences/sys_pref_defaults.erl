@@ -1,0 +1,27 @@
+-module(sys_pref_defaults).
+
+-include_lib("wx/include/wx.hrl").
+-include("../../include/ide.hrl").
+
+-export([get_defaults/0]).
+
+
+get_defaults() ->
+  [
+  %% Project/Directory prefs
+  {project_directory, "../priv/projects"},
+  {projects, []},
+  
+  %% Editor prefs
+  {theme, "Putty"},
+  {editor_font_size, ?DEFAULT_FONT_SIZE},
+  {editor_font_family, ?wxFONTFAMILY_TELETYPE},
+  {editor_font_style, ?wxNORMAL},
+  {editor_font_weight, ?wxNORMAL},
+  {show_line_no, true},
+  {line_wrap, 1},
+  {auto_indent, false},
+  {use_tabs, true},
+  {tab_width, "2"},
+  {indent_guides, false}
+  ].
