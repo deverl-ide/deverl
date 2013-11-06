@@ -92,7 +92,15 @@ init(Options) ->
 	wxFrame:setMinSize(Frame, {300,200}),
 	
 	%% Load modules that should be started by OTP Application and not here
-  sys_pref_manager:start(),
+  sys_pref_manager:start([{wx_env, WxEnv}]),
+  [{_, ProjDir}] = sys_pref_manager:get_preference(project_directory),
+  case filelib:is_dir(ProjDir) of
+    false ->
+      io:format("CREATE DIR ~p~n", [ProjDir]),
+      file:make_dir(ProjDir);
+    true ->
+      ok
+  end,
 	project_manager:start([{frame, Frame}, {wx_env, WxEnv}]),
 
 	FrameSizer = wxBoxSizer:new(?wxVERTICAL),

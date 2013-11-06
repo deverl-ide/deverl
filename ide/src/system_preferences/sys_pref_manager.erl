@@ -1,6 +1,6 @@
 -module(sys_pref_manager).
 -export([
-        start/0,
+        start/1,
         set_preference/2,
         get_preference/1
         ]).
@@ -19,8 +19,8 @@
 %% =====================================================================
 %% @doc 
 
-start() ->
-  gen_server:start_link({local, ?MODULE}, ?MODULE, [], []).
+start(Config) ->
+  gen_server:start_link({local, ?MODULE}, ?MODULE, Config, []).
   
 
 %% =====================================================================
@@ -42,6 +42,7 @@ get_preference(Key) ->
 %% =====================================================================
 	
 init(Config) ->
+  wx:set_env(proplists:get_value(wx_env, Config)),
   Table = case filelib:is_file(system_prefs) of
     true ->
       load_prefs();
@@ -57,6 +58,7 @@ handle_call(Key, _From, State=#state{prefs_table=Table}) ->
 	{reply, ets:lookup_element(Table, Key, 2), State}.
 	
 handle_cast({Key, Value}, State=#state{prefs_table=Table}) ->
+  ets:update_element(Table, Key, {2, Value}),
   write_dets(Table),
 	{noreply, State}.
 	
@@ -100,7 +102,7 @@ create_dets() ->
   
   
 %% =====================================================================
-%% @doc 
+%% @doc Write the preferences to disk.
 
 write_dets(PrefsTable) ->
   case dets:open_file(system_prefs, []) of
@@ -117,4 +119,5 @@ write_dets(PrefsTable) ->
 %% @doc 
   
 insert_default_prefs(PrefsTable) ->
-  [ets:insert(PrefsTable, {Key, Value}) || {Key, Value} <- sys_pref_defaults:get_defaults()].
+  [ets:insert(PrefsTable, {Key, Value}) || {Key, Value} <- sys_pref_defaults:get_defaults()],
+  ets:insert(PrefsTable, {project_directory, wx_misc:getHomeDir() ++ "/erlang_projects"}).
