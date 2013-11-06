@@ -71,3 +71,4 @@ get_shade(V, Scalar) ->
 			0;
 		N -> N
 	end.
+  

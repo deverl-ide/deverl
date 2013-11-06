@@ -19,7 +19,7 @@
 get_defaults() ->
   [
   %% Project/Directory prefs
-  {project_directory, "../priv/projects"},
+  {project_directory, undefined},
   {projects, []},
   
   %% Editor prefs
