@@ -1,8 +1,17 @@
-%% ide_io.erl
-%% Module deals with reading and writing to files.
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title ide_io.erl
+%% @version
+%% @doc This module manages file i/o.
+%% @end
+%% =====================================================================
 
 -module(ide_io).
 
+-include_lib("wx/include/wx.hrl").
+
+%% Client API
 -export([
         create_directory_structure/3,
         create_new_file/1,
@@ -12,25 +21,35 @@
         save/2
         ]).
 
--include_lib("wx/include/wx.hrl").
 
+%% =====================================================================
+%% Client API
+%% =====================================================================
 
+%% =====================================================================
+%% @doc Create the directory structure for a new project.
+
+create_directory_structure(_Parent, Name, Path) ->
+	Root = filename:join([Path, Name]),
+  try
+    create_dir(Root),
+    create_dir(filename:join([Root, "ebin"])),
+    create_dir(filename:join([Root, "priv"])),
+    create_dir(filename:join([Root, "include"])),
+    create_dir(filename:join([Root, "src"])),
+		copy_emakefile(Root),
+		Root
+  catch
+    throw:E -> throw(E)
+  end.
+  
+  
 %% =====================================================================
 %% @doc Create a new file on disc.
 
-%create_new_file(Path, Filename) ->
-%	
-%  case file:open(Path ++ "/" ++ Filename, [write, read]) of
-%    {error, Reason} ->
-%      io:format("~p~n", [Reason]);
-%    File ->
-%      doc_manager:new_document_from_existing(Path ++ "/" ++ Filename, []),
-%      file:close(File)
-%  end.
-
 create_new_file(Path) ->
   case file:open(Path, [write, read]) of
-    {error, Reason} ->
+    {error, _Reason} ->
       error;
     File ->
       file:close(File),
@@ -106,72 +125,62 @@ save_as(Parent, Contents) ->
 
 save(Path, Contents) ->
 	try
-		{ok, Fd} = file:open(Path, [read, write, raw]),
+    Result =  file:open(Path, [write]),
+		{ok, Fd} = file:open(Path, [write]),
 		ok = file:write(Fd, Contents),
 		ok = file:close(Fd)
 	catch
-		error:E -> 
-      get_error_message(E, Path)
+		error:{badmatch,{error,Error}} -> 
+      get_error_message(Error, Path)
 	end.
 
 
 %% =====================================================================
-%% @doc Create the directory structure for a new project.
-
-create_directory_structure(_Parent, Name, Path) ->
-	Root = filename:join([Path, Name]),
-  try
-    create_dir(Root),
-    create_dir(filename:join([Root, "ebin"])),
-    create_dir(filename:join([Root, "priv"])),
-    create_dir(filename:join([Root, "include"])),
-    create_dir(filename:join([Root, "src"])),
-		copy_emakefile(Root),
-		Root
-  catch
-    throw:E -> throw(E)
-  end.
-
+%% Internal functions
+%% =====================================================================
 
 %% =====================================================================
 %% @doc Create directory Dir.
 
 create_dir(Dir) ->
 	case file:make_dir(Dir) of
-		{error, eacces} ->
-			throw("Could not create the directory, check your permissions.");
-		{error, eexist} ->
-			throw("A directory named " ++ filename:basename(Dir) ++ " already exists.");
-		{error, enoent} ->
-			throw("The path is invalid.");
-		{error, enospc} ->
-			throw("There is a no space left on the device.");
-		{error, _} ->
-			throw("An error occurred.");
-		ok -> ok
+    {error, Error} ->
+      get_error_message(Error, Dir);
+    ok -> ok
 	end.
-  
-get_error_message({badmatch, Error}, Path) ->
+
+
+%% =====================================================================
+%% @doc Get a more comprehensive error message.
+ 
+get_error_message(Error, Path) ->
   Filename = filename:basename(Path),
   case Error of
-    {error, eacces} ->
-			throw("Cannot modify " ++ Filename ++ ", check your permissions.");
-		{error, eexist} ->
+    eacces ->
+			throw("Cannot access " ++ Filename ++ ", check your permissions.");
+		eexist ->
 			throw(Filename ++ " already exists.");
-		{error, enoent} ->
+		enoent ->
 			throw("The path " ++ Path ++ " is invalid.");
-		{error, enospc} ->
+		enospc ->
 			throw("There is a no space left on the device.");
-		{error, _} ->
-			throw("An error occurred.")
+		_ ->
+  		throw("An error occurred.")
   end.
 
+
+%% =====================================================================
+%% @doc
 
 copy_file(Source, Dest) ->
 	case file:copy(Source, Dest) of
 		{ok, _BytesCopied} -> ok;
 		{error, Reason} -> throw("Copy failed: " ++ atom_to_list(Reason))
 	end.
+
+
+%% =====================================================================
+%% @doc
 
 copy_emakefile(Root) ->
 	case filelib:is_file("../priv/templates/emakefile.txt") of

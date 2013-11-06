@@ -2,7 +2,7 @@
 %% @author
 %% @copyright
 %% @title
-%% @version
+%% @version 0.15
 %% @doc This module manages open documents.
 %% @end
 %% =====================================================================
@@ -74,6 +74,19 @@ new_document(Parent) ->
 %% =====================================================================
 %% @doc
 
+create_document(Path, ProjectId) ->
+  case ide_io:create_new_file(Path) of
+    error ->
+      % file not created dialog
+      error;
+    ok ->
+      wx_object:call(?MODULE, {create_doc, Path, ProjectId})
+  end.
+	
+	
+%% =====================================================================
+%% @doc
+
 close_all() ->
   close_documents(get_open_documents()).
   
@@ -108,7 +121,8 @@ save_all() ->
 %% =====================================================================
 %% @doc
 	
-save_active_document() ->
+save_active_document() -> 
+	%% Saving unmodified documents unnecessarily atm
 	save_documents([get_active_document()]).
 
 
@@ -148,7 +162,7 @@ init(Config) ->
 	wxSizer:add(Sz, Ph, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
 	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [callback]),
-	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed),
+	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed, []),
 
   {Panel, #state{notebook=Notebook, page_to_doc_id=[], doc_records=[], sizer=Sz, parent=Parent}}.
 
@@ -157,7 +171,6 @@ handle_info(Msg, State) ->
 	{noreply,State}.
 
 handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
-  Record = get_record(DocId, DocRecords),
   {NewDocRecords, NewPageToDocId} = remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, PageToDocId), DocRecords, PageToDocId),
   case wxAuiNotebook:getPageCount(Nb) of
  		0 -> wx_object:cast(?MODULE, notebook_empty);
@@ -175,33 +188,43 @@ handle_cast(_, State) ->
 	{noreply, State}.
   
 handle_call({create_doc, Path, ProjectId}, _From, 
-    State=#state{notebook=Nb, sizer=Sz, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
-	ensure_notebook_visible(Nb, Sz),
-  Editor = editor:start([{parent, Nb}, {font, user_prefs:get_user_pref({pref, font})}]),
-  Bool = wxAuiNotebook:addPage(Nb, Editor, filename:basename(Path)),
-  DocId = generate_id(),
-  Document = #document{path=Path, editor=Editor, project_id=ProjectId},
-  NewDocRecords = [{DocId, Document}|DocRecords],
-  Key = wxAuiNotebook:getPage(Nb, wxAuiNotebook:getPageCount(Nb)-1),
-	load_editor_contents(Editor, Path),
-  {reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}};
+						State=#state{notebook=Nb, sizer=Sz, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+	case is_already_open(Path, DocRecords) of
+		false ->
+			ensure_notebook_visible(Nb, Sz),
+		  Editor = editor:start([{parent, Nb}, {font, user_prefs:get_user_pref({pref, font})}]),
+		  wxAuiNotebook:addPage(Nb, Editor, filename:basename(Path), [{select, true}]),
+		  DocId = generate_id(),
+		  Document = #document{path=Path, editor=Editor, project_id=ProjectId},
+		  NewDocRecords = [{DocId, Document}|DocRecords],
+		  Key = wxAuiNotebook:getPage(Nb, wxAuiNotebook:getPageCount(Nb)-1),
+			load_editor_contents(Editor, Path),
+			{reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}};
+		DocId -> 
+			wxAuiNotebook:setSelection(Nb, doc_id_to_page_id(Nb, DocId, PageToDocId)),
+			{reply, ok, State}
+	end;
   
-handle_call(get_open_docs, _From, State=#state{notebook=Nb, doc_records=DocRecords}) ->
+handle_call(get_open_docs, _From, State=#state{doc_records=DocRecords}) ->
   {reply, lists:map(fun({DocId, _}) -> DocId end, DocRecords), State};
   
 handle_call(get_active_doc, _From, 
-    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+				    State=#state{notebook=Nb, page_to_doc_id=PageToDocId}) ->
   DocId = proplists:get_value(wxAuiNotebook:getPage(Nb, wxAuiNotebook:getSelection(Nb)), PageToDocId),
   {reply, DocId, State};
   
 handle_call({get_project_docs, ProjectId}, _From, 
-    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
-  DocList = lists:foldl(fun({DocId, #document{project_id=Project}}, Acc) when Project =:= ProjectId -> [DocId|Acc]; 
-                           (_, Acc) -> Acc end, [], DocRecords),
+				    State=#state{doc_records=DocRecords}) ->
+  DocList = lists:foldl(
+		fun({DocId, #document{project_id=Project}}, Acc) when Project =:= ProjectId -> 
+			[DocId|Acc]; 
+    (_, Acc) -> 
+			Acc 
+		end, [], DocRecords),
   {reply, DocList, State};
   
 handle_call({get_modified_docs, DocIdList}, _From, 
-    State=#state{notebook=Nb, parent=Parent, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+				    State=#state{parent=Parent, doc_records=DocRecords}) ->
   List = lists:foldl(
     fun(DocId, Acc) -> 
       Record = get_record(DocId, DocRecords), 
@@ -215,7 +238,7 @@ handle_call({get_modified_docs, DocIdList}, _From,
   {reply, {List, Parent}, State};
   
 handle_call({get_doc_names, DocIdList}, _From, 
-    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+				    State=#state{doc_records=DocRecords}) ->
   DocNameList = lists:map(
     fun(DocId) -> 
       Record = proplists:get_value(DocId, DocRecords),
@@ -224,7 +247,7 @@ handle_call({get_doc_names, DocIdList}, _From,
   {reply, DocNameList, State};
   
 handle_call({save, DocId}, _From, 
-    State=#state{notebook=Nb, parent=Parent, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+				    State=#state{parent=Parent, doc_records=DocRecords}) ->
   Record = proplists:get_value(DocId, DocRecords),
   Path = Record#document.path,
   Contents = editor:get_text(Record#document.editor),
@@ -238,54 +261,45 @@ handle_call({save, DocId}, _From,
 {reply, Result, State};
 
 handle_call({save_as, DocId}, _From, 
-    State=#state{notebook=Nb, parent=Parent, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+				    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
   Record = proplists:get_value(DocId, DocRecords),
 	Editor = Record#document.editor,
 	Contents = editor:get_text(Editor),
-	Result = case ide_io:save_as(Nb, Contents) of
+	{NewRecs, NewPage2Ids} = case ide_io:save_as(Nb, Contents) of
 		{cancel} ->
-			DocRecords;
+			{DocRecords, PageToDocId};
 		{ok, {Path, Filename}}  ->
-			wxAuiNotebook:setPageText(Nb, Filename),
-			proplists:delete(DocId, PageToDocId),
-			proplists:delete(DocId, DocRecords),
+			wxAuiNotebook:setPageText(Nb, wxAuiNotebook:getSelection(Nb), Filename),
+			NewId = generate_id(),	
+			NewPageToDocId = proplists:delete(wxAuiNotebook:getPage(Nb, wxAuiNotebook:getSelection(Nb)), PageToDocId),
+			NewDocRecords = proplists:delete(DocId, DocRecords),
 			NewRecord = #document{path=Path, editor=Editor},
-			[{generate_id(), NewRecord} | DocRecords]
+			editor:set_savepoint(Editor),
+			{[{NewId, NewRecord} | NewDocRecords], [{wxAuiNotebook:getPage(Nb, wxAuiNotebook:getSelection(Nb)), NewId} | NewPageToDocId]}
 	end,
-{reply, Result, State#state{doc_records=Result}}.
+{reply, ok, State#state{doc_records=NewRecs, page_to_doc_id=NewPage2Ids}}.
   
-handle_sync_event(#wx{}, Event, State=#state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
+handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
   DocId = page_id_to_doc_id(Nb, wxAuiNotebookEvent:getSelection(Event), PageToDoc),
 	close_documents([DocId]),
 	ok.
 
-handle_event(#wx{}, State) ->
+handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed,
+			selection=Index}}, State=#state{notebook=Nb}) ->
+  io:format("PAGE CHANGED~n"),
   {noreply, State}.
 
 code_change(_, _, State) ->
 	{stop, ignore, State}.
 
-terminate(_Reason, State=#state{notebook=Nb}) ->
+terminate(_Reason, #state{}) ->
 	ok.
          
 
 %% =====================================================================
 %% Internal functions
-%% =====================================================================
-
-%% =====================================================================
-%% @doc
-
-create_document(Path, ProjectId) ->
-  case ide_io:create_new_file(Path) of
-    error ->
-      % file not created dialog
-      error;
-    ok ->
-      wx_object:call(?MODULE, {create_doc, Path, ProjectId})
-  end.
-  
+%% =====================================================================  
 
 %% =====================================================================
 %% @doc
@@ -297,7 +311,7 @@ load_editor_contents(Editor, Path) ->
 		editor:set_savepoint(Editor)
 		%editor:link_poller(Editor, Path)
 	catch
-		Throw ->
+		_Throw ->
 			io:format("LOAD EDITOR ERROR~n")
 	end.
 
@@ -329,14 +343,17 @@ show_save_changes_dialog(Parent, DocNames, DocIdList) ->
 		?wxID_SAVE -> %% Save the document
       do_save(DocIdList)
 	end.
+
+
+%% =====================================================================
+%% @doc
   
 do_save(DocIdList) ->
   case save_documents(DocIdList) of
     [] ->
 			ok;
     DocsToClose -> 
-      io:format("DOCS TO CLOSE!!!!! ~p~n", [DocsToClose]),
-      close(DocIdList)
+      close(DocsToClose)
   end.
   
 
@@ -377,6 +394,7 @@ close_project(ProjectId) ->
 
 save_as(DocId) ->
 	wx_object:call(?MODULE, {save_as, DocId}).
+
 
 %% =====================================================================
 %% @doc
@@ -428,11 +446,11 @@ page_id_to_doc_id(Notebook, PageId, PageToDocId) ->
 %% =====================================================================
 %% @doc
 
-doc_id_to_page_id(Notebook, DocId, []) ->
+doc_id_to_page_id(_Nb, _DocId, []) ->
   error("No Corresponding Page ID~n");
-doc_id_to_page_id(Notebook, DocId, [{Page, DocId}|Rest]) ->
+doc_id_to_page_id(Notebook, DocId, [{Page, DocId}|_]) ->
   wxAuiNotebook:getPageIndex(Notebook, Page);
-doc_id_to_page_id(Notebook, DocId, [{Page, _}|Rest]) ->
+doc_id_to_page_id(Notebook, DocId, [_|Rest]) ->
   doc_id_to_page_id(Notebook, DocId, Rest).
 
 
@@ -505,3 +523,15 @@ ensure_notebook_visible(Notebook, Sz) ->
 			show_notebook(Sz);
 		true -> ok
 	end.
+	
+
+%% =====================================================================
+%% @doc Check whether a file is already open.
+%% @private
+
+is_already_open(_, []) ->
+	false;
+is_already_open(Path, [{DocId, #document{path=Path}} | _]) ->
+	DocId;
+is_already_open(Path, [_ | T]) ->
+	is_already_open(Path, T).

@@ -489,8 +489,6 @@ handle_call(is_dirty, _From, State=#state{dirty=Mod}) ->
   {reply,Mod,State};
 
 handle_call(text_content, _From, State=#state{stc=Editor}) ->
-	io:format("IN text_content handler L494, PID: ~p~n", [self()]),
-	%% The following causes deadlock (CRASH) when called via the Save Changes dialog
   Text = ?stc:getText(Editor),
   {reply,Text,State};
 
