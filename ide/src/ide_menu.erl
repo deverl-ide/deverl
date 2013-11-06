@@ -125,17 +125,18 @@ init(Config) ->
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_LINE_WRAP, "Line Wrap\tCtrl+W", [{kind, ?wxITEM_CHECK}]),
   Pref = 
-    case user_prefs:get_user_pref({pref, line_wrap}) of
+    case sys_pref_manager:get_preference(line_wrap) of
       0 -> false;
 			_ -> true
 		end,
   wxMenu:check(View, ?MENU_ID_LINE_WRAP, Pref),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers\tCtrl+Alt+L", [{kind, ?wxITEM_CHECK}]),
-  wxMenu:check(View, ?MENU_ID_LN_TOGGLE, user_prefs:get_user_pref({pref, show_line_no})),
+  io:format("WWWWWWWWWWAAAAAAAAAAAAAA: ~p~n", [sys_pref_manager:get_preference(show_line_no)]),
+  wxMenu:check(View, ?MENU_ID_LN_TOGGLE, sys_pref_manager:get_preference(show_line_no)),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   TabPref = 
-    case user_prefs:get_user_pref({pref, use_tabs}) of
+    case sys_pref_manager:get_preference(use_tabs) of
 			true -> "Tabs";
 			_ -> "Spaces"
 		end,
@@ -146,15 +147,15 @@ init(Config) ->
 		
   {IndentWidth, IndentMax} = generate_radio_submenu(wxMenu:new([]),
   [integer_to_list(Width) || Width <- lists:seq(2, 8)], 
-  user_prefs:get_user_pref({pref, tab_width}), ?MENU_ID_TAB_WIDTH_LOWEST),
+  sys_pref_manager:get_preference(tab_width), ?MENU_ID_TAB_WIDTH_LOWEST),
 			
   wxMenu:append(View, ?MENU_ID_TAB_WIDTH, "Tab Width", IndentWidth),
 		
   {Theme, ThemeMax} = generate_radio_submenu(wxMenu:new([]),
-  editor_theme:get_theme_names(), user_prefs:get_user_pref({pref, theme}), ?MENU_ID_THEME_LOWEST),
+  editor_theme:get_theme_names(), sys_pref_manager:get_preference(theme), ?MENU_ID_THEME_LOWEST),
 		
   wxMenu:append(View, ?MENU_ID_INDENT_GUIDES, "Indent Guides\tCtrl+Alt+G", [{kind, ?wxITEM_CHECK}]),
-  wxMenu:check(View, ?MENU_ID_INDENT_GUIDES, user_prefs:get_user_pref({pref, indent_guides})),
+  wxMenu:check(View, ?MENU_ID_INDENT_GUIDES, sys_pref_manager:get_preference(indent_guides)),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_THEME_SELECT, "Theme", Theme),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
@@ -167,7 +168,7 @@ init(Config) ->
   
   Document    = wxMenu:new([]),	
   wxMenu:append(Document, ?MENU_ID_AUTO_INDENT, "Auto-Indent\tCtrl+Alt+I", [{kind, ?wxITEM_CHECK}]),
-  wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, user_prefs:get_user_pref({pref, auto_indent})),
+  wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, sys_pref_manager:get_preference(auto_indent)),
   wxMenu:append(Document, ?wxID_SEPARATOR, []),
   wxMenu:append(Document, ?MENU_ID_INDENT_RIGHT, "Indent Right\tCtrl+]"),
   wxMenu:append(Document, ?MENU_ID_INDENT_LEFT, "Indent Left\tCtrl+["),

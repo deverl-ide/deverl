@@ -256,7 +256,12 @@ set_line_wrap(EditorPid, Bool) ->
 set_line_margin_visible(EditorPid, Bool) ->
 	Editor = wx_object:call(EditorPid, stc),
 	case Bool of
-		true -> set_linenumber_default(Editor, user_prefs:get_user_pref({pref, font}));
+		true -> 
+  		Font = wxFont:new(sys_pref_manager:get_preference(editor_font_size),
+  											sys_pref_manager:get_preference(editor_font_family),
+  											sys_pref_manager:get_preference(editor_font_style),
+  											sys_pref_manager:get_preference(editor_font_weight), []),
+      set_linenumber_default(Editor, Font);
 		false -> ?stc:setMarginWidth(Editor, 0, 0)
 	end.			
 	
@@ -427,28 +432,26 @@ init(Config) ->
   ?stc:indicatorSetStyle(Editor,1,?wxSTC_INDIC_BOX),
   ?stc:indicatorSetStyle(Editor,2,?wxSTC_INDIC_PLAIN), %% underline
 
-	case editor_theme:load_theme(user_prefs:get_user_pref({pref, theme})) of
+	case editor_theme:load_theme(sys_pref_manager:get_preference(theme)) of
 		{error, load_theme} -> ok; %% Default STC settings
 		Theme -> setup_theme(Editor, Theme, Font)
 	end,
 
 	%% Indentation
 	?stc:setTabWidth(Editor, 
-		list_to_integer(user_prefs:get_user_pref({pref, tab_width}))),
-	?stc:setUseTabs(Editor, user_prefs:get_user_pref({pref, use_tabs})), 
-	?stc:setIndentationGuides(Editor, user_prefs:get_user_pref({pref, indent_guides})),
+		list_to_integer(sys_pref_manager:get_preference(tab_width))),
+	?stc:setUseTabs(Editor, sys_pref_manager:get_preference(use_tabs)), 
+	?stc:setIndentationGuides(Editor, sys_pref_manager:get_preference(indent_guides)),
 	?stc:setBackSpaceUnIndents(Editor, true),
 	
 	%% Scrolling
-	% ?stc:setEndAtLastLine(Editor, user_prefs:get_user_pref({pref, scroll_past_end})),
-  % Policy = ?wxSTC_CARET_SLOP bor ?wxSTC_CARET_JUMPS bor ?wxSTC_CARET_EVEN, 
   Policy = ?wxSTC_CARET_SLOP bor ?wxSTC_CARET_EVEN, 
   ?stc:setYCaretPolicy(Editor, Policy, 3),
   ?stc:setXCaretPolicy(Editor, Policy, 3),
   ?stc:setVisiblePolicy(Editor, Policy, 3),
 
 	%% Wrapping
-	?stc:setWrapMode(Editor, user_prefs:get_user_pref({pref, line_wrap})),
+	?stc:setWrapMode(Editor, sys_pref_manager:get_preference(line_wrap)),
 
 	%% Attach events
   ?stc:connect(Editor, stc_marginclick, []),
@@ -705,9 +708,13 @@ position_to_x_y(Editor, ?stc:getCurrentPos(Editor)).
 %% @private	
 
 update_line_margin(Editor) ->
-	case user_prefs:get_user_pref({pref, show_line_no}) of
+	case sys_pref_manager:get_preference(show_line_no) of
 		true ->
-			set_linenumber_default(Editor, user_prefs:get_user_pref({pref, font}));
+			Font = wxFont:new(sys_pref_manager:get_preference(editor_font_size),
+												sys_pref_manager:get_preference(editor_font_family),
+												sys_pref_manager:get_preference(editor_font_style),
+												sys_pref_manager:get_preference(editor_font_weight), []),
+			set_linenumber_default(Editor, Font);
 		false ->
 			ok
 	end.  

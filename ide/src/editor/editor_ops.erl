@@ -38,13 +38,20 @@
 update_styles(Frame) ->
   %% Display the system font picker
   FD = wxFontData:new(),
-  wxFontData:setInitialFont(FD, user_prefs:get_user_pref({pref, font})),
+	Font = wxFont:new(sys_pref_manager:get_preference(editor_font_size),
+										sys_pref_manager:get_preference(editor_font_family),
+										sys_pref_manager:get_preference(editor_font_style),
+										sys_pref_manager:get_preference(editor_font_weight), []),
+  wxFontData:setInitialFont(FD, Font),
   Dialog = wxFontDialog:new(Frame, FD),
   case wxDialog:showModal(Dialog) of
     ?wxID_OK ->
       %% Get the user selected font, and update the editors
       Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
-      user_prefs:set_user_pref(font, Font),
+      sys_pref_manager:set_preference(editor_font_size, wxFont:getPointSize(Font)),
+      sys_pref_manager:set_preference(editor_font_family, wxFont:getFamily(Font)),
+      sys_pref_manager:set_preference(editor_font_style, wxFont:getStyle(Font)),
+      sys_pref_manager:set_preference(editor_font_weight, wxFont:getWeight(Font)),
 			doc_manager:apply_to_all_documents(fun editor:set_font_style/2, [Font]),
       ok;
     ?wxID_CANCEL ->
@@ -73,19 +80,23 @@ find_replace(Parent) ->
 
 set_theme(ThemeMenu) ->
   {ok, Ckd} = ide_menu:get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
+	Font = wxFont:new(sys_pref_manager:get_preference(editor_font_size),
+										sys_pref_manager:get_preference(editor_font_family),
+										sys_pref_manager:get_preference(editor_font_style),
+										sys_pref_manager:get_preference(editor_font_weight), []),
 	doc_manager:apply_to_all_documents(fun editor:set_theme/3, [wxMenuItem:getLabel(Ckd),
-		user_prefs:get_user_pref({pref, font})]),
-  user_prefs:set_user_pref(theme, wxMenuItem:getLabel(Ckd)).
+		Font]),
+  sys_pref_manager:set_preference(theme, wxMenuItem:getLabel(Ckd)).
 
 set_line_wrap(Menu) ->
   Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LINE_WRAP)),
 	doc_manager:apply_to_all_documents(fun editor:set_line_wrap/2, [Bool]),
-  user_prefs:set_user_pref(line_wrap, Bool).
+  sys_pref_manager:set_preference(line_wrap, Bool).
 
 set_line_margin_visible(Menu) ->
   Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LN_TOGGLE)),
 	doc_manager:apply_to_all_documents(fun editor:set_line_margin_visible/2, [Bool]),
-  user_prefs:set_user_pref(show_line_no, Bool).
+  sys_pref_manager:set_preference(show_line_no, Bool).
 
 set_indent_tabs(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
   Cmd = case Id of
@@ -93,12 +104,12 @@ set_indent_tabs(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
     ?MENU_ID_INDENT_TABS -> true
   end,
 	doc_manager:apply_to_all_documents(fun editor:set_use_tabs/2, [Cmd]),
-  user_prefs:set_user_pref(use_tabs, Cmd).
+  sys_pref_manager:set_preference(use_tabs, Cmd).
 
 set_indent_guides(Menu) ->
   Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_INDENT_GUIDES)),
 	doc_manager:apply_to_all_documents(fun editor:set_indent_guides/2, [Bool]),
-  user_prefs:set_user_pref(indent_guides, Bool).
+  sys_pref_manager:set_preference(indent_guides, Bool).
 
 
 %% =====================================================================

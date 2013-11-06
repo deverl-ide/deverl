@@ -34,7 +34,7 @@ set_preference(Key, Value) ->
 %% @doc 
 
 get_preference(Key) ->
-  ok.
+  gen_server:call(?MODULE, Key).
   
 
 %% =====================================================================
@@ -54,11 +54,9 @@ handle_info(_, State) ->
 	{noreply, State}.
 
 handle_call(Key, _From, State=#state{prefs_table=Table}) ->
-	{reply, ets:lookup(Table, Key), State}.
+	{reply, ets:lookup_element(Table, Key, 2), State}.
 	
 handle_cast({Key, Value}, State=#state{prefs_table=Table}) ->
-  io:format("ETS UPDATE ~p~n", [ets:update_element(Table, Key, {2, Value})]),
-  io:format("ETS TAB ~p~n", [ets:tab2list(Table)]),
   write_dets(Table),
 	{noreply, State}.
 	
@@ -80,7 +78,6 @@ terminate(_Reason, _) ->
 %% @doc Load the preferences from disk and transfer to ETS table.
 
 load_prefs() ->
-  io:format("LOAD~n"),
   case dets:open_file(system_prefs, []) of
     {ok, DetsTable} ->
       PrefsTable = dets:to_ets(DetsTable, ets:new(prefs ,[])),
@@ -97,10 +94,8 @@ load_prefs() ->
 %% @doc 
   
 create_dets() ->
-  io:format("CREATE~n"),
   PrefsTable = ets:new(prefs, []),
   insert_default_prefs(PrefsTable),
-  io:format("~p~n",[ets:tab2list(PrefsTable)]),
   write_dets(PrefsTable).
   
   
@@ -123,6 +118,3 @@ write_dets(PrefsTable) ->
   
 insert_default_prefs(PrefsTable) ->
   [ets:insert(PrefsTable, {Key, Value}) || {Key, Value} <- sys_pref_defaults:get_defaults()].
-  
-  
-  

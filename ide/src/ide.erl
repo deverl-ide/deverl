@@ -93,7 +93,6 @@ init(Options) ->
 	
 	%% Load modules that should be started by OTP Application and not here
   sys_pref_manager:start(),
-	user_prefs:new([{wxe_server, wx:get_env()}]),
 	project_manager:start([{frame, Frame}, {wx_env, WxEnv}]),
 
 	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
@@ -273,7 +272,7 @@ handle_event(E=#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_sele
 	spawn(fun() -> wx:set_env(Env),
 		[editor:set_tab_width(Ed, list_to_integer(wxMenu:getLabel(Menu, Id))) || {_,Ed} <- doc_manager:get_open_documents()]
 	end),
-	user_prefs:set_user_pref(tab_width, wxMenu:getLabel(Menu, Id)),
+  sys_pref_manager:set_preference(tab_width, wxMenu:getLabel(Menu, Id)),
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSCREEN=Id},
 						 State=#state{frame=Frame}) ->
@@ -388,7 +387,6 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 	% 	  console_port:close_port(),
 	% 	  erlang:unregister(console_port)
 	% end,
-	user_prefs:stop(),
   %% Below is the necessary cleanup
   io:format("TERMINATE IDE~n"),
   wxFrame:destroy(Frame),

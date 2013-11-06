@@ -27,7 +27,9 @@
 				 save_as/0,  
 				 save_all/0,
          save_active_document/0,
-         save_active_project/0]).
+         save_active_project/0,
+				 apply_to_all_documents/2,
+				 apply_to_active_document/2]).
     
 %% Records
 -record(document, {path :: string(), 
@@ -134,6 +136,20 @@ save_active_project() ->
 
 
 %% =====================================================================
+%% @doc Apply the function Fun to all open documents.
+
+apply_to_all_documents(Fun, Args) ->
+	apply_to_documents(Fun, Args, get_open_documents()).
+
+
+%% =====================================================================
+%% @doc 
+	
+apply_to_active_document(Fun, Args) ->
+	apply_to_documents(Fun, Args, [get_active_document()]).
+	
+	
+%% =====================================================================
 %% Callbacks
 %% =====================================================================
 
@@ -196,7 +212,7 @@ handle_call({create_doc, Path, ProjectId}, _From,
 			Font = wxFont:new(sys_pref_manager:get_preference(editor_font_size),
 												sys_pref_manager:get_preference(editor_font_family),
 												sys_pref_manager:get_preference(editor_font_style),
-												sys_pref_manager:get_preference(editor_font_weigth), []),
+												sys_pref_manager:get_preference(editor_font_weight), []),
 			
 		  Editor = editor:start([{parent, Nb}, {font, Font}]),
 		  wxAuiNotebook:addPage(Nb, Editor, filename:basename(Path), [{select, true}]),
@@ -283,7 +299,17 @@ handle_call({save_as, DocId}, _From,
 			editor:set_savepoint(Editor),
 			{[{NewId, NewRecord} | NewDocRecords], [{wxAuiNotebook:getPage(Nb, wxAuiNotebook:getSelection(Nb)), NewId} | NewPageToDocId]}
 	end,
-{reply, ok, State#state{doc_records=NewRecs, page_to_doc_id=NewPage2Ids}}.
+	{reply, ok, State#state{doc_records=NewRecs, page_to_doc_id=NewPage2Ids}};
+
+handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_records=DocRecords}) ->
+	Fun2 = fun(Editor) -> apply(Fun, [Editor | Args]) end,
+	List = lists:map(
+		fun(DocId) -> 
+			Record = proplists:get_value(DocId, DocRecords),
+			Record#document.editor
+		end, DocIds),
+	lists:foreach(Fun2, List),
+	{reply, ok, State}.
   
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
@@ -541,3 +567,10 @@ is_already_open(Path, [{DocId, #document{path=Path}} | _]) ->
 	DocId;
 is_already_open(Path, [_ | T]) ->
 	is_already_open(Path, T).
+
+
+%% =====================================================================
+%% @doc 
+
+apply_to_documents(Fun, Args, Docs) ->
+	wx_object:call(?MODULE, {apply_to_docs, {Fun, Args, Docs}}).
