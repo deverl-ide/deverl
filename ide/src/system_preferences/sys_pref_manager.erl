@@ -34,7 +34,7 @@ set_preference(Key, Value) ->
 %% @doc 
 
 get_preference(Key) ->
-  ok.
+  gen_server:call(?MODULE, Key).
   
 
 %% =====================================================================

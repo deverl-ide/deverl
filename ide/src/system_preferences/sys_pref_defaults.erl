@@ -1,3 +1,13 @@
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc This module holds the default preferences that the program uses 
+%%      when no user-specified preferences have been defined.
+%% @end
+%% =====================================================================
+
 -module(sys_pref_defaults).
 
 -include_lib("wx/include/wx.hrl").
