@@ -386,6 +386,7 @@ get_item_from_list(Tree, ProjectId, [Project|Projects]) ->
       get_item_from_list(Tree, ProjectId, Projects)
   end.
 
+
 %% =====================================================================
 %% @doc Check if tree item has children. If so, set item has children.
 
