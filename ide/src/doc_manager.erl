@@ -309,16 +309,12 @@ handle_call({save_as, DocId}, _From,
 	{reply, ok, State#state{doc_records=NewRecs, page_to_doc_id=NewPage2Ids}};
 
 handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_records=DocRecords}) ->
-  io:format("Fun: ~p~n", [Fun]),
-  io:format("Args: ~p~n", [Args]),
-  io:format("DocIds: ~p~n", [DocIds]),
 	Fun2 = fun(Editor) -> apply(Fun, [Editor | Args]) end,
 	List = lists:map(
 		fun(DocId) -> 
 			Record = proplists:get_value(DocId, DocRecords),
 			Record#document.editor
 		end, DocIds),
-  io:format("Editors: ~p~n", [List]),
 	lists:foreach(Fun2, List),
 	{reply, ok, State}.
   
