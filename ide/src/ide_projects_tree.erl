@@ -105,7 +105,8 @@ init(Config) ->
 
   Tree = wxTreeCtrl:new(Panel, [{style, ?wxTR_HAS_BUTTONS bor
                                         ?wxTR_HIDE_ROOT bor
-                                        ?wxTR_FULL_ROW_HIGHLIGHT}]),
+                                        ?wxTR_FULL_ROW_HIGHLIGHT bor
+                                        ?wxTR_NO_LINES}]),
 	wxTreeCtrl:setIndent(Tree, 10),
 	ImgList = wxImageList:new(16,16),
 	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER", [{client,"wxART_MENU"}])),
@@ -114,8 +115,16 @@ init(Config) ->
 	wxTreeCtrl:assignImageList(Tree, ImgList),
 
   Root = wxTreeCtrl:addRoot(Tree, "Root"),
-  wxTreeCtrl:setItemBold(Tree, wxTreeCtrl:appendItem(Tree, Root, "Projects")),
-  wxTreeCtrl:setItemBold(Tree, wxTreeCtrl:appendItem(Tree, Root, "Standalone Files")),
+  AddRoot = 
+    fun(Name) ->
+      Item = wxTreeCtrl:appendItem(Tree, Root, Name),
+      % wxTreeCtrl:setItemBold(Tree, Item),
+      wxTreeCtrl:setItemBackgroundColour(Tree, Item, {150,150,150}),
+      wxTreeCtrl:setItemTextColour(Tree, Item, ?wxWHITE)
+    end,
+  AddRoot("Projects"),
+  AddRoot("Standalone Files"),
+
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
@@ -133,7 +142,8 @@ handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) -
   Item = get_item_from_list(Tree, ProjectId, get_projects(Tree)),
 	wxPanel:freeze(Panel),
   wxTreeCtrl:delete(Tree, Item),
-	alternate_background(Tree),
+  % alternate_background(Tree),
+  alternate_background_of_children(Tree, get_projects_root(Tree)),
 	wxPanel:thaw(Panel),
   {noreply,State};
 	
@@ -143,7 +153,8 @@ handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
   wxTreeCtrl:setItemImage(Tree, Item, 2),
   check_dir_has_contents(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
-	alternate_background(Tree),
+  % alternate_background(Tree),
+  alternate_background_of_children(Tree, get_projects_root(Tree)),
   {noreply,State};
 
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
@@ -153,7 +164,8 @@ handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
 handle_cast({remove_standalone, Path}, State=#state{tree=Tree}) ->
   Item = find_standalone(Tree, Path),
   wxTreeCtrl:delete(Tree, Item),
-  alternate_background(Tree),
+  % alternate_background(Tree),
+  alternate_background_of_children(Tree, get_standalone_root(Tree)),
   {noreply,State}.
   
 handle_call(tree, _From, State) ->
@@ -164,7 +176,9 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
     false ->
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
-    	alternate_background(Tree);
+      % alternate_background(Tree);
+      alternate_background_of_children(Tree, get_projects_root(Tree)),
+      alternate_background_of_children(Tree, get_standalone_root(Tree));
     true -> ok
   end,
 	{noreply, State};
@@ -172,7 +186,9 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=
   case is_fixed_header(Tree, Item) of
     false ->
       wxTreeCtrl:deleteChildren(Tree, Item),
-    	alternate_background(Tree);
+      % alternate_background(Tree);
+      alternate_background_of_children(Tree, get_projects_root(Tree)),
+      alternate_background_of_children(Tree, get_standalone_root(Tree));
     true -> ok
   end,
 	{noreply, State};
@@ -223,14 +239,21 @@ get_path(Tree, Item) ->
 %% @doc Set the background colour for all visible items.
 %% Includes those items that are currently scrolled out of view.
 
-alternate_background(Tree) ->
+% alternate_background(Tree) ->
+%   lists:foldl(
+%   fun(Item, Acc) ->
+%     set_item_background(Tree, Item, Acc),
+%     Acc+1
+%   end,
+%   0, lists:reverse(get_all_items(Tree))).
+
+alternate_background_of_children(Tree, Item) ->
 	lists:foldl(
 	fun(Item, Acc) ->
 		set_item_background(Tree, Item, Acc),
 		Acc+1
 	end,
-	0, lists:reverse(get_all_items(Tree))).
-
+	0, lists:reverse(get_children_recursively(Tree, Item))). 
 
 %% =====================================================================
 %% @doc Set the background colour for a single item.
@@ -245,24 +268,32 @@ set_item_background(Tree, Item, Index) ->
 
 
 %% =====================================================================
-%% @doc Get every item in the tree which currently occupys a row.
-%% This ignores any children of a collapsed item.
+%% @doc Get all children recursively
 
-get_all_items(Tree) ->
-	{FirstChild,_} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
-	get_all_items(Tree, FirstChild, []).
-get_all_items(Tree, Item, Acc) ->
+get_children_recursively(Tree, Item) ->
+  {FirstChild, _} = wxTreeCtrl:getFirstChild(Tree, Item),
+  get_children_recursively(Tree, FirstChild, []).
+
+get_children_recursively(Tree, Item, Acc) ->
 	case wxTreeCtrl:isTreeItemIdOk(Item) of
 		false -> Acc;
 		true ->
 			Res = case wxTreeCtrl:itemHasChildren(Tree, Item) and wxTreeCtrl:isExpanded(Tree, Item) of
 				true ->
 					{FirstChild,_} = wxTreeCtrl:getFirstChild(Tree, Item),
-					get_all_items(Tree, FirstChild, [Item|Acc]);
+					get_children_recursively(Tree, FirstChild, [Item|Acc]);
 				false -> [Item|Acc]
 			end,
-			get_all_items(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Res)
+			get_children_recursively(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Res)
 	end.
+  
+  
+%% =====================================================================
+%% @doc Get every item in the tree which currently occupys a row.
+%% This ignores any children of a collapsed item.
+
+get_all_items(Tree) ->
+  get_children_recursively(Tree, wxTreeCtrl:getRootItem(Tree)).
 
 
 %% =====================================================================
