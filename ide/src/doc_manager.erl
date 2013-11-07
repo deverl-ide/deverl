@@ -21,7 +21,7 @@
 -export([start/1,
 				 new_document/1,
 				 create_document/2,
-         open_document/0,
+         open_document/1,
          close_all/0,
          close_active_document/0,
          close_active_project/0,     
@@ -90,8 +90,10 @@ create_document(Path, ProjectId) ->
 %% =====================================================================
 %% @doc
 
-open_document() ->
-  ok.
+open_document(Path) ->
+  ProjectId = project_manager:get_project(Path),
+  wx_object:call(?MODULE, {create_doc, Path, ProjectId}).
+  
 
 %% =====================================================================
 %% @doc
@@ -119,6 +121,7 @@ close_active_project() ->
 
 save_as() ->
 	save_as(get_active_document()).
+
 
 %% =====================================================================
 %% @doc
@@ -215,12 +218,10 @@ handle_call({create_doc, Path, ProjectId}, _From,
 	case is_already_open(Path, DocRecords) of
 		false ->
 			ensure_notebook_visible(Nb, Sz),
-			
 			Font = wxFont:new(sys_pref_manager:get_preference(editor_font_size),
 												sys_pref_manager:get_preference(editor_font_family),
 												sys_pref_manager:get_preference(editor_font_style),
 												sys_pref_manager:get_preference(editor_font_weight), []),
-			
 		  Editor = editor:start([{parent, Nb}, {font, Font}]),
 		  wxAuiNotebook:addPage(Nb, Editor, filename:basename(Path), [{select, true}]),
 		  DocId = generate_id(),
