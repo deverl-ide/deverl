@@ -28,6 +28,7 @@
 -export([start/1,
 				 new_project/1,
 				 open_project/1,
+         get_project/1,
 				 close_project/0,
 				 open_file/3,
 				 get_open_projects/0,
@@ -100,7 +101,14 @@ open_project(Frame) ->
 	end,
 	ok.
 	
-	
+
+%% =====================================================================
+%% @doc
+
+get_project(Path) ->
+  wx_object:call(?MODULE, {get_project, Path}).
+  
+
 %% =====================================================================
 %% @doc Close an open project.
 %% This will close any files belonging to the project, and remove the
@@ -138,26 +146,15 @@ set_active_project(ProjectId) ->
 	
 %% =====================================================================
 %% @doc Get all currently open projects
-%% NOTE this currently returns paths and not project ids.
 
 -spec get_open_projects() -> [project_id()].
 
 get_open_projects() ->
 	gen_server:call(?MODULE, open_projects).
 	
+
 %% =====================================================================
-%% @doc Returns a list containing all open 
-%% documents belonging to the project Project.
-	
-% get_active_project_documents(Project, DocEts, Notebook) ->
-% 	ets:foldl(
-% 		fun(Record, Acc) ->
-% 			case record_get_project(Record) of
-% 				Project ->
-% 					[record_get_key(Record) | Acc];
-% 				_ -> Acc
-% 			end
-% 		end, [], DocEts).
+%% @doc
 
 -spec get_root(project_id()) -> path().
 
@@ -191,12 +188,11 @@ handle_call({add_open_project, Id, Path}, _From, State=#state{projects=Projects}
 	N = P#project{open_files=[Path | Open]},
 	D = proplists:delete(Id, Projects),
   {reply, ok, State#state{projects=[{Id, N} | D]}};
+handle_call({get_project, Path}, _From, State=#state{projects=Projects}) ->
+  {reply, path_to_project_id(Projects, Path), State};
 handle_call(open_projects, _From, State=#state{projects=Projects}) ->
 	OpenProjects = lists:map(fun({Id, _Path}) -> Id end, Projects),
   {reply, OpenProjects, State};
-%handle_call(open_project_paths, _From, State=#state{projects=Projects}) ->
-%	Paths = lists:map(fun({_Id, Path}) -> Path#project.root end, Projects),
-%  {reply, Paths, State};
 handle_call(active_project, _From, State) ->
   {reply, State#state.active_project, State};
 handle_call({get_root, ProjectId}, _From, State=#state{projects=Projects}) ->
@@ -244,3 +240,10 @@ update_ui(Frame, #project{root=Root}) ->
 	ide:set_title(ProjectName),
 	ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjectName ++ ")"),
 	ok.
+
+path_to_project_id([], Path) ->
+  undefined;
+path_to_project_id([{ProjId, #project{root=Path}} | T], Path) ->
+  ProjId;
+path_to_project_id([_|T], Path) ->
+  path_to_project_id(T, Path).

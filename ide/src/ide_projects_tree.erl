@@ -115,7 +115,7 @@ init(Config) ->
 
   Root = wxTreeCtrl:addRoot(Tree, "Root"),
   wxTreeCtrl:setItemBold(Tree, wxTreeCtrl:appendItem(Tree, Root, "Projects")),
-  wxTreeCtrl:setItemBold(Tree, wxTreeCtrl:appendItem(Tree, Root, "standaloneellaneous Files")),
+  wxTreeCtrl:setItemBold(Tree, wxTreeCtrl:appendItem(Tree, Root, "Standalone Files")),
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
