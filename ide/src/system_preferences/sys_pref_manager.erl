@@ -120,4 +120,8 @@ write_dets(PrefsTable) ->
   
 insert_default_prefs(PrefsTable) ->
   [ets:insert(PrefsTable, {Key, Value}) || {Key, Value} <- sys_pref_defaults:get_defaults()],
-  ets:insert(PrefsTable, {project_directory, wx_misc:getHomeDir() ++ "/erlang_projects"}).
+  Folder = case os:type() of
+    {_,linux} -> "erlang_projects";
+    _ -> "ErlangProjects"
+  end,
+  ets:insert(PrefsTable, {project_directory, filename:join(wx_misc:getHomeDir(), Folder)}).

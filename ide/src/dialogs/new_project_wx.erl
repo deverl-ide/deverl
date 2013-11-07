@@ -108,7 +108,7 @@ do_init(Parent) ->
   wxSizer:add(FlexGridSz, 0, 0, []),
    
 	%% Project path
-	Path = wx_misc:getHomeDir(),
+	Path = sys_pref_manager:get_preference(project_directory),
   wxSizer:add(FlexGridSz, wxStaticText:new(Dialog, ?wxID_ANY, "Project Path:"), []),
 	ProjPath = wxTextCtrl:new(Dialog, ?ID_PROJ_PATH, [{value, Path}]),
 	wxTextCtrl:disable(ProjPath),

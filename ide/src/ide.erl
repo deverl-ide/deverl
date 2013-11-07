@@ -93,10 +93,9 @@ init(Options) ->
 	
 	%% Load modules that should be started by OTP Application and not here
   sys_pref_manager:start([{wx_env, WxEnv}]),
-  [{_, ProjDir}] = sys_pref_manager:get_preference(project_directory),
+  ProjDir = sys_pref_manager:get_preference(project_directory),
   case filelib:is_dir(ProjDir) of
     false ->
-      io:format("CREATE DIR ~p~n", [ProjDir]),
       file:make_dir(ProjDir);
     true ->
       ok
@@ -130,7 +129,6 @@ init(Options) ->
                                         {proportion, 0}]),
 
 	Workspace = create_workspace(SplitterLeftRight),
-	io:format("WORKSPACE: ~p~n", [Workspace]),
 
 	%% The left window
 	LeftWindow = create_left_window(Frame, SplitterLeftRight),
@@ -267,19 +265,13 @@ handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_hig
 %% First handle the sub-menus
 handle_event(E=#wx{id=Id, userData={theme_menu,Menu}, event=#wxCommand{type=command_menu_selected}},
              State) ->
-	Env = wx:get_env(),
-	spawn(fun() -> wx:set_env(Env),
-		editor_ops:set_theme(Menu)
-	end),
+	editor_ops:set_theme(Menu),
 	{noreply, State};
 
 handle_event(E=#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_selected}},
              State) when Id >= ?MENU_ID_TAB_WIDTH_LOWEST,
 						 Id =< ?MENU_ID_TAB_WIDTH_HIGHEST  ->
-	Env = wx:get_env(),
-	spawn(fun() -> wx:set_env(Env),
-		[editor:set_tab_width(Ed, list_to_integer(wxMenu:getLabel(Menu, Id))) || {_,Ed} <- doc_manager:get_open_documents()]
-	end),
+  doc_manager:apply_to_all_documents(fun editor:set_tab_width/2, [list_to_integer(wxMenu:getLabel(Menu, Id))]),
   sys_pref_manager:set_preference(tab_width, wxMenu:getLabel(Menu, Id)),
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSCREEN=Id},

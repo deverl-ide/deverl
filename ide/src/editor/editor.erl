@@ -35,7 +35,7 @@
   replace_all/3,
 	set_text/2,
 	set_theme/3,
-	set_font_style/2,
+	set_font/2,
 	set_tab_width/2,
 	set_use_tabs/2,
 	set_indent_guides/2,
@@ -198,25 +198,10 @@ set_theme(Editor, Theme, Font) ->
 %% =====================================================================
 %% @doc Update the font used in the editor
 
--spec set_font_style(EditorPid, Font) -> 'ok' when
-  EditorPid :: pid(),
-  Font :: wxFont:wxFont().
-
-set_font_style(EditorPid, Font) when is_pid(EditorPid) -> 
+set_font(EditorPid, Font) -> 
   Editor = wx_object:call(EditorPid, stc),
-  set_font_style(Editor, Font);
+  set_font_style(Editor, Font).
 
-%% @private
-set_font_style(Editor, Font) ->
-	Update = fun(Id) -> 
-		?stc:styleSetFont(Editor, Id, Font)
-		end,
-	Update(?wxSTC_STYLE_DEFAULT),
-	% ?stc:styleClearAll(Editor), Needed to ensure all styles are resized
-	[Update(Id) || Id <- lists:seq(?wxSTC_ERLANG_DEFAULT, ?wxSTC_ERLANG_MODULES_ATT)],
-	update_line_margin(Editor),
-	ok.
-	
 
 %% =====================================================================
 %% @doc
@@ -745,6 +730,20 @@ adjust_margin_width(Editor) ->
     true -> ok
   end,
   ok.  
+
+
+%% =====================================================================
+%% @doc
+
+set_font_style(Editor, Font) ->
+	Update = fun(Id) -> 
+		?stc:styleSetFont(Editor, Id, Font)
+		end,
+	Update(?wxSTC_STYLE_DEFAULT),
+  % ?stc:styleClearAll(Editor), %% Needed to ensure all styles are resized
+	[Update(Id) || Id <- lists:seq(?wxSTC_ERLANG_DEFAULT, ?wxSTC_ERLANG_MODULES_ATT)],
+	update_line_margin(Editor),
+	ok.
 
 
 %% =====================================================================

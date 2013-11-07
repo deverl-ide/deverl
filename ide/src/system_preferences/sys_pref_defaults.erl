@@ -33,5 +33,8 @@ get_defaults() ->
   {auto_indent, false},
   {use_tabs, true},
   {tab_width, "2"},
-  {indent_guides, false}
+  {indent_guides, false},
+  
+  %% Console prefs
+  {console_theme, "Light"}
   ].

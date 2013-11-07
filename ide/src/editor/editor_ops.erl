@@ -38,11 +38,11 @@
 update_styles(Frame) ->
   %% Display the system font picker
   FD = wxFontData:new(),
-	Font = wxFont:new(sys_pref_manager:get_preference(editor_font_size),
-										sys_pref_manager:get_preference(editor_font_family),
-										sys_pref_manager:get_preference(editor_font_style),
-										sys_pref_manager:get_preference(editor_font_weight), []),
-  wxFontData:setInitialFont(FD, Font),
+  % Font = wxFont:new(sys_pref_manager:get_preference(editor_font_size),
+  %                   sys_pref_manager:get_preference(editor_font_family),
+  %                   sys_pref_manager:get_preference(editor_font_style),
+  %                   sys_pref_manager:get_preference(editor_font_weight), []),
+  % wxFontData:setInitialFont(FD, Font),
   Dialog = wxFontDialog:new(Frame, FD),
   case wxDialog:showModal(Dialog) of
     ?wxID_OK ->
@@ -52,7 +52,7 @@ update_styles(Frame) ->
       sys_pref_manager:set_preference(editor_font_family, wxFont:getFamily(Font)),
       sys_pref_manager:set_preference(editor_font_style, wxFont:getStyle(Font)),
       sys_pref_manager:set_preference(editor_font_weight, wxFont:getWeight(Font)),
-			doc_manager:apply_to_all_documents(fun editor:set_font_style/2, [Font]),
+      doc_manager:apply_to_all_documents(fun editor:set_font/2, [Font]),
       ok;
     ?wxID_CANCEL ->
 				ok
@@ -124,15 +124,15 @@ transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 	doc_manager:apply_to_active_document(fun editor:transform_selection/2, [{transform, Cmd}]).
 
 indent_right() -> 
-  doc_manager:apply_to_active_document(fun editor:indent_right/1).
+  doc_manager:apply_to_active_document(fun editor:indent_right/1, []).
 indent_left() -> 
-  doc_manager:apply_to_active_document(fun editor:indent_left/1).
+  doc_manager:apply_to_active_document(fun editor:indent_left/1, []).
 comment() -> 
-  doc_manager:apply_to_active_document(fun editor:comment/1).
+  doc_manager:apply_to_active_document(fun editor:comment/1, []).
 zoom_in() -> 
-  doc_manager:apply_to_active_document(fun editor:zoom_in/1).
+  doc_manager:apply_to_active_document(fun editor:zoom_in/1, []).
 zoom_out() -> 
-  doc_manager:apply_to_active_document(fun editor:zoom_out/1).
+  doc_manager:apply_to_active_document(fun editor:zoom_out/1, []).
 
 
 %% =====================================================================

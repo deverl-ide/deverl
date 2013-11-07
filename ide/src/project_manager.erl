@@ -79,8 +79,7 @@ new_project(Parent) ->
 	
 new_project(Parent, Dialog) ->
   try
-		Path = ide_io:create_directory_structure(Parent, 
-    	new_project_wx:get_name(Dialog), new_project_wx:get_path(Dialog)),
+		Path = ide_io:create_directory_structure(new_project_wx:get_path(Dialog)),
 		Id = gen_server:call(?MODULE, {new_project, Path}),
 		ide_projects_tree:add_project(Id, Path)
   catch

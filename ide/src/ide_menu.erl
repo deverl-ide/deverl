@@ -132,7 +132,6 @@ init(Config) ->
   wxMenu:check(View, ?MENU_ID_LINE_WRAP, Pref),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers\tCtrl+Alt+L", [{kind, ?wxITEM_CHECK}]),
-  io:format("WWWWWWWWWWAAAAAAAAAAAAAA: ~p~n", [sys_pref_manager:get_preference(show_line_no)]),
   wxMenu:check(View, ?MENU_ID_LN_TOGGLE, sys_pref_manager:get_preference(show_line_no)),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   TabPref = 

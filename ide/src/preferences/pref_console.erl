@@ -58,6 +58,7 @@ do_init(Config) ->
 %% =====================================================================
 %% @doc OTP behaviour callbacks
 handle_event(#wx{id=Id, event=#wxCommand{type=command_radiobutton_selected}, userData={Fg,Bg}}, State) ->
+  
   console_wx:set_theme(Fg, Bg),
   {noreply, State};
 handle_event(Ev = #wx{}, State = #state{}) ->

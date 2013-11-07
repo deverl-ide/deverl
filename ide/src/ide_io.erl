@@ -13,7 +13,7 @@
 
 %% Client API
 -export([
-        create_directory_structure/3,
+        create_directory_structure/1,
         create_new_file/1,
         open_new/1,
         read_file/1,
@@ -29,16 +29,15 @@
 %% =====================================================================
 %% @doc Create the directory structure for a new project.
 
-create_directory_structure(_Parent, Name, Path) ->
-	Root = filename:join([Path, Name]),
+create_directory_structure(Path) ->
   try
-    create_dir(Root),
-    create_dir(filename:join([Root, "ebin"])),
-    create_dir(filename:join([Root, "priv"])),
-    create_dir(filename:join([Root, "include"])),
-    create_dir(filename:join([Root, "src"])),
-		copy_emakefile(Root),
-		Root
+    create_dir(Path),
+    create_dir(filename:join([Path, "ebin"])),
+    create_dir(filename:join([Path, "priv"])),
+    create_dir(filename:join([Path, "include"])),
+    create_dir(filename:join([Path, "src"])),
+		copy_emakefile(Path),
+		Path
   catch
     throw:E -> throw(E)
   end.
