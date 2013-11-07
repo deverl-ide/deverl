@@ -25,6 +25,7 @@ get_defaults() ->
   %% Editor prefs
   {theme, "Putty"},
   {editor_font_size, ?DEFAULT_FONT_SIZE},
+  {editor_font_facename, undefined},
   {editor_font_family, ?wxFONTFAMILY_TELETYPE},
   {editor_font_style, ?wxNORMAL},
   {editor_font_weight, ?wxNORMAL},

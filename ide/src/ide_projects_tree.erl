@@ -189,16 +189,13 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
 						State=#state{frame=Frame}) ->
-  FilePath = get_path(Tree, Item),
-  case filelib:is_dir(FilePath) of
-    true ->
-      wxTreeCtrl:toggle(Tree, Item);
+  case is_fixed_header(Tree, Item) of
     false ->
-      {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
-			doc_manager:create_document(FilePath, Id)
+      toggle_or_open(Tree, Item);
+    true ->
+      ok
   end,
 	{noreply, State}.
-
 
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
@@ -355,6 +352,7 @@ get_item_from_list(Tree, ProjectId, [Project|Projects]) ->
       get_item_from_list(Tree, ProjectId, Projects)
   end.
 
+
 %% =====================================================================
 %% @doc Check if tree item has children. If so, set item has children.
 
@@ -445,4 +443,18 @@ find_standalone(Tree, Item, Path) ->
     Path -> Item;
     _ ->
       find_standalone(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Path)
+  end.
+  
+  
+%% =====================================================================
+%% @doc
+
+toggle_or_open(Tree, Item) ->
+  FilePath = get_path(Tree, Item),
+  case filelib:is_dir(FilePath) of
+    true ->
+      wxTreeCtrl:toggle(Tree, Item);
+    false ->
+      {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
+      doc_manager:create_document(FilePath, Id)
   end.

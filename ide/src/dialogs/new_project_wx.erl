@@ -146,7 +146,8 @@ do_init(Parent) ->
   wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 
               [{flag, ?wxEXPAND}]),
 	wxSizer:addSpacer(VertSizer, 20),
-	ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
+	
+  ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxSizer:addStretchSpacer(ButtonSz),
 	Finish = wxButton:new(Dialog, ?wxID_OK, [{label, "Finish"}]),
 	wxButton:disable(Finish),
@@ -193,10 +194,11 @@ do_init(Parent) ->
 	},
   
 	{Dialog, State}.
-  
-    
+      
 %% =====================================================================
-%% @doc OTP behaviour callbacks
+%% Event callbacks
+%% =====================================================================
+
 handle_event(#wx{event=#wxClose{}}, State) ->
   {stop, normal, State};
 handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}}, 

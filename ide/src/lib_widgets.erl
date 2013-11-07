@@ -1,3 +1,12 @@
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc This module groups together common functions for wx.
+%% @end
+%% =====================================================================
+
 -module(lib_widgets).
 
 -include_lib("wx/include/wx.hrl").
@@ -6,9 +15,16 @@
 -export([
 	placeholder/2,
 	placeholder/3,
-	colour_shade/2
+	colour_shade/2,
+  datetime_to_string/1,
+  set_list_item_background/2
 ]).
 
+
+
+%% =====================================================================
+%% Client API
+%% =====================================================================
 
 %% =====================================================================
 %% @doc Get a placeholder panel that displays some text within the parent
@@ -60,8 +76,41 @@ colour_shade({R,G,B}, Scalar) ->
 colour_shade({R,G,B,A}, Scalar) ->
 	{get_shade(R, Scalar), get_shade(G, Scalar), get_shade(B, Scalar), A}.
 
+  
+  
+%% =====================================================================
+%% @doc Convert calender:datetime() to a string of the form
+%% YYYY-MM-DD HH:MM:SS
+
+-spec datetime_to_string(DateTime) -> string() when
+  DateTime :: calender:datetime().
+
+datetime_to_string({{Y, M, D}, {H, Mi, S}}) ->
+  Args = [Y, M, D, H, Mi, S],
+  Str = io_lib:format("~B-~2.10.0B-~2.10.0B ~2.10.0B:~2.10.0B:~2.10.0B", Args),
+  lists:flatten(Str).
+ 
+  
+%% =====================================================================
+%% @doc Set the background colour for a single list item.
+
+set_list_item_background(ListCtrl, Item) ->
+	case Item rem 2 of
+	  0 ->
+			wxListCtrl:setItemBackgroundColour(ListCtrl, Item, ?ROW_BG_EVEN);
+	  _ ->
+	 		wxListCtrl:setItemBackgroundColour(ListCtrl, Item, ?ROW_BG_ODD)
+	end.
+  
+
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
+
+%% =====================================================================
+%% @doc  
 %% @private
-%% @hidden	
+
 get_shade(V, Scalar) ->
 	Shade = round(V * Scalar),
 	case Shade of

@@ -27,7 +27,8 @@
 %% API
 -export([start/1,
 				 new_project/1,
-				 open_project/1,
+				 open_project_dialog/1,
+         open_project/1,
          get_project/1,
 				 close_project/0,
 				 open_file/3,
@@ -35,7 +36,8 @@
 				 get_active_project/0,
 				 set_active_project/1,
 				 get_root/1,
-         get_name/1]).
+         get_name/1,
+         is_known_project/1]).
 
 
 %% Records
@@ -77,10 +79,12 @@ new_project(Parent) ->
 			new_project(Parent, Dialog),
 			new_project_wx:close(Dialog)
 	end.
-	
+
+  
 new_project(Parent, Dialog) ->
   try
 		Path = ide_io:create_directory_structure(new_project_wx:get_path(Dialog)),
+    sys_pref_manager:set_preference(projects, [Path | sys_pref_manager:get_preference(projects)]),
 		Id = gen_server:call(?MODULE, {new_project, Path}),
 		ide_projects_tree:add_project(Id, Path)
   catch
@@ -90,17 +94,27 @@ new_project(Parent, Dialog) ->
 	
 	
 %% =====================================================================
+%% @doc Open an existing project using a dialog.
+
+open_project_dialog(Frame) ->
+  Dialog = open_project_wx:start(Frame, sys_pref_manager:get_preference(projects)),
+  case wxDialog:showModal(Dialog) of
+    ?wxID_CANCEL ->
+      ok;
+    ?wxID_OK ->
+      open_project(open_project_wx:get_path(Dialog)),
+      open_project_wx:close(Dialog)
+  end.
+  
+
+%% =====================================================================
 %% @doc Open an existing project.
 
-open_project(Frame) ->
-	case lib_dialog_wx:get_existing_dir(Frame) of
-		cancelled -> ok;
-		Path ->
-			Id = gen_server:call(?MODULE, {new_project, Path}),
-			ide_projects_tree:add_project(Id, Path)
-	end,
-	ok.
-	
+open_project(Path) ->
+  Id = gen_server:call(?MODULE, {new_project, Path}),
+  ide_projects_tree:add_project(Id, Path),
+  Id.
+  
 
 %% =====================================================================
 %% @doc
@@ -163,6 +177,25 @@ get_root(ProjectId) ->
   
 get_name(ProjectId) ->
       filename:basename(get_root(ProjectId)).
+      
+
+%% =====================================================================
+%% @doc 
+
+is_known_project(Path) ->
+  Projects = sys_pref_manager:get_preference(projects),
+  is_known_project(Path, Projects).
+  
+is_known_project(_Path, []) ->
+  false;
+is_known_project(Path, [ProjectPath|Projects]) ->
+  case string:equal(string:sub_string(Path, 1, string:len(ProjectPath)), ProjectPath) of
+    true ->
+      true;
+    false ->
+      is_known_project(Path, Projects)
+  end.
+  
 		
 %% =====================================================================
 %% Callback functions
@@ -247,3 +280,4 @@ path_to_project_id([{ProjId, #project{root=Path}} | T], Path) ->
   ProjId;
 path_to_project_id([_|T], Path) ->
   path_to_project_id(T, Path).
+  

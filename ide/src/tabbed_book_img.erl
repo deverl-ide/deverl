@@ -72,15 +72,12 @@ init(Options) ->
 	Parent = proplists:get_value(parent, Options),
 	
 	MainPanel = wxPanel:new(Parent, []),
-	% wxPanel:setBackgroundColour(MainPanel, {160,160,160}),
 	MainSz = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(MainPanel, MainSz),
 	
 		% wxSizer:addSpacer(MainSz, 2),
 	
-	% Tabs = wxPanel:new(MainPanel, [{size, {74,-1}}]),
 	Tabs = wxPanel:new(MainPanel, []),
-	% wxPanel:setBackgroundColour(Tabs, ?SYS_BG),
 	Font = wxPanel:getFont(Tabs),
 	wxFont:setPointSize(Font, 9),
 	wxPanel:setFont(Tabs, Font),
@@ -122,7 +119,6 @@ handle_cast({add_page, {Page, Text, Options}},
 	wxWindow:hide(Page),
 	wxSizer:add(ContentSz, Page, SzFlags),
 	UpdatedPages = [{Button, {Page, Options}} | Pages],
-	% wxPanel:layout(Content),
 	wxPanel:layout(TabPanel),
 	Tip = wxToolTip:new(Label),
 	wxWindow:setToolTip(Button, Tip),
@@ -215,20 +211,20 @@ create_button(Parent, Sz, Label, Options) ->
 draw(Btn, Label, ImageList, WxDc, _, Options) ->
 	{W,H} = wxWindow:getSize(Btn),
 	
-	% SysBg = wxSystemSettings:getColour(?wxSYS_COLOUR_BACKGROUND),
-	SysBg = wxWindow:getBackgroundColour(Btn),
+  {R,G,B,_} = wxWindow:getBackgroundColour(Btn),
+
+  SysBg = {R, G, B, 0},
 	Grad2 = {190,190,190},
 	LineL = {155,155,155},
-	% wxWindow:setBackgroundColour(Btn, SysBg),
+
 	%% wxDC must be created in a callback to work on windows.
 	DC = WxDc:new(Btn),
 	
-	Pen = wxPen:new(SysBg, [{width, 1}]),
-	wxDC:setPen(DC, Pen),
-	Brush = wxBrush:new(SysBg),
-	wxDC:setBrush(DC, Brush),
-	wxDC:drawRectangle(DC, {0, 0}, {W, H}),
-	
+  Pen = wxPen:new(SysBg, [{width, 1}]),
+  wxDC:setPen(DC, Pen),
+  Brush = wxBrush:new(SysBg),
+  wxDC:setBrush(DC, Brush),
+  wxDC:drawRectangle(DC, {0, 0}, {W, H}),
 
 	%% Add gradients if button is selected
 	Fg = case proplists:get_value(active, Options, false) of
