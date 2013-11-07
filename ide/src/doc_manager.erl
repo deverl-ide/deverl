@@ -21,6 +21,7 @@
 -export([start/1,
 				 new_document/1,
 				 create_document/2,
+         open_document/0,
          close_all/0,
          close_active_document/0,
          close_active_project/0,     
@@ -85,7 +86,13 @@ create_document(Path, ProjectId) ->
       wx_object:call(?MODULE, {create_doc, Path, ProjectId})
   end.
 	
-	
+
+%% =====================================================================
+%% @doc
+
+open_document() ->
+  ok.
+
 %% =====================================================================
 %% @doc
 
@@ -419,7 +426,7 @@ get_modified_docs(Documents) ->
 close_project(ProjectId) ->
   case close_documents(get_project_documents(ProjectId)) of
     ok ->
-      ide_projects_tree:delete_project(ProjectId);
+      ide_projects_tree:remove_project(ProjectId);
     cancelled ->
       ok
   end.
