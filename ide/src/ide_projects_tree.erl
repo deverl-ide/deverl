@@ -31,12 +31,14 @@
         start/1,
         add_project/2,
 				add_project/3,
-				delete_project/1,
+        add_standalone_document/1,
+				remove_project/1,
+        remove_standalone_document/1,
         refresh_project/1
         ]).
 
 %% Server state
--record(state, {frame, sizer, panel, tree, placeholder}).
+-record(state, {frame, sizer, panel, tree}).
 
 
 %% =====================================================================
@@ -51,16 +53,16 @@ start(Config) ->
 %% @doc Add a project directory to the tree.
 
 add_project(Id, Dir) ->
-	wx_object:cast(?MODULE, {add, Id, Dir}).
+	wx_object:cast(?MODULE, {add_project, Id, Dir}).
 add_project(Id, Dir, Pos) ->
-	wx_object:cast(?MODULE, {add, Id, Dir, Pos}).
+	wx_object:cast(?MODULE, {add_project, Id, Dir, Pos}).
   
 
 %% =====================================================================
 %% @doc Delete an item from the tree
 
-delete_project(Id) ->
-	wx_object:cast(?MODULE, {delete, Id}).
+remove_project(Id) ->
+	wx_object:cast(?MODULE, {remove_project, Id}).
 
 
 %% =====================================================================
@@ -68,13 +70,25 @@ delete_project(Id) ->
 
 refresh_project(Path) ->
   Tree = wx_object:call(?MODULE, tree),
-  % Root = wxTreeCtrl:getRootItem(Tree),
 	ProjectItem  = get_item_from_path(Tree, get_all_items(Tree), Path),
 	{ProjectId, _} = wxTreeCtrl:getItemData(Tree, ProjectItem),
   wxTreeCtrl:delete(Tree, ProjectItem),
-	%%%%%%
-  wx_object:cast(?MODULE, {add, ProjectId, Path, 0}),
+  wx_object:cast(?MODULE, {add_project, ProjectId, Path}),
 	ok.
+  
+
+%% =====================================================================
+%% @doc
+
+add_standalone_document(Path) ->
+  wx_object:cast(?MODULE, {add_standalone, Path}).
+
+
+%% =====================================================================
+%% @doc
+ 
+remove_standalone_document(Path) ->
+  wx_object:cast(?MODULE, {remove_standalone, Path}).
 
 
 %% =====================================================================
@@ -89,9 +103,6 @@ init(Config) ->
 	MainSz = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(Panel, MainSz),
 
-	Placeholder = lib_widgets:placeholder(Panel, "No Open Projects"),
-	wxSizer:add(MainSz, Placeholder, [{proportion, 1}, {flag, ?wxEXPAND}]),
-
   Tree = wxTreeCtrl:new(Panel, [{style, ?wxTR_HAS_BUTTONS bor
                                         ?wxTR_HIDE_ROOT bor
                                         ?wxTR_FULL_ROW_HIGHLIGHT}]),
@@ -102,90 +113,78 @@ init(Config) ->
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/book.png"))),
 	wxTreeCtrl:assignImageList(Tree, ImgList),
 
-  wxTreeCtrl:addRoot(Tree, "ProjectTreeRoot"),
+  Root = wxTreeCtrl:addRoot(Tree, "Root"),
+  wxTreeCtrl:setItemBold(Tree, wxTreeCtrl:appendItem(Tree, Root, "Projects")),
+  wxTreeCtrl:setItemBold(Tree, wxTreeCtrl:appendItem(Tree, Root, "standaloneellaneous Files")),
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
-
-	hide_tree(MainSz, Tree),
 
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
 	wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
 	wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
 	wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
 
-	{Panel, #state{frame=Frame, sizer=MainSz, panel=Panel, tree=Tree, placeholder=Placeholder}}.
+	{Panel, #state{frame=Frame, sizer=MainSz, panel=Panel, tree=Tree}}.
 
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
   
-handle_cast({delete, ProjectId}, State=#state{sizer=Sz, panel=Panel, tree=Tree}) ->
-  Item = get_item_from_list(Tree, ProjectId, get_projects(Tree, wxTreeCtrl:getRootItem(Tree))),
+handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) ->
+  Item = get_item_from_list(Tree, ProjectId, get_projects(Tree)),
 	wxPanel:freeze(Panel),
   wxTreeCtrl:delete(Tree, Item),
-	case wxTreeCtrl:getCount(Tree) of
-		0 -> show_placeholder(Sz);
-		_ -> ok
-	end,
 	alternate_background(Tree),
 	wxPanel:thaw(Panel),
   {noreply,State};
 	
-handle_cast({add, Id, Dir}, State=#state{sizer=Sz, tree=Tree}) ->
-	case wxWindow:isShown(Tree) of
-		false ->
-			show_tree(Sz);
-		true -> 
-      ok
-	end,
-  Root = wxTreeCtrl:getRootItem(Tree),
+handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
+  Root = get_projects_root(Tree),
   Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, {Id, Dir}}]),
   wxTreeCtrl:setItemImage(Tree, Item, 2),
   check_dir_has_contents(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
 	alternate_background(Tree),
   {noreply,State};
-	
-handle_cast({add, Id, Dir, _Pos}, State=#state{sizer=Sz, tree=Tree}) ->
-	case wxWindow:isShown(Tree) of
-		false ->
-			show_tree(Sz);
-		true -> ok
-	end,
-	Root = wxTreeCtrl:getRootItem(Tree),
-	Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, {Id, Dir}}]),
-	wxTreeCtrl:setItemImage(Tree, Item, 2),
-  check_dir_has_contents(Tree, Item, Dir),
-  wxTreeCtrl:selectItem(Tree, Item),
-	alternate_background(Tree),
+
+handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
+  wxTreeCtrl:appendItem(Tree, get_standalone_root(Tree), filename:basename(Path), [{data, Path}]),
   {noreply,State};
 
-handle_cast(Msg, State) ->
-  io:format("Got cast ~p~n",[Msg]),
+handle_cast({remove_standalone, Path}, State=#state{tree=Tree}) ->
+  Item = find_standalone(Tree, Path),
+  wxTreeCtrl:delete(Tree, Item),
+  alternate_background(Tree),
   {noreply,State}.
-
+  
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
-  {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
-  insert(Tree, Item, FilePath),
-	alternate_background(Tree),
-  %print_tree_debug(Tree),
+  case is_fixed_header(Tree, Item) of
+    false ->
+      {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
+      insert(Tree, Item, FilePath),
+    	alternate_background(Tree);
+    true -> ok
+  end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
-  wxTreeCtrl:deleteChildren(Tree, Item),
-	alternate_background(Tree),
-  %print_tree_debug(Tree),
+  case is_fixed_header(Tree, Item) of
+    false ->
+      wxTreeCtrl:deleteChildren(Tree, Item),
+    	alternate_background(Tree);
+    true -> ok
+  end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}},
 						 State) ->
-	case wxTreeCtrl:isTreeItemIdOk(OldItem) of
+	case wxTreeCtrl:isTreeItemIdOk(OldItem) andalso not is_fixed_header(Tree, Item) of
 		false ->  %% Deleted item
 			ok;
 		true ->
-			ProjRoot = get_project_root(Tree, Item),
-			{ProjectId, _Path} = wxTreeCtrl:getItemData(Tree, ProjRoot),
-			project_manager:set_active_project(ProjectId)
+      ProjRoot = get_project_root(Tree, Item),
+      {ProjectId, _Path} = wxTreeCtrl:getItemData(Tree, ProjRoot),
+      project_manager:set_active_project(ProjectId)
 	end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
@@ -195,12 +194,8 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
     true ->
       wxTreeCtrl:toggle(Tree, Item);
     false ->
-      try
-        {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
-				doc_manager:create_document(FilePath, Id)
-      catch
-        throw:_ -> lib_dialog_wx:msg_error(Frame, "The file could not be loaded.")
-      end
+      {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
+			doc_manager:create_document(FilePath, Id)
   end,
 	{noreply, State}.
 
@@ -225,33 +220,6 @@ get_path(Tree, Item) ->
 		{_Id, Path} -> Path;
 		Path -> Path
 	end.
-
-
-%% =====================================================================
-%% @doc Show the tree ctrl.
-
-show_tree(Sz) ->
-	wxSizer:hide(Sz, 0),
-	wxSizer:show(Sz, 1),
-	wxSizer:layout(Sz).
-
-
-%% =====================================================================
-%% @doc Display the placeholder.
-%% This is displayed when no projects are open.
-
-show_placeholder(Sz) ->
-	wxSizer:hide(Sz, 1),
-	wxSizer:show(Sz, 0),
-	wxSizer:layout(Sz).
-
-
-%% =====================================================================
-%% @doc Hide the tree ctrl.
-
-hide_tree(Sz, Tree) ->
-	wxSizer:hide(Sz, Tree),
-	wxSizer:layout(Sz).
 
 
 %% =====================================================================
@@ -343,7 +311,7 @@ add_files(Tree, Item, [File|Files]) ->
 %% @doc Get the project's root item when given any item.
 
 get_project_root(Tree, Item) ->
-	get_project_root(Tree, wxTreeCtrl:getRootItem(Tree),
+	get_project_root(Tree, get_projects_root(Tree),
 		wxTreeCtrl:getItemParent(Tree, Item), Item).
 
 get_project_root(_Tree, Root, Root, Item) ->
@@ -356,7 +324,8 @@ get_project_root(Tree, Root, Parent, Item) ->
 %% =====================================================================
 %% @doc
 
-get_projects(Tree, Root) ->
+get_projects(Tree) ->
+  Root = get_projects_root(Tree),
   {FirstChild, _} = wxTreeCtrl:getFirstChild(Tree, Root),
   case wxTreeCtrl:isTreeItemIdOk(FirstChild) of
     true ->
@@ -420,3 +389,60 @@ print_tree_debug(Tree, Node, Indent) ->
 		true -> print_tree_debug(Tree, Sibling, Indent);
 		false -> ok
 	end.
+
+
+%% =====================================================================
+%% @doc
+
+is_projects_root(Tree, Item) ->
+  case get_projects_root(Tree) of
+    Item -> true;
+    _ -> false
+  end.
+  
+
+%% =====================================================================
+%% @doc
+   
+is_standalone_root(Tree, Item) ->
+  case get_standalone_root(Tree) of
+    Item -> true;
+    _ -> false
+  end.
+
+
+%% =====================================================================
+%% @doc
+ 
+get_projects_root(Tree) ->
+  {Item, _} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
+  Item.
+
+
+%% =====================================================================
+%% @doc
+
+get_standalone_root(Tree) ->
+  wxTreeCtrl:getNextSibling(Tree, get_projects_root(Tree)).
+  
+  
+%% =====================================================================
+%% @doc
+  
+is_fixed_header(Tree, Item) ->
+  is_projects_root(Tree, Item) orelse is_standalone_root(Tree, Item).
+
+
+%% =====================================================================
+%% @doc
+ 
+find_standalone(Tree, Path) ->
+  Root = get_standalone_root(Tree),
+  find_standalone(Tree, Root, Path).
+  
+find_standalone(Tree, Item, Path) ->
+  case wxTreeCtrl:getItemData(Item) of
+    Path -> Item;
+    _ ->
+      find_standalone(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Path)
+  end.
