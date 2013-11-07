@@ -21,7 +21,7 @@
 -export([start/1,
 				 new_document/1,
 				 create_document/2,
-         open_document/1,
+         open_document_dialog/1,
          close_all/0,
          close_active_document/0,
          close_active_project/0,     
@@ -90,10 +90,15 @@ create_document(Path, ProjectId) ->
 %% =====================================================================
 %% @doc
 
-open_document(Path) ->
-  ProjectId = project_manager:get_project(Path),
-  wx_object:call(?MODULE, {create_doc, Path, ProjectId}).
-  
+open_document_dialog(Frame) ->
+  case ide_io:open_new(Frame) of
+		cancel ->
+			ok;
+		Path ->
+      io:format("EXISTING PROJECTS ~p~n", [sys_pref_manager:get_preference(projects)]),
+      open_document(Path)
+	end.
+
 
 %% =====================================================================
 %% @doc
@@ -586,3 +591,32 @@ is_already_open(Path, [_ | T]) ->
 
 apply_to_documents(Fun, Args, Docs) ->
 	wx_object:call(?MODULE, {apply_to_docs, {Fun, Args, Docs}}).
+  
+
+%% =====================================================================
+%% @doc 
+
+open_document(Path) ->
+  io:format("PATH ~p~n", [Path]),
+  ProjectId = case project_manager:is_known_project(Path) of
+    true ->
+      open_from_existing_project(Path);
+    false ->
+      ide_projects_tree:add_standalone_document(Path),
+      undefined
+  end,
+  wx_object:call(?MODULE, {create_doc, Path, ProjectId}).
+  
+
+%% =====================================================================
+%% @doc 
+
+open_from_existing_project(Path) ->
+  Result = case project_manager:get_project(Path) of
+    undefined ->
+      project_manager:open_project(Path);
+    ProjectId ->
+      ProjectId
+  end.
+  
+    
