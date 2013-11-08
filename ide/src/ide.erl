@@ -377,17 +377,6 @@ code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
-  %% Unregister any pids/ports that dont close automatically
-  %% This is a bit nasty - an OTP Application which allows
-  %% components that can be started and stopped as a unit might
-  %% be a better choice.
-	% case erlang:whereis(console_port) of
-	% 	undefined -> ok;
-	% 	_ ->
-	% 	  console_port:close_port(),
-	% 	  erlang:unregister(console_port)
-	% end,
-  %% Below is the necessary cleanup
   io:format("TERMINATE IDE~n"),
   wxFrame:destroy(Frame),
   wx:destroy().

@@ -110,10 +110,8 @@ init(Config) ->
                                         ?wxTR_NO_LINES}]),
 	wxTreeCtrl:setIndent(Tree, 10),
 	ImgList = wxImageList:new(14,14),
-  % wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER", [{client,"wxART_MENU"}])),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/blue-folder-horizontal.png"))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/document.png"))),
-  % wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_NORMAL_FILE", [{client,"wxART_MENU"}])),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/book.png"))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/blue-folder-horizontal-open.png"))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/book-open.png"))),
@@ -159,7 +157,8 @@ handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
   {noreply,State};
 
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
-  append_item(Tree, get_standalone_root(Tree), filename:basename(Path), [{data, Path}]),
+  Item = append_item(Tree, get_standalone_root(Tree), filename:basename(Path), [{data, Path}]),
+  wxTreeCtrl:setItemImage(Tree, Item, 1),
   {noreply,State};
 
 handle_cast({remove_standalone, Path}, State=#state{tree=Tree}) ->
@@ -174,6 +173,16 @@ handle_call(tree, _From, State) ->
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
   case is_fixed_header(Tree, Item) of
     false ->
+      %%
+      %%
+      %% CHANGE THESE INTEGER VALUES TO MACROS
+      Image = wxTreeCtrl:getItemImage(Tree, Item),
+      Idx = case Image of
+        0 -> 3;
+        2 -> 4
+      end,
+      wxTreeCtrl:setItemImage(Tree, Item, Idx),
+      
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
       alternate_background_all(Tree);
@@ -183,6 +192,12 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
   case is_fixed_header(Tree, Item) of
     false ->
+      Image = wxTreeCtrl:getItemImage(Tree, Item),
+      Idx = case Image of
+        3 -> 0;
+        4 -> 2
+      end,
+      wxTreeCtrl:setItemImage(Tree, Item, Idx),
       wxTreeCtrl:deleteChildren(Tree, Item),
       alternate_background_all(Tree);
     true -> ok
