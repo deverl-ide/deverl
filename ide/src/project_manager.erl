@@ -224,6 +224,7 @@ handle_call({get_root, ProjectId}, _From, State=#state{projects=Projects}) ->
 	{reply, Root, State};
 handle_call(close_project, _From, State=#state{projects=Projects, active_project=ProjectId, frame=Frame}) ->
 	doc_manager:close_project(ProjectId),
+  ide_projects_tree:remove_project(ProjectId),
   update_ui(Frame, undefined),
   ProjectsList = proplists:delete(ProjectId, Projects),
   {reply, ProjectId, State#state{active_project=undefined, projects=ProjectsList}}.
