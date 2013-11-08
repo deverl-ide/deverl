@@ -106,20 +106,24 @@ init(Config) ->
   Tree = wxTreeCtrl:new(Panel, [{style, ?wxTR_HAS_BUTTONS bor
                                         ?wxTR_HIDE_ROOT bor
                                         ?wxTR_FULL_ROW_HIGHLIGHT bor
+                                        ?wxTR_HAS_VARIABLE_ROW_HEIGHT bor
                                         ?wxTR_NO_LINES}]),
 	wxTreeCtrl:setIndent(Tree, 10),
-	ImgList = wxImageList:new(16,16),
-	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER", [{client,"wxART_MENU"}])),
-	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_NORMAL_FILE", [{client,"wxART_MENU"}])),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/book.png"))),
+	ImgList = wxImageList:new(14,14),
+  % wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER", [{client,"wxART_MENU"}])),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/blue-folder-horizontal.png"))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/document.png"))),
+  % wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_NORMAL_FILE", [{client,"wxART_MENU"}])),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/book.png"))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/blue-folder-horizontal-open.png"))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/book-open.png"))),
 	wxTreeCtrl:assignImageList(Tree, ImgList),
 
   Root = wxTreeCtrl:addRoot(Tree, "Root"),
   AddRoot = 
     fun(Name) ->
-      Item = wxTreeCtrl:appendItem(Tree, Root, Name),
-      % wxTreeCtrl:setItemBold(Tree, Item),
-      wxTreeCtrl:setItemBackgroundColour(Tree, Item, {150,150,150}),
+      Item = append_item(Tree, Root, Name),
+      wxTreeCtrl:setItemBackgroundColour(Tree, Item, {71,141,220}),
       wxTreeCtrl:setItemTextColour(Tree, Item, ?wxWHITE)
     end,
   AddRoot("Projects"),
@@ -142,29 +146,25 @@ handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) -
   Item = get_item_from_list(Tree, ProjectId, get_projects(Tree)),
 	wxPanel:freeze(Panel),
   wxTreeCtrl:delete(Tree, Item),
-  % alternate_background(Tree),
   alternate_background_of_children(Tree, get_projects_root(Tree)),
 	wxPanel:thaw(Panel),
   {noreply,State};
 	
 handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
-  Root = get_projects_root(Tree),
-  Item = wxTreeCtrl:appendItem(Tree, Root, filename:basename(Dir), [{data, {Id, Dir}}]),
+  Item = append_item(Tree, get_projects_root(Tree), filename:basename(Dir), [{data, {Id, Dir}}]),
   wxTreeCtrl:setItemImage(Tree, Item, 2),
   check_dir_has_contents(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
-  % alternate_background(Tree),
   alternate_background_of_children(Tree, get_projects_root(Tree)),
   {noreply,State};
 
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
-  wxTreeCtrl:appendItem(Tree, get_standalone_root(Tree), filename:basename(Path), [{data, Path}]),
+  append_item(Tree, get_standalone_root(Tree), filename:basename(Path), [{data, Path}]),
   {noreply,State};
 
 handle_cast({remove_standalone, Path}, State=#state{tree=Tree}) ->
   Item = find_standalone(Tree, Path),
   wxTreeCtrl:delete(Tree, Item),
-  % alternate_background(Tree),
   alternate_background_of_children(Tree, get_standalone_root(Tree)),
   {noreply,State}.
   
@@ -176,9 +176,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
     false ->
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
-      % alternate_background(Tree);
-      alternate_background_of_children(Tree, get_projects_root(Tree)),
-      alternate_background_of_children(Tree, get_standalone_root(Tree));
+      alternate_background_all(Tree);
     true -> ok
   end,
 	{noreply, State};
@@ -186,9 +184,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=
   case is_fixed_header(Tree, Item) of
     false ->
       wxTreeCtrl:deleteChildren(Tree, Item),
-      % alternate_background(Tree);
-      alternate_background_of_children(Tree, get_projects_root(Tree)),
-      alternate_background_of_children(Tree, get_standalone_root(Tree));
+      alternate_background_all(Tree);
     true -> ok
   end,
 	{noreply, State};
@@ -236,16 +232,16 @@ get_path(Tree, Item) ->
 
 
 %% =====================================================================
-%% @doc Set the background colour for all visible items.
-%% Includes those items that are currently scrolled out of view.
+%% @doc Alternate the background colour for each section.
 
-% alternate_background(Tree) ->
-%   lists:foldl(
-%   fun(Item, Acc) ->
-%     set_item_background(Tree, Item, Acc),
-%     Acc+1
-%   end,
-%   0, lists:reverse(get_all_items(Tree))).
+alternate_background_all(Tree) ->
+  alternate_background_of_children(Tree, get_projects_root(Tree)),
+  alternate_background_of_children(Tree, get_standalone_root(Tree)).
+
+
+%% =====================================================================
+%% @doc Set the background colour for all visible children of Item.
+%% Includes those items that are currently scrolled out of view.
 
 alternate_background_of_children(Tree, Item) ->
 	lists:foldl(
@@ -254,6 +250,7 @@ alternate_background_of_children(Tree, Item) ->
 		Acc+1
 	end,
 	0, lists:reverse(get_children_recursively(Tree, Item))). 
+
 
 %% =====================================================================
 %% @doc Set the background colour for a single item.
@@ -324,13 +321,12 @@ add_files(Tree, Item, [File|Files]) ->
   {Id, _} = wxTreeCtrl:getItemData(Tree, Item),
 	case IsDir of
 		true ->
-			Child = wxTreeCtrl:appendItem(Tree, Item, FileName, [{data, {Id, File}}]),
-			wxTreeCtrl:setItemImage(Tree, Child, 0),
-      %Children = filelib:wildcard(File ++ "/*"),
+			Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
+      wxTreeCtrl:setItemImage(Tree, Child, 0),
       check_dir_has_contents(Tree, Child, File);
 		_ ->
-			Child = wxTreeCtrl:prependItem(Tree, Item, FileName, [{data, {Id, File}}]),
-			wxTreeCtrl:setItemImage(Tree, Child, 1)
+      Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
+      wxTreeCtrl:setItemImage(Tree, Child, 1)
 	end,
 	add_files(Tree, Item, Files).
 
@@ -421,6 +417,19 @@ print_tree_debug(Tree, Node, Indent) ->
 
 
 %% =====================================================================
+%% @doc Add Item to Tree.
+
+append_item(Tree, Item, Filename) ->
+  append_item(Tree, Item, Filename, []).
+  
+append_item(Tree, Item, Filename, Data) ->
+  Itm = wxTreeCtrl:appendItem(Tree, Item, Filename, Data),
+  Font = wxTreeCtrl:getItemFont(Tree, Itm),
+  wxFont:setPointSize(Font, 12),
+  wxTreeCtrl:setItemFont(Tree, Itm, Font),
+  Itm.
+
+%% =====================================================================
 %% @doc
 
 is_projects_root(Tree, Item) ->
@@ -484,7 +493,7 @@ toggle_or_open(Tree, Item) ->
   FilePath = get_path(Tree, Item),
   case filelib:is_dir(FilePath) of
     true ->
-      wxTreeCtrl:toggle(Tree, Item);
+      wxTreeCtrl:toggle(Tree, Item),
     false ->
       {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
       doc_manager:create_document(FilePath, Id)
