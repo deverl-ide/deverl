@@ -424,9 +424,13 @@ append_item(Tree, Item, Filename) ->
   
 append_item(Tree, Item, Filename, Data) ->
   Itm = wxTreeCtrl:appendItem(Tree, Item, Filename, Data),
-  Font = wxTreeCtrl:getItemFont(Tree, Itm),
-  wxFont:setPointSize(Font, 12),
-  wxTreeCtrl:setItemFont(Tree, Itm, Font),
+  case os:type() of
+    {_,darwin} ->
+      Font = wxTreeCtrl:getItemFont(Tree, Itm),
+      wxFont:setPointSize(Font, 12),
+      wxTreeCtrl:setItemFont(Tree, Itm, Font);
+    _ -> ok
+  end,
   Itm.
 
 %% =====================================================================
