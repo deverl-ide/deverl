@@ -3,7 +3,7 @@
 %% @copyright
 %% @title
 %% @version
-%% @doc This module holds the default preferences that the program uses 
+%% @doc This module holds the default preferences that the program uses
 %%      when no user-specified preferences have been defined.
 %% @end
 %% =====================================================================
@@ -21,7 +21,7 @@ get_defaults() ->
   %% Project/Directory prefs
   {project_directory, undefined},
   {projects, []},
-  
+
   %% Editor prefs
   {theme, "Putty"},
   {editor_font_size, ?DEFAULT_FONT_SIZE},
@@ -35,7 +35,7 @@ get_defaults() ->
   {use_tabs, true},
   {tab_width, "2"},
   {indent_guides, false},
-  
+
   %% Console prefs
   {console_theme, "Light"}
   ].
