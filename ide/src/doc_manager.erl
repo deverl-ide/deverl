@@ -607,7 +607,7 @@ open_document(Path) ->
 %% @doc 
 
 open_from_existing_project(Path) ->
-  Result = case project_manager:get_project(Path) of
+  Result = case project_manager:get_project(Path) of %% checks whether open
     undefined ->
       project_manager:open_project(Path);
     ProjectId ->

@@ -110,6 +110,8 @@ open_project_dialog(Frame) ->
 %% =====================================================================
 %% @doc Open an existing project.
 
+-spec open_project(path()) -> project_id().
+
 open_project(Path) ->
   Id = gen_server:call(?MODULE, {new_project, Path}),
   ide_projects_tree:add_project(Id, Path),
@@ -238,7 +240,6 @@ handle_call(close_project, _From, State=#state{projects=Projects, active_project
 handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Projects}) ->
   case ProjectId of
     undefined ->
-      io:format("UNDEFINED PROJECT~n"),
       update_ui(Frame, undefined);
     _ ->
       update_ui(Frame, proplists:get_value(ProjectId, Projects))
@@ -280,4 +281,3 @@ path_to_project_id([{ProjId, #project{root=Path}} | T], Path) ->
   ProjId;
 path_to_project_id([_|T], Path) ->
   path_to_project_id(T, Path).
-  
