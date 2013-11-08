@@ -37,7 +37,8 @@
 				 set_active_project/1,
 				 get_root/1,
          get_name/1,
-         is_known_project/1]).
+         is_known_project/1
+         ]).
 
 
 %% Records
@@ -184,17 +185,7 @@ get_name(ProjectId) ->
 
 is_known_project(Path) ->
   Projects = sys_pref_manager:get_preference(projects),
-  is_known_project(Path, Projects).
-  
-is_known_project(_Path, []) ->
-  false;
-is_known_project(Path, [ProjectPath|Projects]) ->
-  case string:equal(string:sub_string(Path, 1, string:len(ProjectPath)), ProjectPath) of
-    true ->
-      true;
-    false ->
-      is_known_project(Path, Projects)
-  end.
+  is_subpath(Path, Projects).
   
 		
 %% =====================================================================
@@ -231,9 +222,11 @@ handle_call(active_project, _From, State) ->
 handle_call({get_root, ProjectId}, _From, State=#state{projects=Projects}) ->
 	#project{root=Root} = proplists:get_value(ProjectId, Projects),
 	{reply, Root, State};
-handle_call(close_project, _From, State=#state{projects=Projects, active_project=ProjectId}) ->
+handle_call(close_project, _From, State=#state{projects=Projects, active_project=ProjectId, frame=Frame}) ->
 	doc_manager:close_project(ProjectId),
-  {reply, ProjectId, State}.
+  update_ui(Frame, undefined),
+  ProjectsList = proplists:delete(ProjectId, Projects),
+  {reply, ProjectId, State#state{active_project=undefined, projects=ProjectsList}}.
   
 handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Projects}) ->
   case ProjectId of
@@ -281,3 +274,16 @@ path_to_project_id([{ProjId, #project{root=Path}} | T], Path) ->
 path_to_project_id([_|T], Path) ->
   path_to_project_id(T, Path).
   
+
+%% =====================================================================
+%% @doc 
+
+is_subpath(_Path, []) ->
+  false;
+is_subpath(Path, [ProjectPath|ProjectPaths]) ->
+  case string:equal(string:sub_string(Path, 1, string:len(ProjectPath)), ProjectPath) of
+    true ->
+      {true, ProjectPath};
+    false ->
+      is_subpath(Path, ProjectPaths)
+  end.
