@@ -493,7 +493,7 @@ toggle_or_open(Tree, Item) ->
   FilePath = get_path(Tree, Item),
   case filelib:is_dir(FilePath) of
     true ->
-      wxTreeCtrl:toggle(Tree, Item),
+      wxTreeCtrl:toggle(Tree, Item);
     false ->
       {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
       doc_manager:create_document(FilePath, Id)
