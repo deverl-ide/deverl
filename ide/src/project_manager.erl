@@ -30,7 +30,8 @@
 				 open_project_dialog/1,
          open_project/1,
          get_project/1,
-				 close_project/1,
+         close_active_project/0,
+         % close_project/1,
 				 open_file/3,
 				 get_open_projects/0,
 				 get_active_project/0,
@@ -125,6 +126,18 @@ open_project(Path) ->
 get_project(Path) ->
   wx_object:call(?MODULE, {get_project, Path}).
   
+
+%% =====================================================================
+%% @doc
+
+close_active_project() ->
+  case doc_manager:close_project(get_active_project()) of
+    cancelled -> ok;
+    ok -> 
+      io:format("CLOSE PROJ~n"),
+      wx_object:call(?MODULE, close_project)
+  end.
+
 
 %% =====================================================================
 %% @doc Close an open project.
@@ -224,12 +237,18 @@ handle_call(active_project, _From, State) ->
 handle_call({get_root, ProjectId}, _From, State=#state{projects=Projects}) ->
 	#project{root=Root} = proplists:get_value(ProjectId, Projects),
 	{reply, Root, State};
-handle_call({close_project, ProjectId}, _From, State=#state{projects=Projects, frame=Frame}) ->
-	doc_manager:close_project(ProjectId),
-  ide_projects_tree:remove_project(ProjectId),
+handle_call(close_project, _From, State=#state{frame=Frame, active_project=ActiveProject, projects=Projects}) ->
+  ide_projects_tree:remove_project(ActiveProject),
   update_ui(Frame, undefined),
-  ProjectsList = proplists:delete(ProjectId, Projects),
-  {reply, ProjectId, State#state{active_project=undefined, projects=ProjectsList}}.
+  ProjectsList = proplists:delete(ActiveProject, Projects),
+  {reply, ok, State#state{active_project=undefined, projects=ProjectsList}}.
+  
+% handle_call({close_project, ProjectId}, _From, State=#state{projects=Projects, frame=Frame}) ->
+%   doc_manager:close_project(ProjectId),
+%   ide_projects_tree:remove_project(ProjectId),
+%   update_ui(Frame, undefined),
+%   ProjectsList = proplists:delete(ProjectId, Projects),
+%   {reply, ProjectId, State#state{active_project=undefined, projects=ProjectsList}}.
   
 handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Projects}) ->
   case ProjectId of

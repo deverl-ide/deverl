@@ -24,7 +24,7 @@
          open_document_dialog/1,
          close_all/0,
          close_active_document/0,
-         close_active_project/0,
+         close_project/1,
 				 save_as/0,
 				 save_all/0,
          save_active_document/0,
@@ -117,9 +117,10 @@ close_active_document() ->
 %% =====================================================================
 %% @doc
 
-close_active_project() ->
-  close_project(project_manager:get_active_project()).
-
+close_project(ProjectId) ->
+  close_documents(get_project_documents(ProjectId)).
+  
+  
 %% =====================================================================
 %% @doc
 
@@ -419,16 +420,6 @@ close([DocId|Documents]) ->
 
 get_modified_docs(Documents) ->
   wx_object:call(?MODULE, {get_modified_docs, Documents}).
-
-
-%% =====================================================================
-%% @doc
-
-close_project(undefined) -> ok;
-close_project(ProjectId) ->
-  close_documents(get_project_documents(ProjectId)),
-  project_manager:close_project(ProjectId).
-
 
 
 %% =====================================================================
