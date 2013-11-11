@@ -92,8 +92,8 @@
 % -define(MENU_GROUP_WS, 	1 bsl 1).
 % -define(MENU_GROUP_TC, 	1 bsl 2).
 % -define(MENU_GROUP_GL, 	1 bsl 3).
--define(MENU_GROUP_ED, 	1).
--define(MENU_GROUP_WS, 	2).
+-define(MENU_GROUP_NOTEBOOK_EMPTY, 	1).
+-define(MENU_GROUP_PROJECTS_EMPTY, 	2).
 -define(MENU_GROUP_TC, 	4).
 -define(MENU_GROUP_GL, 	8).
 

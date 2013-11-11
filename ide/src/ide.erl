@@ -18,7 +18,7 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 	
 %% API			 
--export([start/0, set_title/1, get_menubar/0]).
+-export([start/0, set_title/1, toggle_menu_group/2]).
 
 %% Server state
 -record(state, {frame,
@@ -30,7 +30,8 @@
                 sash_v :: wxSpliiterWindow:wxSplitterWindow(), %% The vertical splitter
                 sash_h :: wxSpliiterWindow:wxSplitterWindow(), %% The horizontal splitter
                 sash_v_pos :: integer(),
-                sash_h_pos :: integer()
+                sash_h_pos :: integer(),
+                menu_ets
                 }).
 								
 %% Macros
@@ -72,10 +73,10 @@ set_title(Title) ->
 
 
 %% =====================================================================
-%% @doc Get the menubar.
+%% @doc Enable/disable a menu group
 
-get_menubar() ->
-	wxFrame:getMenuBar(wx_object:call(?MODULE, frame)).
+toggle_menu_group(Mask, Toggle) ->
+	wx_object:cast(?MODULE, {toggle_menu_group, Mask, Toggle}).
 	
 		
 %% =====================================================================
@@ -123,7 +124,7 @@ init(Options) ->
 	StatusBar = ide_status_bar:start([{parent, Frame}]),
 
 	%% Menubar %%
-  {Menu, MenuTab} = ide_menu:create([{parent, Frame}]),
+  {Menu, MenuEts} = ide_menu:create([{parent, Frame}]),
 
 	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),
@@ -157,7 +158,7 @@ init(Options) ->
 	% [wxAcceleratorEntry:new([{flags, ?wxACCEL_NORMAL}, {keyCode, ?WXK_SPACE}, {cmd, ?MENU_ID_FONT}])]),
 	% wxFrame:setAcceleratorTable(Frame, AccelTab),
 
-	toggle_menu_group(Menu, 1, MenuTab, {enable, false}),
+  % toggle_menu_group(Menu, 1, MenuEts, {enable, false}),
 
   {Frame, #state{
 						frame=Frame,
@@ -167,7 +168,8 @@ init(Options) ->
             sash_h_pos=?SASH_HOR_DEFAULT_POS,
             sash_v=SplitterLeftRight,
             sash_h=SplitterTopBottom,
-						workspace=Workspace
+						workspace=Workspace,
+            menu_ets=MenuEts
             }}.
 
 
@@ -189,13 +191,27 @@ handle_info(Msg, State) ->
 handle_call(frame, _From, State) ->
 	{reply, State#state.frame, State}.
 
+handle_cast({toggle_menu_group, Mask, Toggle}, State=#state{frame=Frame, menu_ets=MenuEts}) ->
+  MenuBar = wxFrame:getMenuBar(Frame),
+  ets:foldl(
+  fun({Id,_}, DontCare) ->
+    DontCare;
+  ({Id,_,Options}, DontCare) ->
+    case proplists:get_value(group, Options) of
+      undefined -> ok;
+      Groups ->
+        toggle_menu_item(MenuBar, wxFrame:getToolBar(Frame), Mask, Id, Groups, Toggle)
+    end,
+    DontCare
+  end, notused, MenuEts),
+	{noreply, State};
 handle_cast({title, Title}, State=#state{frame=Frame}) ->
 	Str = case Title of
 		[] -> ?FRAME_TITLE;
 		T -> Title ++ " - " ++ ?FRAME_TITLE
 	end,
 	wxFrame:setTitle(Frame, Str),
-  {noreply,State}.
+  {noreply, State}.
 
 %% =====================================================================
 %% Event handlers
@@ -460,37 +476,21 @@ create_workspace(Parent) ->
 
 
 %% =====================================================================
-%% @doc Enable/disable a menu group
-%% @private
-
-toggle_menu_group(Mb, Mask, TabId, {enable, Bool}=Toggle) ->
-	ets:foldl(
-	fun({Id,_}, DontCare) ->
-		DontCare;
-	({Id,_,Options}, DontCare) ->
-		case proplists:get_value(group, Options) of
-			undefined -> ok;
-			Groups ->
-				toggle_menu_item(Mb, Mask, Id, Groups, Toggle)
-		end,
-		DontCare
-	end, notused, TabId).
-
-
-%% =====================================================================
 %% @doc Enable/disable a menu item
 %% @private
 
--spec toggle_menu_item(Mb, Mask, Id, Groups, Enable) -> 'ok' when
-	Mb :: wxMenuBar:wxMenuBar(),
+-spec toggle_menu_item(MenuBar, ToolBar, Mask, Id, Groups, Enable) -> 'ok' when
+	MenuBar :: wxMenuBar:wxMenuBar(),
+  ToolBar :: wxToolBar:wxToolBar(),
 	Mask :: integer(), % Defines which groups to affect
 	Id :: integer(),	% The menu item id
 	Groups :: integer(), % The groups associated to the menu item with Id
-	Enable :: {'enable', boolean()}.
+	Enable :: boolean().
 
-toggle_menu_item(Mb, Mask, Id, Groups, Enable) ->
+toggle_menu_item(MenuBar, ToolBar, Mask, Id, Groups, Enable) ->
 	case (Mask band Groups) of
 		0 -> ok;
 		_ ->
-			wxMenuItem:enable(wxMenuBar:findItem(Mb, Id), [{enable, false}])
+			wxMenuItem:enable(wxMenuBar:findItem(MenuBar, Id), [{enable, Enable}]),
+      wxToolBar:enableTool(ToolBar, Id, Enable)
 	end.

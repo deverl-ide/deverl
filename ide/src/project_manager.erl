@@ -87,8 +87,7 @@ new_project(Parent, Dialog) ->
   try
 		Path = ide_io:create_directory_structure(new_project_wx:get_path(Dialog)),
     sys_pref_manager:set_preference(projects, [Path | sys_pref_manager:get_preference(projects)]),
-		Id = gen_server:call(?MODULE, {new_project, Path}),
-		ide_projects_tree:add_project(Id, Path)
+		Id = gen_server:call(?MODULE, {new_project, Path})
   catch
     throw:E -> 
 			lib_dialog_wx:msg_error(Parent, E)
@@ -116,7 +115,6 @@ open_project_dialog(Frame) ->
 
 open_project(Path) ->
   Id = gen_server:call(?MODULE, {new_project, Path}),
-  ide_projects_tree:add_project(Id, Path),
   Id.
   
 
@@ -134,7 +132,6 @@ close_active_project() ->
   case doc_manager:close_project(get_active_project()) of
     cancelled -> ok;
     ok -> 
-      io:format("CLOSE PROJ~n"),
       wx_object:call(?MODULE, close_project)
   end.
 
@@ -144,9 +141,9 @@ close_active_project() ->
 %% This will close any files belonging to the project, and remove the
 %% tree from the project tree. 
 
-close_project(ProjectId) ->
-	%% Check open files, save/close
-	wx_object:call(?MODULE, {close_project, ProjectId}).
+% close_project(ProjectId) ->
+%   %% Check open files, save/close
+%   wx_object:call(?MODULE, {close_project, ProjectId}).
 
 
 %% =====================================================================
@@ -219,9 +216,16 @@ handle_info(Msg, State) ->
   {noreply,State}.
     
 handle_call({new_project, Path}, _From, State=#state{projects=Projects}) ->
-	Id = generate_id(),
-	Record = {Id, #project{root=Path, open_files=[]}},
-  {reply, Id, State#state{projects=[Record | Projects]}};
+  case is_already_open(Projects, Path) of
+    {true, Id} -> 
+      {reply, Id, State};
+    false ->
+    	Id = generate_id(),
+    	Record = {Id, #project{root=Path, open_files=[]}},
+      ide_projects_tree:add_project(Id, Path),
+      ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, true),
+      {reply, Id, State#state{projects=[Record | Projects]}}
+  end;
 handle_call({add_open_project, Id, Path}, _From, State=#state{projects=Projects}) ->
 	P=#project{open_files=Open} = proplists:get_value(Id, Projects),
 	N = P#project{open_files=[Path | Open]},
@@ -241,8 +245,13 @@ handle_call(close_project, _From, State=#state{frame=Frame, active_project=Activ
   ide_projects_tree:remove_project(ActiveProject),
   update_ui(Frame, undefined),
   ProjectsList = proplists:delete(ActiveProject, Projects),
+  case ProjectsList of
+    [] ->
+      ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, false);
+    _ -> ok
+  end,
   {reply, ok, State#state{active_project=undefined, projects=ProjectsList}}.
-  
+ 
 % handle_call({close_project, ProjectId}, _From, State=#state{projects=Projects, frame=Frame}) ->
 %   doc_manager:close_project(ProjectId),
 %   ide_projects_tree:remove_project(ProjectId),
@@ -308,3 +317,15 @@ is_subpath(Path, [ProjectPath|ProjectPaths]) ->
     false ->
       is_subpath(Path, ProjectPaths)
   end.
+
+
+%% =====================================================================
+%% @doc Determine whether the project with path Path is already open.
+
+is_already_open(Projects, Path) ->
+  case path_to_project_id(Projects, Path) of
+    undefined -> 
+      false;
+    ProjId ->
+      {true, ProjId}
+  end. 
