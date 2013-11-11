@@ -203,11 +203,13 @@ handle_info(Msg, State) ->
 	{noreply,State}.
 
 handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+  wxWindow:freeze(Nb),
   {NewDocRecords, NewPageToDocId} = remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, PageToDocId), DocRecords, PageToDocId),
   case wxAuiNotebook:getPageCount(Nb) of
  		0 -> wx_object:cast(?MODULE, notebook_empty);
  		_ -> ok
  	end,
+  wxWindow:thaw(Nb),
   {noreply, State#state{doc_records=NewDocRecords, page_to_doc_id=NewPageToDocId}};
 
 handle_cast(notebook_empty, State=#state{sizer=Sz}) ->

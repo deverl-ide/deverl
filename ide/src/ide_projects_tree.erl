@@ -35,7 +35,6 @@
         add_standalone_document/1,
 				remove_project/1,
         remove_standalone_document/1,
-        refresh_project/1,
         insert_file/1
         ]).
 
@@ -47,7 +46,7 @@
 -define(ICON_DOCUMENT, 4).
 -define(ICON_INFO, 5).
 
--define(HEADER_BACKGROUND, {100,141,220}).
+-define(HEADER_BACKGROUND, {120,120,120}).
 
 -define(HEADER_PROJECTS, 0).
 -define(HEADER_FILES, 1).
@@ -84,16 +83,7 @@ remove_project(Id) ->
 
 
 %% =====================================================================
-%% @doc Update the tree item (including children) whose data is Path.
-
-refresh_project(Path) ->
-%  Tree = wx_object:call(?MODULE, tree),
-%	ProjectItem  = get_item_from_path(Tree, get_all_items(Tree), Path),
-%	{ProjectId, _} = wxTreeCtrl:getItemData(Tree, ProjectItem),
-%  wxTreeCtrl:delete(Tree, ProjectItem),
-%  wx_object:cast(?MODULE, {add_project, ProjectId, Path}),
-	ok.
-  
+%% @doc
   
 insert_file(FilePath) ->
   Tree = wx_object:call(?MODULE, tree),
@@ -106,34 +96,7 @@ insert_file(FilePath) ->
       append_item(Tree, Item, filename:basename(FilePath), [{image, ?ICON_DOCUMENT}, {data, {Id, FilePath}}])
   end.
   
-
   
-find_root(FilePath) ->
-  find_root(FilePath, []).
-  
-find_root(FilePath, Acc) ->
-  
-  Tree = wx_object:call(?MODULE, tree),
-  case get_item_from_path(Tree, get_all_items(Tree), FilePath) of 
-    no_item ->
-      find_root(filename:dirname(FilePath), [FilePath|Acc]);
-    Item ->
-      wxTreeCtrl:toggle(Tree, Item),
-      io:format("FILE DIRS ~p~n", [Acc]),
-      toggle_items(Tree, Acc)
-  end.
-  
-toggle_items(Tree, [FilePath]) ->
-  wxTreeCtrl:selectItem(Tree, get_item_from_path(Tree, get_all_items(Tree), FilePath));
-toggle_items(Tree, [Path|Paths]) ->
-  io:format("PATH ~p~n", [Path]),
-  io:format("ITEM FROM PATH ~p~n", [get_item_from_path(Tree, get_all_items(Tree), Path)]),
-  wxTreeCtrl:toggle(Tree, get_item_from_path(Tree, get_all_items(Tree), Path)),
-  print_tree_debug(Tree),
-  toggle_items(Tree, Paths).
-
-  
-
 %% =====================================================================
 %% @doc
 
@@ -191,10 +154,10 @@ init(Config) ->
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
-	wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
-	wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
-	wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
-	wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
+  wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
+  wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
+  wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
+  wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
 
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
 
@@ -204,13 +167,16 @@ handle_info(Msg, State) ->
 	
 %% ALMOST IDENTICAL TO THE SUBSEQUENT add_* HANDLER
 handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
+  wxPanel:freeze(Tree),
   Root = get_projects_root(Tree),
   remove_placeholder(Tree, Root),
   Item = append_item(Tree, Root, filename:basename(Dir), [{data, {Id, Dir}}]),
   wxTreeCtrl:setItemImage(Tree, Item, ?ICON_PROJECT),
   check_dir_has_contents(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
+  wxTreeCtrl:toggle(Tree, Item),
   alternate_background_of_children(Tree, Root),
+  wxPanel:thaw(Tree),
   {noreply,State};
   
 handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) ->
@@ -256,7 +222,6 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
       alternate_background_all(Tree);
     false -> ok
   end,
-  print_tree_debug(Tree),
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
   % case is_fixed_header(Tree, Item) of
@@ -410,7 +375,7 @@ insert(Tree, Parent, Dir) ->
 
 
 %% =====================================================================
-%% @doc Add a fi
+%% @doc
 
 add_files(_, _, []) ->
   ok;
@@ -673,4 +638,38 @@ insert_placeholder(Tree, Item, Msg) ->
       Placeholder = append_item(Tree, Item, Msg, [{data, placeholder}]),
       wxTreeCtrl:setItemImage(Tree, Placeholder, ?ICON_INFO);
     _ -> ok
+  end.
+
+
+find_root(FilePath) ->
+  find_root(FilePath, []).
+  
+find_root(FilePath, Acc) ->
+  Tree = wx_object:call(?MODULE, tree),
+  case get_item_from_path(Tree, get_all_items(Tree), FilePath) of 
+    no_item ->
+      find_root(filename:dirname(FilePath), [FilePath|Acc]);
+    Item ->
+      wxTreeCtrl:freeze(Tree),
+      wxTreeCtrl:toggle(Tree, Item),
+      toggle_items(Tree, Acc)
+  end.
+  
+toggle_items(Tree, [Path]) ->
+  Item = poll_tree_item(Tree, get_all_items(Tree), Path),
+  wxTreeCtrl:selectItem(Tree, Item),
+  wxTreeCtrl:thaw(Tree);
+toggle_items(Tree, [Path|Paths]) ->
+  Item = poll_tree_item(Tree, get_all_items(Tree), Path),
+  wxTreeCtrl:toggle(Tree, Item),
+  toggle_items(Tree, Paths).
+
+%% This is required because the tree is not updated immediately, and
+%% subsequent recursive calls to toggle_items fail.
+poll_tree_item(Tree, Items, Path) ->
+  case get_item_from_path(Tree, Items, Path) of
+    no_item ->
+      poll_tree_item(Tree, get_all_items(Tree), Path);
+    Item ->
+      Item
   end.
