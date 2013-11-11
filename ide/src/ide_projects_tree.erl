@@ -23,7 +23,8 @@
         handle_info/2,
         handle_call/3,
         handle_cast/2,
-        handle_event/2
+        handle_event/2,
+        handle_sync_event/3
         ]).
 
 %% API
@@ -37,8 +38,24 @@
         refresh_project/1
         ]).
 
+%% Macros
+-define(ICON_FOLDER, 0).
+-define(ICON_FOLDER_OPEN, 1).
+-define(ICON_PROJECT, 2).
+-define(ICON_PROJECT_OPEN, 3).
+-define(ICON_DOCUMENT, 4).
+-define(ICON_INFO, 5).
+
+-define(HEADER_BACKGROUND, {100,141,220}).
+
+-define(HEADER_PROJECTS, 0).
+-define(HEADER_FILES, 1).
+
+-define(HEADER_PROJECTS_EMPTY, "No open projects").
+-define(HEADER_FILES_EMPTY, "No open files").
+
 %% Server state
--record(state, {frame, sizer, panel, tree}).
+-record(state, {frame, panel, tree}).
 
 
 %% =====================================================================
@@ -110,102 +127,115 @@ init(Config) ->
                                         ?wxTR_NO_LINES}]),
 	wxTreeCtrl:setIndent(Tree, 10),
 	ImgList = wxImageList:new(14,14),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/blue-folder-horizontal.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/document.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/book.png"))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/blue-folder-horizontal.png"))), 
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/blue-folder-horizontal-open.png"))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/book.png"))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/book-open.png"))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/document.png"))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/information-white.png"))),
 	wxTreeCtrl:assignImageList(Tree, ImgList),
 
   Root = wxTreeCtrl:addRoot(Tree, "Root"),
   AddRoot = 
-    fun(Name) ->
-      Item = append_item(Tree, Root, Name),
-      wxTreeCtrl:setItemBackgroundColour(Tree, Item, {71,141,220}),
+    fun(Id, Name, Info) ->
+      Item = append_item(Tree, Root, Name, [{data, Id}]),
+      Placeholder = append_item(Tree, Item, Info, [{data, placeholder}]),
+      wxTreeCtrl:toggle(Tree, Item),
+      wxTreeCtrl:setItemImage(Tree, Placeholder, ?ICON_INFO),
+      wxTreeCtrl:setItemBackgroundColour(Tree, Item, ?HEADER_BACKGROUND),
       wxTreeCtrl:setItemTextColour(Tree, Item, ?wxWHITE)
     end,
-  AddRoot("Projects"),
-  AddRoot("Standalone Files"),
+  AddRoot(?HEADER_PROJECTS, "Projects", ?HEADER_PROJECTS_EMPTY),
+  AddRoot(?HEADER_FILES, "Standalone Files", ?HEADER_FILES_EMPTY),
 
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
 	wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
+	wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
 	wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
 	wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
 
-	{Panel, #state{frame=Frame, sizer=MainSz, panel=Panel, tree=Tree}}.
+	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
 
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
+	
+%% ALMOST IDENTICAL TO THE SUBSEQUENT HANDLER
+handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
+  Root = get_projects_root(Tree),
+  remove_placeholder(Tree, Root),
+  Item = append_item(Tree, Root, filename:basename(Dir), [{data, {Id, Dir}}]),
+  wxTreeCtrl:setItemImage(Tree, Item, ?ICON_PROJECT),
+  check_dir_has_contents(Tree, Item, Dir),
+  wxTreeCtrl:selectItem(Tree, Item),
+  alternate_background_of_children(Tree, Root),
+  {noreply,State};
   
 handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) ->
   Item = get_item_from_list(Tree, ProjectId, get_projects(Tree)),
 	wxPanel:freeze(Panel),
   wxTreeCtrl:delete(Tree, Item),
   alternate_background_of_children(Tree, get_projects_root(Tree)),
+  insert_placeholder(Tree, get_projects_root(Tree), ?HEADER_PROJECTS_EMPTY),
 	wxPanel:thaw(Panel),
   {noreply,State};
-	
-handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
-  Item = append_item(Tree, get_projects_root(Tree), filename:basename(Dir), [{data, {Id, Dir}}]),
-  wxTreeCtrl:setItemImage(Tree, Item, 2),
-  check_dir_has_contents(Tree, Item, Dir),
-  wxTreeCtrl:selectItem(Tree, Item),
-  alternate_background_of_children(Tree, get_projects_root(Tree)),
-  {noreply,State};
-
+  
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
-  Item = append_item(Tree, get_standalone_root(Tree), filename:basename(Path), [{data, Path}]),
-  wxTreeCtrl:setItemImage(Tree, Item, 1),
+  Root = get_standalone_root(Tree),
+  remove_placeholder(Tree, Root),
+  Item = append_item(Tree, Root, filename:basename(Path), [{data, Path}]),
+  wxTreeCtrl:setItemImage(Tree, Item, ?ICON_DOCUMENT),
+  wxTreeCtrl:selectItem(Tree, Item),
+  alternate_background_of_children(Tree, Root),
   {noreply,State};
 
 handle_cast({remove_standalone, Path}, State=#state{tree=Tree}) ->
   Item = find_standalone(Tree, Path),
   wxTreeCtrl:delete(Tree, Item),
   alternate_background_of_children(Tree, get_standalone_root(Tree)),
+  insert_placeholder(Tree, get_standalone_root(Tree), ?HEADER_FILES_EMPTY),
   {noreply,State}.
   
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
-  case is_fixed_header(Tree, Item) of
-    false ->
-      %%
-      %%
-      %% CHANGE THESE INTEGER VALUES TO MACROS
+  % case is_fixed_header(Tree, Item) of
+  case is_selectable(Tree, Item) of
+    true ->
       Image = wxTreeCtrl:getItemImage(Tree, Item),
       Idx = case Image of
-        0 -> 3;
-        2 -> 4
+        ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
+        ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
       end,
       wxTreeCtrl:setItemImage(Tree, Item, Idx),
       
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
       alternate_background_all(Tree);
-    true -> ok
+    false -> ok
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
-  case is_fixed_header(Tree, Item) of
-    false ->
+  % case is_fixed_header(Tree, Item) of
+  case is_selectable(Tree, Item) of
+    true ->
       Image = wxTreeCtrl:getItemImage(Tree, Item),
       Idx = case Image of
-        3 -> 0;
-        4 -> 2
+        ?ICON_FOLDER_OPEN -> ?ICON_FOLDER;
+        ?ICON_PROJECT_OPEN -> ?ICON_PROJECT
       end,
       wxTreeCtrl:setItemImage(Tree, Item, Idx),
       wxTreeCtrl:deleteChildren(Tree, Item),
       alternate_background_all(Tree);
-    true -> ok
+    false -> ok
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}},
 						 State) ->
-	case wxTreeCtrl:isTreeItemIdOk(OldItem) andalso not is_fixed_header(Tree, Item) of
+	case wxTreeCtrl:isTreeItemIdOk(OldItem) of
 		false ->  %% Deleted item
 			ok;
 		true ->
@@ -215,14 +245,25 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 	end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
-						State=#state{frame=Frame}) ->
-  case is_fixed_header(Tree, Item) of
-    false ->
-      toggle_or_open(Tree, Item);
+            State=#state{frame=Frame}) ->
+  % case is_fixed_header(Tree, Item) of
+  case is_selectable(Tree, Item) of
     true ->
-      ok
+      toggle_or_open(Tree, Item);
+    false ->
+      wxTreeCtrl:toggle(Tree, Item)
   end,
 	{noreply, State}.
+  
+handle_sync_event(#wx{obj=Tree}, Event, _State) ->
+  Item = wxTreeEvent:getItem(Event),
+  % case is_fixed_header(Tree, Item) of
+  case is_selectable(Tree, Item) of
+    true ->
+      ok;
+    false ->
+      wxTreeEvent:veto(Event)
+  end.
 
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
@@ -337,11 +378,11 @@ add_files(Tree, Item, [File|Files]) ->
 	case IsDir of
 		true ->
 			Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
-      wxTreeCtrl:setItemImage(Tree, Child, 0),
+      wxTreeCtrl:setItemImage(Tree, Child, ?ICON_FOLDER),
       check_dir_has_contents(Tree, Child, File);
 		_ ->
       Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
-      wxTreeCtrl:setItemImage(Tree, Child, 1)
+      wxTreeCtrl:setItemImage(Tree, Child, ?ICON_DOCUMENT)
 	end,
 	add_files(Tree, Item, Files).
 
@@ -471,23 +512,58 @@ is_standalone_root(Tree, Item) ->
 %% =====================================================================
 %% @doc
  
+% get_projects_root(Tree) ->
+%   {Item, _} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
+%   Item.
 get_projects_root(Tree) ->
-  {Item, _} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
-  Item.
+  get_header(Tree, ?HEADER_PROJECTS).
 
-
+%% get_header CAN BE CALLED DIRECTLY
 %% =====================================================================
 %% @doc
 
+% get_standalone_root(Tree) ->
+%   wxTreeCtrl:getNextSibling(Tree, get_projects_root(Tree)).
 get_standalone_root(Tree) ->
-  wxTreeCtrl:getNextSibling(Tree, get_projects_root(Tree)).
+  get_header(Tree, ?HEADER_FILES).
   
+
+%% NEW NEW NEW NEW
+%% =====================================================================
+%% @doc Find the header with the id Id
+%% All headers will be a first child of the (hidden) root.
+
+get_header(Tree, HeaderId) ->
+  {Item, _} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
+  get_sibling(Tree, Item, HeaderId).
   
+%% THIS IS THE SAME AS find_standalone/3
+%% WILL loop forever if the item does not exist
+get_sibling(Tree, Item, Data) ->
+  case wxTreeCtrl:getItemData(Tree, Item) of
+    Data -> Item;
+    _ -> 
+      get_sibling(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Data)
+  end.
+  
+is_selectable(Tree, Item) ->
+  Bool = is_projects_root(Tree, Item) orelse
+  is_standalone_root(Tree, Item) orelse
+  is_placeholder(Tree, Item),
+  not Bool.
+  
+%% A placeholder has unique client data
+is_placeholder(Tree, Item) ->
+  case wxTreeCtrl:getItemData(Tree, Item) of
+    placeholder -> true;
+    _ -> false
+  end.
 %% =====================================================================
 %% @doc
   
-is_fixed_header(Tree, Item) ->
-  is_projects_root(Tree, Item) orelse is_standalone_root(Tree, Item).
+% is_fixed_header(Tree, Item) ->
+%   is_projects_root(Tree, Item) orelse 
+%   is_standalone_root(Tree, Item).
 
 
 %% =====================================================================
@@ -516,4 +592,30 @@ toggle_or_open(Tree, Item) ->
     false ->
       {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
       doc_manager:create_document(FilePath, Id)
+  end.
+
+
+%% =====================================================================
+%% @doc The placeholder will always be the first child of the header.
+%% A placeholder has a unique item data. Item should always be a header.
+
+remove_placeholder(Tree, Item) ->
+  % Sibling = wxTreeCtrl:getNextSibling(Tree, Item),
+  {Child, _} = wxTreeCtrl:getFirstChild(Tree, Item),
+  case wxTreeCtrl:getItemData(Tree, Child) of
+    placeholder ->
+      wxTreeCtrl:delete(Tree, Child);
+    _ -> ok
+  end.
+
+%% If the next sibling is a header, then the branch must be empty, so
+%% display a placeholder.
+%% Item should always be a header.
+insert_placeholder(Tree, Item, Msg) ->
+  Sibling = wxTreeCtrl:getNextSibling(Tree, Item),
+  case wxTreeCtrl:getItemData(Tree, Sibling) of
+    N when (N =:= ?HEADER_FILES) or (N =:= ?HEADER_PROJECTS) ->
+      Placeholder = append_item(Tree, Item, Msg, [{data, placeholder}]),
+      wxTreeCtrl:setItemImage(Tree, Placeholder, ?ICON_INFO);
+    _ -> ok
   end.
