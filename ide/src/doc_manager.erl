@@ -70,7 +70,9 @@ new_document(Parent) ->
     ?wxID_CANCEL ->
       ok;
     ?wxID_OK ->
-      create_document(new_file:get_path(Dialog), new_file:get_project_id(Dialog))
+      create_document(new_file:get_path(Dialog), new_file:get_project_id(Dialog)),
+      ide_projects_tree:insert_file(new_file:get_path(Dialog)),
+      new_file:close(Dialog)
   end.
 
 

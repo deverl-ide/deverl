@@ -35,7 +35,8 @@
         add_standalone_document/1,
 				remove_project/1,
         remove_standalone_document/1,
-        refresh_project/1
+        refresh_project/1,
+        insert_file/1
         ]).
 
 %% Macros
@@ -86,12 +87,51 @@ remove_project(Id) ->
 %% @doc Update the tree item (including children) whose data is Path.
 
 refresh_project(Path) ->
-  Tree = wx_object:call(?MODULE, tree),
-	ProjectItem  = get_item_from_path(Tree, get_all_items(Tree), Path),
-	{ProjectId, _} = wxTreeCtrl:getItemData(Tree, ProjectItem),
-  wxTreeCtrl:delete(Tree, ProjectItem),
-  wx_object:cast(?MODULE, {add_project, ProjectId, Path}),
+%  Tree = wx_object:call(?MODULE, tree),
+%	ProjectItem  = get_item_from_path(Tree, get_all_items(Tree), Path),
+%	{ProjectId, _} = wxTreeCtrl:getItemData(Tree, ProjectItem),
+%  wxTreeCtrl:delete(Tree, ProjectItem),
+%  wx_object:cast(?MODULE, {add_project, ProjectId, Path}),
 	ok.
+  
+  
+insert_file(FilePath) ->
+  Tree = wx_object:call(?MODULE, tree),
+  FileDir = filename:dirname(FilePath),
+  case get_item_from_path(Tree, get_all_items(Tree), FileDir) of
+    no_item ->
+      find_root(FilePath);
+    Item ->
+      {Id, _} = wxTreeCtrl:getItemData(Tree, Item),
+      append_item(Tree, Item, filename:basename(FilePath), [{image, ?ICON_DOCUMENT}, {data, {Id, FilePath}}])
+  end.
+  
+
+  
+find_root(FilePath) ->
+  find_root(FilePath, []).
+  
+find_root(FilePath, Acc) ->
+  
+  Tree = wx_object:call(?MODULE, tree),
+  case get_item_from_path(Tree, get_all_items(Tree), FilePath) of 
+    no_item ->
+      find_root(filename:dirname(FilePath), [FilePath|Acc]);
+    Item ->
+      wxTreeCtrl:toggle(Tree, Item),
+      io:format("FILE DIRS ~p~n", [Acc]),
+      toggle_items(Tree, Acc)
+  end.
+  
+toggle_items(Tree, [FilePath]) ->
+  wxTreeCtrl:selectItem(Tree, get_item_from_path(Tree, get_all_items(Tree), FilePath));
+toggle_items(Tree, [Path|Paths]) ->
+  io:format("PATH ~p~n", [Path]),
+  io:format("ITEM FROM PATH ~p~n", [get_item_from_path(Tree, get_all_items(Tree), Path)]),
+  wxTreeCtrl:toggle(Tree, get_item_from_path(Tree, get_all_items(Tree), Path)),
+  print_tree_debug(Tree),
+  toggle_items(Tree, Paths).
+
   
 
 %% =====================================================================
@@ -352,7 +392,7 @@ get_all_items(Tree) ->
 %% =====================================================================
 %% @doc Get the tree item whose data (path) is Path.
 
-get_item_from_path(_Tree, [], _Path) -> ok;
+get_item_from_path(_Tree, [], _Path) -> no_item;
 get_item_from_path(Tree, [H|T], Path) ->
 	case get_path(Tree, H) of
 		Path -> H;
@@ -392,7 +432,7 @@ add_files(Tree, Item, [File|Files]) ->
 
 get_project_root(Tree, Item) ->
 	get_project_root(Tree, get_projects_root(Tree),
-		wxTreeCtrl:getItemParent(Tree, Item), Item).
+  wxTreeCtrl:getItemParent(Tree, Item), Item).
 
 get_project_root(_Tree, Root, Root, Item) ->
 	Item;
