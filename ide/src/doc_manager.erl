@@ -362,31 +362,30 @@ load_editor_contents(Editor, Path) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc If single io error, no docs are closed.
 
 close_documents(Documents) ->
   case get_modified_docs(Documents) of
     {[], _Parent} ->
-      close(Documents),
-      ok;
+      close(Documents);
     {ModifiedDocs, Parent} ->
-      show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs),
-			close(lists:subtract(Documents, ModifiedDocs))
+      show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs, get_doc_names(Documents), Documents)
   end.
-
+  
 
 %% =====================================================================
 %% @doc
 
-show_save_changes_dialog(Parent, DocNames, DocIdList) ->
-  Dialog = lib_dialog_wx:save_changes_dialog(Parent, DocNames),
+show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocNames, DocIdList) ->
+  Dialog = lib_dialog_wx:save_changes_dialog(Parent, ModifiedDocNames),
   case wxDialog:showModal(Dialog) of
 		?wxID_CANCEL -> %% Cancel close
 			cancelled;
 		?wxID_REVERT_TO_SAVED ->  %% Close without saving
 			close(DocIdList);
 		?wxID_SAVE -> %% Save the document
-      do_save(DocIdList)
+      close(lists:subtract(DocIdList, ModifiedDocIdList)),
+      do_save(ModifiedDocIdList)
 	end.
 
 
@@ -397,6 +396,8 @@ do_save(DocIdList) ->
   case save_documents(DocIdList) of
     [] ->
 			ok;
+    failed ->
+      cancelled;
     DocsToClose ->
       close(DocsToClose)
   end.
@@ -438,16 +439,15 @@ save_documents(DocIdList) ->
 save_documents([], Acc) ->
   Acc;
 save_documents([DocId|DocIdList], Acc) ->
-	Result = case wx_object:call(?MODULE, {save, DocId}) of
+	case wx_object:call(?MODULE, {save, DocId}) of
     {ok, DocRecords} ->
       Record = get_record(DocId, DocRecords),
       editor:set_savepoint(Record#document.editor),
-      [DocId|Acc];
+      save_documents(DocIdList, [DocId|Acc]);
     {Msg, Parent} ->
       lib_dialog_wx:msg_error(Parent, Msg),
-      Acc
-  end,
-  save_documents(DocIdList, Result).
+      failed
+  end.
 
 
 %% =====================================================================
