@@ -22,7 +22,8 @@
 %% API
 -export([start/1,
          get_path/1,
-         get_project_id/1]).
+         get_project_id/1,
+         close/1]).
 
 %% Macros
 -define(FILE_TYPE_ERLANG, 0).
@@ -73,6 +74,10 @@ get_path(This) ->
   
 get_project_id(This) ->
   wx_object:call(This, get_project_id).
+  
+close(This) ->
+  wx_object:call(This, shutdown).
+  
 
 %% =====================================================================
 %% Callback functions
@@ -158,7 +163,6 @@ handle_info(_Info, State) ->
   {noreply, State}.
 
 handle_call(shutdown, _From, State=#state{win=Dialog}) ->
-  wxDialog:destroy(Dialog),
   {stop, normal, ok, State};
 handle_call(win, _From, State) ->
   {reply, State#state.win, State};
@@ -178,7 +182,6 @@ code_change(_, _, State) ->
 
 terminate(_Reason, #state{win=Dialog}) ->
   io:format("TERMINATE NEW FILE DIALOG~n"),
-  %wxDialog:endModal(Dialog, ?wxID_CANCEL),
   wxDialog:destroy(Dialog).
 
 %% =====================================================================
@@ -241,12 +244,6 @@ handle_event(#wx{id=?FINISH_BUTTON, event=#wxCommand{type=command_button_clicked
   Filename = get_filename(Parent) ++ get_file_extension(Parent),
   Path = get_path_text(Parent),
   {_, ProjectPath} = get_project_choice(Parent),
-  case get_project_choice(Parent) of
-    {"No Project", _} ->
-      ok;
-    _ ->
-      ide_projects_tree:refresh_project(ProjectPath)
-  end,
   wxDialog:endModal(Parent, ?wxID_OK),
   {noreply, State#state{path=filename:join([Path, Filename])}};
 handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_selected, commandInt=Index}},
