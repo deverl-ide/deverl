@@ -95,7 +95,6 @@ open_document_dialog(Frame) ->
 		cancel ->
 			ok;
 		Path ->
-      io:format("EXISTING PROJECTS ~p~n", [sys_pref_manager:get_preference(projects)]),
       open_document(Path)
 	end.
 

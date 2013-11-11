@@ -76,7 +76,7 @@ add_project(Id, Dir, Pos) ->
   
 
 %% =====================================================================
-%% @doc Delete an item from the tree
+%% @doc Delete an item from the tree. 
 
 remove_project(Id) ->
 	wx_object:cast(?MODULE, {remove_project, Id}).
@@ -162,7 +162,7 @@ handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
 	
-%% ALMOST IDENTICAL TO THE SUBSEQUENT HANDLER
+%% ALMOST IDENTICAL TO THE SUBSEQUENT add_* HANDLER
 handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
   Root = get_projects_root(Tree),
   remove_placeholder(Tree, Root),
@@ -197,12 +197,11 @@ handle_cast({remove_standalone, Path}, State=#state{tree=Tree}) ->
   alternate_background_of_children(Tree, get_standalone_root(Tree)),
   insert_placeholder(Tree, get_standalone_root(Tree), ?HEADER_FILES_EMPTY),
   {noreply,State}.
-  
+
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
-  % case is_fixed_header(Tree, Item) of
   case is_selectable(Tree, Item) of
     true ->
       Image = wxTreeCtrl:getItemImage(Tree, Item),
@@ -217,6 +216,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
       alternate_background_all(Tree);
     false -> ok
   end,
+  print_tree_debug(Tree),
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
   % case is_fixed_header(Tree, Item) of
@@ -321,7 +321,7 @@ set_item_background(Tree, Item, Index) ->
 
 
 %% =====================================================================
-%% @doc Get all children recursively
+%% @doc Get all children recursively.
 
 get_children_recursively(Tree, Item) ->
   {FirstChild, _} = wxTreeCtrl:getFirstChild(Tree, Item),
@@ -369,6 +369,9 @@ insert(Tree, Parent, Dir) ->
 	add_files(Tree, Parent, lists:reverse(Files)).
 
 
+%% =====================================================================
+%% @doc Add a fi
+
 add_files(_, _, []) ->
   ok;
 add_files(Tree, Item, [File|Files]) ->
@@ -402,7 +405,7 @@ get_project_root(Tree, Root, Parent, Item) ->
       
 
 %% =====================================================================
-%% @doc
+%% @doc Get a list of project root items.
 
 get_projects(Tree) ->
   Root = get_projects_root(Tree),
@@ -417,14 +420,15 @@ get_projects(Tree, Item, Acc) ->
   Next = wxTreeCtrl:getNextSibling(Tree, Item),
   case wxTreeCtrl:isTreeItemIdOk(Next) of
     true ->
-      get_projects(Tree, Next, Acc ++ [Next]);
+      get_projects(Tree, Next, [Next | Acc]);
     false ->
       Acc
   end.
   
 
 %% =====================================================================
-%% @doc
+%% @doc Get the item from the given list of project root items whose 
+%% client data contains the project id.
 
 get_item_from_list(Tree, ProjectId, [Project|Projects]) ->
   {Id, _} = wxTreeCtrl:getItemData(Tree, Project),
@@ -473,7 +477,8 @@ print_tree_debug(Tree, Node, Indent) ->
 
 
 %% =====================================================================
-%% @doc Add Item to Tree.
+%% @doc Add Item to Tree. 
+%% Calls wxTreeCtrl:appendItem/4 but applys any formatting to the item.
 
 append_item(Tree, Item, Filename) ->
   append_item(Tree, Item, Filename, []).
@@ -489,8 +494,10 @@ append_item(Tree, Item, Filename, Data) ->
   end,
   Itm.
 
+
 %% =====================================================================
-%% @doc
+%% @doc Determine whether Item is the root (header) for the projects,
+%% ("Projects") branch of the tree.
 
 is_projects_root(Tree, Item) ->
   case get_projects_root(Tree) of
@@ -500,7 +507,8 @@ is_projects_root(Tree, Item) ->
   
 
 %% =====================================================================
-%% @doc
+%% @doc Determine whether Item is the root (header) for the standalone
+%% files branch of the tree.
    
 is_standalone_root(Tree, Item) ->
   case get_standalone_root(Tree) of
@@ -510,25 +518,21 @@ is_standalone_root(Tree, Item) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Get the root (header) item for projects.
+%% @equiv get_header(Tree, ?HEADER_PROJECTS).
  
-% get_projects_root(Tree) ->
-%   {Item, _} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
-%   Item.
 get_projects_root(Tree) ->
   get_header(Tree, ?HEADER_PROJECTS).
 
-%% get_header CAN BE CALLED DIRECTLY
-%% =====================================================================
-%% @doc
 
-% get_standalone_root(Tree) ->
-%   wxTreeCtrl:getNextSibling(Tree, get_projects_root(Tree)).
+%% =====================================================================
+%% @doc Get the root (header) item for standalone files.
+%% @equiv get_header(Tree, ?HEADER_FILES).
+
 get_standalone_root(Tree) ->
   get_header(Tree, ?HEADER_FILES).
   
 
-%% NEW NEW NEW NEW
 %% =====================================================================
 %% @doc Find the header with the id Id
 %% All headers will be a first child of the (hidden) root.
@@ -536,53 +540,63 @@ get_standalone_root(Tree) ->
 get_header(Tree, HeaderId) ->
   {Item, _} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
   get_sibling(Tree, Item, HeaderId).
-  
-%% THIS IS THE SAME AS find_standalone/3
-%% WILL loop forever if the item does not exist
+
+
+%% =====================================================================
+%% @doc Locate the sibling of Item with client data Data.
+%% The item MUST exist, otherwise this function will loop indefinitely.
+
 get_sibling(Tree, Item, Data) ->
   case wxTreeCtrl:getItemData(Tree, Item) of
     Data -> Item;
     _ -> 
       get_sibling(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Data)
   end.
-  
+
+
+%% =====================================================================
+%% @doc Determine whether Item should be selectable. An item is selectable
+%% if it is NOT a header or a placeholder.
+
 is_selectable(Tree, Item) ->
   Bool = is_projects_root(Tree, Item) orelse
   is_standalone_root(Tree, Item) orelse
   is_placeholder(Tree, Item),
   not Bool.
-  
-%% A placeholder has unique client data
+
+
+%% =====================================================================
+%% @doc Determine whether Item is a placeholder. A placeholder item
+%% has a specific (unique) client data.
+ 
 is_placeholder(Tree, Item) ->
   case wxTreeCtrl:getItemData(Tree, Item) of
     placeholder -> true;
     _ -> false
   end.
-%% =====================================================================
-%% @doc
-  
-% is_fixed_header(Tree, Item) ->
-%   is_projects_root(Tree, Item) orelse 
-%   is_standalone_root(Tree, Item).
 
 
 %% =====================================================================
-%% @doc
+%% @doc Locate the tree item that represents the standalone file with
+%% the path Path.
+%% The item must exist.
  
 find_standalone(Tree, Path) ->
   Root = get_standalone_root(Tree),
-  find_standalone(Tree, Root, Path).
+  get_sibling(Tree, Root, Path).
   
-find_standalone(Tree, Item, Path) ->
-  case wxTreeCtrl:getItemData(Item) of
-    Path -> Item;
-    _ ->
-      find_standalone(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Path)
-  end.
+% repeated function (get_sibling)
+% find_standalone(Tree, Item, Path) ->
+%   case wxTreeCtrl:getItemData(Item) of
+%     Path -> Item;
+%     _ ->
+%       find_standalone(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Path)
+%   end.
   
   
 %% =====================================================================
-%% @doc
+%% @doc If the node represents a file then open the file, otherwise
+%% toggle the item to display any children.
 
 toggle_or_open(Tree, Item) ->
   FilePath = get_path(Tree, Item),
@@ -597,10 +611,9 @@ toggle_or_open(Tree, Item) ->
 
 %% =====================================================================
 %% @doc The placeholder will always be the first child of the header.
-%% A placeholder has a unique item data. Item should always be a header.
+%% Item should always be a header.
 
 remove_placeholder(Tree, Item) ->
-  % Sibling = wxTreeCtrl:getNextSibling(Tree, Item),
   {Child, _} = wxTreeCtrl:getFirstChild(Tree, Item),
   case wxTreeCtrl:getItemData(Tree, Child) of
     placeholder ->
@@ -608,9 +621,11 @@ remove_placeholder(Tree, Item) ->
     _ -> ok
   end.
 
-%% If the next sibling is a header, then the branch must be empty, so
-%% display a placeholder.
-%% Item should always be a header.
+
+%% =====================================================================
+%% @doc If the next sibling is a header then the branch must be empty, so
+%% display a placeholder. Item should always be a header.
+
 insert_placeholder(Tree, Item, Msg) ->
   Sibling = wxTreeCtrl:getNextSibling(Tree, Item),
   case wxTreeCtrl:getItemData(Tree, Sibling) of
