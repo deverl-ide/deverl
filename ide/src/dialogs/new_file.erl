@@ -39,8 +39,7 @@
 
 -define(FILENAME_BOX, 9008).
 -define(PROJECT_TEXT, 9009).
--define(FOLDER_BOX,   9010).
--define(PATH_TEXT,    9011).
+-define(PATH_BOX,   9010).
 
 -define(FILE_TYPES,   ["Erlang",
                        "Plain Text"]).
@@ -154,6 +153,8 @@ init({Parent, Projects, ActiveProject}) ->
   {Dialog, #state{win=Dialog, dialog1=Dialog1, swap_sizer=SwapSizer, project_id=ActiveProject, projects=Projects}}.
 
 
+handle_cast({set_path, ProjectPath}, State) ->
+  {noreply, State#state{path=ProjectPath}};
 handle_cast(_Msg, State) ->
   io:format("handle_cast/2: NEW FILE DIALOG"),
   {noreply, State}.
@@ -201,9 +202,8 @@ handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}}
   wxButton:disable(wxWindow:findWindow(Parent, ?NEXT_BUTTON)),
   {ProjectName, ProjectPath} = get_project_choice(Parent),
   set_project_text(Parent, ProjectName),
-  set_default_folder_text(Parent),
-  set_default_path_text(Parent, ProjectPath),
-  {noreply, State#state{dialog2=Dialog2}};
+  PathText = set_default_path_text(Parent, ProjectPath),
+  {noreply, State#state{dialog2=Dialog2, path=PathText++"/"}};
 handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=Dialog1, dialog2=Dialog2, swap_sizer=Sz}) ->
   swap(Sz, Dialog1, Dialog2),
@@ -211,10 +211,12 @@ handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}}
   wxButton:disable(wxWindow:findWindow(Parent, ?NEXT_BUTTON)),
   {ProjectName, ProjectPath} = get_project_choice(Parent),
   set_project_text(Parent, ProjectName),
-  set_default_folder_text(Parent),
-  set_default_path_text(Parent, ProjectPath),
+  
+  %%PathText = set_default_path_text(Parent, ProjectPath),
+  PathText = get_default_path_text(Parent, ProjectPath) ++ "/",
+  set_path_text(Parent, PathText ++ get_filename(Parent)),
   check_if_finished(Parent),
-  {noreply, State};
+  {noreply, State#state{path=PathText}};
 handle_event(#wx{id=?BACK_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=Dialog1, dialog2=Dialog2, swap_sizer=Sz}) ->
   swap(Sz, Dialog2, Dialog1),
@@ -223,7 +225,7 @@ handle_event(#wx{id=?BACK_BUTTON, event=#wxCommand{type=command_button_clicked}}
   wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON)),
   {noreply, State};
 handle_event(#wx{id=?BROWSE_BUTTON, event=#wxCommand{type=command_button_clicked}},
-             State=#state{win=Parent}) ->
+             State=#state{win=Parent, project_id=ProjectId}) ->
   {ProjectName, ProjectPath} = get_project_choice(Parent),
   case ProjectName of
     "No Project" ->
@@ -233,19 +235,17 @@ handle_event(#wx{id=?BROWSE_BUTTON, event=#wxCommand{type=command_button_clicked
           ok;
         _ ->
           set_path_text(Parent, DirectoryChoice),
-          set_folder_text(Parent, "/" ++ filename:basename(DirectoryChoice))
+          set_default_path(DirectoryChoice)
       end;
     _ ->
-      browse_dialog(Parent, ProjectPath ++ get_default_folder_text(Parent))
+      browse_dialog(Parent, ProjectPath ++ get_default_folder_text(Parent), ProjectId)
   end,
   {noreply, State};
 handle_event(#wx{id=?FINISH_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=_Dialog1, dialog2=_Dialog2}) ->
-  Filename = get_filename(Parent) ++ get_file_extension(Parent),
   Path = get_path_text(Parent),
-  {_, ProjectPath} = get_project_choice(Parent),
   wxDialog:endModal(Parent, ?wxID_OK),
-  {noreply, State#state{path=filename:join([Path, Filename])}};
+  {noreply, State#state{path=Path++get_file_extension(Parent)}};
 handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_selected, commandInt=Index}},
              State=#state{win=Parent}) ->
   case Index of
@@ -255,9 +255,23 @@ handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_sel
       wxListBox:disable(wxWindow:findWindow(Parent, ?MODULE_TYPE_CHOICE))
   end,
   {noreply, State};
-handle_event(#wx{id=?FILENAME_BOX, event=#wxCommand{type=command_text_updated}},
-             State=#state{win=Parent}) ->
+handle_event(#wx{id=?FILENAME_BOX, event=#wxCommand{type=command_text_updated, cmdString=Filename}},
+             State=#state{win=Parent, project_id=ProjectId, path=ProjectPath}) ->
   check_if_finished(Parent),
+  
+  
+  %Path = wxTextCtrl:getLineText(PathTextBox, 0) ++ Filename,
+  
+  %{_ProjectName, ProjectPath} = get_project_choice(Parent),
+  %set_default_path_text(Parent, ProjectPath),
+  
+  io:format("FILENAME: ~p~n", [Filename]),
+  io:format("PROJECTPATH: ~p~n", [ProjectPath]),
+  
+  PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
+  wxTextCtrl:clear(PathTextBox),
+  wxTextCtrl:writeText(PathTextBox, ProjectPath ++ Filename),
+  
   {noreply, State};
 handle_event(#wx{id=?PROJECT_CHOICE, event=#wxCommand{type=command_choice_selected}},
              State=#state{win=Parent}) ->
@@ -265,6 +279,7 @@ handle_event(#wx{id=?PROJECT_CHOICE, event=#wxCommand{type=command_choice_select
   ProjectChoice = wxChoice:getSelection(ProjectChoiceBox),
   ProjectId = wxChoice:getClientData(ProjectChoiceBox, ProjectChoice),
   {noreply, State#state{project_id=ProjectId}}.
+
 
 %% =====================================================================
 %% Internal functions
@@ -319,22 +334,22 @@ dialog2(Parent) ->
   Dialog2 = wxPanel:new(Parent),
   DialogSizer2 = wxFlexGridSizer:new(4, 3, 20, 20),
   wxPanel:setSizer(Dialog2, DialogSizer2),
+  
+  wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Project Name:"), []),
+  ProjectText = wxStaticText:new(Dialog2, ?PROJECT_TEXT, ""),
+  ProjectFont = wxStaticText:getFont(ProjectText),
+  wxFont:setWeight(ProjectFont, ?wxFONTWEIGHT_BOLD),
+  wxStaticText:setFont(ProjectText, ProjectFont),
+  wxSizer:add(DialogSizer2, ProjectText, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(DialogSizer2, 0, 0, []),
 
   wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "File Name:"),   []),
   wxSizer:add(DialogSizer2, wxTextCtrl:new(Dialog2, ?FILENAME_BOX), [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(DialogSizer2, 0, 0, []),
 
-  wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Project Name:"), []),
-  wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?PROJECT_TEXT, "Project Name goes here..."), [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(DialogSizer2, 0, 0, []),
-
-  wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Folder:"), []),
-  wxSizer:add(DialogSizer2, wxTextCtrl:new(Dialog2, ?FOLDER_BOX, [{style, ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(DialogSizer2, wxButton:new(Dialog2, ?BROWSE_BUTTON, [{label, "Browse"}])),
-
   wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Path:"), []),
-  wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?PATH_TEXT, "Path goes here..."), [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(DialogSizer2, 0, 0, []),
+  wxSizer:add(DialogSizer2, wxTextCtrl:new(Dialog2, ?PATH_BOX, [{style, ?wxTE_READONLY}]), [{proportion, 1}, {flag, ?wxEXPAND}]),
+  wxSizer:add(DialogSizer2, wxButton:new(Dialog2, ?BROWSE_BUTTON, [{label, "Browse"}])),
 
   wxFlexGridSizer:addGrowableCol(DialogSizer2, 1),
   wxFlexGridSizer:addGrowableRow(DialogSizer2, 3),
@@ -348,11 +363,11 @@ dialog2(Parent) ->
 %% =====================================================================
 %% @doc Create the browse dialog for browsing a project directory.
 
-browse_dialog(Parent, Root) ->
+browse_dialog(Parent, Root, ProjectId) -> 
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size,{400, 300}},
                                                                 {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                         ?wxRESIZE_BORDER bor
-                                                                        ?wxDIALOG_EX_METAL}]),
+                                                                        ?wxDIALOG_EX_METAL}]),                                                                      
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxSizer:addSpacer(LRSizer, 20),
 
@@ -363,8 +378,8 @@ browse_dialog(Parent, Root) ->
   wxSizer:addSpacer(MainSizer, 20),
   wxSizer:addSpacer(LRSizer, 20),
 
-  TreeSizer = wxBoxSizer:new(?wxVERTICAL),
-  Tree = create_tree(Dialog, Root),
+  TreeSizer = wxBoxSizer:new(?wxVERTICAL), 
+  Tree = create_tree(Dialog, Root, ProjectId),
   wxSizer:add(TreeSizer, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(MainSizer, TreeSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
@@ -384,8 +399,8 @@ browse_dialog(Parent, Root) ->
     wxEvent:skip(O),
     Selection = wxTreeCtrl:getSelection(Tree),
     %%io:format(wxTreeCtrl:getItemData(Tree, Selection) ++ "~n"),
-    set_path_text(Parent, wxTreeCtrl:getItemData(Tree, Selection)),
-    set_folder_text(Parent, "/" ++ wxTreeCtrl:getItemText(Tree, Selection))
+    set_path_text(Parent, wxTreeCtrl:getItemData(Tree, Selection) ++ "/" ++ get_filename(Parent)),
+    set_default_path(wxTreeCtrl:getItemData(Tree, Selection) ++ "/")
   end,
 
   wxPanel:connect(ButtonPanel, command_button_clicked, [{callback, ButtonHandler}]),
@@ -397,42 +412,34 @@ browse_dialog(Parent, Root) ->
 
 set_project_text(Parent, ProjectName) ->
   ProjectText = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_TEXT), wxStaticText),
-  wxTextCtrl:setLabel(ProjectText, ProjectName).
-
-
-%% =====================================================================
-%% @doc Set the default folder depending on what file type is selected.
-
-set_default_folder_text(Parent) ->
-  Text = get_default_folder_text(Parent),
-  FolderText = wx:typeCast(wxWindow:findWindow(Parent, ?FOLDER_BOX), wxTextCtrl),
-  wxTextCtrl:setValue(FolderText, Text).
-
-
-%% =====================================================================
-%% @doc Set the folder text.
-
-set_folder_text(Parent, Path) ->
-  FolderText = wx:typeCast(wxWindow:findWindow(Parent, ?FOLDER_BOX), wxTextCtrl),
-  wxTextCtrl:clear(FolderText),
-  wxTextCtrl:writeText(FolderText, Path).
-
+  wxStaticText:setLabel(ProjectText, ProjectName).
+  
 
 %% =====================================================================
 %% @doc Set the project's default path in the project path field in dialog 2.
 
-set_default_path_text(Parent, Project) ->
-  PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_TEXT), wxStaticText),
-  wxStaticText:setLabel(PathTextBox, get_default_path_text(Parent, Project)).
+set_default_path_text(Parent, ProjectPath) ->
+  PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
+  wxTextCtrl:clear(PathTextBox),
+  PathText = get_default_path_text(Parent, ProjectPath),
+  wxTextCtrl:writeText(PathTextBox, PathText),
+  PathText.
 
 
 %% =====================================================================
 %% @doc Set the path text to a given path.
 
 set_path_text(Parent, Path) ->
-  PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_TEXT), wxStaticText),
-  wxStaticText:setLabel(PathTextBox, Path).
+  PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
+  wxTextCtrl:clear(PathTextBox),
+  wxTextCtrl:writeText(PathTextBox, Path).
 
+
+%% =====================================================================
+%% @doc
+set_default_path(ProjectPath) ->
+  wx_object:cast(?MODULE, {set_path, ProjectPath}).
+  
 
 %% =====================================================================
 %% @doc Get the project choice from the projects choice box.
@@ -457,8 +464,7 @@ get_default_folder_text(Parent) ->
   Project = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_CHOICE), wxChoice),
   case wxChoice:getSelection(Project) of
     0 -> %% No Project
-      %"/" ++ filename:basename(wxChoice:getClientData(Project, 0));
-      "/";
+      "";
     _ ->
       FileType = wx:typeCast(wxWindow:findWindow(Parent, ?FILE_TYPE_CHOICE), wxListBox),
       case wxListBox:getSelection(FileType) of
@@ -471,7 +477,7 @@ get_default_folder_text(Parent) ->
               "/src"
           end;
         ?FILE_TYPE_TEXT ->
-          "/"
+          ""
       end
   end.
 
@@ -479,14 +485,12 @@ get_default_folder_text(Parent) ->
 %% =====================================================================
 %% @doc Get the default path based on which project is selected.
 
-get_default_path_text(Parent, Project) ->
-  case Project of
+get_default_path_text(Parent, ProjectPath) ->
+  case ProjectPath of
     "No Project" ->
       wx_misc:getHomeDir();
     _ ->
-      FolderText = wx:typeCast(wxWindow:findWindow(Parent, ?FOLDER_BOX), wxTextCtrl),
-      Folder = wxTextCtrl:getLineText(FolderText, 0),
-      Project ++ Folder
+      ProjectPath ++ get_default_folder_text(Parent)
   end.
 
 
@@ -494,8 +498,8 @@ get_default_path_text(Parent, Project) ->
 %% @doc Set the project's default path in the project path field in dialog 2.
 
 get_path_text(Parent) ->
-  PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_TEXT), wxStaticText),
-  wxStaticText:getLabel(PathTextBox).
+  PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
+  wxTextCtrl:getLineText(PathTextBox, 0).
 
 
 %% =====================================================================
@@ -566,7 +570,7 @@ add_project_data(ProjectChoice, [ProjectId|Projects]) ->
 %% =====================================================================
 %% @doc Create the directory tree structure for the Browse Dialog.
 
-create_tree(Parent, Root) ->
+create_tree(Parent, Root, ProjectId) ->
   Tree = wxTreeCtrl:new(Parent, [{style, ?wxTR_HAS_BUTTONS bor
                                          ?wxTR_FULL_ROW_HIGHLIGHT}]),
   wxTreeCtrl:setIndent(Tree, 10),
@@ -574,32 +578,32 @@ create_tree(Parent, Root) ->
 	wxImageList:add(ImgList, wxArtProvider:getBitmap("wxART_FOLDER", [{client,"wxART_MENU"}])),
 	wxTreeCtrl:assignImageList(Tree, ImgList),
   RootItem = wxTreeCtrl:addRoot(Tree, filename:basename(Root), [{data, Root}]),
-  build_tree(Tree, RootItem),
+  build_tree(Tree, RootItem, ProjectId),
   wxTreeCtrl:expand(Tree, RootItem),
   Tree.
 
 %% =====================================================================
 %% @doc Build the tree structure for a given tree item.
 
-build_tree(Tree, Item) ->
-  Root = project_manager:get_root(wxTreeCtrl:getItemData(Tree, Item)),
+build_tree(Tree, Item, ProjectId) ->
+  Root = wxTreeCtrl:getItemData(Tree, Item),
   Files = filelib:wildcard(Root ++ "/*"),
-  add_files(Tree, Item, Files).
+  add_files(Tree, Item, Files, ProjectId).
 
 %% =====================================================================
 %% @doc Add the files to the given tree item.
 
-add_files(_, _, []) ->
+add_files(_, _, [], _) ->
 	ok;
-add_files(Tree, Root, [File|Files]) ->
+add_files(Tree, Root, [File|Files], ProjectId) ->
 	FileName = filename:basename(File),
 	IsDir = filelib:is_dir(File),
 	case IsDir of
 		true ->
 			Child = wxTreeCtrl:appendItem(Tree, Root, FileName, [{data, File}]),
 			wxTreeCtrl:setItemImage(Tree, Child, 0),
-			build_tree(Tree, Child);
+			build_tree(Tree, Child, ProjectId);
 		_ ->
 			ok
 	end,
-	add_files(Tree, Root, Files).
+	add_files(Tree, Root, Files, ProjectId).
