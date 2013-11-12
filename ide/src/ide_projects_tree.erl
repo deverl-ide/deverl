@@ -270,8 +270,13 @@ handle_event(#wx{obj=Tree, event=#wxMouse{type=right_up, x=XPos, y=YPos}},
             State=#state{frame=Frame}) ->
   {Item, _Flags} = wxTreeCtrl:hitTest(Tree, {XPos, YPos}),
   wxTreeCtrl:selectItem(Tree, Item),
-  Menu = create_menu(),
-  wxWindow:popupMenu(Tree, Menu),
+  case is_selectable(Tree, Item) of
+    true ->
+      Menu = create_menu(),
+      wxWindow:popupMenu(Tree, Menu);
+    false ->
+      ok
+  end,
 	{noreply, State};
 handle_event(#wx{obj=Menu, id=Id, event=#wxCommand{type=command_menu_selected}},
             State=#state{frame=Frame}) ->
