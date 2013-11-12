@@ -26,20 +26,21 @@
          close/1]).
 
 %% Macros
--define(FILE_TYPE_ERLANG, 0).
--define(FILE_TYPE_TEXT,   1).
--define(BACK_BUTTON,   9000).
--define(NEXT_BUTTON,   9001).
--define(FINISH_BUTTON, 9002).
--define(BROWSE_BUTTON, 9003).
+-define(FILE_TYPE_ERLANG,   0).
+-define(FILE_TYPE_TEXT,     1).
+
+-define(BACK_BUTTON,        9000).
+-define(NEXT_BUTTON,        9001).
+-define(FINISH_BUTTON,      9002).
+-define(BROWSE_BUTTON,      9003).
+
 -define(PROJECT_CHOICE,     9004).
 -define(FILE_TYPE_CHOICE,   9005).
 -define(MODULE_TYPE_CHOICE, 9006).
 -define(DESCRIPTION_BOX,    9007).
-
--define(FILENAME_BOX, 9008).
--define(PROJECT_TEXT, 9009).
--define(PATH_BOX,   9010).
+-define(FILENAME_BOX,       9008).
+-define(PROJECT_TEXT,       9009).
+-define(PATH_BOX,           9010).
 
 -define(FILE_TYPES,   ["Erlang",
                        "Plain Text"]).
@@ -193,7 +194,7 @@ handle_info(_Info, State) ->
   io:format("handle_info/2: NEW FILE DIALOG"),
   {noreply, State}.
 
-handle_call(shutdown, _From, State=#state{win=Dialog}) ->
+handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State};
 handle_call(win, _From, State) ->
   {reply, State#state.win, State};
@@ -288,7 +289,7 @@ handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_sel
   end,
   {noreply, State};
 handle_event(#wx{id=?FILENAME_BOX, event=#wxCommand{type=command_text_updated, cmdString=Filename}},
-             State=#state{win=Parent, project_id=ProjectId, path=ProjectPath, desc_panel=Desc}) ->
+             State=#state{win=Parent, path=ProjectPath, desc_panel=Desc}) ->
   check_if_finished(Parent, Filename, Desc),
   PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
   wxTextCtrl:clear(PathTextBox),
@@ -424,6 +425,7 @@ browse_dialog(Parent, Root, ProjectId) ->
     set_path_text(Parent, wxTreeCtrl:getItemData(Tree, Selection) ++ "/" ++ get_filename(Parent)),
     set_default_path(wxTreeCtrl:getItemData(Tree, Selection) ++ "/")
   end,
+  
   wxPanel:connect(ButtonPanel, command_button_clicked, [{callback, ButtonHandler}]),
   wxDialog:showModal(Dialog).
 
