@@ -245,11 +245,7 @@ handle_call(close_project, _From, State=#state{frame=Frame, active_project=Activ
   ide_projects_tree:remove_project(ActiveProject),
   update_ui(Frame, undefined),
   ProjectsList = proplists:delete(ActiveProject, Projects),
-  case ProjectsList of
-    [] ->
-      ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, false);
-    _ -> ok
-  end,
+  ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, false),
   {reply, ok, State#state{active_project=undefined, projects=ProjectsList}}.
  
 % handle_call({close_project, ProjectId}, _From, State=#state{projects=Projects, frame=Frame}) ->
@@ -262,8 +258,10 @@ handle_call(close_project, _From, State=#state{frame=Frame, active_project=Activ
 handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Projects}) ->
   case ProjectId of
     undefined ->
+      ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, false),
       update_ui(Frame, undefined);
     _ ->
+      ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, true),
       update_ui(Frame, proplists:get_value(ProjectId, Projects))
   end,
   {noreply,State#state{active_project=ProjectId}}.

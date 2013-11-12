@@ -628,16 +628,16 @@ remove_placeholder(Tree, Item) ->
 
 
 %% =====================================================================
-%% @doc If the next sibling is a header then the branch must be empty, so
-%% display a placeholder. Item should always be a header.
+%% @doc If the header item Item has 0 children, then display the 
+%% placeholder.
 
 insert_placeholder(Tree, Item, Msg) ->
-  Sibling = wxTreeCtrl:getNextSibling(Tree, Item),
-  case wxTreeCtrl:getItemData(Tree, Sibling) of
-    N when (N =:= ?HEADER_FILES) or (N =:= ?HEADER_PROJECTS) ->
+  case wxTreeCtrl:getChildrenCount(Tree, Item) of
+    0 ->
       Placeholder = append_item(Tree, Item, Msg, [{data, placeholder}]),
       wxTreeCtrl:setItemImage(Tree, Placeholder, ?ICON_INFO);
-    _ -> ok
+    _ ->
+      ok
   end.
 
 
@@ -665,7 +665,8 @@ toggle_items(Tree, [Path|Paths]) ->
   toggle_items(Tree, Paths).
 
 %% This is required because the tree is not updated immediately, and
-%% subsequent recursive calls to toggle_items fail.
+%% subsequent recursive calls to toggle_items which rely on the
+%% updated tree fail.
 poll_tree_item(Tree, Items, Path) ->
   case get_item_from_path(Tree, Items, Path) of
     no_item ->
