@@ -398,21 +398,28 @@ browse_dialog(Parent, Root, ProjectId) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                         ?wxRESIZE_BORDER bor
                                                                         ?wxDIALOG_EX_METAL}]),                                                                      
+	%% Conditional compilation OSX
+	case os:type() of
+		{_, darwin} ->
+			wxPanel:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL);
+		 _ -> ok
+	end,
+  
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  % wxSizer:addSpacer(LRSizer, 20),
+  wxSizer:addSpacer(LRSizer, 5),
   wxDialog:setSizer(Dialog, LRSizer),
   
   MainSizer = wxBoxSizer:new(?wxVERTICAL),
-  % wxSizer:addSpacer(MainSizer, 20),
+  wxSizer:addSpacer(MainSizer, 5),
   
   wxSizer:add(LRSizer, MainSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-  % wxSizer:addSpacer(LRSizer, 20),
+  wxSizer:addSpacer(LRSizer, 5),
 
   Tree = create_tree(Dialog, Root, ProjectId),
   wxSizer:add(MainSizer, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
   
-  wxSizer:addSpacer(MainSizer, 20),
+  wxSizer:addSpacer(MainSizer, 10),
   ButtonPanel = wxPanel:new(Dialog),
   ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(ButtonPanel, ButtonSizer),
@@ -422,7 +429,7 @@ browse_dialog(Parent, Root, ProjectId) ->
   wxSizer:addSpacer(ButtonSizer, 10),
   
   wxSizer:add(MainSizer, ButtonPanel, [{proportion, 0}, {flag, ?wxALIGN_RIGHT}]),
-  wxSizer:addSpacer(MainSizer, 20),
+  wxSizer:addSpacer(MainSizer, 10),
 
   ButtonHandler =
   fun(#wx{id=?wxID_CANCEL},O) ->
@@ -436,6 +443,7 @@ browse_dialog(Parent, Root, ProjectId) ->
   end,
 
   wxPanel:connect(ButtonPanel, command_button_clicked, [{callback, ButtonHandler}]),
+  wxDialog:centre(Dialog),
   wxDialog:showModal(Dialog).
 
 
