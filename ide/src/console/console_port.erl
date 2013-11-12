@@ -72,7 +72,9 @@ init(Args) ->
 	% process_flag(trap_exit, true), %% Die when the parent process dies
 	{Path, Options} = case os:type() of
 		{win32,_} ->
-			{"C:\\Program Files\\erl5.10.2\\erts-5.10.2\\bin\\erl", [use_stdio]};
+			{"C:\\Program Files\\erl5.10.2\\erts-5.10.3\\bin\\erl", [use_stdio]};
+    {_,darwin} ->
+      {"/usr/local/lib/erlang/erts-5.10.1/bin/erl", [use_stdio, exit_status]}; %% For Tom, for now.
 		_Other ->
 			{"/usr/local/lib/erlang/erts-5.10.2/bin/erl", [use_stdio, exit_status]}
 	end,

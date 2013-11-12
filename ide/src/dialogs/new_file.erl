@@ -387,7 +387,8 @@ dialog2(Parent) ->
 %% @doc Create the browse dialog for browsing a project directory.
 
 browse_dialog(Parent, Root, ProjectId) -> 
-  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{style, ?wxDEFAULT_DIALOG_STYLE bor
+  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size, {300,300}},
+                                                                {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                         ?wxRESIZE_BORDER bor
                                                                         ?wxDIALOG_EX_METAL}]),                                                                      
 	%% Conditional compilation OSX

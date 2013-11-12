@@ -148,7 +148,6 @@ init(Config) ->
   AddRoot = 
     fun(Id, Name, Info) ->
       Item = append_item(Tree, Root, Name, [{data, Id}]),
-      set_item_bold(Tree, Item),
       Placeholder = append_item(Tree, Item, Info, [{data, placeholder}]),
       wxTreeCtrl:toggle(Tree, Item),
       wxTreeCtrl:setItemImage(Tree, Placeholder, ?ICON_INFO),
