@@ -129,12 +129,13 @@ init({Parent, Projects, ActiveProject}) ->
   wxSizer:addSpacer(MainSizer, 20),
 	wxSizer:add(MainSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Description"), []),
 	wxSizer:addSpacer(MainSizer, 5),  
-	Desc = wxPanel:new(Dialog),
+	Desc = wxPanel:new(Dialog, [{size, {400, 150}}]),
 	wxPanel:setBackgroundColour(Desc, ?wxWHITE),
 	wxPanel:setForegroundColour(Desc, ?wxBLACK),
   insert_desc(Desc, "Create a new file."),
-	wxSizer:add(MainSizer, Desc, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	wxSizer:add(MainSizer, Desc, [{proportion, 0}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 40),
+  wxSizer:setItemMinSize(MainSizer, 11, {80,80}),
 
   %% Buttons
   wxSizer:add(MainSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), [{flag, ?wxEXPAND}]),
