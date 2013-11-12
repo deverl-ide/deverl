@@ -133,7 +133,8 @@ init(Config) ->
                                         ?wxTR_HIDE_ROOT bor
                                         ?wxTR_FULL_ROW_HIGHLIGHT bor
                                         ?wxTR_HAS_VARIABLE_ROW_HEIGHT bor
-                                        ?wxTR_NO_LINES}]),
+                                        ?wxTR_NO_LINES bor
+                                        ?wxTR_TWIST_BUTTONS}]),
 	wxTreeCtrl:setIndent(Tree, 10),
 	ImgList = wxImageList:new(14,14),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/blue-folder-horizontal.png"))), 
@@ -303,8 +304,9 @@ handle_sync_event(#wx{obj=Tree}, Event, _State) ->
   Item = wxTreeEvent:getItem(Event),
   case is_selectable(Tree, Item) of
     true ->
-      ok;
+      wxEvent:skip(Event);
     false ->
+      io:format("VETO SELECTION~n"),
       wxTreeEvent:veto(Event)
   end.
 
