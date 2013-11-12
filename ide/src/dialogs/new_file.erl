@@ -52,12 +52,15 @@
 											 
 %% Server state
 -record(state, {win,
-                dialog1    :: wxPanel:wxPanel(),
-                dialog2    :: wxPanel:wxPanel(),
-                swap_sizer :: wxSizer:wxSizer(),
-                path       :: string(),
-                project_id :: project_manager:project_id(),
-                projects   :: [project_manager:project_id()]
+                dialog1     :: wxPanel:wxPanel(),
+                dialog2     :: wxPanel:wxPanel(),
+                swap_sizer  :: wxSizer:wxSizer(),
+                path        :: string(),
+                project_id  :: project_manager:project_id(),
+                projects    :: [project_manager:project_id()],
+                desc_panel  :: wxPanel:wxPanel(),
+                image_list,
+                info_messages
                }).
 
 
@@ -124,9 +127,13 @@ init({Parent, Projects, ActiveProject}) ->
   %% Description Box
   wxSizer:add(MainSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 20),
-  wxSizer:add(MainSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Description"), []),
-  wxSizer:addSpacer(MainSizer, 5),
-  wxSizer:add(MainSizer, wxTextCtrl:new(Dialog, ?DESCRIPTION_BOX, [{size,{-1, 70}}, {style, ?wxTE_MULTILINE bor ?wxTE_READONLY}]), [{proportion, 0}, {flag, ?wxEXPAND}]),
+	wxSizer:add(MainSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Description"), []),
+	wxSizer:addSpacer(MainSizer, 5),  
+	Desc = wxPanel:new(Dialog),
+	wxPanel:setBackgroundColour(Desc, ?wxWHITE),
+	wxPanel:setForegroundColour(Desc, ?wxBLACK),
+  insert_desc(Desc, "Create a new file."),
+	wxSizer:add(MainSizer, Desc, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 40),
 
   %% Buttons
@@ -136,8 +143,11 @@ init({Parent, Projects, ActiveProject}) ->
   ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(ButtonPanel, ButtonSizer),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?BACK_BUTTON,   [{label, "Back"}]),   [{border, 2}, {flag, ?wxALL}]),
+  wxSizer:addSpacer(ButtonSizer, 10),  
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?NEXT_BUTTON,   [{label, "Next"}]),   [{border, 2}, {flag, ?wxALL}]),
+  wxSizer:addSpacer(ButtonSizer, 10),  
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?FINISH_BUTTON, [{label, "Finish"}]), [{border, 2}, {flag, ?wxALL}]),
+  wxSizer:addSpacer(ButtonSizer, 10),  
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxID_CANCEL,   [{label, "Cancel"}]), [{border, 2}, {flag, ?wxALL}]),
 
   wxSizer:add(MainSizer, ButtonPanel, [{proportion, 0}, {flag, ?wxALIGN_RIGHT}]),
@@ -149,8 +159,27 @@ init({Parent, Projects, ActiveProject}) ->
 
   wxButton:disable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
   wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON)),
+  
+	%% Setup the image list
+	ImageList = wxImageList:new(24,24),
+	wxImageList:add(ImageList, wxBitmap:new(wxImage:new("../icons/information.png"))),
+	wxImageList:add(ImageList, wxBitmap:new(wxImage:new("../icons/prohibition.png"))),
+	
+	%% Information messages
+	Info = [
+		{name, "Please specify a file name."}
+	],
+  
+  State=#state{win=Dialog, 
+               dialog1=Dialog1,
+               swap_sizer=SwapSizer,
+               project_id=ActiveProject,
+               projects=Projects,
+               desc_panel=Desc,
+               image_list=ImageList,
+               info_messages=Info},
 
-  {Dialog, #state{win=Dialog, dialog1=Dialog1, swap_sizer=SwapSizer, project_id=ActiveProject, projects=Projects}}.
+  {Dialog, State}.
 
 
 handle_cast({set_path, ProjectPath}, State) ->
@@ -608,3 +637,29 @@ add_files(Tree, Root, [File|Files], ProjectId) ->
 			ok
 	end,
 	add_files(Tree, Root, Files, ProjectId).
+
+
+%% =====================================================================
+%% @doc Display information to the user within the 'Description' box.	
+%% NOTE This is duplicated from the new_project_wx module.
+
+insert_desc(Description, Msg) ->
+	insert_desc(Description, Msg, []).
+
+insert_desc(Description, Msg, Options) ->
+	SzFlags = wxSizerFlags:new([{proportion, 0}]),
+	wxSizerFlags:expand(wxSizerFlags:border(SzFlags, ?wxTOP, 10)),
+	wxWindow:freeze(Description),
+	wxPanel:destroyChildren(Description),
+	Sz = wxBoxSizer:new(?wxHORIZONTAL),
+	wxPanel:setSizer(Description, Sz),
+	wxSizer:addSpacer(Sz, 10),
+	case proplists:get_value(bitmap, Options) of
+		undefined -> ok;
+		Bitmap -> 
+			wxSizer:add(Sz, wxStaticBitmap:new(Description, ?wxID_ANY, Bitmap), [{border, 5}, {flag, ?wxTOP bor ?wxRIGHT}])
+	end,
+	wxSizer:add(Sz, wxStaticText:new(Description, ?wxID_ANY, Msg), SzFlags),
+	wxPanel:layout(Description),	
+	wxWindow:thaw(Description),
+	ok.

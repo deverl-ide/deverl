@@ -146,7 +146,8 @@ do_init(Parent) ->
   wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 
               [{flag, ?wxEXPAND}]),
 	wxSizer:addSpacer(VertSizer, 20),
-	
+  
+  %% Buttons
   ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxSizer:addStretchSpacer(ButtonSz),
 	Finish = wxButton:new(Dialog, ?wxID_OK, [{label, "Finish"}]),

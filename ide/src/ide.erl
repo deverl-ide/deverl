@@ -87,6 +87,8 @@ init(Options) ->
 	wx:new(Options),
 	WxEnv = wx:get_env(),
 	process_flag(trap_exit, true),
+  
+  % wxSystemOptions:setOption("window-default-variant", ?wxWINDOW_VARIANT_SMALL),
 
 	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
 	wxFrame:connect(Frame, close_window),

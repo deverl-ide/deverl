@@ -4,8 +4,6 @@
 %% @title
 %% @version
 %% @doc
-%% Each node in the tree contains the path of the file, accept for the
-%% root of each project which contains the project id and path.
 %% @end
 %% =====================================================================
 
@@ -53,6 +51,14 @@
 
 -define(HEADER_PROJECTS_EMPTY, "No open projects").
 -define(HEADER_FILES_EMPTY, "No open files").
+
+%% Popup menu
+-define(ID_NEW_FOLDER, 0).
+-define(ID_RENAME, 1).
+-define(ID_DELETE_FILE, 2).
+-define(ID_IMPORT_FILE, 3).
+-define(ID_QUICK_NEW_FILE, 4).
+-define(ID_GENERATE_MAKEFILE, 5).
 
 %% Server state
 -record(state, {frame, panel, tree}).
@@ -142,6 +148,7 @@ init(Config) ->
   AddRoot = 
     fun(Id, Name, Info) ->
       Item = append_item(Tree, Root, Name, [{data, Id}]),
+      set_item_bold(Tree, Item),
       Placeholder = append_item(Tree, Item, Info, [{data, placeholder}]),
       wxTreeCtrl:toggle(Tree, Item),
       wxTreeCtrl:setItemImage(Tree, Placeholder, ?ICON_INFO),
@@ -158,6 +165,7 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
+  wxTreeCtrl:connect(Tree, right_up),
   
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
 
@@ -171,6 +179,7 @@ handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
   Root = get_projects_root(Tree),
   remove_placeholder(Tree, Root),
   Item = append_item(Tree, Root, filename:basename(Dir), [{data, {Id, Dir}}]),
+  set_item_bold(Tree, Item),
   wxTreeCtrl:setItemImage(Tree, Item, ?ICON_PROJECT),
   check_dir_has_contents(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
@@ -224,7 +233,6 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
-  % case is_fixed_header(Tree, Item) of
   case is_selectable(Tree, Item) of
     true ->
       Image = wxTreeCtrl:getItemImage(Tree, Item),
@@ -251,18 +259,44 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
             State=#state{frame=Frame}) ->
-  % case is_fixed_header(Tree, Item) of
   case is_selectable(Tree, Item) of
     true ->
       toggle_or_open(Tree, Item);
     false ->
       wxTreeCtrl:toggle(Tree, Item)
   end,
+	{noreply, State};
+handle_event(#wx{obj=Tree, event=#wxMouse{type=right_up, x=XPos, y=YPos}},
+            State=#state{frame=Frame}) ->
+  {Item, _Flags} = wxTreeCtrl:hitTest(Tree, {XPos, YPos}),
+  wxTreeCtrl:selectItem(Tree, Item),
+  Menu = create_menu(),
+  wxWindow:popupMenu(Tree, Menu),
+	{noreply, State};
+handle_event(#wx{obj=Menu, id=Id, event=#wxCommand{type=command_menu_selected}},
+            State=#state{frame=Frame}) ->
+  case Id of
+    ?wxID_NEW ->
+      doc_manager:new_document(Frame);
+    ?MENU_ID_CLOSE_PROJECT ->
+      ok;   
+    ?ID_NEW_FOLDER ->
+      ok;
+    ?ID_RENAME ->
+      ok;
+    ?ID_DELETE_FILE ->
+      ok;
+    ?ID_IMPORT_FILE ->
+      ok;
+    ?ID_QUICK_NEW_FILE ->
+      ok;
+    ?ID_GENERATE_MAKEFILE ->
+      ok
+  end,
 	{noreply, State}.
   
 handle_sync_event(#wx{obj=Tree}, Event, _State) ->
   Item = wxTreeEvent:getItem(Event),
-  % case is_fixed_header(Tree, Item) of
   case is_selectable(Tree, Item) of
     true ->
       ok;
@@ -639,7 +673,49 @@ insert_placeholder(Tree, Item, Msg) ->
     _ ->
       ok
   end.
+  
 
+%% =====================================================================
+%% @doc This function sets a tree item to bold.
+%% This is required because a consequence of reducing the font size on
+%% darwin to improve the appearence is that wxTreeCtrl:setItemBold has
+%% no affect. The small window variant is too small in this instance, so 
+%% the font weight must be changed manually.
+%% On other platforms the standard function wxTreeCtrl:setItemBold/3 
+%% can be used.
+
+set_item_bold(Tree, Item) ->
+  case os:type() of
+    {_,darwin} ->
+      Font = wxTreeCtrl:getItemFont(Tree, Item),
+      wxFont:setWeight(Font, ?wxFONTWEIGHT_BOLD),
+      wxTreeCtrl:setItemFont(Tree, Item, Font);
+    _ ->
+      wxTreeCtrl:setItemBold(Tree, Item, [{bold, true}])
+  end.
+  
+
+%% =====================================================================
+%% @doc Create the popup menu.
+
+create_menu() ->
+    Menu = wxMenu:new([]),
+    wxMenu:append(Menu, ?wxID_NEW, "New File\tCtrl+N", []),
+    wxMenu:append(Menu, ?ID_NEW_FOLDER, "New Folder", []),
+    wxMenu:append(Menu, ?ID_RENAME, "Rename", []),
+    wxMenu:append(Menu, ?ID_DELETE_FILE, "Delete File", []),
+    wxMenu:appendSeparator(Menu),
+    wxMenu:append(Menu, ?MENU_ID_CLOSE_PROJECT, "Close Project", []),
+    wxMenu:append(Menu, ?ID_IMPORT_FILE, "Import File", []),
+    wxMenu:append(Menu, ?ID_QUICK_NEW_FILE, "Quick New File", []),
+    wxMenu:appendSeparator(Menu),
+    wxMenu:append(Menu, ?ID_GENERATE_MAKEFILE, "Generate Makefile", []),
+    wxMenu:connect(Menu, command_menu_selected),
+    Menu.
+
+
+%% =====================================================================
+%% @doc 
 
 find_root(FilePath) ->
   find_root(FilePath, []).
