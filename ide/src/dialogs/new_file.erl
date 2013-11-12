@@ -215,6 +215,7 @@ terminate(_Reason, #state{win=Dialog}) ->
   wxDialog:endModal(Dialog, ?wxID_CANCEL),
   wxDialog:destroy(Dialog).
 
+
 %% =====================================================================
 %% Event handlers
 %% =====================================================================
@@ -235,7 +236,7 @@ handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}}
   PathText = set_default_path_text(Parent, ProjectPath),
   {noreply, State#state{dialog2=Dialog2, path=PathText++"/"}};
 handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}},
-             State=#state{win=Parent, dialog1=Dialog1, dialog2=Dialog2, swap_sizer=Sz}) ->
+             State=#state{win=Parent, dialog1=Dialog1, dialog2=Dialog2, swap_sizer=Sz, desc_panel=Desc}) ->
   swap(Sz, Dialog1, Dialog2),
   wxButton:enable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
   wxButton:disable(wxWindow:findWindow(Parent, ?NEXT_BUTTON)),
@@ -245,7 +246,7 @@ handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}}
   %%PathText = set_default_path_text(Parent, ProjectPath),
   PathText = get_default_path_text(Parent, ProjectPath) ++ "/",
   set_path_text(Parent, PathText ++ get_filename(Parent)),
-  check_if_finished(Parent),
+  check_if_finished(Parent, get_filename(Parent), Desc),
   {noreply, State#state{path=PathText}};
 handle_event(#wx{id=?BACK_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=Dialog1, dialog2=Dialog2, swap_sizer=Sz}) ->
@@ -286,18 +287,8 @@ handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_sel
   end,
   {noreply, State};
 handle_event(#wx{id=?FILENAME_BOX, event=#wxCommand{type=command_text_updated, cmdString=Filename}},
-             State=#state{win=Parent, project_id=ProjectId, path=ProjectPath}) ->
-  check_if_finished(Parent),
-  
-  
-  %Path = wxTextCtrl:getLineText(PathTextBox, 0) ++ Filename,
-  
-  %{_ProjectName, ProjectPath} = get_project_choice(Parent),
-  %set_default_path_text(Parent, ProjectPath),
-  
-  io:format("FILENAME: ~p~n", [Filename]),
-  io:format("PROJECTPATH: ~p~n", [ProjectPath]),
-  
+             State=#state{win=Parent, project_id=ProjectId, path=ProjectPath, desc_panel=Desc}) ->
+  check_if_finished(Parent, Filename, Desc),
   PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
   wxTextCtrl:clear(PathTextBox),
   wxTextCtrl:writeText(PathTextBox, ProjectPath ++ Filename),
@@ -394,7 +385,7 @@ dialog2(Parent) ->
 %% @doc Create the browse dialog for browsing a project directory.
 
 browse_dialog(Parent, Root, ProjectId) -> 
-  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size,{400, 300}},
+  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size,{300, 400}},
                                                                 {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                         ?wxRESIZE_BORDER bor
                                                                         ?wxDIALOG_EX_METAL}]),                                                                      
@@ -432,7 +423,6 @@ browse_dialog(Parent, Root, ProjectId) ->
     set_path_text(Parent, wxTreeCtrl:getItemData(Tree, Selection) ++ "/" ++ get_filename(Parent)),
     set_default_path(wxTreeCtrl:getItemData(Tree, Selection) ++ "/")
   end,
-
   wxPanel:connect(ButtonPanel, command_button_clicked, [{callback, ButtonHandler}]),
   wxDialog:showModal(Dialog).
 
@@ -562,13 +552,18 @@ get_file_extension(Parent) ->
 %% =====================================================================
 %% @doc Check if the dialog is in a finished state.
 
-check_if_finished(Parent) ->
+check_if_finished(Parent, Filename, Desc) ->
   Filename = get_filename(Parent),
   case length(Filename) of
     0 ->
       wxListBox:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
     _ ->
-      wxListBox:enable(wxWindow:findWindow(Parent, ?FINISH_BUTTON))
+      case validate_name(Filename, Desc) of
+        true ->
+          wxListBox:enable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
+        false ->
+          wxListBox:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON))
+      end
   end.
 
 
@@ -591,6 +586,23 @@ add_project_data(_, []) ->
 add_project_data(ProjectChoice, [ProjectId|Projects]) ->
   wxChoice:append(ProjectChoice, project_manager:get_name(ProjectId), ProjectId),
   add_project_data(ProjectChoice, Projects).
+  
+
+%% =====================================================================
+%% @doc Validate the input Name.
+
+validate_name([], _) -> false;
+validate_name(Str, Desc) ->
+	case validate_name(Str) of
+		nomatch -> 
+			true;
+		{match, [{Pos,_}]} -> 
+			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
+			insert_desc(Desc, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename.", [{bitmap, Bitmap}]),
+			false
+	end.
+validate_name(Str) ->
+	re:run(Str, "[/\]").
 
 
 %% =====================================================================

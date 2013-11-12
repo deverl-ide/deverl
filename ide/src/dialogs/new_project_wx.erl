@@ -392,7 +392,7 @@ validate_name(Str, Desc) ->
 			false
 	end.
 validate_name(Str) ->
-	re:run(Str, "[/]").
+	re:run(Str, "[/\]").
 	
 %% Overidden
 %% @hidden
