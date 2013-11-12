@@ -158,7 +158,7 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
-
+  
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
 
 handle_info(Msg, State) ->
