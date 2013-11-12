@@ -312,8 +312,7 @@ code_change(_, _, State) ->
 terminate(_Reason, #state{dialog=Dialog}) ->
   io:format("TERMINATE NEW DIALOG~n"),
 	wxDialog:endModal(Dialog, ?wxID_CANCEL),
-	wxDialog:destroy(Dialog),
-	ok.
+	wxDialog:destroy(Dialog).
 	
 
 %% =====================================================================
