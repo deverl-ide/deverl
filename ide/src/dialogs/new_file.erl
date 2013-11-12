@@ -395,33 +395,34 @@ dialog2(Parent) ->
 %% @doc Create the browse dialog for browsing a project directory.
 
 browse_dialog(Parent, Root, ProjectId) -> 
-  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size,{400, 300}},
-                                                                {style, ?wxDEFAULT_DIALOG_STYLE bor
+  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                         ?wxRESIZE_BORDER bor
                                                                         ?wxDIALOG_EX_METAL}]),                                                                      
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  wxSizer:addSpacer(LRSizer, 20),
-
+  % wxSizer:addSpacer(LRSizer, 20),
   wxDialog:setSizer(Dialog, LRSizer),
+  
   MainSizer = wxBoxSizer:new(?wxVERTICAL),
-
+  % wxSizer:addSpacer(MainSizer, 20),
+  
   wxSizer:add(LRSizer, MainSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:addSpacer(MainSizer, 20),
-  wxSizer:addSpacer(LRSizer, 20),
 
-  TreeSizer = wxBoxSizer:new(?wxVERTICAL), 
+  % wxSizer:addSpacer(LRSizer, 20),
+
   Tree = create_tree(Dialog, Root, ProjectId),
-  wxSizer:add(TreeSizer, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(MainSizer, TreeSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
-
+  wxSizer:add(MainSizer, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  
+  wxSizer:addSpacer(MainSizer, 20),
   ButtonPanel = wxPanel:new(Dialog),
   ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
-
   wxPanel:setSizer(ButtonPanel, ButtonSizer),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxID_OK,     [{label, "OK"}]), [{border, 2}, {flag, ?wxALL}]),
+  wxSizer:addSpacer(ButtonSizer, 10),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxID_CANCEL, [{label, "Cancel"}]), [{border, 2}, {flag, ?wxALL}]),
+  wxSizer:addSpacer(ButtonSizer, 10),
+  
+  wxSizer:add(MainSizer, ButtonPanel, [{proportion, 0}, {flag, ?wxALIGN_RIGHT}]),
   wxSizer:addSpacer(MainSizer, 20),
-  wxSizer:add(MainSizer, ButtonPanel, [{proportion, 1}, {flag, ?wxALIGN_RIGHT}]),
 
   ButtonHandler =
   fun(#wx{id=?wxID_CANCEL},O) ->
