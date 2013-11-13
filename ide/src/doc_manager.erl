@@ -32,7 +32,8 @@
          save_active_project/0,
 				 apply_to_all_documents/2,
 				 apply_to_active_document/2,
-         get_active_document/0]).
+         get_active_document/0,
+         get_path/1]).
 
 %% Records
 -record(document, {path :: string(),
@@ -141,14 +142,14 @@ save_all() ->
 %% =====================================================================
 %% @doc
 
+-spec save_document(document_id()) -> 'ok' | 'cancelled'.
+
 save_document(DocId) ->
   case save_documents([DocId]) of
-    [] ->
-			ok;
-    failed ->
-      cancelled;
-    DocsToClose ->
-      close(DocsToClose)
+    {_Saved, []} ->
+      ok;
+    {_Saved, _Failed} ->
+      cancelled
   end.
   
 
@@ -187,6 +188,13 @@ apply_to_active_document(Fun, Args) ->
 get_active_document() ->
   wx_object:call(?MODULE, get_active_doc).
 
+
+%% =====================================================================
+%% @doc
+
+get_path(DocId) ->
+  wx_object:call(?MODULE, {get_path, DocId}).
+  
 
 %% =====================================================================
 %% Callbacks
@@ -318,11 +326,17 @@ handle_call({get_doc_names, DocIdList}, _From,
       filename:basename(Record#document.path)
     end, DocIdList),
   {reply, DocNameList, State};
+  
+handle_call({get_path, DocId}, _From,
+				    State=#state{doc_records=DocRecords}) ->
+  io:format("DOC ID: ~p~n", [DocId]),
+  io:format("DOC STATE: ~p~n", [State]),
+  #document{path=Path} = proplists:get_value(DocId, DocRecords),
+  {reply, Path, State};
 
 handle_call({save, DocId}, _From,
 				    State=#state{parent=Parent, doc_records=DocRecords}) ->
-  Record = proplists:get_value(DocId, DocRecords),
-  Path = Record#document.path,
+  Record=#document{path=Path} = proplists:get_value(DocId, DocRecords),
   Contents = editor:get_text(Record#document.editor),
   Result = try
     ide_io:save(Path, Contents),
@@ -331,7 +345,7 @@ handle_call({save, DocId}, _From,
     _:Msg ->
       {error, {Msg, Parent}}
   end,
-{reply, Result, State};
+  {reply, Result, State};
 
 handle_call({save_as, DocId}, _From,
 				    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
