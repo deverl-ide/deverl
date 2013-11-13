@@ -334,8 +334,6 @@ handle_call({get_doc_names, DocIdList}, _From,
   
 handle_call({get_path, DocId}, _From,
 				    State=#state{doc_records=DocRecords}) ->
-  io:format("DOC ID: ~p~n", [DocId]),
-  io:format("DOC STATE: ~p~n", [State]),
   #document{path=Path} = proplists:get_value(DocId, DocRecords),
   {reply, Path, State};
 

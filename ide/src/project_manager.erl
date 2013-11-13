@@ -189,7 +189,7 @@ get_root(ProjectId) ->
 	gen_server:call(?MODULE, {get_root, ProjectId}).
   
 get_name(ProjectId) ->
-      filename:basename(get_root(ProjectId)).
+  filename:basename(get_root(ProjectId)).
       
 
 %% =====================================================================

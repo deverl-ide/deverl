@@ -1,28 +1,41 @@
-%% The preference pane for the IDE
-%% ide.erl
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc 
+%% @end
+%% =====================================================================
   
 -module(ide_prefs).
   
 -include_lib("wx/include/wx.hrl").
--behaviour(wx_object).
   
-%% wx_objects callbacks
--export([start/1,
-         init/1,
+%% wx_object
+-behaviour(wx_object).
+-export([init/1,
          terminate/2,
          code_change/3,
          handle_info/2,
          handle_call/3,
          handle_cast/2,
          handle_event/2]).
-  
+         
+%% API
+-export([start/1]).
+
+%% Server state
 -record(state, {frame, pref_panel, pref}).        
-  
+
 -define(PREF_GENERAL,  1).
 -define(PREF_EDITOR, 2).
 -define(PREF_CONSOLE,  3).
 -define(PREF_DEBUG,   4).
   
+
+%% =====================================================================
+%% Client API
+%% =====================================================================
   
 %% =====================================================================
 %% @doc Start a preference pane instance.
@@ -30,7 +43,11 @@
 start(Config) ->
 	wx_object:start_link(?MODULE, Config, []).
   
-  
+
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
+ 
 %% =====================================================================
 %% @doc Initialise the preference pane.
   
@@ -74,10 +91,6 @@ init(Config) ->
   wxFrame:show(Frame),
   
   {Frame, State#state{pref=PrefPane}}.
-  
-
-%% =====================================================================
-%% @doc OTP behaviour callbacks
 
 handle_info(Msg, State) ->
   io:format("Got Info (prefs) ~p~n",[Msg]),
@@ -116,6 +129,10 @@ terminate(_Reason, #state{frame=Frame}) ->
   io:format("TERMINATE PREFS~n"),
   wxFrame:destroy(Frame).
     
+
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
 
 %% =====================================================================
 %% @doc Load a preference pane.
