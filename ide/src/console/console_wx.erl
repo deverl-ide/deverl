@@ -67,11 +67,8 @@ load_response(Response) ->
 %% @doc Update the shell's theme
 
 set_theme(Fg, Bg) ->
-  {_, Tc} = wx_object:call(?MODULE, text_ctrl),
-  ?stc:styleSetBackground(Tc, ?wxSTC_STYLE_DEFAULT, Bg),
-  ?stc:styleSetForeground(Tc, ?wxSTC_STYLE_DEFAULT, Fg),
-  ?stc:setCaretForeground(Tc, Fg),
-  ?stc:styleClearAll(Tc),
+  wx_object:cast(?MODULE, {set_theme, Fg, Bg}),
+
   ok.
 	
 
@@ -96,10 +93,11 @@ init(Config) ->
 					  wxFont:new(13, ?wxFONTFAMILY_TELETYPE, 
                                      ?wxNORMAL, 
                                      ?wxNORMAL,[])),
-	?stc:setCaretWidth(ShellTextBox, 1),
-  
+	?stc:setCaretWidth(ShellTextBox, 1), 
 	?stc:cmdKeyClear(ShellTextBox, ?wxSTC_KEY_UP, 0),
-
+  
+  {_Name, Fg, Bg} = sys_pref_manager:get_preference(console_theme),
+  set_theme(Fg, Bg),
                                                 	
 	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
                                           {proportion, 1}]),
@@ -118,13 +116,15 @@ init(Config) ->
   
   {Panel, State}.
 
-
 handle_info(Msg, State) ->
-  io:format("Got Info ~p~n",[Msg]),
-  {noreply,State}.
-
-handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
+  {noreply,State}.
+  
+handle_cast({set_theme, Fg, Bg}, State=#state{textctrl=Console}) ->
+  ?stc:styleSetBackground(Console, ?wxSTC_STYLE_DEFAULT, Bg),
+  ?stc:styleSetForeground(Console, ?wxSTC_STYLE_DEFAULT, Fg),
+  ?stc:setCaretForeground(Console, Fg),
+  ?stc:styleClearAll(Console),
   {noreply,State}.
     
 handle_call(text_ctrl, _From, State) ->

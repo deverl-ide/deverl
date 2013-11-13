@@ -37,5 +37,5 @@ get_defaults() ->
   {indent_guides, false},
 
   %% Console prefs
-  {console_theme, "Light"}
+  {console_theme, {"Light", ?wxBLACK, ?wxWHITE}}
   ].
