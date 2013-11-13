@@ -202,7 +202,7 @@ handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
   remove_placeholder(Tree, Root),
   Item = append_item(Tree, Root, filename:basename(Path), [{data, Path}]),
   wxTreeCtrl:setItemImage(Tree, Item, ?ICON_DOCUMENT),
-  %wxTreeCtrl:selectItem(Tree, Item),
+  wxTreeCtrl:selectItem(Tree, Item),
   alternate_background_of_children(Tree, Root),
   {noreply,State};
 
@@ -252,9 +252,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 		false ->  %% Deleted item
 			ok;
 		true ->
-      ProjRoot = get_project_root(Tree, Item),
-      {ProjectId, _Path} = wxTreeCtrl:getItemData(Tree, ProjRoot),
-      project_manager:set_active_project(ProjectId)
+      select(Tree, Item)
 	end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
@@ -755,4 +753,13 @@ poll_tree_item(Tree, Items, Path) ->
       poll_tree_item(Tree, get_all_items(Tree), Path);
     Item ->
       Item
+  end.
+  
+select(Tree, Item) ->
+  case wxTreeCtrl:getItemData(Tree, Item) of
+    {ProjectId, _Path} ->
+      get_project_root(Tree, Item),
+      project_manager:set_active_project(ProjectId);
+    Path -> %% Standalone document
+      project_manager:set_active_project(undefined)
   end.
