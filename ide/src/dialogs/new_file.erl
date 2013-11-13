@@ -384,11 +384,7 @@ dialog2(Parent) ->
 %% @doc Create the browse dialog for browsing a project directory.
 
 browse_dialog(Parent, Root, ProjectId) -> 
-<<<<<<< HEAD
-  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size, {300, 300}},
-=======
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size, {300,300}},
->>>>>>> 257254c74a490c3d6ac3beb631b16f8d4ad3ac67
                                                                 {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                         ?wxRESIZE_BORDER bor
                                                                         ?wxDIALOG_EX_METAL}]),                                                                      
