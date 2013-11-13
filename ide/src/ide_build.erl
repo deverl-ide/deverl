@@ -9,7 +9,7 @@ compile() ->
   case doc_manager:get_active_document() of
     {error, _} ->
       ok;
-     Index ->
+    Index ->
       case doc_manager:save_document(Index) of
 				undefined -> ok;
 				Path ->			
