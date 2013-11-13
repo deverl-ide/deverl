@@ -202,7 +202,7 @@ handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
   remove_placeholder(Tree, Root),
   Item = append_item(Tree, Root, filename:basename(Path), [{data, Path}]),
   wxTreeCtrl:setItemImage(Tree, Item, ?ICON_DOCUMENT),
-  wxTreeCtrl:selectItem(Tree, Item),
+  %wxTreeCtrl:selectItem(Tree, Item),
   alternate_background_of_children(Tree, Root),
   {noreply,State};
 
@@ -628,7 +628,8 @@ is_placeholder(Tree, Item) ->
  
 find_standalone(Tree, Path) ->
   Root = get_standalone_root(Tree),
-  get_sibling(Tree, Root, Path).
+  {FirstItem, _} = wxTreeCtrl:getFirstChild(Tree, Root),
+  get_sibling(Tree, FirstItem, Path).
   
 % repeated function (get_sibling)
 % find_standalone(Tree, Item, Path) ->
