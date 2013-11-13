@@ -304,9 +304,8 @@ handle_sync_event(#wx{obj=Tree}, Event, _State) ->
   Item = wxTreeEvent:getItem(Event),
   case is_selectable(Tree, Item) of
     true ->
-      wxEvent:skip(Event);
+      ok;
     false ->
-      io:format("VETO SELECTION~n"),
       wxTreeEvent:veto(Event)
   end.
 

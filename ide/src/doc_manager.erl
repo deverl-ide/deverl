@@ -204,6 +204,14 @@ handle_info(Msg, State) ->
 
 handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
   wxWindow:freeze(Nb),
+  Record = proplists:get_value(DocId, DocRecords),
+  case Record#document.project_id of
+    undefined ->
+      io:format("REMOVE DOC~n"),
+      ide_projects_tree:remove_standalone_document(Record#document.path);
+    _ ->
+      ok
+  end,
   {NewDocRecords, NewPageToDocId} = remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, PageToDocId), DocRecords, PageToDocId),
   case wxAuiNotebook:getPageCount(Nb) of
  		0 -> wx_object:cast(?MODULE, notebook_empty);

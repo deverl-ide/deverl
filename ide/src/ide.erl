@@ -427,8 +427,8 @@ create_utils(Parent) ->
 		Port ->
 			io:format("PORT SUP: ~p~n", [Port]),
 			C = console_wx:new([{parent, TabbedWindow}]),
-			console_port:flush_buffer(), %% Load text received whilst initialising
-			console_port:buffer_responses(false), %% The port will now send responses directly to the console
+      console_port:flush_buffer(), %% Load text received whilst initialising
+      console_port:buffer_responses(false), %% The port will now send responses directly to the console
 			C
 	end,
 	tabbed_book:add_page(TabbedWindow, Console, "Console"),

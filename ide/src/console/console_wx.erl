@@ -32,12 +32,15 @@
 -define(ID_SHELL_TEXT_BOX, 1).
 -define(stc, wxStyledTextCtrl).
 
+-define(ID_RESET_CONSOLE, 1).
+
 %% Server state
 -record(state, {win, 
 								textctrl, 
 								cmd_history, 
 								current_cmd, 
-								wx_env}).
+								wx_env,
+                menu}).
 
 
 %% =====================================================================
@@ -101,41 +104,62 @@ init(Config) ->
 	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
                                           {proportion, 1}]),
                                           
-	% ?stc:connect(ShellTextBox, key_down, [{callback, fun(E,O) -> handle_key_event(E,O) end}]),
+  Menu = create_menu(),
+                                          
 	?stc:connect(ShellTextBox, key_down, [callback]),
+  ?stc:connect(ShellTextBox, right_up),
 
-	{Panel, #state{win=Panel, 
-				   textctrl=ShellTextBox, 
-				   cmd_history=[],
-				   current_cmd=0,
-				   wx_env=wx:get_env()}}. %% Maintained at server
+	State=#state{win=Panel, 
+				       textctrl=ShellTextBox, 
+				       cmd_history=[],
+				       current_cmd=0,
+				       wx_env=wx:get_env(),
+               menu=Menu},
+  
+  {Panel, State}.
 
 
 handle_info(Msg, State) ->
-    io:format("Got Info ~p~n",[Msg]),
-    {noreply,State}.
+  io:format("Got Info ~p~n",[Msg]),
+  {noreply,State}.
 
 handle_cast(Msg, State) ->
-    io:format("Got cast ~p~n",[Msg]),
-    {noreply,State}.
+  io:format("Got cast ~p~n",[Msg]),
+  {noreply,State}.
     
 handle_call(text_ctrl, _From, State) ->
-    {reply,{State#state.wx_env,State#state.textctrl}, State};
+  {reply,{State#state.wx_env,State#state.textctrl}, State};
 handle_call(command_history, _From, State) ->
 	{reply, {State#state.cmd_history}, State};
 handle_call({update_cmd_history, CmdLst}, _From, State) ->
-    {reply, ok, State#state{cmd_history=CmdLst}};
+  {reply, ok, State#state{cmd_history=CmdLst}};
 handle_call(command_index, _From, State) ->
 	{reply, {State#state.current_cmd}, State};
 handle_call({update_cmd_index, Index}, _From, State) ->
-    {reply, ok, State#state{current_cmd=Index}};
+  {reply, ok, State#state{current_cmd=Index}};
 handle_call(Msg, _From, State) ->
-    io:format("Got Call ~p~n",[Msg]),
-    {reply,ok,State}.
+  io:format("Got Call ~p~n",[Msg]),
+  {reply,ok,State}.
     
-handle_event(_Event, State) ->
-    io:format("SHELL EVENT CA~n"),
-    {noreply, State}.
+handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
+            State=#state{menu=Menu}) ->
+  wxWindow:popupMenu(Console, Menu),
+	{noreply, State};
+handle_event(#wx{obj=Console, id=Id, event=#wxCommand{type=command_menu_selected}},
+            State) ->
+  case Id of
+    ?ID_RESET_CONSOLE ->
+      console_port:close_port(),
+      receive
+        after 5000 ->
+          io:format("FLUSHING BUFFER~n"),
+          console_port:buffer_responses(false),
+          console_port:flush_buffer()
+      end;
+    _ ->
+      io:format("NOT IMPLEMENTED")
+  end,
+	{noreply, State}.
     
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
@@ -405,3 +429,17 @@ check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
       FailFun()
   end,
   ok.
+  
+
+%% =====================================================================
+%% @doc Build the popup "right click" menu.
+
+create_menu() ->
+  Menu = wxMenu:new([]),
+  wxMenu:append(Menu, ?wxID_ANY, "Cut", []),
+  wxMenu:append(Menu, ?wxID_ANY, "Copy", []),
+  wxMenu:append(Menu, ?wxID_ANY, "Paste", []),
+  wxMenu:appendSeparator(Menu),
+  wxMenu:append(Menu, ?ID_RESET_CONSOLE, "Reset Console", []),
+  wxMenu:connect(Menu, command_menu_selected),
+  Menu.
