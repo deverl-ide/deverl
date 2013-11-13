@@ -244,10 +244,8 @@ handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}}
   wxButton:disable(wxWindow:findWindow(Parent, ?NEXT_BUTTON)),
   {ProjectName, ProjectPath} = get_project_choice(Parent),
   set_project_text(Parent, ProjectName),
-  
-  %%PathText = set_default_path_text(Parent, ProjectPath),
   PathText = get_default_path_text(Parent, ProjectPath) ++ "/",
-  set_path_text(Parent, PathText ++ get_filename(Parent)),
+  set_path_text(Parent, PathText, get_filename(Parent)),
   check_if_finished(Parent, get_filename(Parent), Desc),
   {noreply, State#state{path=PathText}};
 handle_event(#wx{id=?BACK_BUTTON, event=#wxCommand{type=command_button_clicked}},
@@ -267,8 +265,8 @@ handle_event(#wx{id=?BROWSE_BUTTON, event=#wxCommand{type=command_button_clicked
         cancelled ->
           ok;
         _ ->
-          set_path_text(Parent, DirectoryChoice),
-          set_default_path(DirectoryChoice)
+          set_path_text(Parent, DirectoryChoice ++ "/", get_filename(Parent)),
+          set_default_path(DirectoryChoice ++ "/")
       end;
     _ ->
       browse_dialog(Parent, ProjectPath ++ get_default_folder_text(Parent), ProjectId)
@@ -278,7 +276,7 @@ handle_event(#wx{id=?FINISH_BUTTON, event=#wxCommand{type=command_button_clicked
              State=#state{win=Parent, dialog1=_Dialog1, dialog2=_Dialog2}) ->
   Path = get_path_text(Parent),
   wxDialog:endModal(Parent, ?wxID_OK),
-  {noreply, State#state{path=Path++get_file_extension(Parent)}};
+  {noreply, State#state{path=Path}};
 handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_selected, commandInt=Index}},
              State=#state{win=Parent}) ->
   case Index of
@@ -291,10 +289,9 @@ handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_sel
 handle_event(#wx{id=?FILENAME_BOX, event=#wxCommand{type=command_text_updated, cmdString=Filename}},
              State=#state{win=Parent, path=ProjectPath, desc_panel=Desc}) ->
   check_if_finished(Parent, Filename, Desc),
-  PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
-  wxTextCtrl:clear(PathTextBox),
-  wxTextCtrl:writeText(PathTextBox, ProjectPath ++ Filename),
-  
+  %PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
+  %wxTextCtrl:clear(PathTextBox),
+  set_path_text(Parent, ProjectPath, Filename),
   {noreply, State};
 handle_event(#wx{id=?PROJECT_CHOICE, event=#wxCommand{type=command_choice_selected}},
              State=#state{win=Parent}) ->
@@ -387,7 +384,8 @@ dialog2(Parent) ->
 %% @doc Create the browse dialog for browsing a project directory.
 
 browse_dialog(Parent, Root, ProjectId) -> 
-  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{style, ?wxDEFAULT_DIALOG_STYLE bor
+  Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size, {300, 300}},
+                                                                {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                         ?wxRESIZE_BORDER bor
                                                                         ?wxDIALOG_EX_METAL}]),                                                                      
 	%% Conditional compilation OSX
@@ -430,7 +428,7 @@ browse_dialog(Parent, Root, ProjectId) ->
     wxEvent:skip(O),
     Selection = wxTreeCtrl:getSelection(Tree),
     %%io:format(wxTreeCtrl:getItemData(Tree, Selection) ++ "~n"),
-    set_path_text(Parent, wxTreeCtrl:getItemData(Tree, Selection) ++ "/" ++ get_filename(Parent)),
+    set_path_text(Parent, wxTreeCtrl:getItemData(Tree, Selection) ++ "/", get_filename(Parent)),
     set_default_path(wxTreeCtrl:getItemData(Tree, Selection) ++ "/")
   end,
   
@@ -454,18 +452,23 @@ set_default_path_text(Parent, ProjectPath) ->
   PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
   wxTextCtrl:clear(PathTextBox),
   PathText = get_default_path_text(Parent, ProjectPath),
-  wxTextCtrl:writeText(PathTextBox, PathText),
+  wxTextCtrl:writeText(PathTextBox, PathText ++ "/"),
   PathText.
 
 
 %% =====================================================================
 %% @doc Set the path text to a given path.
 
-set_path_text(Parent, Path) ->
+set_path_text(Parent, Path, Filename) ->
   PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
   wxTextCtrl:clear(PathTextBox),
-  wxTextCtrl:writeText(PathTextBox, Path).
-
+  case string:len(Filename) of
+    0 ->
+      wxTextCtrl:writeText(PathTextBox, Path);
+    _ ->
+      wxTextCtrl:writeText(PathTextBox, Path ++ Filename ++ get_file_extension(Parent))
+  end.
+  
 
 %% =====================================================================
 %% @doc
@@ -580,6 +583,23 @@ check_if_finished(Parent, Filename, Desc) ->
 
 
 %% =====================================================================
+%% @doc Validate the input Name.
+
+validate_name([], _) -> false;
+validate_name(Str, Desc) ->
+	case validate_name(Str) of
+		nomatch -> 
+			true;
+		{match, [{Pos,_}]} -> 
+			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
+			insert_desc(Desc, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename.", [{bitmap, Bitmap}]),
+			false
+	end.
+validate_name(Str) ->
+	re:run(Str, "[/\]").
+
+
+%% =====================================================================
 %% @doc Swap Dialog1 with Dialog2.
 
 swap(Sizer, Dialog1, Dialog2) ->
@@ -601,20 +621,29 @@ add_project_data(ProjectChoice, [ProjectId|Projects]) ->
   
 
 %% =====================================================================
-%% @doc Validate the input Name.
+%% @doc Display information to the user within the 'Description' box.	
+%% NOTE This is duplicated from the new_project_wx module.
 
-validate_name([], _) -> false;
-validate_name(Str, Desc) ->
-	case validate_name(Str) of
-		nomatch -> 
-			true;
-		{match, [{Pos,_}]} -> 
-			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
-			insert_desc(Desc, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename.", [{bitmap, Bitmap}]),
-			false
-	end.
-validate_name(Str) ->
-	re:run(Str, "[/\]").
+insert_desc(Description, Msg) ->
+	insert_desc(Description, Msg, []).
+
+insert_desc(Description, Msg, Options) ->
+	SzFlags = wxSizerFlags:new([{proportion, 0}]),
+	wxSizerFlags:expand(wxSizerFlags:border(SzFlags, ?wxTOP, 10)),
+	wxWindow:freeze(Description),
+	wxPanel:destroyChildren(Description),
+	Sz = wxBoxSizer:new(?wxHORIZONTAL),
+	wxPanel:setSizer(Description, Sz),
+	wxSizer:addSpacer(Sz, 10),
+	case proplists:get_value(bitmap, Options) of
+		undefined -> ok;
+		Bitmap -> 
+			wxSizer:add(Sz, wxStaticBitmap:new(Description, ?wxID_ANY, Bitmap), [{border, 5}, {flag, ?wxTOP bor ?wxRIGHT}])
+	end,
+	wxSizer:add(Sz, wxStaticText:new(Description, ?wxID_ANY, Msg), SzFlags),
+	wxPanel:layout(Description),	
+	wxWindow:thaw(Description),
+	ok.
 
 
 %% =====================================================================
@@ -662,28 +691,3 @@ add_files(Tree, Root, [File|Files], ProjectId) ->
 	end,
 	add_files(Tree, Root, Files, ProjectId).
 
-
-%% =====================================================================
-%% @doc Display information to the user within the 'Description' box.	
-%% NOTE This is duplicated from the new_project_wx module.
-
-insert_desc(Description, Msg) ->
-	insert_desc(Description, Msg, []).
-
-insert_desc(Description, Msg, Options) ->
-	SzFlags = wxSizerFlags:new([{proportion, 0}]),
-	wxSizerFlags:expand(wxSizerFlags:border(SzFlags, ?wxTOP, 10)),
-	wxWindow:freeze(Description),
-	wxPanel:destroyChildren(Description),
-	Sz = wxBoxSizer:new(?wxHORIZONTAL),
-	wxPanel:setSizer(Description, Sz),
-	wxSizer:addSpacer(Sz, 10),
-	case proplists:get_value(bitmap, Options) of
-		undefined -> ok;
-		Bitmap -> 
-			wxSizer:add(Sz, wxStaticBitmap:new(Description, ?wxID_ANY, Bitmap), [{border, 5}, {flag, ?wxTOP bor ?wxRIGHT}])
-	end,
-	wxSizer:add(Sz, wxStaticText:new(Description, ?wxID_ANY, Msg), SzFlags),
-	wxPanel:layout(Description),	
-	wxWindow:thaw(Description),
-	ok.
