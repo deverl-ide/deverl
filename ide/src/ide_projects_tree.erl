@@ -33,7 +33,8 @@
         add_standalone_document/1,
 				remove_project/1,
         remove_standalone_document/1,
-        insert_file/1
+        insert_file/1,
+        set_has_children/1
         ]).
 
 %% Macros
@@ -116,6 +117,13 @@ add_standalone_document(Path) ->
 remove_standalone_document(Path) ->
   wx_object:cast(?MODULE, {remove_standalone, Path}).
 
+
+%% =====================================================================
+%% @doc
+
+set_has_children(Path) ->
+  wx_object:cast(?MODULE, {set_has_children, Path}).
+  
 
 %% =====================================================================
 %% Callback functions
@@ -211,7 +219,11 @@ handle_cast({remove_standalone, Path}, State=#state{tree=Tree}) ->
   wxTreeCtrl:delete(Tree, Item),
   alternate_background_of_children(Tree, get_standalone_root(Tree)),
   insert_placeholder(Tree, get_standalone_root(Tree), ?HEADER_FILES_EMPTY),
-  {noreply,State}.
+  {noreply,State};
+  
+handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
+  wxTreeCtrl:setItemHasChildren(Tree, get_item_from_path(Tree, get_all_items(Tree), Path)),
+  {noreply, State}.
 
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.

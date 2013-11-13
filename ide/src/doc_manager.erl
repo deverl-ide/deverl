@@ -165,7 +165,12 @@ save_active_document() ->
 %% @doc
 
 save_active_project() ->
-	save_project(project_manager:get_active_project()).
+	case save_project(project_manager:get_active_project()) of
+    {Saved, []} ->
+      ok;
+    {_Saved, _Failed} ->
+      cancelled
+  end.
 
 
 %% =====================================================================

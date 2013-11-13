@@ -362,9 +362,9 @@ init(Config) ->
     {?MENU_ID_WRANGLER, {},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
 		
-    {?MENU_ID_COMPILE_FILE, {ide_build,compile,[]},
+    {?MENU_ID_COMPILE_FILE, {ide_build, compile_file,[]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?MENU_ID_MAKE_PROJECT, {},
+    {?MENU_ID_MAKE_PROJECT, {ide_build, make_project, []},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?MENU_ID_RUN, {},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
