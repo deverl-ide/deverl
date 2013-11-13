@@ -248,12 +248,12 @@ handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
 	ide:set_title([]),
 	{noreply, State};
   
-handle_cast(freeze_notebook, State=#state{notebook=Nb}) ->
-  wxWindow:freeze(Nb),
+handle_cast(freeze_notebook, State=#state{notebook=Nb, parent=Parent}) ->
+  wxWindow:freeze(Parent),
 	{noreply, State};
   
-handle_cast(thaw_notebook, State=#state{notebook=Nb}) ->
-  wxWindow:thaw(Nb),
+handle_cast(thaw_notebook, State=#state{notebook=Nb, parent=Parent}) ->
+  wxWindow:thaw(Parent),
 	{noreply, State}.
 
 handle_call({create_doc, Path, ProjectId}, _From,
