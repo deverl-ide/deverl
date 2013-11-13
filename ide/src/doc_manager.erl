@@ -27,10 +27,12 @@
          close_project/1,
 				 save_as/0,
 				 save_all/0,
+         save_document/1,
          save_active_document/0,
          save_active_project/0,
 				 apply_to_all_documents/2,
-				 apply_to_active_document/2]).
+				 apply_to_active_document/2,
+         get_active_document/0]).
 
 %% Records
 -record(document, {path :: string(),
@@ -139,6 +141,20 @@ save_all() ->
 %% =====================================================================
 %% @doc
 
+save_document(DocId) ->
+  case save_documents([DocId]) of
+    [] ->
+			ok;
+    failed ->
+      cancelled;
+    DocsToClose ->
+      close(DocsToClose)
+  end.
+  
+
+%% =====================================================================
+%% @doc
+
 save_active_document() ->
 	%% Saving unmodified documents unnecessarily atm
 	save_documents([get_active_document()]).
@@ -163,6 +179,13 @@ apply_to_all_documents(Fun, Args) ->
 
 apply_to_active_document(Fun, Args) ->
 	apply_to_documents(Fun, Args, [get_active_document()]).
+  
+  
+%% =====================================================================
+%% @doc
+
+get_active_document() ->
+  wx_object:call(?MODULE, get_active_doc).
 
 
 %% =====================================================================
@@ -203,7 +226,6 @@ handle_info(Msg, State) ->
 	{noreply,State}.
 
 handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
-  wxWindow:freeze(Nb),
   Record = proplists:get_value(DocId, DocRecords),
   case Record#document.project_id of
     undefined ->
@@ -217,7 +239,6 @@ handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords
  		0 -> wx_object:cast(?MODULE, notebook_empty);
  		_ -> ok
  	end,
-  wxWindow:thaw(Nb),
   {noreply, State#state{doc_records=NewDocRecords, page_to_doc_id=NewPageToDocId}};
 
 handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
@@ -226,8 +247,13 @@ handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
 	show_placeholder(Sz),
 	ide:set_title([]),
 	{noreply, State};
-
-handle_cast(_, State) ->
+  
+handle_cast(freeze_notebook, State=#state{notebook=Nb}) ->
+  wxWindow:freeze(Nb),
+	{noreply, State};
+  
+handle_cast(thaw_notebook, State=#state{notebook=Nb}) ->
+  wxWindow:thaw(Nb),
 	{noreply, State}.
 
 handle_call({create_doc, Path, ProjectId}, _From,
@@ -303,7 +329,7 @@ handle_call({save, DocId}, _From,
     {ok, DocRecords}
   catch
     _:Msg ->
-      {Msg, Parent}
+      {error, {Msg, Parent}}
   end,
 {reply, Result, State};
 
@@ -374,15 +400,17 @@ load_editor_contents(Editor, Path) ->
 
 
 %% =====================================================================
-%% @doc If single io error, no docs are closed.
+%% @doc 
 
 close_documents(Documents) ->
+  wx_object:cast(?MODULE, freeze_notebook),
   case get_modified_docs(Documents) of
     {[], _Parent} ->
       close(Documents);
     {ModifiedDocs, Parent} ->
       show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs, get_doc_names(Documents), Documents)
-  end.
+  end,
+  wx_object:cast(?MODULE, thaw_notebook).
   
 
 %% =====================================================================
@@ -397,21 +425,20 @@ show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocNames, 
 			close(DocIdList);
 		?wxID_SAVE -> %% Save the document
       close(lists:subtract(DocIdList, ModifiedDocIdList)),
-      do_save(ModifiedDocIdList)
+      save_and_close(ModifiedDocIdList)
 	end.
 
 
 %% =====================================================================
 %% @doc
-
-do_save(DocIdList) ->
+  
+save_and_close(DocIdList) ->
   case save_documents(DocIdList) of
-    [] ->
-			ok;
-    failed ->
-      cancelled;
-    DocsToClose ->
-      close(DocsToClose)
+    {Saved, []} ->
+      close(Saved);
+    {Saved, Failed} ->
+      close(Saved),
+      cancelled
   end.
 
 
@@ -446,19 +473,19 @@ save_as(DocId) ->
 %% @doc
 
 save_documents(DocIdList) ->
-  save_documents(DocIdList, []).
+  save_documents(DocIdList, {[], []}).
 
 save_documents([], Acc) ->
   Acc;
-save_documents([DocId|DocIdList], Acc) ->
+save_documents([DocId|DocIdList], {Saved, Failed}) ->
 	case wx_object:call(?MODULE, {save, DocId}) of
     {ok, DocRecords} ->
       Record = get_record(DocId, DocRecords),
       editor:set_savepoint(Record#document.editor),
-      save_documents(DocIdList, [DocId|Acc]);
-    {Msg, Parent} ->
+      save_documents(DocIdList, {[DocId|Saved], Failed});
+    {error, {Msg, Parent}} ->
       lib_dialog_wx:msg_error(Parent, Msg),
-      failed
+      save_documents(DocIdList, {Saved, [DocId|Failed]})
   end.
 
 
@@ -504,13 +531,6 @@ doc_id_to_page_id(Notebook, DocId, [_|Rest]) ->
 
 get_open_documents() ->
   wx_object:call(?MODULE, get_open_docs).
-
-
-%% =====================================================================
-%% @doc
-
-get_active_document() ->
-  wx_object:call(?MODULE, get_active_doc).
 
 
 %% =====================================================================
