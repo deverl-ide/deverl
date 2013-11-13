@@ -374,7 +374,8 @@ load_editor_contents(Editor, Path) ->
 
 
 %% =====================================================================
-%% @doc If single io error, no docs are closed.
+%% @doc Should an io error occur, only those documents saved up to that
+%% point will be saved.
 
 close_documents(Documents) ->
   case get_modified_docs(Documents) of
