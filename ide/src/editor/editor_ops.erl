@@ -52,6 +52,7 @@ update_styles(Frame) ->
       sys_pref_manager:set_preference(editor_font_family, wxFont:getFamily(Font)),
       sys_pref_manager:set_preference(editor_font_style, wxFont:getStyle(Font)),
       sys_pref_manager:set_preference(editor_font_weight, wxFont:getWeight(Font)),
+      sys_pref_manager:set_preference(editor_font_facenmae, wxFont:getFaceName(Font)),
       doc_manager:apply_to_all_documents(fun editor:set_font/2, [Font]),
       ok;
     ?wxID_CANCEL ->
