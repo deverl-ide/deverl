@@ -38,7 +38,8 @@
 				 set_active_project/1,
 				 get_root/1,
          get_name/1,
-         is_known_project/1
+         is_known_project/1,
+         set_project_configuration/1
          ]).
 
 
@@ -199,7 +200,19 @@ is_known_project(Path) ->
   Projects = sys_pref_manager:get_preference(projects),
   is_subpath(Path, Projects).
   
-		
+  
+%% =====================================================================
+%% @doc 
+
+set_project_configuration(Parent) ->
+  Dialog = project_config_wx:start(Parent),
+  case wxDialog:showModal(Dialog) of
+    ?wxID_CANCEL ->
+      ok;
+    ?wxID_OK ->
+      ok
+  end.  
+  
 %% =====================================================================
 %% Callback functions
 %% =====================================================================

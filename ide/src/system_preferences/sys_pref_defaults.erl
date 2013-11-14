@@ -37,5 +37,10 @@ get_defaults() ->
   {indent_guides, false},
 
   %% Console prefs
-  {console_theme, {"Light", ?wxBLACK, ?wxWHITE}}
+  {console_theme, {"Light", ?wxBLACK, ?wxWHITE}},
+  {console_font_size, ?DEFAULT_FONT_SIZE},
+  {console_font_facename, undefined},
+  {console_font_family, ?wxFONTFAMILY_TELETYPE},
+  {console_font_style, ?wxNORMAL},
+  {console_font_weight, ?wxNORMAL}
   ].

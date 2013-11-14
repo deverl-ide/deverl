@@ -88,6 +88,7 @@ init(Config) ->
 	wxSizer:setSizeHints(PanelSz, Frame),
   wxSizer:layout(PanelSz),
   
+  wxFrame:centre(Frame),
   wxFrame:show(Frame),
   
   {Frame, State#state{pref=PrefPane}}.

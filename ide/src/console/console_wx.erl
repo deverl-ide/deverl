@@ -26,7 +26,8 @@
 %% API     
 -export([new/1,
 				 load_response/1,
-         set_theme/2]).
+         set_theme/2,
+         set_font/1]).
 
 %% Macros
 -define(ID_SHELL_TEXT_BOX, 1).
@@ -67,10 +68,15 @@ load_response(Response) ->
 %% @doc Update the shell's theme
 
 set_theme(Fg, Bg) ->
-  wx_object:cast(?MODULE, {set_theme, Fg, Bg}),
+  wx_object:cast(?MODULE, {set_theme, Fg, Bg}).
 
-  ok.
-	
+
+%% =====================================================================
+%% @doc 
+
+set_font(Font) ->
+  wx_object:cast(?MODULE, {set_font, Font}).	
+  
 
 %% =====================================================================
 %% Callback functions
@@ -96,8 +102,16 @@ init(Config) ->
 	?stc:setCaretWidth(ShellTextBox, 1), 
 	?stc:cmdKeyClear(ShellTextBox, ?wxSTC_KEY_UP, 0),
   
+  %% Set saved state
   {_Name, Fg, Bg} = sys_pref_manager:get_preference(console_theme),
   set_theme(Fg, Bg),
+  
+  Font = wxFont:new(sys_pref_manager:get_preference(console_font_size),
+	           sys_pref_manager:get_preference(console_font_family),
+	           sys_pref_manager:get_preference(console_font_style),
+	           sys_pref_manager:get_preference(console_font_weight),
+             [{face, sys_pref_manager:get_preference(console_font_facename)}]),
+  set_font(Font),         
                                                 	
 	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
                                           {proportion, 1}]),
@@ -124,6 +138,10 @@ handle_cast({set_theme, Fg, Bg}, State=#state{textctrl=Console}) ->
   ?stc:styleSetBackground(Console, ?wxSTC_STYLE_DEFAULT, Bg),
   ?stc:styleSetForeground(Console, ?wxSTC_STYLE_DEFAULT, Fg),
   ?stc:setCaretForeground(Console, Fg),
+  ?stc:styleClearAll(Console),
+  {noreply,State};
+handle_cast({set_font, Font}, State=#state{textctrl=Console}) ->
+  ?stc:styleSetFont(Console, ?wxSTC_STYLE_DEFAULT, Font),
   ?stc:styleClearAll(Console),
   {noreply,State}.
     

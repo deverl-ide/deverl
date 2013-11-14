@@ -96,9 +96,18 @@ init(Config) ->
   wxMenu:append(File, ?wxID_CLOSE_ALL, "Close All"),
   wxMenu:append(File, ?MENU_ID_CLOSE_PROJECT, "Close Project"),
   wxMenu:append(File, ?wxID_SEPARATOR, []),
+  wxMenu:append(File, ?MENU_ID_PROJECT_CONFIG, "Project Configuration\tCtrl+Alt+Shift+P"),
+  wxMenu:append(File, ?wxID_SEPARATOR, []),
+  wxMenu:append(File, ?wxID_PRINT, "Print\tCtrl+P"),
+  case os:type() of
+    {_, darwin} ->
+      ok;
+    _ ->
+      wxMenu:append(File, ?wxID_SEPARATOR, [])
+  end,
   wxMenu:append(File, ?wxID_EXIT, "Exit\tCtrl+Q"),
   wxMenu:append(File, ?wxID_PREFERENCES, "Preferences"),
-  wxMenu:append(File, ?wxID_PRINT, "Print\tCtrl+P"),
+
   
   Edit        = wxMenu:new([]),
   wxMenu:append(Edit, ?wxID_UNDO, "Undo"),
@@ -317,6 +326,8 @@ init(Config) ->
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
 		{?MENU_ID_CLOSE_PROJECT, {project_manager, close_active_project, []},
       [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
+    {?MENU_ID_PROJECT_CONFIG, {project_manager, set_project_configuration, [Frame]},
+      [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?wxID_EXIT, {}},
     {?wxID_PREFERENCES, {ide_prefs,start, [[{parent,Frame}]]}},
     
@@ -366,7 +377,7 @@ init(Config) ->
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
     {?MENU_ID_MAKE_PROJECT, {ide_build, make_project, []},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
-    {?MENU_ID_RUN, {},
+    {?MENU_ID_RUN, {ide_build, run_project, []},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?MENU_ID_DIALYZER, {}, []},
     {?MENU_ID_TESTS, {}, []},

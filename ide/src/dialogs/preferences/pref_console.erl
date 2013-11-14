@@ -26,7 +26,9 @@
 
 %% Server state
 -record(state, {parent,
-                themes
+                themes,
+                font,
+                font_string
             	 }).
 
 
@@ -48,19 +50,48 @@ init(Config) ->
 do_init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Panel = wxPanel:new(Parent),
-     
-  MainSz = wxBoxSizer:new(?wxHORIZONTAL),
-  wxWindow:setSizer(Panel, MainSz),
+  
+  Sz = wxBoxSizer:new(?wxHORIZONTAL), %% For left and right margins
+  wxWindow:setSizer(Panel, Sz),
+  wxSizer:addSpacer(Sz, 20),
+  
+  MainSz = wxBoxSizer:new(?wxVERTICAL),
   wxSizer:addSpacer(MainSz, 20),
-
-  wxSizer:add(MainSz, wxStaticText:new(Panel, ?wxID_ANY, "Theme:"), [{border, 20}, {flag, ?wxTOP bor ?wxRIGHT}]),
+ 
+  %% Font
+  add_bold_label(Panel, MainSz, "Font"),
+  
+  Font = wxFont:new(
+     sys_pref_manager:get_preference(console_font_size),
+     sys_pref_manager:get_preference(console_font_family),
+     sys_pref_manager:get_preference(console_font_style),
+  	 sys_pref_manager:get_preference(console_font_weight)),
+  
+  case sys_pref_manager:get_preference(console_font_facename) of
+    undefined ->
+      ok;
+    FaceName ->
+      wxFont:setFaceName(Font, FaceName)
+  end,
+  
+  FontSz = wxBoxSizer:new(?wxHORIZONTAL),
+  FontStr = wxStaticText:new(Panel, ?wxID_ANY, get_font_string(Font)),
+  wxSizer:add(FontSz, FontStr, [{flag, ?wxALIGN_CENTRE_VERTICAL bor ?wxRIGHT}, {border, 50}]),
+  Browse = wxButton:new(Panel, ?wxID_ANY, [{label, "Browse"}]),
+  wxSizer:add(FontSz, Browse, [{flag, ?wxALIGN_CENTRE_VERTICAL}]),
+  
+  wxSizer:add(MainSz, FontSz, [{proportion, 0}]),
+  wxSizer:addSpacer(MainSz, 20),
+  
+  %% Theme
+  add_bold_label(Panel, MainSz, "Theme"),
   
   %% Console themes {Name, FgColour, BgColour}
   Themes = [{"Light", ?wxBLACK, ?wxWHITE},
             {"Dark", ?wxWHITE, ?wxBLACK},
             {"Matrix", {0,204,0}, ?wxBLACK}],
   
-  ThemeSizer = wxFlexGridSizer:new(length(Themes), 2, 10, 10),
+  ThemeSz = wxBoxSizer:new(?wxHORIZONTAL),
   
   SavedTheme = sys_pref_manager:get_preference(console_theme),
   
@@ -72,8 +103,9 @@ do_init(Config) ->
       wxWindow:setForegroundColour(T, Fg),
       wxWindow:setBackgroundColour(Profile, Bg),
       Radio = wxRadioButton:new(Panel, ?wxID_ANY, Name, []),
-      wxSizer:add(ThemeSizer, Profile, [{proportion, 1}, {flag, ?wxEXPAND}]),
-      wxSizer:add(ThemeSizer, Radio, [{flag, ?wxALIGN_CENTRE}]),    
+      wxSizer:add(ThemeSz, Profile, [{proportion, 1}, {flag, ?wxEXPAND bor ?wxRIGHT}, {border, 5}]),
+      wxSizer:add(ThemeSz, Radio, [{flag, ?wxALIGN_CENTRE}]),
+      wxSizer:addSpacer(ThemeSz, 10),    
       wxRadioButton:connect(Radio, command_radiobutton_selected, [{userData,Theme}]),
       case SavedTheme of
         Theme ->
@@ -84,21 +116,47 @@ do_init(Config) ->
     end,
 
   [ ThemeEx(Theme) || Theme <- Themes ],
-
-  wxFlexGridSizer:addGrowableCol(ThemeSizer, 2),
   
-  wxSizer:add(MainSz, ThemeSizer, [{border, 20}, {flag, ?wxTOP bor ?wxBOTTOM}]),
+  wxSizer:add(MainSz, ThemeSz, []),
   wxSizer:addSpacer(MainSz, 20),
+  
+  wxSizer:add(Sz, MainSz, []),
+  wxSizer:addSpacer(Sz, 20),
+  
+  wxButton:connect(Browse, command_button_clicked, []),
+  
+  State=#state{parent=Panel,
+               themes=Themes,
+               font=Font,
+               font_string=FontStr},
     
-  {Panel, #state{parent=Panel, themes=Themes}}.
+  {Panel, State}.
 
 handle_event(#wx{id=Id, event=#wxCommand{type=command_radiobutton_selected}, userData={_Name,Fg,Bg}=Theme}, State) ->
   console_wx:set_theme(Fg, Bg),
   sys_pref_manager:set_preference(console_theme, Theme),
   {noreply, State};
-handle_event(Ev = #wx{}, State = #state{}) ->
-  io:format("Got Event ~p~n",[Ev]),
-  {noreply,State}.
+handle_event(#wx{obj=Browse, event=#wxCommand{type=command_button_clicked}}, 
+             State=#state{parent=Parent, font=Font, font_string=FontStr}) ->
+  Fd = wxFontData:new(),
+  wxFontData:setInitialFont(Fd, Font),
+  Dialog = wxFontDialog:new(Parent, Fd),
+  Result = case wxDialog:showModal(Dialog) of
+    ?wxID_OK ->
+      NewFont = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
+      wxStaticText:setLabel(FontStr, get_font_string(NewFont)),
+      %% Crap way to set font prefs, need a function that does all this lot
+      sys_pref_manager:set_preference(console_font_size, wxFont:getPointSize(NewFont)),
+      sys_pref_manager:set_preference(console_font_family, wxFont:getFamily(NewFont)),
+      sys_pref_manager:set_preference(console_font_style, wxFont:getStyle(NewFont)),
+      sys_pref_manager:set_preference(console_font_weight, wxFont:getWeight(NewFont)),
+      sys_pref_manager:set_preference(console_font_facename, wxFont:getFaceName(NewFont)),
+      console_wx:set_font(NewFont),
+      NewFont;
+    ?wxID_CANCEL ->
+			Font
+	end,
+  {noreply,State#state{font=Result}}.
 
 handle_info(Msg, State) ->
   io:format( "Got Info ~p~n",[Msg]),
@@ -120,3 +178,14 @@ code_change(_, _, State) ->
 
 terminate(_Reason, _) ->
   ok.
+  
+add_bold_label(Parent, Sz, Name) ->
+  Label = wxStaticText:new(Parent, ?wxID_ANY, Name),
+  Font = wxStaticText:getFont(Label),
+  wxFont:setWeight(Font, ?wxFONTWEIGHT_BOLD),
+  wxStaticText:setFont(Label, Font),
+  wxSizer:add(Sz, Label, []),
+  wxSizer:addSpacer(Sz, 10).
+  
+get_font_string(Font) ->
+  io_lib:format("~s ~p pt.", [wxFont:getFaceName(Font), wxFont:getPointSize(Font)]).

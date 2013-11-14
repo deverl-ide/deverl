@@ -76,6 +76,7 @@
 -define(MENU_ID_HOTKEYS,           6044).
 -define(MENU_ID_SEARCH_DOC,        6045).
 -define(MENU_ID_MANUAL,            6046).
+-define(MENU_ID_PROJECT_CONFIG,    6050).
 -define(MENU_ID_HIGHEST,					 6999).
 
 %% Sub-menus
