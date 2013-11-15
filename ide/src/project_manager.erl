@@ -38,6 +38,7 @@
 				 set_active_project/1,
 				 get_root/1,
          get_name/1,
+         get_build_config/1,
          is_known_project/1,
          set_project_configuration/1
          ]).
@@ -45,6 +46,7 @@
 
 %% Records
 -record(project, {root :: path(),
+                  build_config,
 									open_files :: [{path(), term()}]}).
 
 %% Types
@@ -191,7 +193,14 @@ get_root(ProjectId) ->
   
 get_name(ProjectId) ->
   filename:basename(get_root(ProjectId)).
-      
+  
+  
+%% =====================================================================
+%% @doc 
+
+get_build_config(ProjectId) ->
+  gen_server:call(?MODULE, {get_build_config, ProjectId}).
+       
 
 %% =====================================================================
 %% @doc 
@@ -208,10 +217,13 @@ set_project_configuration(Parent) ->
   Dialog = project_config_wx:start(Parent),
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
-      ok;
+      cancelled;
     ?wxID_OK ->
-      ok
+      Config = project_config_wx:get_build_config(Dialog),
+      project_config_wx:close(Dialog),
+      wx_object:call(?MODULE, {set_project_configuration, Config})
   end.  
+  
   
 %% =====================================================================
 %% Callback functions
@@ -239,27 +251,58 @@ handle_call({new_project, Path}, _From, State=#state{projects=Projects}) ->
       ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, true),
       {reply, Id, State#state{projects=[Record | Projects]}}
   end;
+
 handle_call({add_open_project, Id, Path}, _From, State=#state{projects=Projects}) ->
 	P=#project{open_files=Open} = proplists:get_value(Id, Projects),
 	N = P#project{open_files=[Path | Open]},
 	D = proplists:delete(Id, Projects),
   {reply, ok, State#state{projects=[{Id, N} | D]}};
+
 handle_call({get_project, Path}, _From, State=#state{projects=Projects}) ->
   {reply, path_to_project_id(Projects, Path), State};
+
 handle_call(open_projects, _From, State=#state{projects=Projects}) ->
 	OpenProjects = lists:map(fun({Id, _Path}) -> Id end, Projects),
   {reply, OpenProjects, State};
+
 handle_call(active_project, _From, State) ->
   {reply, State#state.active_project, State};
+
 handle_call({get_root, ProjectId}, _From, State=#state{projects=Projects}) ->
 	#project{root=Root} = proplists:get_value(ProjectId, Projects),
 	{reply, Root, State};
+
+handle_call({get_build_config, ProjectId}, _From, State=#state{projects=Projects}) ->
+	#project{build_config=Build, root=Root}=Project = proplists:get_value(ProjectId, Projects),
+  {Conf, UpdatedProjects} = case Build of
+    undefined -> %% Attempt to read the config file
+      B = load_build_config(Root),
+      W = proplists:delete(ProjectId, Projects),
+      {B, [{ProjectId, Project#project{build_config=B}} | W]};
+    C ->
+      {C, Projects}
+  end,
+	{reply, Conf, State#state{projects=UpdatedProjects}};
+
 handle_call(close_project, _From, State=#state{frame=Frame, active_project=ActiveProject, projects=Projects}) ->
   ide_projects_tree:remove_project(ActiveProject),
   update_ui(Frame, undefined),
   ProjectsList = proplists:delete(ActiveProject, Projects),
   ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, false),
-  {reply, ok, State#state{active_project=undefined, projects=ProjectsList}}.
+  {reply, ok, State#state{active_project=undefined, projects=ProjectsList}};
+
+handle_call({set_project_configuration, Config}, _From, 
+            State=#state{frame=Frame, active_project=ActiveProject, projects=Projects}) -> 
+  #project{root=Root}=Project = proplists:get_value(ActiveProject, Projects),
+  Result = case file:write_file(filename:join([Root, ".build_config"]), io_lib:fwrite("~p.\n",[Config])) of
+    ok ->
+      ok;
+    {error, _} -> %% Project config will only be maintained while the application is open
+      error
+  end,
+  Tmp = proplists:delete(ActiveProject, Projects),
+  UpdatedProjects = [{ActiveProject, Project#project{build_config=Config}} | Tmp],
+ {reply, Result, State#state{projects=UpdatedProjects}}.
  
 % handle_call({close_project, ProjectId}, _From, State=#state{projects=Projects, frame=Frame}) ->
 %   doc_manager:close_project(ProjectId),
@@ -340,3 +383,21 @@ is_already_open(Projects, Path) ->
     ProjId ->
       {true, ProjId}
   end. 
+  
+
+load_build_config(Path) ->
+  Fh = filename:join([Path, ".build_config"]),
+  case file:consult(Fh) of
+    {error, {Line, Mod, Term}} -> %% The file is badly formatted
+      io:format("BUILD CONFIG BADLY FORMATTED~n"),
+      undefined;
+    {error, enoent} -> %% Does not exist
+      io:format("BUILD CONFIG NOT EXISTS~n"),
+      undefined;
+    {error, E} -> %% Other i/o error
+      %% Notify user of i/o error
+      io:format("ERROR: ~p~n", [E]),
+      undefined;
+    {ok, [Terms]} ->
+      Terms
+  end.

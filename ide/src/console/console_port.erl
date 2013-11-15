@@ -69,7 +69,7 @@ close_port() ->
 %% =====================================================================
    
 init(Args) ->
-  io:format("STARTING PORT~n"),
+  %% io:format("STARTING PORT~n"),
 	% process_flag(trap_exit, true), %% Die when the parent process dies
 	{Path, Options} = case os:type() of
 		{win32,_} ->
@@ -81,17 +81,17 @@ init(Args) ->
 	end,
 	try open(Path, Options) of
 		Port -> 
-      io:format("OPENING PORT: ~p~n", [Port]),
+      %% io:format("OPENING PORT: ~p~n", [Port]),
 			{ok, #state{port=Port, buffer_responses=true, queue=[]}}
 	catch
 		_:_ ->
-      io:format("COULD NOT OPEN PORT~n"),
+      %% io:format("COULD NOT OPEN PORT~n"),
 			{stop, no_port}
 	end.
 
 handle_call({call, Msg}, _From, #state{port=Port}=State) ->
-  io:format("CALLING PORT: ~p~n", [Port]),
-  io:format("SERVER STATE: ~p~n", [State]),
+  %% io:format("CALLING PORT: ~p~n", [Port]),
+  %% io:format("SERVER STATE: ~p~n", [State]),
   port_command(Port, Msg),
 	{reply, ok, State};
 handle_call(flush_buffer, _From, #state{queue=Queue}=State) ->
@@ -104,22 +104,22 @@ handle_cast(_Msg, State) ->
   {noreply, State}.
 
 handle_info({_From, close}, State) ->
-	io:format("PORT CLOSED INFO 1~n"),
+	%% io:format("PORT CLOSED INFO 1~n"),
   {stop, {port_closed, quit}, State};
 handle_info({Port,{exit_status,Status}}, State) ->
-	io:format("PORT CLOSED INFO 2~n"),
+	%% io:format("PORT CLOSED INFO 2~n"),
   % {stop, {port_terminated, ok}, State};
   {stop, {port_terminated, quit}, State};
 handle_info({'EXIT', Port, Reason}, #state{port=Port}=State) ->
-	io:format("PORT CLOSED~n"),
+	%% io:format("PORT CLOSED~n"),
   {stop, {port_terminated, Reason}, State};
 handle_info({_Port, {data, Response}}, State=#state{buffer_responses=Buffer, queue=Queue}) ->
 	NewState = case Buffer of
 		true -> 
-      io:format("Buffered response: ~p~n", [Response]),
+      %% io:format("Buffered response: ~p~n", [Response]),
 			State#state{queue=[Response | Queue]};
 		false -> 
-      io:format("Non-buffered response: ~p~n", [Response]),
+      %% io:format("Non-buffered response: ~p~n", [Response]),
 			console_parser:parse_response(Response), State
 	end,
 	{noreply, State}.

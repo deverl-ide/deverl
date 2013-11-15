@@ -330,7 +330,8 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_U
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_EDITOR},
 						 State=#state{sash_h=H, sash_v=V, utilities=Utils, left_pane=LeftPane,
-						 							sash_h_pos=HPos, sash_v_pos=VPos, workspace=Ws}) ->
+						 							sash_h_pos=HPos, sash_v_pos=VPos, workspace=Ws, frame=Frame}) ->
+  wxFrame:freeze(Frame),
 	Fun = fun(false, false, false) -> %% Restore
 		wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
 		wxSplitterWindow:splitVertically(V, LeftPane, Ws, [{sashPosition, VPos}]);
@@ -345,10 +346,12 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_ED
 			wxSplitterWindow:unsplit(V,[{toRemove, LeftPane}]);
 		_ -> ok
 	end,
+  wxFrame:thaw(Frame),
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UTIL},
 						 State=#state{frame=Frame, sash_h=H, sash_v=V, utilities=Utils, left_pane=LeftPane,
 						 							sash_h_pos=HPos, sash_v_pos=VPos, workspace=Ws}) ->
+  wxFrame:freeze(Frame),
 	IsSplit = wxSplitterWindow:isSplit(H),
 	IsShown = wxSplitterWindow:isShown(Utils),
 	case IsSplit of
@@ -360,6 +363,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UT
 		true -> wxSplitterWindow:unsplit(H,[{toRemove, V}]);
 		false -> ok
 	end,
+  wxFrame:thaw(Frame),
 	{noreply, State};
 
 %% The menu items from the ETS table

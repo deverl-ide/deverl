@@ -377,7 +377,7 @@ init(Config) ->
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
     {?MENU_ID_MAKE_PROJECT, {ide_build, make_project, []},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
-    {?MENU_ID_RUN, {ide_build, run_project, []},
+    {?MENU_ID_RUN, {ide_build, run_project, [Frame]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?MENU_ID_DIALYZER, {}, []},
     {?MENU_ID_TESTS, {}, []},

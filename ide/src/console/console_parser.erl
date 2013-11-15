@@ -38,7 +38,7 @@ parse_input(Message) ->
 %% @doc
 
 parse_response(Response) ->
-  io:format("RESPONSE FROM PORT~n"),
-	M = Response,
+  % io:format("RESPONSE FROM PORT~n"),
+  M = Response,
 	console_wx:load_response(M).
   

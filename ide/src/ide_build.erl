@@ -8,12 +8,13 @@
 %% =====================================================================
 
 -module(ide_build).
+-include_lib("wx/include/wx.hrl").
 
 %% API
 -export([
         compile_file/0,
         make_project/0,
-        run_project/0
+        run_project/1
         ]).
 
 
@@ -46,10 +47,10 @@ make_project() ->
   end.
   
   
-run_project() ->
+run_project(Parent) ->
   case make_project() of
     {ok, ProjectId, ProjectPath} ->
-      build_project(ProjectId, ProjectPath);
+      build_project(Parent, ProjectId);
     {error, _} ->
       ok
   end.
@@ -62,12 +63,33 @@ run_project() ->
 compile_file(Path) ->
 	console_port:call_port("c(\"" ++ Path ++ "\")." ++ io_lib:nl()).
   
-build_project(ProjectId, ProjectPath) ->
-  case file:consult(ProjectPath) of
-    {error, {Line, Mod, Term}} -> %% The file is badly formatted
-      io:format("BUILD CONFIG BADLY FORMATTED~n");
-    {error, _} -> %% Error opening the file
-      ok;
-    {ok, Terms} ->
-      ok
+build_project(Parent, ProjectId) ->
+  case project_manager:get_build_config(ProjectId) of
+    undefined -> 
+      notify_missing_config(Parent);
+    Config ->
+      io:format("CONFIG: ~p~n", [Config]),
+      try
+        ParsedConfig = parse_config(Config),
+        execute_function(ParsedConfig)
+      catch
+        error:_ ->
+          io:format("ERROR PARSING CONFIG")
+      end
   end.
+  
+notify_missing_config(Parent) ->
+  Dialog = lib_dialog_wx:notify_missing_config(Parent),
+  case wxDialog:showModal(Dialog) of
+		?wxID_CANCEL ->
+			cancelled;
+		?wxID_OK ->
+      project_manager:set_project_configuration(Parent)
+	end.
+  
+parse_config(Config) ->
+  
+  ok.
+
+execute_function({M, F, Args}) ->
+  ok.

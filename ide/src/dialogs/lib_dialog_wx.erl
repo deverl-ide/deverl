@@ -18,7 +18,8 @@
 	text_input_dialog/5,
 	msg_error/2,
 	msg_notice/2,
-	save_changes_dialog/2]).
+	save_changes_dialog/2,
+  notify_missing_config/1]).
 	
 -define(ERROR_CAPTION, "The operation could not continue.").
 -define(ID_DISCARD_CHANGES, 12345).
@@ -114,7 +115,7 @@ msg_notice(Parent, Msg) ->
 
 
 %% =====================================================================
-%% Display the save changes dialog.
+%% @doc Display the save changes dialog.
 
 save_changes_dialog(Parent, Filenames) ->
 	Heading = "The following documents have been modified. Would you like to save the changes?",
@@ -127,6 +128,16 @@ save_changes_dialog(Parent, Filenames) ->
 	generic_dialog(Parent, Heading, Buttons, [{sub_heading, SubHeading}, {stretch_spacer, 1}]).
 
 
+%% =====================================================================
+%% @doc
+
+notify_missing_config(Parent) ->
+	Heading = "The project needs to be configured before it can be run.",
+  SubHeading = "Do you want to configure it now?",
+	Buttons = [{?wxID_CANCEL, [], []}, {?wxID_OK, [{label, "Configure Project"}], [{default, true}]}],
+	generic_dialog(Parent, Heading, Buttons, [{sub_heading, SubHeading}]).
+  
+  
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
@@ -157,7 +168,8 @@ save_changes_dialog(Parent, Filenames) ->
 	Button :: {integer(), list(), [ButtonOption]},
 	ButtonOption :: {connect_handler, boolean()},
 	Option :: {sub_heading, string()}
-		| {stretch_spacer, integer()},
+		      | {stretch_spacer, integer()}
+          | {default, boolean()},
 	Result :: wxDialog:wxDialog().
 
 generic_dialog(Parent, Heading, Buttons, Option) ->
@@ -216,6 +228,12 @@ generic_dialog(Parent, Heading, Buttons, Option) ->
 			L -> ok;
 			_ -> wxSizer:addSpacer(ButtonSz, 15)
 		end,
+    case proplists:get_value(default, Config) of
+      true ->
+        wxButton:setDefault(Button);
+      _ ->
+        ok
+    end,
 		Acc + 1
 	end, 1, Buttons),
 	
@@ -230,6 +248,7 @@ generic_dialog(Parent, Heading, Buttons, Option) ->
 	wxSizer:fit(Sz, Dialog),
 	wxSizer:layout(Sz),
 	wxDialog:layout(Dialog),
+  wxDialog:centre(Dialog),
 	Dialog.
 
 

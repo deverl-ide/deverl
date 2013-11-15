@@ -77,7 +77,7 @@ do_init(Config) ->
   FontSz = wxBoxSizer:new(?wxHORIZONTAL),
   FontStr = wxStaticText:new(Panel, ?wxID_ANY, get_font_string(Font)),
   wxSizer:add(FontSz, FontStr, [{flag, ?wxALIGN_CENTRE_VERTICAL bor ?wxRIGHT}, {border, 50}]),
-  Browse = wxButton:new(Panel, ?wxID_ANY, [{label, "Browse"}]),
+  Browse = wxButton:new(Panel, ?wxID_ANY, [{label, "Browse..."}]),
   wxSizer:add(FontSz, Browse, [{flag, ?wxALIGN_CENTRE_VERTICAL}]),
   
   wxSizer:add(MainSz, FontSz, [{proportion, 0}]),
