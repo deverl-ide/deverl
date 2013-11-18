@@ -22,9 +22,7 @@
 %% @throws
 
 start(Args, Cwd)->
-  io:format("~p~n", [self()]),
-  spawn(?MODULE, call, [Args, Cwd]).
-  %call(Args, Cwd).   
+  spawn(?MODULE, call, [Args, Cwd]). 
   
 
 %% =====================================================================
@@ -43,18 +41,21 @@ call(Args, Cwd) ->
 		_Other ->
 			"/usr/local/lib/erlang/erts-5.10.2/bin/erl"
   end,
-  open_port({spawn_executable, ErlPath}, [use_stdio, exit_status, {cd, Cwd}, {args, [Args]}]),
-  io:format("~p~n", [self()]),
+  open_port({spawn_executable, ErlPath}, [stderr_to_stdout, exit_status, {cd, Cwd}, {args, [Args]}]),
   loop().
   
   
 loop() ->
-  receive 
-    {data, Data} ->
+  receive    
+    {_Port, {data, Data}} ->
       io:format("Data Received: ~p~n", [Data]),
       loop();
-    {exit_status, 0} ->
-      io:format("Exited~n")
+    {_Port, {exit_status, Status}} ->
+      io:format("Exited with code: ~p~n", [Status]);
+    {'EXIT', _Port, Reason} ->
+      io:format("Exited: ~p~n", [Reason]);
+    Thing ->
+      io:format("~p~n", [Thing])
   end.
 
 

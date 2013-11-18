@@ -251,7 +251,7 @@ generic_dialog(Parent, Heading, Buttons, Option) ->
   wxDialog:centre(Dialog),
 	Dialog.
 
-
+  
 %% =====================================================================
 %% @doc Display a choose directory dialog; gets a directory grom the 
 %% user.
