@@ -346,7 +346,7 @@ init(Config) ->
     {?wxID_CUT, {}},
     {?wxID_COPY, {}},
     {?wxID_PASTE, {}},
-    {?wxID_DELETE, {}},
+    {?wxID_DELETE, {port, start, ["-make", "/home/qqq/projects/git/erlangIDE/ide"]}},
     {?wxID_FIND, {editor_ops,find_replace,[Frame]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
     

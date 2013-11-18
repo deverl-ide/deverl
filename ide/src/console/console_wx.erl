@@ -109,8 +109,9 @@ init(Config) ->
   Font = wxFont:new(sys_pref_manager:get_preference(console_font_size),
 	           sys_pref_manager:get_preference(console_font_family),
 	           sys_pref_manager:get_preference(console_font_style),
-	           sys_pref_manager:get_preference(console_font_weight),
-             [{face, sys_pref_manager:get_preference(console_font_facename)}]),
+	           sys_pref_manager:get_preference(console_font_weight)
+             %[{face, sys_pref_manager:get_preference(console_font_facename)}]
+             ),
   set_font(Font),         
                                                 	
 	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
