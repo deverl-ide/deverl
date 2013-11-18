@@ -77,7 +77,10 @@
 -define(MENU_ID_SEARCH_DOC,        6045).
 -define(MENU_ID_MANUAL,            6046).
 -define(MENU_ID_PROJECT_CONFIG,    6050).
+-define(MENU_ID_IMPORT_FILE,       6051).
+-define(MENU_ID_IMPORT_PROJECT,    6052).
 -define(MENU_ID_HIGHEST,					 6999).
+
 
 %% Sub-menus
 %% Reserved range for theme sub-menu

@@ -27,10 +27,11 @@
                 utilities,                                     %% The utilities pane
                 left_pane,                                     %% The test pane
                 workspace_manager,                             %% Tabbed UI manager for editors
-                sash_v :: wxSpliiterWindow:wxSplitterWindow(), %% The vertical splitter
-                sash_h :: wxSpliiterWindow:wxSplitterWindow(), %% The horizontal splitter
-                sash_v_pos :: integer(),
-                sash_h_pos :: integer(),
+                splitter_sidebar :: wxSpliiterWindow:wxSplitterWindow(), %% The vertical splitter
+                splitter_utilities :: wxSpliiterWindow:wxSplitterWindow(), %% The horizontal splitter
+                splitter_sidebar_pos :: integer(),
+                splitter_utilities_pos :: integer(),
+                splitter_log_pos :: integer(),
                 menu_ets
                 }).
 								
@@ -39,14 +40,19 @@
 -define(DEFAULT_FRAME_HEIGHT, 680).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
--define(SASH_VERTICAL, 1).
--define(SASH_HORIZONTAL, 2).
--define(SASH_VERT_DEFAULT_POS, 215).
--define(SASH_HOR_DEFAULT_POS, -200).
+-define(SPLITTER_SIDEBAR, 1).
+-define(SPLITTER_UTILITIES, 2).
+-define(SPLIITER_LOG, 3).
+-define(SPLITTER_SIDEBAR_SASH_POS_DEFAULT, 215).
+-define(SPLITTER_UTILITIES_SASH_POS_DEFAULT, -200).
+-define(SPLITTER_LOG_SASH_POS_DEFAULT, -400).
 -define(ID_DIALOG_TEXT, 9001).
 -define(LABEL_HIDE_UTIL, "Hide Utilities Pane\tShift+Alt+U").
 -define(LABEL_SHOW_UTIL, "Show Utilities Pane\tShift+Alt+U").
 -define(FRAME_TITLE, "Erlang IDE").
+
+%% Bottom splitter (utils/log)
+-define(BUTTON_LOG_VISIBILITY, 0).
 
 
 %% =====================================================================
@@ -112,15 +118,15 @@ init(Options) ->
 		{_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
 		_ -> ?wxSP_3DSASH
 	end,
-	SplitterTopBottom = wxSplitterWindow:new(Frame, [{id, ?SASH_HORIZONTAL},
+	SplitterUtilities = wxSplitterWindow:new(Frame, [{id, ?SPLITTER_UTILITIES},
 		{style, SplitterStyle}]),
-	SplitterLeftRight = wxSplitterWindow:new(SplitterTopBottom, [{id, ?SASH_VERTICAL},
+	SplitterSidebar = wxSplitterWindow:new(SplitterUtilities, [{id, ?SPLITTER_SIDEBAR},
 		{style, SplitterStyle}]),	
 
-	wxSplitterWindow:setSashGravity(SplitterTopBottom, 0.5),
-	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.60),
+	wxSplitterWindow:setSashGravity(SplitterUtilities, 0.5),
+	wxSplitterWindow:setSashGravity(SplitterSidebar, 0.60),
 
-	wxSizer:add(FrameSizer, SplitterTopBottom, [{flag, ?wxEXPAND}, {proportion, 1}]),
+	wxSizer:add(FrameSizer, SplitterUtilities, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
 	%% Status bar %%
 	StatusBar = ide_status_bar:start([{parent, Frame}]),
@@ -130,29 +136,29 @@ init(Options) ->
 
 	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),
-
-	Workspace = create_workspace(SplitterLeftRight),
+                                        
+	Workspace = create_workspace(SplitterSidebar),
 
 	%% The left window
-	LeftWindow = create_left_window(Frame, SplitterLeftRight),
+	LeftWindow = create_left_window(Frame, SplitterSidebar),
 
 	%% The bottom pane/utility window
-	Utilities = create_utils(SplitterTopBottom),
+	Utilities = create_utils(SplitterUtilities),
 
-	wxSplitterWindow:splitVertically(SplitterLeftRight, LeftWindow, Workspace,
-	                  [{sashPosition, ?SASH_VERT_DEFAULT_POS}]),
+	wxSplitterWindow:splitVertically(SplitterSidebar, LeftWindow, Workspace,
+	                  [{sashPosition, ?SPLITTER_SIDEBAR_SASH_POS_DEFAULT}]),
 
-	wxSplitterWindow:splitHorizontally(SplitterTopBottom, SplitterLeftRight, Utilities,
-                  [{sashPosition, ?SASH_HOR_DEFAULT_POS}]),
+	wxSplitterWindow:splitHorizontally(SplitterUtilities, SplitterSidebar, Utilities,
+                  [{sashPosition, ?SPLITTER_UTILITIES_SASH_POS_DEFAULT}]),
 
 	wxSizer:layout(FrameSizer),
 	wxFrame:center(Frame),
 	wxFrame:show(Frame),
 
-	wxSplitterWindow:setSashGravity(SplitterTopBottom, 1.0), % Only the top window grows on resize
-	wxSplitterWindow:setSashGravity(SplitterLeftRight, 0.0), % Only the right window grows
+	wxSplitterWindow:setSashGravity(SplitterUtilities, 1.0), % Only the top window grows on resize
+	wxSplitterWindow:setSashGravity(SplitterSidebar, 0.0), % Only the right window grows
 
-  wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed,  [{userData, SplitterLeftRight}]),
+  wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
 
 	%% Testing accelerator table
@@ -168,10 +174,11 @@ init(Options) ->
 						frame=Frame,
             left_pane=LeftWindow,
             utilities=Utilities,
-            sash_v_pos=?SASH_VERT_DEFAULT_POS,
-            sash_h_pos=?SASH_HOR_DEFAULT_POS,
-            sash_v=SplitterLeftRight,
-            sash_h=SplitterTopBottom,
+            splitter_sidebar_pos=?SPLITTER_SIDEBAR_SASH_POS_DEFAULT,
+            splitter_utilities_pos=?SPLITTER_UTILITIES_SASH_POS_DEFAULT,
+            splitter_log_pos=?SPLITTER_LOG_SASH_POS_DEFAULT,
+            splitter_sidebar=SplitterSidebar,
+            splitter_utilities=SplitterUtilities,
 						workspace=Workspace,
             menu_ets=MenuEts
             }}.
@@ -233,35 +240,33 @@ handle_event(#wx{event=#wxClose{}}, State) ->
 %%
 %% =====================================================================
 
-%% Vertical sash dragged
-handle_event(_W=#wx{id=?SASH_VERTICAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, State) ->
-  Pos = wxSplitterWindow:getSashPosition(State#state.sash_v),
+handle_event(#wx{id=?SPLITTER_SIDEBAR, event=#wxSplitter{type=command_splitter_sash_pos_changed}}, State) ->
+  % Pos = wxSplitterWindow:getSashPosition(State#state.splitter_sidebar),
   %% Don't save the pos if the sash is dragged to zero, as the sash
   %% will revert to the middle when shown again (on mac definitely,
-	%% probably on all platforms, THIS SHOULD BE CHECKED AGAIN on R16B01 and wxWidgets 2.9.4)
-  if
-    Pos =:= 0 ->
-    	NewPos = State#state.sash_v_pos;
-    true ->
-    	NewPos = Pos
-    end,
-  {noreply, State#state{sash_v_pos=NewPos}};
-
-%% Horizontal sash dragged
-handle_event(_W=#wx{id=?SASH_HORIZONTAL, event=#wxSplitter{type=command_splitter_sash_pos_changed}=_E}, State) ->
-  Pos = wxSplitterWindow:getSashPosition(State#state.sash_h),
-  if
-    Pos =:= 0 ->
-    	NewPos = State#state.sash_h_pos;
-    true ->
-    	NewPos = Pos
+  %% probably on all platforms, THIS SHOULD BE CHECKED AGAIN on R16B01 and wxWidgets 2.9.4)
+  Pos = case wxSplitterWindow:getSashPosition(State#state.splitter_sidebar) of
+    0 ->
+      State#state.splitter_sidebar_pos;
+    N ->
+      N
   end,
-  wxWindow:refresh(State#state.sash_v),
-  wxWindow:update(State#state.sash_v),
-  {noreply, State#state{sash_h_pos=NewPos}};
+  {noreply, State#state{splitter_sidebar_pos=Pos}};
 
-handle_event(#wx{event = #wxSplitter{type = command_splitter_doubleclicked} = _E}, State) ->
-  io:format("Sash double clicked ~n"),
+handle_event(#wx{id=?SPLITTER_UTILITIES, event=#wxSplitter{type=command_splitter_sash_pos_changed}}, State) ->
+  Pos = case wxSplitterWindow:getSashPosition(State#state.splitter_utilities) of
+    0 ->
+      State#state.splitter_utilities_pos;
+    N ->
+      N
+  end,
+  {noreply, State#state{splitter_utilities_pos=Pos}};
+
+handle_event(#wx{id=?SPLIITER_LOG, event=#wxSplitter{type=command_splitter_sash_pos_changed}}, State=#state{frame=Frame}) ->
+  Pos = wxSplitterWindow:getSashPosition(wx:typeCast(wxWindow:findWindow(Frame, ?SPLIITER_LOG), wxSplitterWindow)),
+  {noreply, State#state{splitter_log_pos=Pos}};
+  
+handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State) ->
   {noreply, State};
 
 
@@ -305,7 +310,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSC
 	ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, Label ++ "\tCtrl+Alt+F"),
 	{noreply, State};	
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_TEST=Id},
-						 State=#state{frame=Frame, sash_v=V, left_pane=LeftPane, workspace=Ws, sash_v_pos=VPos}) ->
+						 State=#state{frame=Frame, splitter_sidebar=V, left_pane=LeftPane, workspace=Ws, splitter_sidebar_pos=VPos}) ->
    Str = case wxSplitterWindow:isSplit(V) of
        true -> wxSplitterWindow:unsplit(V,[{toRemove, LeftPane}]), "Show Left Pane\tShift+Alt+T";
        false -> wxSplitterWindow:splitVertically(V, LeftPane, Ws, [{sashPosition, VPos}]), "Hide Left Pane\tShift+Alt+T"
@@ -313,7 +318,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_T
 	 ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, Str),
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_UTIL=Id},
-						 State=#state{frame=Frame, sash_h=H, sash_v=V, utilities=Utils, sash_h_pos=HPos}) ->
+						 State=#state{frame=Frame, splitter_utilities=H, splitter_sidebar=V, utilities=Utils, splitter_utilities_pos=HPos}) ->
 	IsShown = wxSplitterWindow:isShown(Utils),
 	case wxSplitterWindow:isSplit(H) of
 		true -> ok;
@@ -329,8 +334,8 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_U
 	end,
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_EDITOR},
-						 State=#state{sash_h=H, sash_v=V, utilities=Utils, left_pane=LeftPane,
-						 							sash_h_pos=HPos, sash_v_pos=VPos, workspace=Ws, frame=Frame}) ->
+						 State=#state{splitter_utilities=H, splitter_sidebar=V, utilities=Utils, left_pane=LeftPane,
+						 							splitter_utilities_pos=HPos, splitter_sidebar_pos=VPos, workspace=Ws, frame=Frame}) ->
   wxFrame:freeze(Frame),
 	Fun = fun(false, false, false) -> %% Restore
 		wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
@@ -349,8 +354,8 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_ED
   wxFrame:thaw(Frame),
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UTIL},
-						 State=#state{frame=Frame, sash_h=H, sash_v=V, utilities=Utils, left_pane=LeftPane,
-						 							sash_h_pos=HPos, sash_v_pos=VPos, workspace=Ws}) ->
+						 State=#state{frame=Frame, splitter_utilities=H, splitter_sidebar=V, utilities=Utils, left_pane=LeftPane,
+						 							splitter_utilities_pos=HPos, splitter_sidebar_pos=VPos, workspace=Ws}) ->
   wxFrame:freeze(Frame),
 	IsSplit = wxSplitterWindow:isSplit(H),
 	IsShown = wxSplitterWindow:isShown(Utils),
@@ -392,6 +397,17 @@ handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=com
 %%
 %% =====================================================================
 
+handle_event(#wx{id=?BUTTON_LOG_VISIBILITY, userData={Splitter, Utils, Log}, event=#wxCommand{type=command_button_clicked}}, 
+             State=#state{splitter_log_pos=Pos}) ->
+  %% Toggle the visibility of the log
+  case wxSplitterWindow:isSplit(Splitter) of
+    true ->
+      wxSplitterWindow:unsplit(Splitter, [{toRemove, Log}]);
+    false ->
+      wxSplitterWindow:splitVertically(Splitter, Utils, Log, [{sashPosition, Pos}])
+  end,
+  {noreply, State};
+  
 %% Event catchall for testing
 handle_event(Ev, State) ->
   io:format("IDE event catchall: ~p\n", [Ev]),
@@ -418,18 +434,27 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 	Parent :: wxWindow:wxWindow(),
 	Result :: wxPanel:wxPanel().
 
-create_utils(Parent) ->
-	TabbedWindow = tabbed_book:new([{parent, Parent}]),
+create_utils(ParentA) ->
+  
+  Parent = wxPanel:new(ParentA),
+  Sz = wxBoxSizer:new(?wxHORIZONTAL),
+  wxPanel:setSizer(Parent, Sz),
+   
+ 	SplitterStyle = case os:type() of
+ 		{_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
+ 		_ -> ?wxSP_3DSASH
+ 	end,
+	Splitter = wxSplitterWindow:new(Parent, [{id, ?SPLIITER_LOG}, {style, SplitterStyle}]),
+  wxSplitterWindow:setSashGravity(Splitter, 0.0),
+	TabbedWindow = tabbed_book:new([{parent, Splitter}]),
 	
 	%% Start the port that communicates with the external ERTs
 	% Console = case console_port:start() of
 	Console = case console_sup:start_link([]) of
 		{error, E} ->
-			io:format("PORT SUP Er: ~p~n", [E]),
 			lib_widgets:placeholder(TabbedWindow, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
 			%% Disable console menu/toolbar items
 		Port ->
-			io:format("PORT SUP: ~p~n", [Port]),
 			C = console_wx:new([{parent, TabbedWindow}]),
       console_port:flush_buffer(), %% Load text received whilst initialising
       console_port:buffer_responses(false), %% The port will now send responses directly to the console
@@ -447,9 +472,52 @@ create_utils(Parent) ->
 	tabbed_book:add_page(TabbedWindow, Debugger, "Debugger"),
 	
 	tabbed_book:set_selection(TabbedWindow, 1),
-	
-	TabbedWindow.
   
+  %% Add the log
+  Log = log:new([{parent, Splitter}]),
+  wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
+  wxSplitterWindow:initialize(Splitter, TabbedWindow),
+    
+  %% Button toolbar
+  ToolBar = wxPanel:new(Parent),
+  ToolBarSz = wxBoxSizer:new(?wxVERTICAL),
+  wxPanel:setSizer(ToolBar, ToolBarSz),
+  % wxPanel:setBackgroundColour(ToolBar, {188,188,188}),
+  
+  % ButtonFlags = [{style, ?wxBORDER_NONE}],
+  ButtonFlags = [],  
+  Button1 = wxBitmapButton:new(ToolBar, ?BUTTON_LOG_VISIBILITY, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
+  Button2 = wxBitmapButton:new(ToolBar, ?wxID_ANY, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
+  Button3 = wxBitmapButton:new(ToolBar, ?wxID_ANY, wxArtProvider:getBitmap("wxART_INFORMATION", [{size, {16,16}}]), ButtonFlags),
+  
+  %% Connect button handlers
+  wxPanel:connect(ToolBar, command_button_clicked, [{userData, {Splitter, TabbedWindow, Log}}]),
+  
+  % SzFlags = [{flag, ?wxALL}, {border, 3}],
+  SzFlags = [],
+  wxSizer:add(ToolBarSz, Button1, SzFlags),
+  wxSizer:add(ToolBarSz, Button2, SzFlags),
+  wxSizer:add(ToolBarSz, Button3, SzFlags),
+    
+  wxSizer:add(Sz, ToolBar, [{flag, ?wxEXPAND}, {proportion, 0}]),
+  
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
+	
+	Parent.
+
 
 %% =====================================================================
 %% @doc

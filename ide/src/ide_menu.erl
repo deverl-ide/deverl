@@ -96,6 +96,13 @@ init(Config) ->
   wxMenu:append(File, ?wxID_CLOSE_ALL, "Close All"),
   wxMenu:append(File, ?MENU_ID_CLOSE_PROJECT, "Close Project"),
   wxMenu:append(File, ?wxID_SEPARATOR, []),
+  
+  Import = wxMenu:new([]),
+  wxMenu:append(Import, ?MENU_ID_IMPORT_FILE, "Import File"),
+  wxMenu:append(Import, ?MENU_ID_IMPORT_PROJECT, "Import Project"),
+  wxMenu:append(File, ?wxID_ANY, "Import", Import),
+  
+  wxMenu:append(File, ?wxID_SEPARATOR, []),
   wxMenu:append(File, ?MENU_ID_PROJECT_CONFIG, "Project Configuration\tCtrl+Alt+Shift+P"),
   wxMenu:append(File, ?wxID_SEPARATOR, []),
   wxMenu:append(File, ?wxID_PRINT, "Print\tCtrl+P"),
@@ -326,6 +333,9 @@ init(Config) ->
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
 		{?MENU_ID_CLOSE_PROJECT, {project_manager, close_active_project, []},
       [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
+    {?MENU_ID_IMPORT_FILE, {},
+      [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
+    {?MENU_ID_IMPORT_PROJECT, {}},
     {?MENU_ID_PROJECT_CONFIG, {project_manager, set_project_configuration, [Frame]},
       [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?wxID_EXIT, {}},
