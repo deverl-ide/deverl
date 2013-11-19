@@ -32,10 +32,9 @@ start(Config)->
 %% =====================================================================	
 
 compile(Config) ->
-  io:format("CONFIG: ~p~n", [Config]),
   case proplists:get_value(file, Config, undefined) of
     undefined -> %% Assume directory (project)
-      call(Config);
+      call(Config);  
     File ->
       file(File, Config)
   end.
@@ -52,14 +51,17 @@ file(File, Config) ->
 		_ ->
 			"/usr/local/lib/erlang/erts-5.10.2/bin/erlc"
   end,
-  
   Cwd = filename:dirname(File),
   ErlCArgs = filename:basename(File),
   open_port({spawn_executable, ErlC}, [use_stdio, 
                                        exit_status, 
                                        {cd, Cwd}, 
                                        {args, [ErlCArgs]}]),
+<<<<<<< HEAD
   loop().
+=======
+  loop(filename:basename(File)).
+>>>>>>> f37a2f40aed319e5bc438f22edc7d165a8ad7fa4
 
 
 %% =====================================================================
@@ -94,22 +96,21 @@ call(Config) ->
                                        exit_status, 
                                        {cd, Cwd}, 
                                        {args, ErlCArgs}]),
-  loop().
+  loop(filename:basename(Cwd)).
   
 
 %% =====================================================================
 %% @doc
   
-loop() ->
+loop(Name) ->
   receive 
     {_Port, {data, Data}} ->
-      % io:format("Data Received: ~p~n", [Data]),
       compiler_output:append(Data),
-      loop();
-    {_Port, {exit_status, Status}} ->
-      io:format("Exited, status: ~p~n", [Status]);
-    {'EXIT', _, Reason} ->
-      io:format("EXITED: ~p~n", [Reason])
+      loop(Name);
+    {_Port, {exit_status, 0}} ->
+      log:message("Compiled " ++ Name ++ " successfully.");
+    {_Port, {exit_status, _}} ->
+      log:error("ERROR: Compilation failed " ++ Name ++ ". See compiler output.")
   after
     10000 ->
       io:format("TIMEOUT~n")
