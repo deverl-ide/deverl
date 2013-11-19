@@ -58,7 +58,7 @@ file(File, Config) ->
   open_port({spawn_executable, ErlC}, [use_stdio, 
                                        exit_status, 
                                        {cd, Cwd}, 
-                                       {args, ErlCArgs}]),
+                                       {args, [ErlCArgs]}]),
   loop().
 
 

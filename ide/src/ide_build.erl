@@ -62,7 +62,7 @@ run_project(Parent) ->
 
 compile_file(Path) ->
 	%console_port:call_port("c(\"" ++ Path ++ "\")." ++ io_lib:nl()).
-  compiler_port:call(ok, [{file, Path}]).
+  compiler_port:start([{file, Path}]).
   
 build_project(Parent, ProjectId) ->
   case project_manager:get_build_config(ProjectId) of
