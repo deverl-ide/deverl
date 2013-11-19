@@ -183,7 +183,6 @@ init(Options) ->
             menu_ets=MenuEts
             }}.
 
-
 %% Deal with trapped exit signals
 handle_info({'EXIT',_, wx_deleted}, State) ->
   io:format("Got Info 1~n"),
@@ -407,7 +406,13 @@ handle_event(#wx{id=?BUTTON_LOG_VISIBILITY, userData={Splitter, Utils, Log}, eve
       wxSplitterWindow:splitVertically(Splitter, Utils, Log, [{sashPosition, Pos}])
   end,
   {noreply, State};
-  
+handle_event(#wx{id=666, userData={Splitter, Utils, Output}, event=#wxCommand{type=command_button_clicked}}, 
+             State=#state{splitter_log_pos=Pos}) ->
+  ToHide = wxSplitterWindow:getWindow2(Splitter),
+  wxWindow:hide(ToHide),
+  wxSplitterWindow:replaceWindow(Splitter, ToHide, Output),
+  {noreply, State};
+   
 %% Event catchall for testing
 handle_event(Ev, State) ->
   io:format("IDE event catchall: ~p\n", [Ev]),
@@ -446,6 +451,8 @@ create_utils(ParentA) ->
  	end,
 	Splitter = wxSplitterWindow:new(Parent, [{id, ?SPLIITER_LOG}, {style, SplitterStyle}]),
   wxSplitterWindow:setSashGravity(Splitter, 0.0),
+  
+  %% Splitter window 2 
 	TabbedWindow = tabbed_book:new([{parent, Splitter}]),
 	
 	%% Start the port that communicates with the external ERTs
@@ -473,11 +480,17 @@ create_utils(ParentA) ->
 	
 	tabbed_book:set_selection(TabbedWindow, 1),
   
+  
+  %% Splitter window 2  
   %% Add the log
   Log = log:new([{parent, Splitter}]),
-  wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
+  
+  CompilerOutput = compiler_output:new([{parent, Splitter}]),
+  
   wxSplitterWindow:initialize(Splitter, TabbedWindow),
+  wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
     
+  
   %% Button toolbar
   ToolBar = wxPanel:new(Parent),
   ToolBarSz = wxBoxSizer:new(?wxVERTICAL),
@@ -487,11 +500,12 @@ create_utils(ParentA) ->
   % ButtonFlags = [{style, ?wxBORDER_NONE}],
   ButtonFlags = [],  
   Button1 = wxBitmapButton:new(ToolBar, ?BUTTON_LOG_VISIBILITY, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
-  Button2 = wxBitmapButton:new(ToolBar, ?wxID_ANY, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
+  Button2 = wxBitmapButton:new(ToolBar, 666, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
   Button3 = wxBitmapButton:new(ToolBar, ?wxID_ANY, wxArtProvider:getBitmap("wxART_INFORMATION", [{size, {16,16}}]), ButtonFlags),
   
   %% Connect button handlers
-  wxPanel:connect(ToolBar, command_button_clicked, [{userData, {Splitter, TabbedWindow, Log}}]),
+  wxPanel:connect(Button1, command_button_clicked, [{userData, {Splitter, TabbedWindow, Log}}]),
+  wxPanel:connect(Button2, command_button_clicked, [{userData, {Splitter, TabbedWindow, CompilerOutput}}]),
   
   % SzFlags = [{flag, ?wxALL}, {border, 3}],
   SzFlags = [],
@@ -501,21 +515,8 @@ create_utils(ParentA) ->
     
   wxSizer:add(Sz, ToolBar, [{flag, ?wxEXPAND}, {proportion, 0}]),
   
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-  log:message("Batches all wx commands used in the fun. Improves performance of the command processing by grabbing the wxWidgets thread so that no event processing will be done before the complete batch of commands is invoked."),
-	
+  log:message("Application started."),
+  
 	Parent.
 
 

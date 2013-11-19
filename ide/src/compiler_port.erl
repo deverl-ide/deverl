@@ -1,0 +1,81 @@
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title compiler_port
+%% @version
+%% @doc This module connects to erlc through a port and prints the
+%% response to an output window unitl an exit signal is reached.
+%% @end
+%% =====================================================================
+
+-module(compiler_port).
+
+%% API
+-export([start/2, call/2]).
+
+
+%% =====================================================================
+%% Client API
+%% =====================================================================
+
+%% =====================================================================
+%% @doc 
+%% @throws
+
+start(Args, Cwd)->
+  spawn(?MODULE, call, [Args, Cwd]).
+  
+
+%% =====================================================================
+%% Internal functions
+%% =====================================================================	
+
+%% =====================================================================
+%% @doc
+
+call(Args, Cwd) ->
+  ErlC = case os:type() of
+		{win32,_} ->
+			"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erlc";
+    {_,darwin} ->
+      "/usr/local/lib/erlang/erts-5.10.1/bin/erlc";
+		_ ->
+			"/usr/local/lib/erlang/erts-5.10.2/bin/erlc"
+  end,
+  
+  %% erlc flags
+  IncludeDir = ["-I", lists:append([Cwd, "/include"])],
+  OutputDir = ["-o", lists:append([Cwd, "/ebin"])],
+  Flags = lists:append(IncludeDir, OutputDir),
+           
+  %% Get a list of all erl,hrl,yrl,mib,rel files in any subdirectory of Cwd
+  Files = lists:filter(fun(X) -> not filelib:is_dir(X) end,
+    filelib:wildcard([Cwd | "/src/**/*.{erl,hrl,yrl,mib,rel}"])),
+  
+  %% build the arguement list to pass to erlc
+  ErlCArgs = lists:append(Flags, Files),
+
+  open_port({spawn_executable, ErlC}, [use_stdio, 
+                            exit_status, 
+                            {cd, Cwd}, 
+                            {args, ErlCArgs}]),
+  loop().
+  
+
+%% =====================================================================
+%% @doc
+  
+loop() ->
+  receive 
+    {_Port, {data, Data}} ->
+      % io:format("Data Received: ~p~n", [Data]),
+      compiler_output:append(Data),
+      loop();
+    {_Port, {exit_status, Status}} ->
+      io:format("Exited, status: ~p~n", [Status]);
+    {'EXIT', _, Reason} ->
+      io:format("EXITED: ~p~n", [Reason])
+  after
+    10000 ->
+      io:format("TIMEOUT~n")
+  end.
