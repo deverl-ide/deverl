@@ -11,7 +11,7 @@
 -module(compiler_port).
 
 %% API
--export([start/2, call/2]).
+-export([start/1, compile/1]).
 
 
 %% =====================================================================
@@ -22,18 +22,53 @@
 %% @doc 
 %% @throws
 
-start(Args, Cwd)->
-  spawn(?MODULE, call, [Args, Cwd]).
-  
+% start(Args, Cwd)->
+%   spawn(?MODULE, call, [Args, Cwd]).
+start(Config)->
+  spawn(?MODULE, compile, [Config]). 
 
 %% =====================================================================
 %% Internal functions
 %% =====================================================================	
 
+compile(Config) ->
+  io:format("CONFIG: ~p~n", [Config]),
+  case proplists:get_value(file, Config, undefined) of
+    undefined -> %% Assume directory (project)
+      call(Config);
+    File ->
+      file(File, Config)
+  end.
+
 %% =====================================================================
 %% @doc
 
-call(Args, Cwd) ->
+file(File, Config) ->
+  ErlC = case os:type() of
+		{win32,_} ->
+			"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erlc";
+    {_,darwin} ->
+      "/usr/local/lib/erlang/erts-5.10.1/bin/erlc";
+		_ ->
+			"/usr/local/lib/erlang/erts-5.10.2/bin/erlc"
+  end,
+  
+  Cwd = filename:dirname(File),
+  ErlCArgs = filename:basename(File),
+  open_port({spawn_executable, ErlC}, [use_stdio, 
+                                       exit_status, 
+                                       {cd, Cwd}, 
+                                       {args, ErlCArgs}]),
+  loop().
+
+
+%% =====================================================================
+%% @doc
+
+call(Config) ->
+  
+  Cwd = proplists:get_value(cwd, Config),
+  
   ErlC = case os:type() of
 		{win32,_} ->
 			"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erlc";
@@ -56,9 +91,9 @@ call(Args, Cwd) ->
   ErlCArgs = lists:append(Flags, Files),
 
   open_port({spawn_executable, ErlC}, [use_stdio, 
-                            exit_status, 
-                            {cd, Cwd}, 
-                            {args, ErlCArgs}]),
+                                       exit_status, 
+                                       {cd, Cwd}, 
+                                       {args, ErlCArgs}]),
   loop().
   
 
