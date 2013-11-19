@@ -58,9 +58,17 @@ init(Config) ->
 	Panel = wxPanel:new(Parent),
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Panel, MainSizer),
+  
+  Font = wxFont:new(sys_pref_manager:get_preference(console_font_size),
+                    sys_pref_manager:get_preference(console_font_family),
+                    sys_pref_manager:get_preference(console_font_style),
+                    sys_pref_manager:get_preference(console_font_weight)
+                    %[{face, sys_pref_manager:get_preference(console_font_facename)}]
+                    ),
 
 	Output = wxTextCtrl:new(Panel, ?wxID_ANY, [{style, ?wxBORDER_NONE bor ?wxTE_DONTWRAP bor ?wxTE_READONLY bor ?wxTE_MULTILINE}]),
-  wxTextCtrl:setFont(Output, wxFont:new(11, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
+  %wxTextCtrl:setFont(Output, wxFont:new(11, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
+  wxTextCtrl:setFont(Output, Font),
   wxTextCtrl:setForegroundColour(Output, ?wxBLACK),
   wxTextCtrl:setBackgroundColour(Output, ?wxWHITE),
                                                 	
@@ -69,7 +77,7 @@ init(Config) ->
 	State=#state{win=Panel, 
 				       output=Output},
                
-  %% Note this stops the samll square artifact from appearing in top left corner.
+  %% Note this stops the small square artifact from appearing in top left corner.
   wxSizer:layout(MainSizer),
   
   {Panel, State}.

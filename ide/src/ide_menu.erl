@@ -346,11 +346,8 @@ init(Config) ->
     {?wxID_CUT, {}},
     {?wxID_COPY, {}},
     {?wxID_PASTE, {}},
-<<<<<<< HEAD
     {?wxID_DELETE, {compiler_port, start, [ok, "/home/qqq/projects/git/erlangIDE/ide"]}},
-=======
-    {?wxID_DELETE, {compiler_port, start, [ok, "/Users/tommo/Documents/Development/erlang/erlangIDE/ide"]}},
->>>>>>> 4862f06331a6219fa571b25e6ba1fca871948e51
+    %{?wxID_DELETE, {compiler_port, start, [ok, "/Users/tommo/Documents/Development/erlang/erlangIDE/ide"]}},
     {?wxID_FIND, {editor_ops,find_replace,[Frame]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
     
