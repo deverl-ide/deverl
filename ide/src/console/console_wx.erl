@@ -25,7 +25,7 @@
 
 %% API     
 -export([new/1,
-				 load_response/1,
+				 append_to_console/1,
          set_theme/2,
          set_font/1]).
 
@@ -58,7 +58,7 @@ new(Config) ->
 %% =====================================================================
 %% @doc
 	
-load_response(Response) ->
+append_to_console(Response) ->
 	{Env, Tc} = wx_object:call(?MODULE, text_ctrl),
 	wx:set_env(Env),
 	?stc:addText(Tc, Response).

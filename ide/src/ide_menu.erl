@@ -345,8 +345,8 @@ init(Config) ->
     {?wxID_REDO, {}},
     {?wxID_CUT, {}},
     {?wxID_COPY, {}},
-    {?wxID_PASTE, {}},
-    {?wxID_DELETE, {compiler_port, start, [[{cwd, "/Users/tommo/Documents/Development/erlang/erlangIDE/ide"}]]}},
+    {?wxID_PASTE, {console_node, start, []}},
+    {?wxID_DELETE, {compiler_port, start, ["/Users/tommo/Documents/Development/erlang/erlangIDE/ide", [{cflag, verbose}]]}},
     {?wxID_FIND, {editor_ops,find_replace,[Frame]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
     
