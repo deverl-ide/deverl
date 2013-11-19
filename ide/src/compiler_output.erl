@@ -61,6 +61,8 @@ init(Config) ->
 
 	Output = wxTextCtrl:new(Panel, ?wxID_ANY, [{style, ?wxBORDER_NONE bor ?wxTE_DONTWRAP bor ?wxTE_READONLY bor ?wxTE_MULTILINE}]),
   wxTextCtrl:setFont(Output, wxFont:new(11, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
+  wxTextCtrl:setForegroundColour(Output, ?wxBLACK),
+  wxTextCtrl:setBackgroundColour(Output, ?wxWHITE),
                                                 	
 	wxSizer:add(MainSizer, Output, [{flag, ?wxEXPAND}, {proportion, 1}]),
                                         
