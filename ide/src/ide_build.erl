@@ -60,20 +60,37 @@ run_project(Parent) ->
 %% =====================================================================
 
 compile_file(Path) ->
+<<<<<<< HEAD
   compiler_port:start([{file, Path}]).
+=======
+  %% Remember to send the output directory to load_file/1 if the flag is set
+  %% for the compiler (-o). 
+  compiler_port:start(Path, [file]),
+  receive
+    {From, ok} ->
+      load_file(Path, []);
+    {From, error} ->
+      ok
+  end.
+  
+  
+load_file(Path, _Options) ->
+  % Ext = filename:basename(Path, ".erl"),
+  Beam = filename:join([filename:dirname(Path), filename:basename(Path, ".erl")]),
+  console_port:call_port("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl()).
+>>>>>>> da3c22c9b4321e9daf2195a15a1564cdef9d84b3
   
 build_project(Parent, ProjectId) ->
   case project_manager:get_build_config(ProjectId) of
     undefined -> 
       notify_missing_config(Parent);
     Config ->
-      io:format("CONFIG: ~p~n", [Config]),
       try
         ParsedConfig = parse_config(Config),
         execute_function(ParsedConfig)
       catch
         error:_ ->
-          io:format("ERROR PARSING CONFIG")
+          error("ERROR")
       end
   end.
   
@@ -87,7 +104,6 @@ notify_missing_config(Parent) ->
 	end.
   
 parse_config(Config) ->
-  
   ok.
 
 execute_function({M, F, Args}) ->
