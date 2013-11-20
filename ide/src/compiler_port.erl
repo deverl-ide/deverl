@@ -57,11 +57,8 @@ file(File, Config) ->
                                        exit_status, 
                                        {cd, Cwd}, 
                                        {args, [ErlCArgs]}]),
-<<<<<<< HEAD
-  loop().
-=======
   loop(filename:basename(File)).
->>>>>>> f37a2f40aed319e5bc438f22edc7d165a8ad7fa4
+
 
 
 %% =====================================================================

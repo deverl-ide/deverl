@@ -489,7 +489,7 @@ create_utils(ParentA) ->
   
   wxSplitterWindow:initialize(Splitter, TabbedWindow),
   wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
-    
+  
   
   %% Button toolbar
   ToolBar = wxPanel:new(Parent),
