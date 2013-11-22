@@ -32,6 +32,7 @@
                 splitter_sidebar_pos :: integer(),
                 splitter_utilities_pos :: integer(),
                 splitter_log_pos :: integer(),
+                splitter_log_active_window :: wxWindow:wxWindow(),
                 menu_ets
                 }).
 								
@@ -52,7 +53,10 @@
 -define(FRAME_TITLE, "Erlang IDE").
 
 %% Bottom splitter (utils/log)
--define(BUTTON_LOG_VISIBILITY, 0).
+
+-define(BUTTON_LOGS_VISIBILITY, 0).
+-define(BUTTON_LOG, 1).
+-define(BUTTON_COMPILER_OUTPUT, 2).
 
 
 %% =====================================================================
@@ -143,7 +147,7 @@ init(Options) ->
 	LeftWindow = create_left_window(Frame, SplitterSidebar),
 
 	%% The bottom pane/utility window
-	Utilities = create_utils(SplitterUtilities),
+	{Utilities, ActiveLogWindow} = create_utils(SplitterUtilities),
 
 	wxSplitterWindow:splitVertically(SplitterSidebar, LeftWindow, Workspace,
 	                  [{sashPosition, ?SPLITTER_SIDEBAR_SASH_POS_DEFAULT}]),
@@ -179,6 +183,7 @@ init(Options) ->
             splitter_log_pos=?SPLITTER_LOG_SASH_POS_DEFAULT,
             splitter_sidebar=SplitterSidebar,
             splitter_utilities=SplitterUtilities,
+            splitter_log_active_window=ActiveLogWindow,
 						workspace=Workspace,
             menu_ets=MenuEts
             }}.
@@ -396,23 +401,16 @@ handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=com
 %%
 %% =====================================================================
 
-handle_event(#wx{id=?BUTTON_LOG_VISIBILITY, userData={Splitter, Utils, Log}, event=#wxCommand{type=command_button_clicked}}, 
+% Output windows (log, compiler output etc.)
+handle_event(#wx{userData={Splitter, Window1, Window2}, event=#wxCommand{type=command_button_clicked}}, 
              State=#state{splitter_log_pos=Pos}) ->
-  %% Toggle the visibility of the log
-  case wxSplitterWindow:isSplit(Splitter) of
-    true ->
-      wxSplitterWindow:unsplit(Splitter, [{toRemove, Log}]);
-    false ->
-      wxSplitterWindow:splitVertically(Splitter, Utils, Log, [{sashPosition, Pos}])
-  end,
+  replaceOutputWindow(Splitter, Window1, Window2, Pos),
   {noreply, State};
-handle_event(#wx{id=666, userData={Splitter, Utils, Output}, event=#wxCommand{type=command_button_clicked}}, 
-             State=#state{splitter_log_pos=Pos}) ->
-  ToHide = wxSplitterWindow:getWindow2(Splitter),
-  wxWindow:hide(ToHide),
-  wxSplitterWindow:replaceWindow(Splitter, ToHide, Output),
+handle_event(#wx{id=123456, userData=Splitter, event=#wxCommand{type=command_button_clicked}}, State) ->
+  Window2 = wxSplitterWindow:getWindow2(Splitter),
+  wxSplitterWindow:unsplit(Splitter, [{toRemove, Window2}]),
   {noreply, State};
-   
+     
 %% Event catchall for testing
 handle_event(Ev, State) ->
   io:format("IDE event catchall: ~p\n", [Ev]),
@@ -426,7 +424,20 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
   wxFrame:destroy(Frame),
   wx:destroy().
 
-
+replaceOutputWindow(Splitter, Window1, Window2, Pos) ->
+  case wxSplitterWindow:isSplit(Splitter) of
+    true ->
+      case wxWindow:isShown(Window2) of
+        true -> ok;
+        false ->
+          OldWindow2 = wxSplitterWindow:getWindow2(Splitter),
+          wxSplitterWindow:replaceWindow(Splitter, OldWindow2, Window2),
+          wxWindow:hide(OldWindow2),
+          wxWindow:show(Window2)
+      end;
+    _ ->
+      wxSplitterWindow:splitVertically(Splitter, Window1, Window2, [{sashPosition, Pos}])
+  end.
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
@@ -452,7 +463,7 @@ create_utils(ParentA) ->
 	Splitter = wxSplitterWindow:new(Parent, [{id, ?SPLIITER_LOG}, {style, SplitterStyle}]),
   wxSplitterWindow:setSashGravity(Splitter, 0.0),
   
-  %% Splitter window 2 
+  %% Splitter window 1
 	TabbedWindow = tabbed_book:new([{parent, Splitter}]),
 	
 	%% Start the port that communicates with the external ERTs
@@ -482,42 +493,59 @@ create_utils(ParentA) ->
   
   
   %% Splitter window 2  
-  %% Add the log
-  Log = log:new([{parent, Splitter}]),
+  CreateWindow = fun(Parent, WindowModule) ->
+    W = wxPanel:new(Parent),
+    WSz = wxBoxSizer:new(?wxHORIZONTAL),
+    %% Add toolbar
+    Tb = wxPanel:new(W),
+    % wxPanel:setBackgroundColour(Tb, {220,220,220}),
+    TbSz = wxBoxSizer:new(?wxVERTICAL),
+    Style = case os:type() of
+      {_,darwin} -> [{style, ?wxBORDER_NONE}];
+      _ -> [] %%[{style, ?wxBORDER_DEFAULT}]
+    end,
+    Btn = wxBitmapButton:new(Tb, 123456, wxBitmap:new(wxImage:new("../icons/10x10/137.png")), Style),
+    wxSizer:add(TbSz, Btn, [{flag, ?wxALL}, {border, 0}]),
+    wxPanel:setSizer(Tb, TbSz), 
+    wxSizer:add(WSz, Tb, [{flag, ?wxEXPAND}]),
+    wxSizer:add(WSz, WindowModule:new([{parent, W}]), [{flag, ?wxEXPAND}, {proportion, 1}]),  
+    wxPanel:setSizer(W, WSz),
+    wxPanel:hide(W),
+    {W, Tb, TbSz}
+  end,
+
+  {Log, _, _} = CreateWindow(Splitter, log),
+  {CompilerOutput, _, _} = CreateWindow(Splitter, compiler_output),
   
-  CompilerOutput = compiler_output:new([{parent, Splitter}]),
-  
+  wxPanel:connect(Parent, command_button_clicked, [{userData, Splitter}]), %% Minimise button on each window
   wxSplitterWindow:initialize(Splitter, TabbedWindow),
   wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
-    
-  
+     
   %% Button toolbar
   ToolBar = wxPanel:new(Parent),
   ToolBarSz = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(ToolBar, ToolBarSz),
   % wxPanel:setBackgroundColour(ToolBar, {188,188,188}),
   
-  % ButtonFlags = [{style, ?wxBORDER_NONE}],
+  % ButtonFlags = [{style, ?wxBORDER_SUNKEN}],
   ButtonFlags = [],  
-  Button1 = wxBitmapButton:new(ToolBar, ?BUTTON_LOG_VISIBILITY, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
-  Button2 = wxBitmapButton:new(ToolBar, 666, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
-  Button3 = wxBitmapButton:new(ToolBar, ?wxID_ANY, wxArtProvider:getBitmap("wxART_INFORMATION", [{size, {16,16}}]), ButtonFlags),
+  Button1 = wxBitmapButton:new(ToolBar, ?BUTTON_LOG, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
+  Button2 = wxBitmapButton:new(ToolBar, ?BUTTON_COMPILER_OUTPUT, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
   
   %% Connect button handlers
   wxPanel:connect(Button1, command_button_clicked, [{userData, {Splitter, TabbedWindow, Log}}]),
   wxPanel:connect(Button2, command_button_clicked, [{userData, {Splitter, TabbedWindow, CompilerOutput}}]),
   
-  % SzFlags = [{flag, ?wxALL}, {border, 3}],
+  % SzFlags = [{flag, ?wxBOTTOM}, {border, 1}],
   SzFlags = [],
   wxSizer:add(ToolBarSz, Button1, SzFlags),
   wxSizer:add(ToolBarSz, Button2, SzFlags),
-  wxSizer:add(ToolBarSz, Button3, SzFlags),
     
   wxSizer:add(Sz, ToolBar, [{flag, ?wxEXPAND}, {proportion, 0}]),
   
   log:message("Application started."),
   
-	Parent.
+	{Parent, Log}.
 
 
 %% =====================================================================

@@ -4,7 +4,9 @@
 %% @title compiler_port
 %% @version
 %% @doc This module connects to erlc through a port and prints the
-%% response to an output window until an exit signal is received.
+%% response to an output window until an exit signal is received. A
+%% acknowledgment of success or failure is then sent to the calling 
+%% process.
 %% @end
 %% =====================================================================
 
@@ -37,6 +39,16 @@
 start(Cwd)->
   start(Cwd, []).
   
+-spec start(Cwd, [Config])  -> {pid(), 'ok' | 'error'}  when 
+  Cwd :: path(),
+  Config :: file %% Single file, Cwd is absolute path of file
+          | Flag,
+  Flag :: {cflag, supress_warnings  %% Supress warnings
+          | verbose                 %% Verbose warnings
+          | smp                     %% Native compilation
+          | makefile                %% Create a makefile
+          | all_errors}.            %% Convert warninf to errors
+  
 start(Cwd, Config)->
   spawn(?MODULE, compile, [self(), Cwd, Config]). 
 
@@ -44,6 +56,10 @@ start(Cwd, Config)->
 %% =====================================================================
 %% Internal functions
 %% =====================================================================	
+
+%% =====================================================================
+%% @doc 
+%% @private
 
 compile(From, Path, Config) ->
   CFlags = fun({cflag, supress_warnings}, Acc) -> ["-W0"|Acc];
@@ -73,14 +89,12 @@ compile(From, Path, Config) ->
       {Path, lists:append(DirFlags, Files)}
   end,
   
-  A = lists:append(Flags, Args),
-  
   compiler_output:clear(),
   
   open_port({spawn_executable, erlc()}, [use_stdio, 
                                        exit_status, 
                                        {cd, Cwd}, 
-                                       {args, A}]),
+                                       {args, lists:append(Flags, Args)}]),
   
   loop(From, filename:basename(Path)).
 
