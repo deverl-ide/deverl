@@ -105,10 +105,6 @@ loop(From, Name) ->
       From ! {self(), error}
   after
     10000 ->
-<<<<<<< HEAD
-      io:format("TIMEOUT~n")
-  end.
-=======
       io:format("TIMEOUT~n"),
       error
   end.
@@ -126,4 +122,3 @@ erlc() ->
 		_ ->
 			"/usr/local/lib/erlang/erts-5.10.2/bin/erlc"
   end.
->>>>>>> da3c22c9b4321e9daf2195a15a1564cdef9d84b3

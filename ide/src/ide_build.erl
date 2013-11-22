@@ -60,9 +60,6 @@ run_project(Parent) ->
 %% =====================================================================
 
 compile_file(Path) ->
-<<<<<<< HEAD
-  compiler_port:start([{file, Path}]).
-=======
   %% Remember to send the output directory to load_file/1 if the flag is set
   %% for the compiler (-o). 
   compiler_port:start(Path, [file]),
@@ -78,7 +75,7 @@ load_file(Path, _Options) ->
   % Ext = filename:basename(Path, ".erl"),
   Beam = filename:join([filename:dirname(Path), filename:basename(Path, ".erl")]),
   console_port:call_port("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl()).
->>>>>>> da3c22c9b4321e9daf2195a15a1564cdef9d84b3
+  
   
 build_project(Parent, ProjectId) ->
   case project_manager:get_build_config(ProjectId) of

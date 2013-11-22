@@ -150,9 +150,7 @@ get_time() ->
   Args = [H, M, S],
   Str = io_lib:format("~2.10.0B:~2.10.0B:~2.10.0B", Args),
   lists:flatten(Str).
-<<<<<<< HEAD
-=======
-  
+
 
 %% =====================================================================
 %% @doc Append a line (record) to the log.
@@ -172,4 +170,3 @@ append(Log, Msg) ->
   ?stc:newLine(Log),
   ?stc:setReadOnly(Log, true),
   {ok, length(Message)}.
->>>>>>> da3c22c9b4321e9daf2195a15a1564cdef9d84b3
