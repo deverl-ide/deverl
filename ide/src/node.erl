@@ -5,16 +5,17 @@
 -define(CHAR_MAX, 60).
 
 start() ->
+  register(shell, spawn(node, loop, [])).
 	%% Start distributed erlang
-	case net_kernel:start([one, shortnames]) of
-    {ok, Pid} -> ok;
-    {error, _Reason} -> ok
-  end,
-  
-  erlang:set_cookie(node(), secretcookie),
-	
-	io:format("MASTER NODE: ~p~n", [node()]),
-  io:format("LOCALHOST: ~p~n", [net_adm:localhost()]),
+  % case net_kernel:start([one, shortnames]) of
+  %     {ok, Pid} -> ok;
+  %     {error, _Reason} -> ok
+  %   end,
+  %   
+  %   erlang:set_cookie(node(), secretcookie),
+  % 
+  % io:format("MASTER NODE: ~p~n", [node()]),
+  %   io:format("LOCALHOST: ~p~n", [net_adm:localhost()]),
 	
   %% Start new node
   % {ok, Node} = slave:start(net_adm:localhost(), two, "-setcookie secretcookie"),
@@ -39,27 +40,29 @@ start() ->
   % Result = net_adm:ping(two@tom),
   % io:format("PING: ~p~n", [Result]),
   
-  receive
-    after 1000 ->
-      ok
-  end,
-      
-  {ok, Node} = slave:start(list_to_atom(net_adm:localhost()), two, "-setcookie secretcookie"),
-  io:format("NODE: ~p~n", [Node]),
-  
-  SPid = spawn(Node, node, register, []),
-  io:format("PID: ~p~nISPID: ~p~n", [SPid, is_pid(SPid)]),
+  % receive
+  %   after 1000 ->
+  %     ok
+  % end,
+  %     
+  % {ok, Node} = slave:start(list_to_atom(net_adm:localhost()), two, "-setcookie secretcookie"),
+  % io:format("NODE: ~p~n", [Node]),
+  % 
+  % SPid = spawn(Node, node, register, []),
+  % io:format("PID: ~p~nISPID: ~p~n", [SPid, is_pid(SPid)]),
+  % 
+  % io:format("NODES: ~p~n", [nodes()]),
+  % ok.
+%  
+% register() ->
+%   register(waa, self()),
+%   loop().
 
-  io:format("NODES: ~p~n", [nodes()]),
-  ok.
- 
-register() ->
-  register(waa, self()),
-  loop().
+
    
 loop() ->
   receive
-    {Pid, Msg} ->
+    Msg ->
       {ok, Tokens, _End} = erl_scan:string(Msg),
       {ok, Exprs} = erl_parse:parse_exprs(Tokens),
       try 
