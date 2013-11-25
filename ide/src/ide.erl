@@ -520,12 +520,7 @@ create_utils(ParentA) ->
   wxPanel:connect(Parent, command_button_clicked, [{userData, Splitter}]), %% Minimise button on each window
   wxSplitterWindow:initialize(Splitter, TabbedWindow),
   wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
-<<<<<<< HEAD
-  
-  
-=======
-     
->>>>>>> 77253c1c377e15c79f8bf4464e400ac739d397ad
+
   %% Button toolbar
   ToolBar = wxPanel:new(Parent),
   ToolBarSz = wxBoxSizer:new(?wxVERTICAL),

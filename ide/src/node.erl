@@ -8,7 +8,7 @@ start() ->
 	%% Start distributed erlang
 	case net_kernel:start([one, shortnames]) of
     {ok, Pid} -> ok;
-    {error, _Reason} -> ok
+    {error, Reason} -> io:format("ERROR: ~p~n", [Reason]), ok
   end,
   
   erlang:set_cookie(node(), secretcookie),
