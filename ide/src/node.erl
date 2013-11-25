@@ -5,6 +5,7 @@
 -define(CHAR_MAX, 60).
 
 start() ->
+<<<<<<< HEAD
 	%% Start distributed erlang
 	case net_kernel:start([one, shortnames]) of
     {ok, Pid} -> ok;
@@ -56,10 +57,13 @@ start() ->
 register() ->
   register(waa, self()),
   loop().
+=======
+  register(shell, spawn(node, loop, [])).
+>>>>>>> 2b17b2cd83c34ee260deca36c8b5e2d9f086333b
    
 loop() ->
   receive
-    {Pid, Msg} ->
+    Msg ->
       {ok, Tokens, _End} = erl_scan:string(Msg),
       {ok, Exprs} = erl_parse:parse_exprs(Tokens),
       try 
@@ -79,11 +83,9 @@ loop() ->
                   ER = nocatch(Class, {Reason,Stacktrace}),
                   lists:foreach(fun(P) -> exit(P, ER) end, LPs--[self()]),
                   report_exception(Class, {Reason,Stacktrace}),
-                  % exit(normal)
                   loop()
           end
       end,  
-      % Pid ! {result, Result},
       loop()
   end.
   
