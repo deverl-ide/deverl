@@ -4,22 +4,20 @@
 %% @title compiler_port
 %% @version
 %% @doc This module connects to erlc through a port and prints the
+<<<<<<< HEAD
 %% response to an output window until an exit signal is received. A
 %% acknowledgment of success or failure is then sent to the calling 
 %% process.
+=======
+%% response to an output window unitl an exit signal is reached.
+>>>>>>> parent of da3c22c... Refactored log.erl to remove duplicate code and generally tidy it up.
 %% @end
 %% =====================================================================
 
 -module(compiler_port).
 
 %% API
--export([start/1, start/2]).
-
-%% Spawned process
--export([compile/3]).
-
-%% Type
--type path() :: string().
+-export([start/1, compile/1]).
 
 
 %% =====================================================================
@@ -27,6 +25,7 @@
 %% =====================================================================
 
 %% =====================================================================
+<<<<<<< HEAD
 %% @doc Compile the resource located at Cwd. If 'file' is set in Config
 %% then Cwd is the absolute path of the file to compile, otherwise it
 %% is the root directory that contains all erlang source files to be
@@ -51,13 +50,22 @@ start(Cwd)->
   
 start(Cwd, Config)->
   spawn(?MODULE, compile, [self(), Cwd, Config]). 
+=======
+%% @doc 
+%% @throws
+>>>>>>> parent of da3c22c... Refactored log.erl to remove duplicate code and generally tidy it up.
 
+% start(Args, Cwd)->
+%   spawn(?MODULE, call, [Args, Cwd]).
+start(Config)->
+  spawn(?MODULE, compile, [Config]). 
 
 
 %% =====================================================================
 %% Internal functions
 %% =====================================================================	
 
+<<<<<<< HEAD
 %% =====================================================================
 %% @doc 
 %% @private
@@ -88,37 +96,95 @@ compile(From, Path, Config) ->
         filelib:wildcard([Path | "/src/**/*.{erl,hrl,yrl,mib,rel}"])),
         
       {Path, lists:append(DirFlags, Files)}
+=======
+compile(Config) ->
+  case proplists:get_value(file, Config, undefined) of
+    undefined -> %% Assume directory (project)
+      call(Config);  
+    File ->
+      file(File, Config)
+  end.
+
+%% =====================================================================
+%% @doc
+
+file(File, Config) ->
+  ErlC = case os:type() of
+		{win32,_} ->
+			"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erlc";
+    {_,darwin} ->
+      "/usr/local/lib/erlang/erts-5.10.1/bin/erlc";
+		_ ->
+			"/usr/local/lib/erlang/erts-5.10.2/bin/erlc"
+>>>>>>> parent of da3c22c... Refactored log.erl to remove duplicate code and generally tidy it up.
   end,
-  
-  compiler_output:clear(),
-  
-  open_port({spawn_executable, erlc()}, [use_stdio, 
+  Cwd = filename:dirname(File),
+  ErlCArgs = filename:basename(File),
+  open_port({spawn_executable, ErlC}, [use_stdio, 
                                        exit_status, 
                                        {cd, Cwd}, 
-                                       {args, lists:append(Flags, Args)}]),
-  
-  loop(From, filename:basename(Path)).
+                                       {args, [ErlCArgs]}]),
+  loop(filename:basename(File)).
 
-  
+
 %% =====================================================================
-%% @doc Looping receive block to receive all output from the port until
-%% an exit_status is received.
+%% @doc
 
--spec loop(pid(), string()) -> {pid(), 'ok' | 'error'}.
+call(Config) ->
   
-loop(From, Name) ->
+<<<<<<< HEAD
+  compiler_output:clear(),
+=======
+  Cwd = proplists:get_value(cwd, Config),
+  
+  ErlC = case os:type() of
+		{win32,_} ->
+			"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erlc";
+    {_,darwin} ->
+      "/usr/local/lib/erlang/erts-5.10.1/bin/erlc";
+		_ ->
+			"/usr/local/lib/erlang/erts-5.10.2/bin/erlc"
+  end,
+  
+  %% erlc flags
+  IncludeDir = ["-I", lists:append([Cwd, "/include"])],
+  OutputDir = ["-o", lists:append([Cwd, "/ebin"])],
+  Flags = lists:append(IncludeDir, OutputDir),
+           
+  %% Get a list of all erl,hrl,yrl,mib,rel files in any subdirectory of Cwd
+  Files = lists:filter(fun(X) -> not filelib:is_dir(X) end,
+    filelib:wildcard([Cwd | "/src/**/*.{erl,hrl,yrl,mib,rel}"])),
+>>>>>>> parent of da3c22c... Refactored log.erl to remove duplicate code and generally tidy it up.
+  
+  %% build the arguement list to pass to erlc
+  ErlCArgs = lists:append(Flags, Files),
+
+  open_port({spawn_executable, ErlC}, [use_stdio, 
+                                       exit_status, 
+                                       {cd, Cwd}, 
+<<<<<<< HEAD
+                                       {args, lists:append(Flags, Args)}]),
+=======
+                                       {args, ErlCArgs}]),
+  loop(filename:basename(Cwd)).
+>>>>>>> parent of da3c22c... Refactored log.erl to remove duplicate code and generally tidy it up.
+  
+
+%% =====================================================================
+%% @doc
+  
+loop(Name) ->
   receive 
     {_Port, {data, Data}} ->
       compiler_output:append(Data),
-      loop(From, Name);
+      loop(Name);
     {_Port, {exit_status, 0}} ->
-      log:message("Compiled " ++ Name ++ " successfully."),
-      From ! {self(), ok};
+      log:message("Compiled " ++ Name ++ " successfully.");
     {_Port, {exit_status, _}} ->
-      log:error("ERROR: Compilation failed " ++ Name ++ ". See compiler output."),
-      From ! {self(), error}
+      log:error("ERROR: Compilation failed " ++ Name ++ ". See compiler output.")
   after
     10000 ->
+<<<<<<< HEAD
       io:format("TIMEOUT~n"),
       error
   end.
@@ -136,3 +202,7 @@ erlc() ->
 		_ ->
 			"/usr/local/lib/erlang/erts-5.10.2/bin/erlc"
   end.
+=======
+      io:format("TIMEOUT~n")
+  end.
+>>>>>>> parent of da3c22c... Refactored log.erl to remove duplicate code and generally tidy it up.

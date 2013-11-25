@@ -24,8 +24,7 @@
 
 %% API     
 -export([new/1,
-         append/1,
-         clear/0]).
+         append/1]).
 
 %% Server state
 -record(state, {win, 
@@ -50,13 +49,6 @@ append(Msg) ->
   wx_object:cast(?MODULE, Msg).
 
 
-%% =====================================================================
-%% @doc
-
-clear() ->
-  wx_object:cast(?MODULE, clear).
-  
-  
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
@@ -85,7 +77,7 @@ init(Config) ->
 	State=#state{win=Panel, 
 				       output=Output},
                
-  %% Note this stops the small square artifact from appearing in top left corner.
+  %% Note this stops the samll square artifact from appearing in top left corner.
   wxSizer:layout(MainSizer),
   
   {Panel, State}.
@@ -94,13 +86,10 @@ handle_info(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply, State}.
 
-handle_cast(clear, State=#state{output=Output}) ->
-  wxTextCtrl:clear(Output),
-  {noreply, State};
 handle_cast(Msg, State=#state{output=Output}) ->
   wxTextCtrl:appendText(Output, Msg),
   {noreply, State}.
-  
+
 handle_call(Msg, _From, State) ->
   io:format("Got Call ~p~n",[Msg]),
   {reply,ok, State}.
