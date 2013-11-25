@@ -114,38 +114,13 @@ handle_info(Msg, State) ->
   {noreply, State}.
 
 handle_cast({error, Msg}, State=#state{log=Log}) ->
-  ?stc:setReadOnly(Log, false),
-  Line = ?stc:getCurrentLine(Log),
-  case Line rem 2 of
-      0 ->
-        ?stc:markerAdd(Log, Line, ?MARKER_EVEN);
-      _ ->
-        ?stc:markerAdd(Log, Line, ?MARKER_ODD)
-  end,
-  Message = lists:flatten([get_time(), "  ", Msg]),
-  
-  CPos = ?stc:getCurrentPos(Log),
-
-  
-  ?stc:addText(Log, Message),
-  ?stc:newLine(Log),
-  ?stc:startStyling(Log, CPos, 31),
-  ?stc:setStyling(Log, length(Message), ?STYLE_ERROR),
-  ?stc:setReadOnly(Log, true),
+  {ok, Length} = append(Log, Msg),
+  Start = ?stc:positionFromLine(Log, ?stc:getCurrentLine(Log) - 1),
+  ?stc:startStyling(Log, Start, 31),
+  ?stc:setStyling(Log, Length, ?STYLE_ERROR),
   {noreply, State};
 handle_cast(Msg, State=#state{log=Log}) ->
-  ?stc:setReadOnly(Log, false),
-  Line = ?stc:getCurrentLine(Log),
-  case Line rem 2 of
-      0 ->
-        ?stc:markerAdd(Log, Line, ?MARKER_EVEN);
-      _ ->
-        ?stc:markerAdd(Log, Line, ?MARKER_ODD)
-  end,
-  Message = lists:flatten([get_time(), "  ", Msg]),
-  ?stc:addText(Log, Message),
-  ?stc:newLine(Log),
-  ?stc:setReadOnly(Log, true),
+  append(Log, Msg),
   {noreply, State}.
 
 handle_call(Msg, _From, State) ->
@@ -168,13 +143,12 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 	
 %% =====================================================================
-%% @doc
+%% @doc Get the current time formatted as a string HH:MM:SS.
 
 get_time() ->
   {_, {H, M, S}} = calendar:local_time(),
   Args = [H, M, S],
   Str = io_lib:format("~2.10.0B:~2.10.0B:~2.10.0B", Args),
-<<<<<<< HEAD
   lists:flatten(Str).
 
 
@@ -196,6 +170,3 @@ append(Log, Msg) ->
   ?stc:newLine(Log),
   ?stc:setReadOnly(Log, true),
   {ok, length(Message)}.
-=======
-  lists:flatten(Str).
->>>>>>> parent of da3c22c... Refactored log.erl to remove duplicate code and generally tidy it up.
