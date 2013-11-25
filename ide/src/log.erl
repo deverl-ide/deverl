@@ -150,7 +150,7 @@ get_time() ->
   Args = [H, M, S],
   Str = io_lib:format("~2.10.0B:~2.10.0B:~2.10.0B", Args),
   lists:flatten(Str).
-  
+
 
 %% =====================================================================
 %% @doc Append a line (record) to the log.

@@ -475,10 +475,10 @@ create_utils(ParentA) ->
 			lib_widgets:placeholder(TabbedWindow, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
 			%% Disable console menu/toolbar items
 		Port ->
-			C = console_wx:new([{parent, TabbedWindow}]),
-      console_port:flush_buffer(), %% Load text received whilst initialising
-      console_port:buffer_responses(false), %% The port will now send responses directly to the console
-			C
+			console_wx:new([{parent, TabbedWindow}])
+      %       console_port:flush_buffer(), %% Load text received whilst initialising
+      %       console_port:buffer_responses(false), %% The port will now send responses directly to the console
+      % C
 	end,
 	tabbed_book:add_page(TabbedWindow, Console, "Console"),
 	
@@ -522,7 +522,7 @@ create_utils(ParentA) ->
   wxPanel:connect(Parent, command_button_clicked, [{userData, Splitter}]), %% Minimise button on each window
   wxSplitterWindow:initialize(Splitter, TabbedWindow),
   wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
-     
+
   %% Button toolbar
   ToolBar = wxPanel:new(Parent),
   ToolBarSz = wxBoxSizer:new(?wxVERTICAL),

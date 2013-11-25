@@ -38,6 +38,7 @@ parse_input(Message) ->
 %% @doc
 
 parse_response(Response) ->
-  io:format("CONSOLE RESPONSE: ~p~n", [Response]),
+  % io:format("RESPONSE FROM PORT~n"),
   M = Response,
 	console_wx:append_to_console(M).
+  

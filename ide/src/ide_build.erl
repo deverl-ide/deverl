@@ -76,6 +76,7 @@ load_file(Path, _Options) ->
   Beam = filename:join([filename:dirname(Path), filename:basename(Path, ".erl")]),
   console_port:call_port("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl()).
   
+  
 build_project(Parent, ProjectId) ->
   case project_manager:get_build_config(ProjectId) of
     undefined -> 
