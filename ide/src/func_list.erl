@@ -40,19 +40,19 @@ init(Config) ->
 	EditorPid = proplists:get_value(editor, Config),
 	Panel = wxPanel:new(Parent),
 	Sz = wxBoxSizer:new(?wxVERTICAL),
-
+  
 	Search = wxTextCtrl:new(Panel, ?wxID_ANY, [{style, ?wxTE_PROCESS_ENTER}]),
-	wxTextCtrl:setFont(Search, wxFont:new(11,?wxFONTFAMILY_DEFAULT,?wxFONTSTYLE_NORMAL,?wxNORMAL)),
 	wxTextCtrl:setValue(Search, ?SEARCH_TEXT_DEFAULT),
-	  wxSizer:add(Sz, Search, [{flag, ?wxEXPAND bor ?wxALIGN_CENTER_VERTICAL bor ?wxLEFT}, {border, 5}, {proportion, 0}]),
-	wxSizer:addSpacer(Sz, 10),
+  wxSizer:addSpacer(Sz, 2),
+	wxSizer:add(Sz, Search, [{flag, ?wxEXPAND bor ?wxALL}, {border, 2}, {proportion, 0}]),
+
 	wxTextCtrl:connect(Search, command_text_enter, [{skip, true}]),
 	wxTextCtrl:connect(Search, key_down, [{skip, true}]),
 	wxTextCtrl:connect(Search, set_focus, [{skip, true}]),
 	wxTextCtrl:connect(Search, kill_focus, [{skip, true}]),
 
-	List = wxListCtrl:new(Panel, [{style, ?wxLC_REPORT bor ?wxLC_NO_HEADER bor ?wxLC_SINGLE_SEL}]),
-	wxSizer:add(Sz, List, [{flag, ?wxEXPAND bor ?wxLEFT}, {border, 5}, {proportion, 1}]),
+	List = wxListCtrl:new(Panel, [{style, ?wxLC_REPORT bor ?wxLC_NO_HEADER bor ?wxLC_SINGLE_SEL bor ?wxBORDER_NONE}]),
+	wxSizer:add(Sz, List, [{flag, ?wxEXPAND bor ?wxALL}, {border, 2}, {proportion, 1}]),
 	wxListCtrl:insertColumn(List, 0, "Heading", []),
 
 	{W,H} = wxListCtrl:getSize(List),

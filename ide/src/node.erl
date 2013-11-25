@@ -6,59 +6,6 @@
 
 start() ->
   register(shell, spawn(node, loop, [])).
-	%% Start distributed erlang
-  % case net_kernel:start([one, shortnames]) of
-  %     {ok, Pid} -> ok;
-  %     {error, _Reason} -> ok
-  %   end,
-  %   
-  %   erlang:set_cookie(node(), secretcookie),
-  % 
-  % io:format("MASTER NODE: ~p~n", [node()]),
-  %   io:format("LOCALHOST: ~p~n", [net_adm:localhost()]),
-	
-  %% Start new node
-  % {ok, Node} = slave:start(net_adm:localhost(), two, "-setcookie secretcookie"),
-  % {ok, Node} = slave:start(node(), two, "-setcookie secretcookie"),
-  
-  % {Path, Options} = case os:type() of
-  %   {win32,_} ->
-  %     {"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erl", [use_stdio]};
-  %   {_,darwin} ->
-  %     {"/usr/local/lib/erlang/erts-5.10.1/bin/erl", [use_stdio, exit_status]}; %% For Tom, for now.
-  %   _Other ->
-  %     {"/usr/local/lib/erlang/erts-5.10.2/bin/erl", [use_stdio, exit_status]}
-  % end,
-  %   
-  % Port = open_port({spawn_executable, Path}, [use_stdio, 
-  %                                      exit_status, 
-  %                                      {args, ["-sname", "two", "-setcookie", "secretcookie"]}]),
-                                       
-  % Names = net_adm:names(),
-  % io:format("NAMES: ~p~n", [Names]),
-  
-  % Result = net_adm:ping(two@tom),
-  % io:format("PING: ~p~n", [Result]),
-  
-  % receive
-  %   after 1000 ->
-  %     ok
-  % end,
-  %     
-  % {ok, Node} = slave:start(list_to_atom(net_adm:localhost()), two, "-setcookie secretcookie"),
-  % io:format("NODE: ~p~n", [Node]),
-  % 
-  % SPid = spawn(Node, node, register, []),
-  % io:format("PID: ~p~nISPID: ~p~n", [SPid, is_pid(SPid)]),
-  % 
-  % io:format("NODES: ~p~n", [nodes()]),
-  % ok.
-%  
-% register() ->
-%   register(waa, self()),
-%   loop().
-
-
    
 loop() ->
   receive
@@ -82,11 +29,9 @@ loop() ->
                   ER = nocatch(Class, {Reason,Stacktrace}),
                   lists:foreach(fun(P) -> exit(P, ER) end, LPs--[self()]),
                   report_exception(Class, {Reason,Stacktrace}),
-                  % exit(normal)
                   loop()
           end
       end,  
-      % Pid ! {result, Result},
       loop()
   end.
   

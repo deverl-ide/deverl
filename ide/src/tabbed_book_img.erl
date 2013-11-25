@@ -74,19 +74,12 @@ init(Options) ->
 	MainPanel = wxPanel:new(Parent, []),
 	MainSz = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(MainPanel, MainSz),
-	
-		% wxSizer:addSpacer(MainSz, 2),
-	
-	Tabs = wxPanel:new(MainPanel, []),
-	Font = wxPanel:getFont(Tabs),
-	wxFont:setPointSize(Font, 9),
-	wxPanel:setFont(Tabs, Font),
-	wxPanel:setWindowVariant(Tabs, ?wxWINDOW_VARIANT_SMALL),
+		
+	Tabs = wxPanel:new(MainPanel),
+  wxWindow:setBackgroundColour(Tabs, lib_widgets:colour_shade(wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW), 0.8)),
 	Sz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxPanel:setSizer(Tabs, Sz),
-	wxSizer:addSpacer(Sz, 4),
 	wxSizer:add(MainSz, Tabs, [{proportion, 0}, {flag, ?wxEXPAND}]),
-	% wxSizer:addSpacer(MainSz, 1),
 	
 	Content = wxPanel:new(MainPanel),
 	ContentSz = wxBoxSizer:new(?wxVERTICAL),
@@ -196,7 +189,8 @@ terminate(_Reason, _State) ->
 create_button(Parent, Sz, Label, Options) ->
 	SzFlags = wxSizerFlags:new([{proportion, 0}]),
 	wxSizerFlags:right(SzFlags),
-	Btn = wxWindow:new(Parent, ?wxID_ANY, [{size,{34,34}}, {style, ?wxFULL_REPAINT_ON_RESIZE}]),
+  % Btn = wxWindow:new(Parent, ?wxID_ANY, [{size,{34,34}}, {style, ?wxFULL_REPAINT_ON_RESIZE}]),
+	Btn = wxWindow:new(Parent, ?wxID_ANY, [{size,{34,34}}]), %% TESTING
 	wxSizer:add(Sz, Btn, SzFlags),
   wxPanel:connect(Btn, paint, [callback, {userData, {Label, Options}}]),
 	wxPanel:connect(Btn, left_down, [{skip, true}, {userData, {Label, Options}}]),
@@ -209,38 +203,37 @@ create_button(Parent, Sz, Label, Options) ->
 %% @doc Draw the tab graphic.		
 %% Default {active, false}
 draw(Btn, Label, ImageList, WxDc, _, Options) ->
-	{W,H} = wxWindow:getSize(Btn),
-	
-  {R,G,B,_} = wxWindow:getBackgroundColour(Btn),
+  {W,H} = wxWindow:getSize(Btn),
 
-  SysBg = {R, G, B, 0},
-	Grad2 = {190,190,190},
-	LineL = {155,155,155},
+  % Following colour must match bg of tb panel
+  Blend = lib_widgets:colour_shade(wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW), 0.8),
+  FillD = {190,190,190}, %% Deselected button fill
+  FillA = {170,170,170}, %% Selected
+  LineD = {155,155,155}, %% Deselected buttun lines (sides)
+  LineA = {100,100,100},
 
 	%% wxDC must be created in a callback to work on windows.
 	DC = WxDc:new(Btn),
-	
-  Pen = wxPen:new(SysBg, [{width, 1}]),
-  wxDC:setPen(DC, Pen),
-  Brush = wxBrush:new(SysBg),
-  wxDC:setBrush(DC, Brush),
-  wxDC:drawRectangle(DC, {0, 0}, {W, H}),
 
-	%% Add gradients if button is selected
-	Fg = case proplists:get_value(active, Options, false) of
-		true -> 
-			wxDC:gradientFillLinear(DC, {2,6,W-5,11}, SysBg, Grad2, [{nDirection, ?wxDOWN}]),
-			wxDC:gradientFillLinear(DC, {2,17,W-5,11}, Grad2, SysBg, [{nDirection, ?wxDOWN}]),
+	%% Draw graphics
+  Draw = fun(C1, C2, Blend) ->
+    wxDC:gradientFillLinear(DC, {2,6,W-5,11}, Blend, C1, [{nDirection, ?wxDOWN}]),
+    wxDC:gradientFillLinear(DC, {2,17,W-5,11}, C1, Blend, [{nDirection, ?wxDOWN}]),
 
-			wxDC:gradientFillLinear(DC, {2,6,1,11}, SysBg, LineL, [{nDirection, ?wxDOWN}]),
-			wxDC:gradientFillLinear(DC, {2,17,1,11}, LineL, SysBg, [{nDirection, ?wxDOWN}]),
-	
-			wxDC:gradientFillLinear(DC, {W-4,6,1,11}, SysBg, LineL, [{nDirection, ?wxDOWN}]),
-			wxDC:gradientFillLinear(DC, {W-4,17,1,11}, LineL, SysBg, [{nDirection, ?wxDOWN}]);
-		false -> 	
-			wxDC:drawLine(DC, {W-1, 0}, {W-1, H}),
-			{60,60,60}
-	end,
+    wxDC:gradientFillLinear(DC, {2,4,1,13}, Blend, C2, [{nDirection, ?wxDOWN}]),
+    wxDC:gradientFillLinear(DC, {2,17,1,14}, C2, Blend, [{nDirection, ?wxDOWN}]),    
+
+    wxDC:gradientFillLinear(DC, {W-3,4,1,13}, Blend, C2, [{nDirection, ?wxDOWN}]),
+    wxDC:gradientFillLinear(DC, {W-3,17,1,14}, C2, Blend, [{nDirection, ?wxDOWN}])
+  end,
+  
+  case proplists:get_value(active, Options, false) of
+    false -> 
+      % Draw(FillD, LineD, Blend),
+      ok;
+    true ->   
+      Draw(FillA, LineA, Blend)
+  end,
 	
 	case proplists:get_value(imageId, Options) of
 		undefined -> 

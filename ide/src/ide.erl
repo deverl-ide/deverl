@@ -120,13 +120,14 @@ init(Options) ->
 	
 	SplitterStyle = case os:type() of
 		{_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
+    {win32, _} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE bor ?wxBORDER_THEME;
 		_ -> ?wxSP_3DSASH
 	end,
-	SplitterUtilities = wxSplitterWindow:new(Frame, [{id, ?SPLITTER_UTILITIES},
+	SplitterUtilities = wxSplitterWindow:new(Frame, [{id, ?SPLITTER_UTILITIES}, %% Primary splitter
 		{style, SplitterStyle}]),
 	SplitterSidebar = wxSplitterWindow:new(SplitterUtilities, [{id, ?SPLITTER_SIDEBAR},
-		{style, SplitterStyle}]),	
-
+		{style, SplitterStyle}]),
+    
 	wxSplitterWindow:setSashGravity(SplitterUtilities, 0.5),
 	wxSplitterWindow:setSashGravity(SplitterSidebar, 0.60),
 
@@ -315,11 +316,13 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSC
 	{noreply, State};	
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_TEST=Id},
 						 State=#state{frame=Frame, splitter_sidebar=V, left_pane=LeftPane, workspace=Ws, splitter_sidebar_pos=VPos}) ->
+   wxWindow:freeze(V),
    Str = case wxSplitterWindow:isSplit(V) of
        true -> wxSplitterWindow:unsplit(V,[{toRemove, LeftPane}]), "Show Left Pane\tShift+Alt+T";
        false -> wxSplitterWindow:splitVertically(V, LeftPane, Ws, [{sashPosition, VPos}]), "Hide Left Pane\tShift+Alt+T"
    end,
 	 ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, Str),
+   wxWindow:thaw(V),
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_UTIL=Id},
 						 State=#state{frame=Frame, splitter_utilities=H, splitter_sidebar=V, utilities=Utils, splitter_utilities_pos=HPos}) ->
@@ -455,7 +458,7 @@ create_utils(ParentA) ->
   Parent = wxPanel:new(ParentA),
   Sz = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(Parent, Sz),
-   
+     
  	SplitterStyle = case os:type() of
  		{_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
  		_ -> ?wxSP_3DSASH
@@ -467,7 +470,6 @@ create_utils(ParentA) ->
 	TabbedWindow = tabbed_book:new([{parent, Splitter}]),
 	
 	%% Start the port that communicates with the external ERTs
-	% Console = case console_port:start() of
 	Console = case console_sup:start_link([]) of
 		{error, E} ->
 			lib_widgets:placeholder(TabbedWindow, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
@@ -498,10 +500,10 @@ create_utils(ParentA) ->
     WSz = wxBoxSizer:new(?wxHORIZONTAL),
     %% Add toolbar
     Tb = wxPanel:new(W),
-    % wxPanel:setBackgroundColour(Tb, {220,220,220}),
+    wxWindow:setBackgroundColour(Tb, lib_widgets:colour_shade(wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW), 0.8)),
     TbSz = wxBoxSizer:new(?wxVERTICAL),
     Style = case os:type() of
-      {_,darwin} -> [{style, ?wxBORDER_NONE}];
+      {_,darwin} -> []; %%[{style, ?wxBORDER_NONE}];
       _ -> [] %%[{style, ?wxBORDER_DEFAULT}]
     end,
     Btn = wxBitmapButton:new(Tb, 123456, wxBitmap:new(wxImage:new("../icons/10x10/137.png")), Style),
@@ -525,7 +527,6 @@ create_utils(ParentA) ->
   ToolBar = wxPanel:new(Parent),
   ToolBarSz = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(ToolBar, ToolBarSz),
-  % wxPanel:setBackgroundColour(ToolBar, {188,188,188}),
   
   % ButtonFlags = [{style, ?wxBORDER_SUNKEN}],
   ButtonFlags = [],  
@@ -559,6 +560,7 @@ create_left_window(Frame, Parent) ->
 	
 	Toolbook = tabbed_book_img:new([{parent, Parent}]),
 	tabbed_book_img:assign_image_list(Toolbook, ImgList),
+  % wxWindow:setBackgroundColour(Toolbook, wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW)),
 
 	ProjectTrees = ide_projects_tree:start([{parent, Toolbook}, {frame, Frame}]),
 	tabbed_book_img:add_page(Toolbook, ProjectTrees, "Projects", [{imageId, 0}]),

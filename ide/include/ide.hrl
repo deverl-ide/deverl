@@ -102,5 +102,3 @@
 %% Global colours
 -define(ROW_BG_EVEN, {250,250,250,255}).
 -define(ROW_BG_ODD, {237,243,254,255}).
--define(PANEL_FG, {160,160,160}).
--define(PANEL_BG, {252,252,252}).

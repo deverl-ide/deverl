@@ -46,7 +46,7 @@
 -define(ICON_INFO, 5).
 
 -define(HEADER_BACKGROUND, {120,120,120}).
-
+-define(HEADER_BACKGROUND_MAC, {40, 197, 73}).
 -define(HEADER_PROJECTS, 0).
 -define(HEADER_FILES, 1).
 
@@ -142,7 +142,9 @@ init(Config) ->
                                         ?wxTR_FULL_ROW_HIGHLIGHT bor
                                         ?wxTR_HAS_VARIABLE_ROW_HEIGHT bor
                                         ?wxTR_NO_LINES bor
-                                        ?wxTR_TWIST_BUTTONS}]),
+                                        ?wxTR_LINES_AT_ROOT bor
+                                        ?wxTR_TWIST_BUTTONS bor
+                                        ?wxBORDER_NONE}]),
 	wxTreeCtrl:setIndent(Tree, 10),
 	ImgList = wxImageList:new(14,14),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/blue-folder-horizontal.png"))), 
@@ -160,7 +162,11 @@ init(Config) ->
       Placeholder = append_item(Tree, Item, Info, [{data, placeholder}]),
       wxTreeCtrl:toggle(Tree, Item),
       wxTreeCtrl:setItemImage(Tree, Placeholder, ?ICON_INFO),
-      wxTreeCtrl:setItemBackgroundColour(Tree, Item, ?HEADER_BACKGROUND),
+      C = case os:type() of
+        {_,darwin} -> ?HEADER_BACKGROUND_MAC;
+        _ -> ?HEADER_BACKGROUND
+      end,
+      wxTreeCtrl:setItemBackgroundColour(Tree, Item, C),
       wxTreeCtrl:setItemTextColour(Tree, Item, ?wxWHITE)
     end,
   AddRoot(?HEADER_PROJECTS, "Projects", ?HEADER_PROJECTS_EMPTY),
