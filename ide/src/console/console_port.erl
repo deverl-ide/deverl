@@ -20,6 +20,7 @@
 %% API
 -export([start/0, 
 				 eval/1, 
+         eval/2,
 				 close_port/0]).
 
 %% Server state
@@ -47,11 +48,6 @@ eval(Message) ->
 eval(Message, Respond) ->
 	gen_server:call(?MODULE, {call, Message, Respond}).
   
-% flush_buffer() ->
-%   gen_server:call(?MODULE, flush_buffer).
-%   
-% buffer_responses(Bool) ->
-%   gen_server:call(?MODULE, {buffer_responses, Bool}).
 	
 %% =====================================================================
 %% @doc Close the port.
@@ -87,15 +83,8 @@ init(Args) ->
 	end.
 
 handle_call({call, Msg, Respond}, _From, #state{port=Port}=State) ->
-  %% io:format("CALLING PORT: ~p~n", [Port]),
-  %% io:format("SERVER STATE: ~p~n", [State]),
   port_command(Port, Msg),
 	{reply, ok, State#state{respond=Respond}}.
-% handle_call(flush_buffer, _From, #state{queue=Queue}=State) ->
-%   lists:map(fun console_parser:parse_response/1, Queue),
-%   {reply, ok, State#state{queue=[]}};
-% handle_call({buffer_responses, Bool}, _From, #state{port=Port}=State) ->
-%   {reply, response, State#state{buffer_responses=Bool}}.
 	
 handle_cast(_Msg, State) ->
   {noreply, State}.
@@ -113,11 +102,8 @@ handle_info({'EXIT', Port, Reason}, #state{port=Port}=State) ->
 handle_info({_Port, {data, Response}}, State=#state{respond=Respond}) ->
 	case Respond of
 		false -> 
-      %% io:format("Buffered response: ~p~n", [Response]),
-      % State#state{queue=[Response | Queue]}
       ok;
 		true -> 
-      %% io:format("Non-buffered response: ~p~n", [Response]),
 			console_parser:parse_response(Response)
 	end,
 	{noreply, State}.

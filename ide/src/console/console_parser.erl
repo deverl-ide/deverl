@@ -39,7 +39,7 @@ parse_input(Message) ->
 % 
 % parse_response(Response) ->
 %   io:format("RESPONSE FROM PORT: ~p~n", [Response]),
-%   console_wx:append_to_console(Response).
+%   console_wx:append_command(Response).
 % 
 % loop(_) -> ok.
 
@@ -56,7 +56,7 @@ loop(R0) ->
         {prompt, []} ->
           loop([]); %% Single prompt, ignore, start over
         {prompt, R2} ->
-          console_wx:append_to_console(R2),
+          console_wx:append_command(R2),
           loop([]); %% Complete response, start over
         {incomplete, R2} ->
           loop(R2) %% No prompt yet, loop again with current data

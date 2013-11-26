@@ -25,7 +25,8 @@
 
 %% API     
 -export([new/1,
-				 append_to_console/1,
+				 append_command/1,
+         append_message/1,
          set_theme/2,
          set_font/1]).
 
@@ -36,6 +37,7 @@
 -define(PROMPT, "> ").
 -define(STYLE_PROMPT, 1).
 -define(STYLE_MSG, 2).
+-define(MARKER_MSG, 1).
 
 
 %% Server state
@@ -61,10 +63,17 @@ new(Config) ->
 %% =====================================================================
 %% @doc
 	
-append_to_console(Response) ->
+append_command(Response) ->
   wx_object:cast(?MODULE, {append, Response}).
 	
-		
+  
+%% =====================================================================
+%% @doc
+	
+append_message(Msg) ->
+  wx_object:cast(?MODULE, {append_msg, Msg}).
+  
+  	
 %% =====================================================================
 %% @doc Update the shell's theme
 
@@ -97,15 +106,17 @@ init(Config) ->
 	?stc:setLexer(Console, ?wxSTC_LEX_NULL),
   
 	?stc:styleSetFont(Console, ?wxSTC_STYLE_DEFAULT, 
-					  wxFont:new(13, ?wxFONTFAMILY_TELETYPE, 
-                                     ?wxNORMAL, 
-                                     ?wxNORMAL,[])),
+					  wxFont:new(13, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
 	?stc:setCaretWidth(Console, 1), 
 	?stc:cmdKeyClear(Console, ?wxSTC_KEY_UP, 0),
   
   %% Alternate styles
-  ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "fore:#234567,size:13"), % For the prompt
+  ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "bold,fore:#FF0000,size:13"), % For the prompt
   ?stc:styleSetSpec(Console, ?STYLE_MSG, "fore:#D8203E"), % For text written programmatically
+  
+  %% Markers
+  ?stc:markerDefine(Console, ?MARKER_MSG, ?wxSTC_MARK_BACKGROUND),
+  ?stc:markerSetBackground(Console, ?MARKER_MSG, {230,230,230}),
   
   %% Set saved state
   {_Name, Fg, Bg} = sys_pref_manager:get_preference(console_theme),
@@ -136,7 +147,6 @@ init(Config) ->
 				       textctrl=Console, 
 				       cmd_history=[],
 				       current_cmd=0,
-               % wx_env=wx:get_env(),
                menu=Menu},
   
   {Panel, State}.
@@ -156,8 +166,19 @@ handle_cast({set_font, Font}, State=#state{textctrl=Console}) ->
   ?stc:styleClearAll(Console),
   {noreply,State};
 handle_cast({append, Response}, State=#state{textctrl=Console}) ->
+  ?stc:gotoPos(Console, ?stc:getLength(Console)),
   ?stc:addText(Console, Response),
   prompt_2_console(Console, ?PROMPT),
+  ?stc:gotoPos(Console, ?stc:getLength(Console)),
+  {noreply, State};
+handle_cast({append_msg, Msg}, State=#state{textctrl=Console}) ->
+  ?stc:gotoPos(Console, ?stc:getLength(Console)),
+  Line = ?stc:getCurrentLine(Console),
+  ?stc:markerAdd(Console, Line, ?MARKER_MSG),
+  ?stc:gotoLine(Console, Line),
+  ?stc:addText(Console, Msg),
+  ?stc:newLine(Console),
+  ?stc:gotoPos(Console, ?stc:getLength(Console)),
   {noreply, State}.
   
 handle_call(text_ctrl, _From, State) ->

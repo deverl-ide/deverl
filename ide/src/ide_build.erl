@@ -72,9 +72,10 @@ compile_file(Path) ->
   
   
 load_file(Path, _Options) ->
-  % Ext = filename:basename(Path, ".erl"),
-  Beam = filename:join([filename:dirname(Path), filename:basename(Path, ".erl")]),
-  console_port:eval("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl()).
+  Mod = filename:basename(Path, ".erl"),
+  Beam = filename:join([filename:dirname(Path), Mod]),
+  console_port:eval("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl(), false),
+  console_wx:append_message("Loaded module: " ++ Mod).
   
   
 build_project(Parent, ProjectId) ->
