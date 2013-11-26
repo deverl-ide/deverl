@@ -13,7 +13,7 @@
 		     parse_input/1,
 		     parse_response/1]).
 
--export([loop/1]).
+-export([init/0]).
 
 %% =====================================================================
 %% Client API
@@ -23,7 +23,7 @@
 %% @doc Close the selected editor
 
 start()->
-    register(?MODULE, spawn(?MODULE, loop, [[]])).
+    register(?MODULE, spawn_link(?MODULE, init, [])).
 
 
 %% =====================================================================
@@ -54,11 +54,15 @@ parse_response(Response) ->
 %% Internal functions
 %% =====================================================================
 
+init() ->
+  process_flag(trap_exit, true), %% Die when the parent process dies
+  loop([]).
+  
 loop(R0) ->
   receive
     {data, R1} ->
       %% Split data at newline
-      case build_response(re:split(R1, "\\R", [{newline, any}, {return, list}, trim]), R0) of
+      case build_response(re:split(R1, "(\\R)", [{newline, any}, {return, list}, trim]), R0) of
         {prompt, []} ->
           loop([]); %% Single prompt, ignore, start over
         {prompt, R2} ->
@@ -74,6 +78,8 @@ loop(R0) ->
   
 build_response([], Acc) ->
   {incomplete, Acc};
+build_response(["\n"], Acc) ->
+  {incomplete, Acc};
 build_response([H], Acc) ->
   case is_prompt(H) of
     true -> %% Ok, done
@@ -88,7 +94,7 @@ build_response([H|T], Acc) ->
     true -> %% Ok, done
       {prompt, Acc};
     false ->
-      build_response(T, Acc ++ H ++ "\n")
+      build_response(T, Acc ++ H)
   end.
   
 is_prompt(Cmd) ->

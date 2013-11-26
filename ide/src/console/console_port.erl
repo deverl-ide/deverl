@@ -74,11 +74,9 @@ init(Args) ->
 	end,
 	try open(Path, Options) of
 		Port -> 
-      %% io:format("OPENING PORT: ~p~n", [Port]),
 			{ok, #state{port=Port, respond=false}}
 	catch
 		_:_ ->
-      %% io:format("COULD NOT OPEN PORT~n"),
 			{stop, no_port}
 	end.
 
