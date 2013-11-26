@@ -38,20 +38,7 @@ parse_input(Message) ->
 %% @doc
 
 parse_response(Response) ->
-  io:format("RESPONSE FROM PORT: ~p~n", [Response]),
-  M = check_for_prompt(Response),
+  % io:format("RESPONSE FROM PORT~n"),
+  M = Response,
 	console_wx:append_to_console(M).
   
-  
-%% =====================================================================
-%% @doc
-
-check_for_prompt(Response) ->
-  case re:run(Response, "(.+)\\d> $", [{capture, [1]}]) of
-    nomatch ->
-      "";
-    {match, [{Start, Length}]} ->
-      R = string:substr(Response, Start, Length),
-      io:format("RESPONSE: ~p~n", [R]),
-      R
-  end.
