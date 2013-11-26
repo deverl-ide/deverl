@@ -43,17 +43,17 @@ parse_input(Message) ->
 % 
 % loop(_) -> ok.
 
-
+%% =====================================================================
+%% @doc
 
 parse_response(Response) ->
-<<<<<<< HEAD
-  % io:format("RESPONSE FROM PORT~n"),
-  M = Response,
-	console_wx:append_to_console(M).
-  
-=======
   ?MODULE ! {data, Response}.
   
+  
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
+
 loop(R0) ->
   receive
     {data, R1} ->
@@ -98,4 +98,4 @@ is_prompt(Cmd) ->
     {match, _} ->
       true
   end.
->>>>>>> b200137fbfecdffccccc96fc8b2e01c6731afd39
+

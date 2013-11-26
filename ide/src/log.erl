@@ -84,7 +84,7 @@ init(Config) ->
   ?stc:setCaretWidth(Log, 0),
   
   %% Default "normal" style
-  ?stc:styleSetFont(Log, ?wxSTC_STYLE_DEFAULT, wxFont:new(11, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
+  ?stc:styleSetFont(Log, ?wxSTC_STYLE_DEFAULT, sys_pref_manager:get_font(log)),
   ?stc:styleSetSize(Log, ?wxSTC_STYLE_DEFAULT, 11),
   ?stc:styleClearAll(Log),
   

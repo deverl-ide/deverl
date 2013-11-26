@@ -37,10 +37,6 @@
 -define(STYLE_PROMPT, 1).
 -define(STYLE_MSG, 2).
 
-<<<<<<< HEAD
-=======
-
->>>>>>> b200137fbfecdffccccc96fc8b2e01c6731afd39
 %% Server state
 -record(state, {win, 
 								textctrl, 
@@ -65,13 +61,8 @@ new(Config) ->
 %% @doc
 	
 append_to_console(Response) ->
-<<<<<<< HEAD
-	{Env, Tc} = wx_object:call(?MODULE, text_ctrl),
-	wx:set_env(Env),
-	?stc:addText(Tc, Response).
-=======
   wx_object:cast(?MODULE, {append, Response}).
->>>>>>> b200137fbfecdffccccc96fc8b2e01c6731afd39
+
 	
 		
 %% =====================================================================
@@ -98,21 +89,6 @@ init(Config) ->
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Panel, MainSizer),
 
-<<<<<<< HEAD
-	ShellTextBox = ?stc:new(Panel, [{id, ?ID_SHELL_TEXT_BOX}, {style, ?wxBORDER_NONE}]),
-	?stc:setMarginWidth(ShellTextBox, 0, 0),
-	?stc:setMarginWidth(ShellTextBox, 1, 0),
-	?stc:setMarginWidth(ShellTextBox, 2, 0),
-	?stc:setMarginLeft(ShellTextBox, 2),
-	?stc:setLexer(ShellTextBox, ?wxSTC_LEX_NULL),
-  
-	?stc:styleSetFont(ShellTextBox, ?wxSTC_STYLE_DEFAULT, 
-					  wxFont:new(13, ?wxFONTFAMILY_TELETYPE, 
-                                     ?wxNORMAL, 
-                                     ?wxNORMAL,[])),
-	?stc:setCaretWidth(ShellTextBox, 1), 
-	?stc:cmdKeyClear(ShellTextBox, ?wxSTC_KEY_UP, 0),
-=======
 	Console = ?stc:new(Panel, [{id, ?ID_SHELL_TEXT_BOX}, {style, ?wxBORDER_NONE}]),
 	?stc:setMarginWidth(Console, 0, 0),
 	?stc:setMarginWidth(Console, 1, 0),
@@ -130,36 +106,17 @@ init(Config) ->
   %% Alternate styles
   ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "fore:#234567,size:13"), % For the prompt
   ?stc:styleSetSpec(Console, ?STYLE_MSG, "fore:#D8203E"), % For text written programmatically
->>>>>>> b200137fbfecdffccccc96fc8b2e01c6731afd39
   
   %% Set saved state
   {_Name, Fg, Bg} = sys_pref_manager:get_preference(console_theme),
   set_theme(Fg, Bg),
   
-  Font = wxFont:new(sys_pref_manager:get_preference(console_font_size),
-	           sys_pref_manager:get_preference(console_font_family),
-	           sys_pref_manager:get_preference(console_font_style),
-	           sys_pref_manager:get_preference(console_font_weight)
-             %[{face, sys_pref_manager:get_preference(console_font_facename)}]
-             ),
-  set_font(Font),         
+  set_font(sys_pref_manager:get_font(console)),         
                                                 	
-<<<<<<< HEAD
-	wxSizer:add(MainSizer, ShellTextBox, [{flag, ?wxEXPAND},
-=======
-	wxSizer:add(MainSizer, Console, [{flag, ?wxEXPAND},
->>>>>>> b200137fbfecdffccccc96fc8b2e01c6731afd39
-                                          {proportion, 1}]),
+	wxSizer:add(MainSizer, Console, [{flag, ?wxEXPAND}, {proportion, 1}]),
                                           
   Menu = create_menu(),
                                           
-<<<<<<< HEAD
-	?stc:connect(ShellTextBox, key_down, [callback]),
-  ?stc:connect(ShellTextBox, right_up),
-
-	State=#state{win=Panel, 
-				       textctrl=ShellTextBox, 
-=======
 	?stc:connect(Console, key_down, [callback]),
   ?stc:connect(Console, right_up),
   
@@ -170,7 +127,6 @@ init(Config) ->
 
 	State=#state{win=Panel, 
 				       textctrl=Console, 
->>>>>>> b200137fbfecdffccccc96fc8b2e01c6731afd39
 				       cmd_history=[],
 				       current_cmd=0,
                % wx_env=wx:get_env(),
@@ -191,17 +147,12 @@ handle_cast({set_theme, Fg, Bg}, State=#state{textctrl=Console}) ->
 handle_cast({set_font, Font}, State=#state{textctrl=Console}) ->
   ?stc:styleSetFont(Console, ?wxSTC_STYLE_DEFAULT, Font),
   ?stc:styleClearAll(Console),
-<<<<<<< HEAD
-  {noreply,State}.
-    
-=======
   {noreply,State};
 handle_cast({append, Response}, State=#state{textctrl=Console}) ->
   ?stc:addText(Console, Response),
   prompt_2_console(Console, ?PROMPT),
   {noreply, State}.
   
->>>>>>> b200137fbfecdffccccc96fc8b2e01c6731afd39
 handle_call(text_ctrl, _From, State) ->
   {reply,{State#state.wx_env,State#state.textctrl}, State};
 handle_call(command_history, _From, State) ->
@@ -322,10 +273,6 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 %% @doc Write a newline plus the repeated prompt to the console.
 	
 prompt_2_console(Console, Prompt) ->
-<<<<<<< HEAD
-  ?stc:addText(Console, io_lib:nl()),
-	?stc:addText(Console, Prompt).
-=======
   ?stc:newLine(Console),
   ?stc:addText(Console, Prompt),
   Start = ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console) - 1),
@@ -333,7 +280,6 @@ prompt_2_console(Console, Prompt) ->
   ?stc:setStyling(Console, length(Prompt), ?STYLE_PROMPT),
   % ?stc:addText(Console, Prompt),
   ok.
->>>>>>> b200137fbfecdffccccc96fc8b2e01c6731afd39
 	
 	
 %% =====================================================================
@@ -366,11 +312,7 @@ call_parser(Message) ->
 %% @doc Separate the prompt and command on the most recent line.
 
 split_line_at_prompt(Console) ->
-<<<<<<< HEAD
-  lists:split(get_cur_prompt_length(Console), 
-=======
   lists:split(length(?PROMPT), %%get_cur_prompt_length(Console), 
->>>>>>> b200137fbfecdffccccc96fc8b2e01c6731afd39
     ?stc:getLine(Console, ?stc:getLineCount(Console) - 1)).	
 	
 

@@ -18,7 +18,8 @@
 -export([
         start/1,
         set_preference/2,
-        get_preference/1
+        get_preference/1,
+        get_font/1
         ]).
 
 %% Server state
@@ -48,6 +49,29 @@ set_preference(Key, Value) ->
 
 get_preference(Key) ->
   gen_server:call(?MODULE, Key).
+  
+  
+%% =====================================================================
+%% @doc
+
+get_font(Window) ->
+  case Window of 
+    editor ->
+      wxFont:new(sys_pref_manager:get_preference(editor_font_size),
+                 sys_pref_manager:get_preference(editor_font_family),
+                 sys_pref_manager:get_preference(editor_font_style),
+                 sys_pref_manager:get_preference(editor_font_weight));
+    console ->
+      wxFont:new(sys_pref_manager:get_preference(console_font_size),
+                 sys_pref_manager:get_preference(console_font_family),
+                 sys_pref_manager:get_preference(console_font_style),
+                 sys_pref_manager:get_preference(console_font_weight));
+    log ->
+      wxFont:new(sys_pref_manager:get_preference(log_font_size),
+                 sys_pref_manager:get_preference(log_font_family),
+                 sys_pref_manager:get_preference(log_font_style),
+                 sys_pref_manager:get_preference(log_font_weight))
+  end.
 
 
 %% =====================================================================

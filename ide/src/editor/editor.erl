@@ -242,11 +242,7 @@ set_line_margin_visible(EditorPid, Bool) ->
 	Editor = wx_object:call(EditorPid, stc),
 	case Bool of
 		true -> 
-  		Font = wxFont:new(sys_pref_manager:get_preference(editor_font_size),
-  											sys_pref_manager:get_preference(editor_font_family),
-  											sys_pref_manager:get_preference(editor_font_style),
-  											sys_pref_manager:get_preference(editor_font_weight), []),
-      set_linenumber_default(Editor, Font);
+      set_linenumber_default(Editor, sys_pref_manager:get_font(editor));
 		false -> ?stc:setMarginWidth(Editor, 0, 0)
 	end.			
 	
