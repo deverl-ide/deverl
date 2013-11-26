@@ -100,7 +100,12 @@ insert_file(FilePath) ->
       find_root(FilePath);
     Item ->
       {Id, _} = wxTreeCtrl:getItemData(Tree, Item),
-      append_item(Tree, Item, filename:basename(FilePath), [{image, ?ICON_DOCUMENT}, {data, {Id, FilePath}}])
+      case wxTreeCtrl:isExpanded(Tree, Item) of
+        true ->
+          append_item(Tree, Item, filename:basename(FilePath), [{image, ?ICON_DOCUMENT}, {data, {Id, FilePath}}]);
+        false ->
+          wxTreeCtrl:setItemHasChildren(Tree, Item)
+      end
   end.
   
   
