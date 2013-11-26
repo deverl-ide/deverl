@@ -13,7 +13,7 @@
 		     parse_input/1,
 		     parse_response/1]).
 
--export([loop/1]).
+-export([init/0]).
 
 %% =====================================================================
 %% Client API
