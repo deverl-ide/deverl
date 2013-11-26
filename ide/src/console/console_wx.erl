@@ -309,6 +309,7 @@ prompt_2_console(Console, Prompt) ->
 
 prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
   Penult = lists:nth(length(Input)-1, Input),
+  io:format("INPUT: ~p~n", [Input]),
 	if 
 		Penult =:= 46 ->
 			prompt_2_console(Console, Prompt),
