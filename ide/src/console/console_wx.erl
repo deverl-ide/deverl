@@ -39,7 +39,6 @@
 -define(STYLE_MSG, 2).
 -define(MARKER_MSG, 1).
 
-
 %% Server state
 -record(state, {win, 
 								textctrl, 
@@ -65,6 +64,7 @@ new(Config) ->
 	
 append_command(Response) ->
   wx_object:cast(?MODULE, {append, Response}).
+
 	
   
 %% =====================================================================
@@ -122,16 +122,9 @@ init(Config) ->
   {_Name, Fg, Bg} = sys_pref_manager:get_preference(console_theme),
   set_theme(Fg, Bg),
   
-  Font = wxFont:new(sys_pref_manager:get_preference(console_font_size),
-	           sys_pref_manager:get_preference(console_font_family),
-	           sys_pref_manager:get_preference(console_font_style),
-	           sys_pref_manager:get_preference(console_font_weight)
-             %[{face, sys_pref_manager:get_preference(console_font_facename)}]
-             ),
-  set_font(Font),         
+  set_font(sys_pref_manager:get_font(console)),         
                                                 	
-	wxSizer:add(MainSizer, Console, [{flag, ?wxEXPAND},
-                                          {proportion, 1}]),
+	wxSizer:add(MainSizer, Console, [{flag, ?wxEXPAND}, {proportion, 1}]),
                                           
   Menu = create_menu(),
                                           
@@ -237,15 +230,15 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Eve
       %% to the port results in no response. It is the terminal that redraws the prompt
       %% and not the ERTS. Same goes with history (up arrow/down arrow).
       %% The port will only respond through stdout when a '.' is received.
-      prompt_2_console(Console, ?PROMPT),
+      prompt_2_console(Console, Prompt),
       call_parser(Input), %% send anyway, so any error contains the correct position integer
       ok;
     _ ->      
       Last =   fun(46) -> %% keycode 46 = '.'
             %% Deal with the case where several '.'s are entered, '...'
-            prompt_or_not(Console, Input, ?PROMPT, Event);
+            prompt_or_not(Console, Input, Prompt, Event);
           (_) -> %% write the newline and prompt to the console
-            prompt_2_console(Console, ?PROMPT),
+            prompt_2_console(Console, Prompt),
             ok
           end,
       add_cmd(Input),

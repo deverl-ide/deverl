@@ -42,5 +42,12 @@ get_defaults() ->
   {console_font_facename, undefined},
   {console_font_family, ?wxFONTFAMILY_TELETYPE},
   {console_font_style, ?wxNORMAL},
-  {console_font_weight, ?wxNORMAL}
+  {console_font_weight, ?wxNORMAL},
+  
+  %% Log prefs
+  {log_font_size, ?DEFAULT_FONT_SIZE},
+  {log_font_facename, undefined},
+  {log_font_family, ?wxFONTFAMILY_TELETYPE},
+  {log_font_style, ?wxNORMAL},
+  {log_font_weight, ?wxNORMAL}
   ].
