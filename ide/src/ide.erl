@@ -469,16 +469,17 @@ create_utils(ParentA) ->
   %% Splitter window 1
 	TabbedWindow = tabbed_book:new([{parent, Splitter}]),
 	
+  console_parser:start(),
 	%% Start the port that communicates with the external ERTs
 	Console = case console_sup:start_link([]) of
 		{error, E} ->
 			lib_widgets:placeholder(TabbedWindow, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
 			%% Disable console menu/toolbar items
 		Port ->
-			C = console_wx:new([{parent, TabbedWindow}]),
-      console_port:flush_buffer(), %% Load text received whilst initialising
-      console_port:buffer_responses(false), %% The port will now send responses directly to the console
-			C
+			console_wx:new([{parent, TabbedWindow}])
+      % console_port:flush_buffer(), %% Load text received whilst initialising
+      % console_port:buffer_responses(false), %% The port will now send responses directly to the console
+      % C
 	end,
 	tabbed_book:add_page(TabbedWindow, Console, "Console"),
 	
