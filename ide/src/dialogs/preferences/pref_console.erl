@@ -86,17 +86,17 @@ do_init(Config) ->
   %% Theme
   add_bold_label(Panel, MainSz, "Theme"),
   
-  %% Console themes {Name, FgColour, BgColour}
-  Themes = [{"Light", ?wxBLACK, ?wxWHITE},
-            {"Dark", ?wxWHITE, ?wxBLACK},
-            {"Matrix", {0,204,0}, ?wxBLACK}],
+  %% Console themes {Name, FgColour, BgColour, MarkerBg, ErrorFg}
+  Themes = [{"Light", ?wxBLACK, ?wxWHITE, {230,230,230}, ?wxRED},
+            {"Dark", ?wxWHITE, ?wxBLACK, {30,30,30}, {146, 91, 123}},
+            {"Matrix", {0,204,0}, ?wxBLACK, {30,30,30}, {146, 91, 123}}],
   
   ThemeSz = wxBoxSizer:new(?wxHORIZONTAL),
   
   SavedTheme = sys_pref_manager:get_preference(console_theme),
   
   ThemeEx = 
-    fun({Name, Fg, Bg}=Theme) ->
+    fun({Name, Fg, Bg, MrkrBf, ErrFg}=Theme) ->
       Profile = wxWindow:new(Panel, ?wxID_ANY, [{style, ?wxBORDER_SIMPLE}, {size, {65,40}}]),
       T = wxStaticText:new(Profile, ?wxID_ANY, "1> 1+1.\n3\n2>"),
       wxWindow:setFont(T, wxFont:new(8, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL)),
@@ -132,8 +132,8 @@ do_init(Config) ->
     
   {Panel, State}.
 
-handle_event(#wx{id=Id, event=#wxCommand{type=command_radiobutton_selected}, userData={_Name,Fg,Bg}=Theme}, State) ->
-  console_wx:set_theme(Fg, Bg),
+handle_event(#wx{id=Id, event=#wxCommand{type=command_radiobutton_selected}, userData={_Name,Fg,Bg,MrkrBg,ErrFg}=Theme}, State) ->
+  console_wx:set_theme(Fg, Bg, MrkrBg, ErrFg),
   sys_pref_manager:set_preference(console_theme, Theme),
   {noreply, State};
 handle_event(#wx{obj=Browse, event=#wxCommand{type=command_button_clicked}}, 
