@@ -237,13 +237,13 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Eve
       call_parser(Input), %% send anyway, so any error contains the correct position integer
       ok;
     _ ->      
-      Last =   fun(46) -> %% keycode 46 = '.'
-            %% Deal with the case where several '.'s are entered, '...'
-            prompt_or_not(Console, Input, Prompt, Event);
-          (_) -> %% write the newline and prompt to the console
-            prompt_2_console(Console, Prompt),
-            ok
-          end,
+      Last = fun(46) -> %% keycode 46 = '.'
+               %% Deal with the case where several '.'s are entered, '...'
+               prompt_or_not(Console, Input, Prompt, Event);
+             (_) -> %% write the newline and prompt to the console
+               prompt_2_console(Console, Prompt),
+               ok
+             end,
       add_cmd(Input),
       Last(lists:last(Input)),
       call_parser(Input),
@@ -297,6 +297,7 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 %% @doc Write a newline plus the repeated prompt to the console.
 	
 prompt_2_console(Console, Prompt) ->
+  io:format("PROMPT~n"),
   ?stc:newLine(Console),
   ?stc:addText(Console, Prompt),
   Start = ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console)),
@@ -310,8 +311,8 @@ prompt_2_console(Console, Prompt) ->
 %% @private
 
 prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
-  Penult = lists:nth(length(Input)-1, Input),
   io:format("INPUT: ~p~n", [Input]),
+  Penult = lists:nth(length(Input)-1, Input),
 	if 
 		Penult =:= 46 ->
 			prompt_2_console(Console, Prompt),
