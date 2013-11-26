@@ -27,7 +27,7 @@
 -export([new/1,
 				 append_command/1,
          append_message/1,
-         set_theme/2,
+         set_theme/4,
          set_font/1]).
 
 %% Macros
@@ -77,8 +77,8 @@ append_message(Msg) ->
 %% =====================================================================
 %% @doc Update the shell's theme
 
-set_theme(Fg, Bg) ->
-  wx_object:cast(?MODULE, {set_theme, Fg, Bg}).
+set_theme(Fg, Bg, MrkrBg, ErrFg) ->
+  wx_object:cast(?MODULE, {set_theme, Fg, Bg, MrkrBg, ErrFg}).
 
 
 %% =====================================================================
@@ -110,19 +110,18 @@ init(Config) ->
 	?stc:setCaretWidth(Console, 1), 
 	?stc:cmdKeyClear(Console, ?wxSTC_KEY_UP, 0),
   
+  %% Saved styles
+  {_Name, Fg, Bg, MrkrBg, ErrFg} = sys_pref_manager:get_preference(console_theme),
+  set_theme(Fg, Bg, MrkrBg, ErrFg),
+  set_font(sys_pref_manager:get_font(console)),
+  
   %% Alternate styles
-  ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "bold,fore:#FF0000,size:13"), % For the prompt
-  ?stc:styleSetSpec(Console, ?STYLE_MSG, "fore:#D8203E"), % For text written programmatically
+  ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "bold,underline"), % For the prompt
+  ?stc:styleSetBold(Console, ?STYLE_PROMPT, true),
   
   %% Markers
   ?stc:markerDefine(Console, ?MARKER_MSG, ?wxSTC_MARK_BACKGROUND),
-  ?stc:markerSetBackground(Console, ?MARKER_MSG, {230,230,230}),
-  
-  %% Set saved state
-  {_Name, Fg, Bg} = sys_pref_manager:get_preference(console_theme),
-  set_theme(Fg, Bg),
-  
-  set_font(sys_pref_manager:get_font(console)),         
+  ?stc:markerSetBackground(Console, ?MARKER_MSG, MrkrBg),
                                                 	
 	wxSizer:add(MainSizer, Console, [{flag, ?wxEXPAND}, {proportion, 1}]),
                                           
@@ -132,9 +131,10 @@ init(Config) ->
   ?stc:connect(Console, right_up),
   
   %% Add initial text
-  ?stc:setText(Console, "Erlang Evaluator V0.2\n" ++ ?PROMPT),
+  InitText = "Erlang Evaluator V0.2\n" ++ ?PROMPT,
+  ?stc:setText(Console, InitText),
   ?stc:startStyling(Console, 0, 31),
-  ?stc:setStyling(Console, 10, ?STYLE_PROMPT),
+  ?stc:setStyling(Console, length(InitText) - 1, ?STYLE_PROMPT),
 
 	State=#state{win=Panel, 
 				       textctrl=Console, 
@@ -148,15 +148,18 @@ handle_info(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
   
-handle_cast({set_theme, Fg, Bg}, State=#state{textctrl=Console}) ->
+handle_cast({set_theme, Fg, Bg, MrkrBg, ErrFg}, State=#state{textctrl=Console}) ->
+  ?stc:styleSetBackground(Console, 0, Bg),
+  ?stc:styleSetForeground(Console, 0, Fg),
   ?stc:styleSetBackground(Console, ?wxSTC_STYLE_DEFAULT, Bg),
   ?stc:styleSetForeground(Console, ?wxSTC_STYLE_DEFAULT, Fg),
+  ?stc:styleSetBackground(Console, ?STYLE_PROMPT, Bg),  
+  ?stc:styleSetForeground(Console, ?STYLE_PROMPT, Fg),
   ?stc:setCaretForeground(Console, Fg),
-  ?stc:styleClearAll(Console),
+  ?stc:markerSetBackground(Console, ?MARKER_MSG, MrkrBg),
   {noreply,State};
 handle_cast({set_font, Font}, State=#state{textctrl=Console}) ->
-  ?stc:styleSetFont(Console, ?wxSTC_STYLE_DEFAULT, Font),
-  ?stc:styleClearAll(Console),
+  ?stc:styleSetFont(Console, 0, Font),
   {noreply,State};
 handle_cast({append, Response}, State=#state{textctrl=Console}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
@@ -296,10 +299,9 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 prompt_2_console(Console, Prompt) ->
   ?stc:newLine(Console),
   ?stc:addText(Console, Prompt),
-  Start = ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console) - 1),
-  ?stc:startStyling(Console, 0, 31),
-  ?stc:setStyling(Console, length(Prompt), ?STYLE_PROMPT),
-  % ?stc:addText(Console, Prompt),
+  Start = ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console)),
+  ?stc:startStyling(Console, Start, 31),
+  ?stc:setStyling(Console, length(Prompt) - 1, ?STYLE_PROMPT),
   ok.
 	
 	
