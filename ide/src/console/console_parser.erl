@@ -35,29 +35,13 @@ parse_input(Message) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc OLD IMPLEMENTATION - KEPT FOR COMPARISON
 % 
 % parse_response(Response) ->
 %   io:format("RESPONSE FROM PORT: ~p~n", [Response]),
 %   console_wx:append_to_console(Response).
 % 
 % loop(_) -> ok.
-
-% The parser now makes use of a receive loop to assemble responses into complete units.
-% Previously each line (at newline) was passed back to the console when received so:
-% "** exception error: an error occurred when evaluating an arithmetic expression\n
-%      in operator  +/2\n
-%              called as tom + 5\n"
-% was passed back as three lines.
-% The parser now assembles the above into a response (which it is), and passes it back to
-% the console only when complete, i.e. the parser receives a prompt ("4> \n").
-
-% This refactoring of the console modules allows us to manage the prompt ourselves which
-% gives us much greater flexibility when writing to the console, and allows us to hide
-% certain operations and/or output from the user (i.e cd(), l()). We can also write at any position without interfering with 
-% the prompt (command number), which A) looked ugly, and B) became out of sync (jump from 2 to 4, for example, if we deleted a line).
-% The prompt returned from the port is now discarded, as is the newline character at the end of each response (but not those within a long response).
-
 
 
 

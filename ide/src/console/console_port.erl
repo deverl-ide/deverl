@@ -4,18 +4,6 @@
 %% @title
 %% @version
 %% @doc This module initalises and manages the port for the console.
-%% It will buffer any messages received from the port when 
-%% buffer_responses is set to true. These can be received when ready
-%% using flush_buffer/0. 
-
-% FLUSH ETC no longer required, as we have added the ability to repress the response when
-% calling the function eval/1|eval/2 was call_port/1. No longer then, do we have to buffer
-% messages whilst the actual console text ctrl (console) is initalised, we simply discard them.
-% eval/2 accepts a boolean flag to switch off the response. The default behaviour is true (keep
-% response). The flag is not currently synchronized and therefore should a user make a call to the port
-% which takes a while to complete, and in the meantime makes other calls in which they switch off the response,
-% the response for the first call may also be discarded when it finishes.
-
 %% @end
 %% =====================================================================
 

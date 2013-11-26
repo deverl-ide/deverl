@@ -8,8 +8,6 @@
 %% @end
 %% =====================================================================
 
-%% We have stopped using the numbered prompt for now, and use a static prompt defined in a macro.
-
 -module(console_wx).
 
 -include_lib("wx/include/wx.hrl").
