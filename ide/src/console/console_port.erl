@@ -7,6 +7,15 @@
 %% It will buffer any messages received from the port when 
 %% buffer_responses is set to true. These can be received when ready
 %% using flush_buffer/0. 
+
+% FLUSH ETC no longer required, as we have added the ability to repress the response when
+% calling the function eval/1|eval/2 was call_port/1. No longer then, do we have to buffer
+% messages whilst the actual console text ctrl (console) is initalised, we simply discard them.
+% eval/2 accepts a boolean flag to switch off the response. The default behaviour is true (keep
+% response). The flag is not currently synchronized and therefore should a user make a call to the port
+% which takes a while to complete, and in the meantime makes other calls in which they switch off the response,
+% the response for the first call may also be discarded when it finishes.
+
 %% @end
 %% =====================================================================
 
@@ -22,13 +31,13 @@
 
 %% API
 -export([start/0, 
-         call_port/1,
-				 call_port/2, 
+				 eval/1, 
 				 close_port/0]).
 
 %% Server state
 -record(state, {port :: port(),
-                respond :: boolean()}).
+                respond :: boolean()
+                }).
 
 
 %% =====================================================================
@@ -44,11 +53,17 @@ start()->
 
 %% =====================================================================
 %% @doc
-call_port(Message) ->
-  call_port(Message, true).
-call_port(Message, GetResponse) ->
-	gen_server:call(?MODULE, {call, Message, GetResponse}).
 
+eval(Message) ->
+	eval(Message, true).
+eval(Message, Respond) ->
+	gen_server:call(?MODULE, {call, Message, Respond}).
+  
+% flush_buffer() ->
+%   gen_server:call(?MODULE, flush_buffer).
+%   
+% buffer_responses(Bool) ->
+%   gen_server:call(?MODULE, {buffer_responses, Bool}).
 	
 %% =====================================================================
 %% @doc Close the port.
@@ -63,6 +78,7 @@ close_port() ->
 %% =====================================================================
    
 init(Args) ->
+  %% io:format("STARTING PORT~n"),
 	% process_flag(trap_exit, true), %% Die when the parent process dies
 	{Path, Options} = case os:type() of
 		{win32,_} ->
@@ -74,15 +90,24 @@ init(Args) ->
 	end,
 	try open(Path, Options) of
 		Port -> 
+      %% io:format("OPENING PORT: ~p~n", [Port]),
 			{ok, #state{port=Port, respond=false}}
 	catch
 		_:_ ->
+      %% io:format("COULD NOT OPEN PORT~n"),
 			{stop, no_port}
 	end.
 
 handle_call({call, Msg, Respond}, _From, #state{port=Port}=State) ->
+  %% io:format("CALLING PORT: ~p~n", [Port]),
+  %% io:format("SERVER STATE: ~p~n", [State]),
   port_command(Port, Msg),
 	{reply, ok, State#state{respond=Respond}}.
+% handle_call(flush_buffer, _From, #state{queue=Queue}=State) ->
+%   lists:map(fun console_parser:parse_response/1, Queue),
+%   {reply, ok, State#state{queue=[]}};
+% handle_call({buffer_responses, Bool}, _From, #state{port=Port}=State) ->
+%   {reply, response, State#state{buffer_responses=Bool}}.
 	
 handle_cast(_Msg, State) ->
   {noreply, State}.
@@ -100,8 +125,11 @@ handle_info({'EXIT', Port, Reason}, #state{port=Port}=State) ->
 handle_info({_Port, {data, Response}}, State=#state{respond=Respond}) ->
 	case Respond of
 		false -> 
+      %% io:format("Buffered response: ~p~n", [Response]),
+      % State#state{queue=[Response | Queue]}
       ok;
 		true -> 
+      %% io:format("Non-buffered response: ~p~n", [Response]),
 			console_parser:parse_response(Response)
 	end,
 	{noreply, State}.

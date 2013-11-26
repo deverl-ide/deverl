@@ -38,7 +38,7 @@ make_project() ->
     ok ->
       ProjectId = project_manager:get_active_project(),
       Path = project_manager:get_root(ProjectId),
-      console_port:call_port("cd(\"" ++ Path ++ "\"), make:all()." ++ io_lib:nl()),
+      console_port:eval("cd(\"" ++ Path ++ "\"), make:all()." ++ io_lib:nl()),
       ide_projects_tree:set_has_children(Path ++ "/ebin"),
       {ok, ProjectId, Path};
     cancelled ->
@@ -74,7 +74,7 @@ compile_file(Path) ->
 load_file(Path, _Options) ->
   % Ext = filename:basename(Path, ".erl"),
   Beam = filename:join([filename:dirname(Path), filename:basename(Path, ".erl")]),
-  console_port:call_port("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl()).
+  console_port:eval("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl()).
   
   
 build_project(Parent, ProjectId) ->
