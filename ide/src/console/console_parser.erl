@@ -23,7 +23,7 @@
 %% @doc Close the selected editor
 
 start()->
-    register(?MODULE, spawn_link(?MODULE, loop, [[]])).
+    register(?MODULE, spawn_link(?MODULE, init, [])).
 
 
 %% =====================================================================
@@ -54,6 +54,10 @@ parse_response(Response) ->
 %% Internal functions
 %% =====================================================================
 
+init() ->
+  process_flag(trap_exit, true), %% Die when the parent process dies
+  loop([]).
+  
 loop(R0) ->
   receive
     {data, R1} ->
