@@ -139,11 +139,12 @@ handle_cast(Msg, State) ->
 %% Sync events i.e. from callbacks must return ok, it can not return a new state.
 %% Do the redrawing here.
 handle_sync_event(#wx{obj=Btn, userData={Label, Options}, event=#wxPaint{}}, _,
-		  						#state{tabs=Panel, active_btn=ActiveBtn, image_list=ImageList}) ->
+		  						#state{tabs={Panel,_Sz}, active_btn=ActiveBtn, image_list=ImageList}) ->
+  Bg = wxWindow:getBackgroundColour(Panel),
 	case ActiveBtn of
-		Btn -> draw(Btn, Label, ImageList, wxPaintDC, nogradient, [{active, true} | Options]);
+		Btn -> draw(Btn, Label, ImageList, wxPaintDC, Bg, [{active, true} | Options]);
 		% undefined -> draw(Btn, Label, wxPaintDC, ?BUTTON_ACTIVE, [{active, true}]);
-		_ -> draw(Btn, Label, ImageList, wxPaintDC, nogradient, Options)
+		_ -> draw(Btn, Label, ImageList, wxPaintDC, Bg, Options)
 	end,
 	ok.
 	
@@ -202,11 +203,13 @@ create_button(Parent, Sz, Label, Options) ->
 %% =====================================================================
 %% @doc Draw the tab graphic.		
 %% Default {active, false}
-draw(Btn, Label, ImageList, WxDc, _, Options) ->
+draw(Btn, Label, ImageList, WxDc, Bg, Options) ->
+  wxWindow:setBackgroundColour(Btn, Bg),
   {W,H} = wxWindow:getSize(Btn),
 
   % Following colour must match bg of tb panel
-  Blend = lib_widgets:colour_shade(wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW), 0.8),
+  % Blend = lib_widgets:colour_shade(wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW), 0.8),
+  Blend = Bg,
   FillD = {190,190,190}, %% Deselected button fill
   FillA = {170,170,170}, %% Selected
   LineD = {155,155,155}, %% Deselected buttun lines (sides)

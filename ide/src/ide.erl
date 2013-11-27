@@ -22,7 +22,6 @@
 
 %% Server state
 -record(state, {frame,
-                % env,                                           %% The wx environment
                 workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 utilities,                                     %% The utilities pane
                 left_pane,                                     %% The test pane
@@ -98,6 +97,7 @@ init(Options) ->
 	WxEnv = wx:get_env(),
 	process_flag(trap_exit, true),
   
+  %% Set small window variant globally
   % wxSystemOptions:setOption("window-default-variant", ?wxWINDOW_VARIANT_SMALL),
 
 	Frame = wxFrame:new(wx:null(), ?wxID_ANY, "Erlang IDE", [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
@@ -477,14 +477,8 @@ create_utils(ParentA) ->
 			%% Disable console menu/toolbar items
 		Port ->
 			console_wx:new([{parent, TabbedWindow}])
-      % console_port:flush_buffer(), %% Load text received whilst initialising
-      % console_port:buffer_responses(false), %% The port will now send responses directly to the console
-      % C
 	end,
 	tabbed_book:add_page(TabbedWindow, Console, "Console"),
-	
-	% Observer = ide_observer:start([{parent, TabbedWindow}]),
-	% tabbed_book:add_page(TabbedWindow, Observer, "Observer"),
 
 	Dialyser = wxPanel:new(TabbedWindow, []),
 	tabbed_book:add_page(TabbedWindow, Dialyser, "Dialyser"),
@@ -521,7 +515,6 @@ create_utils(ParentA) ->
   {CompilerOutput, _, _} = CreateWindow(Splitter, compiler_output),
   
   wxPanel:connect(Parent, command_button_clicked, [{userData, Splitter}]), %% Minimise button on each window
-  %wxSplitterWindow:initialize(Splitter, TabbedWindow),
   wxSplitterWindow:splitVertically(Splitter, TabbedWindow, Log, [{sashPosition, ?SPLITTER_LOG_SASH_POS_DEFAULT}]),
   wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
@@ -562,7 +555,6 @@ create_left_window(Frame, Parent) ->
 	
 	Toolbook = tabbed_book_img:new([{parent, Parent}]),
 	tabbed_book_img:assign_image_list(Toolbook, ImgList),
-  % wxWindow:setBackgroundColour(Toolbook, wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW)),
 
 	ProjectTrees = ide_projects_tree:start([{parent, Toolbook}, {frame, Frame}]),
 	tabbed_book_img:add_page(Toolbook, ProjectTrees, "Projects", [{imageId, 0}]),
