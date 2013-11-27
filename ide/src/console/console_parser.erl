@@ -69,21 +69,16 @@ loop(R0) ->
         {prompt, []} ->
           loop([]); %% Single prompt, ignore, start over
         {prompt, R2} ->
-          console_wx:append_command(R2),
+          console_wx:append_command(remove_nl(R2)),
           loop([]); %% Complete response, start over
         {incomplete, R2} ->
           loop(R2) %% No prompt yet, loop again with current data
       end;
-      % loop([R1 | R0]);
     {waa, _R} ->
       ok
   end.
 
 build_response([], Acc) ->
-  {incomplete, Acc};
-% build_response(["\n"], Acc) ->
-%   {incomplete, Acc};
-build_response([[],"\n"], Acc) -> 
   {incomplete, Acc};
 build_response([H], Acc) ->
   case is_prompt(H) of
@@ -94,7 +89,8 @@ build_response([H], Acc) ->
   end;
 build_response([H|T], Acc) ->
   %% NOTE currently two prompts on one line would cause any data after
-  %% the first to be lost i.e. "DATA 4> \nLOST_DATA 5> \n"
+  %% the first to be lost i.e. "DATA 4> \nLOST_DATA 5> \n",
+  %% This should never happen however, if it does there's an easy fix
   case is_prompt(H) of
     true -> %% Ok, done
       {prompt, Acc};
@@ -110,3 +106,10 @@ is_prompt(Cmd) ->
       true
   end.
 
+remove_nl(L) ->
+  case lists:last(L) of
+    10 -> %% newline
+      lists:sublist(L, length(L) - 1);
+    _ ->
+      L
+  end.
