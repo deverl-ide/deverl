@@ -35,8 +35,8 @@
 -define(stc, wxStyledTextCtrl).
 -define(ID_RESET_CONSOLE, 1).
 -define(PROMPT, "> ").
--define(STYLE_PROMPT, 1).
--define(STYLE_MSG, 2).
+-define(STYLE_PROMPT, 12).
+-define(STYLE_ERROR, 2).
 -define(MARKER_MSG, 1).
 
 %% Server state
@@ -105,8 +105,6 @@ init(Config) ->
 	?stc:setMarginLeft(Console, 2),
 	?stc:setLexer(Console, ?wxSTC_LEX_NULL),
   
-	?stc:styleSetFont(Console, ?wxSTC_STYLE_DEFAULT, 
-					  wxFont:new(13, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
 	?stc:setCaretWidth(Console, 1), 
 	?stc:cmdKeyClear(Console, ?wxSTC_KEY_UP, 0),
   
@@ -115,9 +113,8 @@ init(Config) ->
   set_theme(Fg, Bg, MrkrBg, ErrFg),
   set_font(sys_pref_manager:get_font(console)),
   
-  %% Alternate styles
-  ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "bold,underline"), % For the prompt
-  ?stc:styleSetBold(Console, ?STYLE_PROMPT, true),
+  %% Other styles
+  % ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "fore:#FF0000,bold,underline"), % For the prompt
   
   %% Markers
   ?stc:markerDefine(Console, ?MARKER_MSG, ?wxSTC_MARK_BACKGROUND),
@@ -149,17 +146,18 @@ handle_info(Msg, State) ->
   {noreply,State}.
   
 handle_cast({set_theme, Fg, Bg, MrkrBg, ErrFg}, State=#state{textctrl=Console}) ->
-  ?stc:styleSetBackground(Console, 0, Bg),
-  ?stc:styleSetForeground(Console, 0, Fg),
-  ?stc:styleSetBackground(Console, ?wxSTC_STYLE_DEFAULT, Bg),
-  ?stc:styleSetForeground(Console, ?wxSTC_STYLE_DEFAULT, Fg),
-  ?stc:styleSetBackground(Console, ?STYLE_PROMPT, Bg),  
-  ?stc:styleSetForeground(Console, ?STYLE_PROMPT, Fg),
+  SetColour = fun(StyleId) ->
+    ?stc:styleSetBackground(Console, StyleId, Bg),
+    ?stc:styleSetForeground(Console, StyleId, Fg)
+  end,
+  [SetColour(Style) || Style <- [0,?wxSTC_STYLE_DEFAULT,?STYLE_PROMPT]],
   ?stc:setCaretForeground(Console, Fg),
   ?stc:markerSetBackground(Console, ?MARKER_MSG, MrkrBg),
   {noreply,State};
 handle_cast({set_font, Font}, State=#state{textctrl=Console}) ->
   ?stc:styleSetFont(Console, 0, Font),
+  ?stc:styleSetFont(Console, ?wxSTC_STYLE_DEFAULT, Font),
+  ?stc:styleSetFont(Console, ?STYLE_PROMPT, Font),
   {noreply,State};
 handle_cast({append, Response}, State=#state{textctrl=Console}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
@@ -230,7 +228,7 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Eve
     0 -> 
       %% Single enter key pressed with no other input.
       %% Note we have manually insert the prompt because sending a single newline '\n'
-      %% to the port results in no response. It is the terminal that redraws the prompt
+      %% to the port results in no response. It is the shell that redraws the prompt
       %% and not the ERTS. Same goes with history (up arrow/down arrow).
       %% The port will only respond through stdout when a '.' is received.
       prompt_2_console(Console, Prompt),

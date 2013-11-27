@@ -61,18 +61,7 @@ do_init(Config) ->
   %% Font
   add_bold_label(Panel, MainSz, "Font"),
   
-  Font = wxFont:new(
-     sys_pref_manager:get_preference(console_font_size),
-     sys_pref_manager:get_preference(console_font_family),
-     sys_pref_manager:get_preference(console_font_style),
-  	 sys_pref_manager:get_preference(console_font_weight)),
-  
-  case sys_pref_manager:get_preference(console_font_facename) of
-    undefined ->
-      ok;
-    FaceName ->
-      wxFont:setFaceName(Font, FaceName)
-  end,
+  Font = sys_pref_manager:get_font(console),
   
   FontSz = wxBoxSizer:new(?wxHORIZONTAL),
   FontStr = wxStaticText:new(Panel, ?wxID_ANY, get_font_string(Font)),

@@ -35,7 +35,7 @@ placeholder(Parent, Str) ->
 	placeholder(Parent, Str, []).
 	
 placeholder(Parent, Str, Options) ->
-	%% Linux needs an additional horizontal sizer (seems like it
+	%% Linux (Mint, at least!) needs an additional horizontal sizer (seems like it
 	%% ignores {style, ?wxALIGN_CENTRE}).
 	
 	Panel = wxPanel:new(Parent),
@@ -49,7 +49,7 @@ placeholder(Parent, Str, Options) ->
 			ok; %wxSizer:addStretchSpacer(HSz);
 			_ -> ok
 	end,
-	Text = wxStaticText:new(Panel, ?wxID_ANY, Str, [{style, ?wxALIGN_CENTRE}]),
+	Text = wxStaticText:new(Panel, ?wxID_ANY, Str, [{style, ?wxALIGN_CENTRE bor ?wxALIGN_CENTRE_HORIZONTAL}]),
 	case os:type() of
 		{_, linux} ->
 			ok; %wxSizer:addStretchSpacer(HSz);
