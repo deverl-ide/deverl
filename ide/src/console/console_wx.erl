@@ -232,6 +232,7 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Eve
     0 ->
       %% Single enter key pressed with no other input.
       %% The port will only respond through stdout when a '.' is received.
+      ?stc:newLine(Console),
       prompt_2_console(Console, Prompt),
       false;
     _ ->
@@ -239,6 +240,7 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Eve
                %% Deal with the case where several '.'s are entered, '...'
                prompt_or_not(Console, Input, Prompt, Event);
              (_) -> %% write the newline and prompt to the console
+               ?stc:newLine(Console),
                prompt_2_console(Console, Prompt)
              end,
       add_cmd(Input),
@@ -294,7 +296,6 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 %% @doc Write a newline plus the repeated prompt to the console.
 
 prompt_2_console(Console, Prompt) ->
-  ?stc:newLine(Console),
   ?stc:addText(Console, Prompt),
   Start = ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console)),
   ?stc:startStyling(Console, Start, 31),

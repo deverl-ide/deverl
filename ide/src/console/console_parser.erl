@@ -81,8 +81,8 @@ loop(R0) ->
 
 build_response([], Acc) ->
   {incomplete, Acc};
-build_response(["\n"], Acc) ->
-  {incomplete, Acc};
+%build_response(["\n"], Acc) ->
+  %{incomplete, Acc};
 build_response([H], Acc) ->
   case is_prompt(H) of
     true -> %% Ok, done
