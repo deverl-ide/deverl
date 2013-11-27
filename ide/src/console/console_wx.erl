@@ -45,7 +45,8 @@
 								cmd_history,
 								current_cmd,
 								wx_env,
-                menu}).
+                menu,
+                busy}).
 
 
 %% =====================================================================
@@ -163,7 +164,7 @@ handle_cast({append, Response}, State=#state{textctrl=Console}) ->
   ?stc:addText(Console, Response),
   prompt_2_console(Console, ?PROMPT),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  {noreply, State};
+  {noreply, State#state{busy=false}};
 handle_cast({append_msg, Msg}, State=#state{textctrl=Console}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   Line = ?stc:getCurrentLine(Console),
@@ -172,7 +173,10 @@ handle_cast({append_msg, Msg}, State=#state{textctrl=Console}) ->
   ?stc:addText(Console, Msg),
   ?stc:newLine(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  {noreply, State}.
+  {noreply, State};
+handle_cast({call_parser, Cmd, Busy}, State) ->
+  console_parser:parse_input(Cmd),
+  {noreply, State#state{busy=Busy}}.
 
 handle_call(text_ctrl, _From, State) ->
   {reply,{State#state.wx_env,State#state.textctrl}, State};
@@ -219,33 +223,30 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 %% Callback Sync event handling
 %% =====================================================================
-
+handle_sync_event(#wx{}, _Event, #state{busy=true}) ->
+  ok;
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Event, _State) ->
   {Prompt,Input} = split_line_at_prompt(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  case length(Input) of
+  Busy = case length(Input) of
     0 ->
       %% Single enter key pressed with no other input.
-      %% Note we have manually insert the prompt because sending a single newline '\n'
-      %% to the port results in no response. It is the shell that redraws the prompt
-      %% and not the ERTS. Same goes with history (up arrow/down arrow).
       %% The port will only respond through stdout when a '.' is received.
       prompt_2_console(Console, Prompt),
-      call_parser(Input), %% send anyway, so any error contains the correct position integer
-      ok;
+      false;
     _ ->
       Last = fun(46) -> %% keycode 46 = '.'
                %% Deal with the case where several '.'s are entered, '...'
                prompt_or_not(Console, Input, Prompt, Event);
              (_) -> %% write the newline and prompt to the console
                prompt_2_console(Console, Prompt),
-               ok
+               false
              end,
       add_cmd(Input),
-      Last(lists:last(Input)),
-      call_parser(Input),
-      ok
+      Last(lists:last(Input))
   end,
+  %% send even when length(Input) = 0, so any error contains the correct line no.
+  wx_object:cast(?MODULE, {call_parser, Input, Busy}),
 	ok;
 %%--- Arrow keys
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, _State) ->
@@ -294,7 +295,6 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 %% @doc Write a newline plus the repeated prompt to the console.
 
 prompt_2_console(Console, Prompt) ->
-  io:format("PROMPT~n"),
   ?stc:newLine(Console),
   ?stc:addText(Console, Prompt),
   Start = ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console)),
@@ -312,22 +312,24 @@ prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
 	if
 		Penult =:= 46 -> 
 			prompt_2_console(Console, Prompt),
-			wxEvent:stopPropagation(EvObj);
+			wxEvent:stopPropagation(EvObj),
+      false;
 		true ->
-      wxEvent:skip(EvObj)
-      %prompt_2_console(Console, Prompt)
+      wxEvent:skip(EvObj),
+      true
 	end;
   
 prompt_or_not(_,_,_,EvObj) ->
-	wxEvent:skip(EvObj).
+	wxEvent:skip(EvObj),
+  true.
 
 
 %% =====================================================================
 %% @doc
-
-call_parser(Message) ->
-  % io:format("Message~p~n", [Message]),
-	console_parser:parse_input(Message).
+% 
+% call_parser(Message) ->
+%   % io:format("Message~p~n", [Message]),
+%   console_parser:parse_input(Message).
 
 
 %% =====================================================================
