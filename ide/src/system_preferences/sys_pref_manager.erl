@@ -65,12 +65,14 @@ get_font(Window) ->
       wxFont:new(sys_pref_manager:get_preference(console_font_size),
                  sys_pref_manager:get_preference(console_font_family),
                  sys_pref_manager:get_preference(console_font_style),
-                 sys_pref_manager:get_preference(console_font_weight));
+                 sys_pref_manager:get_preference(console_font_weight),
+                 [{face, sys_pref_manager:get_preference(console_font_facename)}]);
     log ->
       wxFont:new(sys_pref_manager:get_preference(log_font_size),
                  sys_pref_manager:get_preference(log_font_family),
                  sys_pref_manager:get_preference(log_font_style),
-                 sys_pref_manager:get_preference(log_font_weight))
+                 sys_pref_manager:get_preference(log_font_weight),
+                 [{face, sys_pref_manager:get_preference(log_font_facename)}])
   end.
 
 

@@ -35,8 +35,8 @@
 -define(stc, wxStyledTextCtrl).
 -define(ID_RESET_CONSOLE, 1).
 -define(PROMPT, "> ").
--define(STYLE_PROMPT, 1).
--define(STYLE_MSG, 2).
+-define(STYLE_PROMPT, 12).
+-define(STYLE_ERROR, 2).
 -define(MARKER_MSG, 1).
 
 %% Server state
@@ -45,7 +45,8 @@
 								cmd_history,
 								current_cmd,
 								wx_env,
-                menu}).
+                menu,
+                busy}).
 
 
 %% =====================================================================
@@ -103,21 +104,17 @@ init(Config) ->
 	?stc:setMarginWidth(Console, 1, 0),
 	?stc:setMarginWidth(Console, 2, 0),
 	?stc:setMarginLeft(Console, 2),
-	?stc:setLexer(Console, ?wxSTC_LEX_NULL),
-
-	?stc:styleSetFont(Console, ?wxSTC_STYLE_DEFAULT,
-					  wxFont:new(13, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
-	?stc:setCaretWidth(Console, 1),
+	?stc:setLexer(Console, ?wxSTC_LEX_NULL),  
+	?stc:setCaretWidth(Console, 1), 
 	?stc:cmdKeyClear(Console, ?wxSTC_KEY_UP, 0),
 
   %% Saved styles
   {_Name, Fg, Bg, MrkrBg, ErrFg} = sys_pref_manager:get_preference(console_theme),
   set_theme(Fg, Bg, MrkrBg, ErrFg),
   set_font(sys_pref_manager:get_font(console)),
-
-  %% Alternate styles
-  ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "bold,underline"), % For the prompt
-  ?stc:styleSetBold(Console, ?STYLE_PROMPT, true),
+  
+  %% Other styles
+  % ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "fore:#FF0000,bold,underline"), % For the prompt
 
   %% Markers
   ?stc:markerDefine(Console, ?MARKER_MSG, ?wxSTC_MARK_BACKGROUND),
@@ -149,24 +146,25 @@ handle_info(Msg, State) ->
   {noreply,State}.
 
 handle_cast({set_theme, Fg, Bg, MrkrBg, ErrFg}, State=#state{textctrl=Console}) ->
-  ?stc:styleSetBackground(Console, 0, Bg),
-  ?stc:styleSetForeground(Console, 0, Fg),
-  ?stc:styleSetBackground(Console, ?wxSTC_STYLE_DEFAULT, Bg),
-  ?stc:styleSetForeground(Console, ?wxSTC_STYLE_DEFAULT, Fg),
-  ?stc:styleSetBackground(Console, ?STYLE_PROMPT, Bg),
-  ?stc:styleSetForeground(Console, ?STYLE_PROMPT, Fg),
+  SetColour = fun(StyleId) ->
+    ?stc:styleSetBackground(Console, StyleId, Bg),
+    ?stc:styleSetForeground(Console, StyleId, Fg)
+  end,
+  [SetColour(Style) || Style <- [0,?wxSTC_STYLE_DEFAULT,?STYLE_PROMPT]],
   ?stc:setCaretForeground(Console, Fg),
   ?stc:markerSetBackground(Console, ?MARKER_MSG, MrkrBg),
   {noreply,State};
 handle_cast({set_font, Font}, State=#state{textctrl=Console}) ->
   ?stc:styleSetFont(Console, 0, Font),
+  ?stc:styleSetFont(Console, ?wxSTC_STYLE_DEFAULT, Font),
+  ?stc:styleSetFont(Console, ?STYLE_PROMPT, Font),
   {noreply,State};
 handle_cast({append, Response}, State=#state{textctrl=Console}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   ?stc:addText(Console, Response),
   prompt_2_console(Console, ?PROMPT),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  {noreply, State};
+  {noreply, State#state{busy=false}};
 handle_cast({append_msg, Msg}, State=#state{textctrl=Console}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   Line = ?stc:getCurrentLine(Console),
@@ -175,7 +173,10 @@ handle_cast({append_msg, Msg}, State=#state{textctrl=Console}) ->
   ?stc:addText(Console, Msg),
   ?stc:newLine(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  {noreply, State}.
+  {noreply, State};
+handle_cast({call_parser, Cmd, Busy}, State) ->
+  console_parser:parse_input(Cmd),
+  {noreply, State#state{busy=Busy}}.
 
 handle_call(text_ctrl, _From, State) ->
   {reply,{State#state.wx_env,State#state.textctrl}, State};
@@ -222,30 +223,42 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 %% Callback Sync event handling
 %% =====================================================================
-
+handle_sync_event(#wx{}, _Event, #state{busy=true}) ->
+  ok;
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Event, _State) ->
   {Prompt,Input} = split_line_at_prompt(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  case length(Input) of
+  Busy = case length(Input) of
     0 ->
       %% Single enter key pressed with no other input.
-      %% Note we have manually insert the prompt because sending a single newline '\n'
-      %% to the port results in no response. It is the terminal that redraws the prompt
-      %% and not the ERTS. Same goes with history (up arrow/down arrow).
       %% The port will only respond through stdout when a '.' is received.
       prompt_2_console(Console, Prompt),
+<<<<<<< HEAD
       call_parser(Input); %% send anyway, so any error contains the correct position integer
+=======
+      false;
+>>>>>>> 5861439cac2f917621793fc16fce35a9da261ffe
     _ ->
       Last = fun(46) -> %% keycode 46 = '.'
                %% Deal with the case where several '.'s are entered, '...'
                prompt_or_not(Console, Input, Prompt, Event);
              (_) -> %% write the newline and prompt to the console
+<<<<<<< HEAD
                prompt_2_console(Console, Prompt)
              end,
       add_cmd(Input),
       Last(lists:last(Input)),
       call_parser(Input)
+=======
+               prompt_2_console(Console, Prompt),
+               false
+             end,
+      add_cmd(Input),
+      Last(lists:last(Input))
+>>>>>>> 5861439cac2f917621793fc16fce35a9da261ffe
   end,
+  %% send even when length(Input) = 0, so any error contains the correct line no.
+  wx_object:cast(?MODULE, {call_parser, Input, Busy}),
 	ok;
 %%--- Arrow keys
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, _State) ->
@@ -294,7 +307,6 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 %% @doc Write a newline plus the repeated prompt to the console.
 
 prompt_2_console(Console, Prompt) ->
-  io:format("PROMPT~n"),
   ?stc:newLine(Console),
   ?stc:addText(Console, Prompt),
   Start = ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console)),
@@ -312,22 +324,31 @@ prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
 	if
 		Penult =:= 46 ->
 			prompt_2_console(Console, Prompt),
-			wxEvent:stopPropagation(EvObj);
+			wxEvent:stopPropagation(EvObj),
+      false;
 		true ->
-      wxEvent:skip(EvObj)
-      %prompt_2_console(Console, Prompt)
+      wxEvent:skip(EvObj),
+      true
 	end;
 
 prompt_or_not(_,_,_,EvObj) ->
-	wxEvent:skip(EvObj).
+	wxEvent:skip(EvObj),
+  true.
 
 
 %% =====================================================================
 %% @doc
+<<<<<<< HEAD
 
 call_parser(Message) ->
   % io:format("Message~p~n", [Message]),
   console_parser:parse_input(Message).
+=======
+% 
+% call_parser(Message) ->
+%   % io:format("Message~p~n", [Message]),
+%   console_parser:parse_input(Message).
+>>>>>>> 5861439cac2f917621793fc16fce35a9da261ffe
 
 
 %% =====================================================================
