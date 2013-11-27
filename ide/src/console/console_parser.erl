@@ -23,7 +23,9 @@
 %% @doc Close the selected editor
 
 start()->
-    register(?MODULE, spawn_link(?MODULE, init, [])).
+    Pid =  spawn_link(?MODULE, init, []),
+    register(?MODULE, Pid),
+    {ok, Pid}.
 
 
 %% =====================================================================
