@@ -469,7 +469,7 @@ create_utils(ParentA) ->
   %% Splitter window 1
 	TabbedWindow = tabbed_book:new([{parent, Splitter}]),
 	
-  console_parser:start(),
+  % console_parser:start(),
 	%% Start the port that communicates with the external ERTs
 	Console = case console_sup:start_link([]) of
 		{error, E} ->
