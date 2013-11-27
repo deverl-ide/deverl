@@ -234,20 +234,17 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Eve
       %% and not the ERTS. Same goes with history (up arrow/down arrow).
       %% The port will only respond through stdout when a '.' is received.
       prompt_2_console(Console, Prompt),
-      call_parser(Input), %% send anyway, so any error contains the correct position integer
-      ok;
+      call_parser(Input); %% send anyway, so any error contains the correct position integer
     _ ->
       Last = fun(46) -> %% keycode 46 = '.'
                %% Deal with the case where several '.'s are entered, '...'
                prompt_or_not(Console, Input, Prompt, Event);
              (_) -> %% write the newline and prompt to the console
-               prompt_2_console(Console, Prompt),
-               ok
+               prompt_2_console(Console, Prompt)
              end,
       add_cmd(Input),
       Last(lists:last(Input)),
-      call_parser(Input),
-      ok
+      call_parser(Input)
   end,
 	ok;
 %%--- Arrow keys
@@ -313,14 +310,14 @@ prompt_2_console(Console, Prompt) ->
 prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
   Penult = lists:nth(length(Input)-1, Input),
 	if
-		Penult =:= 46 -> 
+		Penult =:= 46 ->
 			prompt_2_console(Console, Prompt),
 			wxEvent:stopPropagation(EvObj);
 		true ->
       wxEvent:skip(EvObj)
       %prompt_2_console(Console, Prompt)
 	end;
-  
+
 prompt_or_not(_,_,_,EvObj) ->
 	wxEvent:skip(EvObj).
 
@@ -330,7 +327,7 @@ prompt_or_not(_,_,_,EvObj) ->
 
 call_parser(Message) ->
   % io:format("Message~p~n", [Message]),
-	console_parser:parse_input(Message).
+  console_parser:parse_input(Message).
 
 
 %% =====================================================================

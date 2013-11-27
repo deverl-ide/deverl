@@ -3,7 +3,7 @@
 %% @copyright
 %% @title
 %% @version
-%% @doc 
+%% @doc
 %% @end
 %% =====================================================================
 
@@ -38,20 +38,21 @@ parse_input(Message) ->
 
 %% =====================================================================
 %% @doc OLD IMPLEMENTATION - KEPT FOR COMPARISON
-% 
+%
 % parse_response(Response) ->
 %   io:format("RESPONSE FROM PORT: ~p~n", [Response]),
 %   console_wx:append_command(Response).
-% 
+%
 % loop(_) -> ok.
+
 
 %% =====================================================================
 %% @doc
 
 parse_response(Response) ->
   ?MODULE ! {data, Response}.
-  
-  
+
+
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
@@ -59,7 +60,7 @@ parse_response(Response) ->
 init() ->
   process_flag(trap_exit, true), %% Die when the parent process dies
   loop([]).
-  
+
 loop(R0) ->
   receive
     {data, R1} ->
@@ -77,7 +78,7 @@ loop(R0) ->
     {waa, _R} ->
       ok
   end.
-  
+
 build_response([], Acc) ->
   {incomplete, Acc};
 build_response(["\n"], Acc) ->
@@ -98,7 +99,7 @@ build_response([H|T], Acc) ->
     false ->
       build_response(T, Acc ++ H)
   end.
-  
+
 is_prompt(Cmd) ->
   case re:run(Cmd, "^\\d+> $", []) of
     nomatch ->

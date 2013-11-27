@@ -46,13 +46,14 @@ placeholder(Parent, Str, Options) ->
 	HSz = wxBoxSizer:new(?wxHORIZONTAL),
 	case os:type() of
 		{_, linux} ->
-			ok; %wxSizer:addStretchSpacer(HSz);
+			wxSizer:addStretchSpacer(HSz);
 			_ -> ok
 	end,
 	Text = wxStaticText:new(Panel, ?wxID_ANY, Str, [{style, ?wxALIGN_CENTRE}]),
+  wxSizer:add(HSz, Text, [{proportion, 1}, {flag, ?wxEXPAND}]),
 	case os:type() of
 		{_, linux} ->
-			ok; %wxSizer:addStretchSpacer(HSz);
+			wxSizer:addStretchSpacer(HSz);
 			_ -> ok
 	end,
 	
@@ -61,7 +62,7 @@ placeholder(Parent, Str, Options) ->
 		C -> C
 	end,
 	wxStaticText:setForegroundColour(Text, Fg),
-	wxSizer:add(HSz, Text, [{proportion, 1}, {flag, ?wxEXPAND}]),
+	%wxSizer:add(HSz, Text, [{proportion, 1}, {flag, ?wxEXPAND}]),
 	
 	wxSizer:addStretchSpacer(Sz),
 	wxSizer:add(Sz, HSz, [{proportion, 1}, {flag, ?wxEXPAND}]),
