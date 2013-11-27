@@ -314,16 +314,53 @@ prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
 			wxEvent:stopPropagation(EvObj),
       false;
 		true ->
-      wxEvent:skip(EvObj),
-      true
+      case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
+        true ->
+          io:format("Yar~n"),
+          wxEvent:skip(EvObj),
+          true;
+        false ->
+          io:format("BADDDDD~n"),
+          prompt_2_console(Console, Prompt),
+          false
+      end
 	end;
 
 prompt_or_not(_,_,_,EvObj) ->
-	wxEvent:skip(EvObj),
+  wxEvent:skip(EvObj),
   true.
 
 
 %% =====================================================================
+%% @doc Return true if the number of characters is even. If the character
+%% is escaped, it does not count.
+
+count_chars(Char, String) ->
+  count_chars(Char, String, 0, false).
+count_chars(_Char, [], Acc, _) ->
+  io:format("COUNT: ~p~n", [Acc]),
+  case Acc rem 2 of
+    0 ->
+      true;
+    _ ->
+      false
+  end;
+count_chars(Char, [H|T], Acc, Escape) ->
+  case H of 
+    Char ->
+      case Escape of
+        true ->
+          count_chars(Char, T, Acc, false);
+        false ->
+          count_chars(Char, T, Acc+1, false)
+        end;
+    92 -> %% "escape char \"
+      count_chars(Char, T, Acc, not Escape);
+    _ ->
+      count_chars(Char, T, Acc, Escape)
+  end.
+
+
 %% @doc Separate the prompt and command on the most recent line.
 
 split_line_at_prompt(Console) ->
