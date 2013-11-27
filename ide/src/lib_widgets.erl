@@ -49,12 +49,9 @@ placeholder(Parent, Str, Options) ->
 			wxSizer:addStretchSpacer(HSz);
 			_ -> ok
 	end,
-<<<<<<< HEAD
+
 	Text = wxStaticText:new(Panel, ?wxID_ANY, Str, [{style, ?wxALIGN_CENTRE}]),
   wxSizer:add(HSz, Text, [{proportion, 1}, {flag, ?wxEXPAND}]),
-=======
-	Text = wxStaticText:new(Panel, ?wxID_ANY, Str, [{style, ?wxALIGN_CENTRE bor ?wxALIGN_CENTRE_HORIZONTAL}]),
->>>>>>> 5861439cac2f917621793fc16fce35a9da261ffe
 	case os:type() of
 		{_, linux} ->
 			wxSizer:addStretchSpacer(HSz);

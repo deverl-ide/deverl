@@ -233,29 +233,16 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Eve
       %% Single enter key pressed with no other input.
       %% The port will only respond through stdout when a '.' is received.
       prompt_2_console(Console, Prompt),
-<<<<<<< HEAD
-      call_parser(Input); %% send anyway, so any error contains the correct position integer
-=======
       false;
->>>>>>> 5861439cac2f917621793fc16fce35a9da261ffe
     _ ->
       Last = fun(46) -> %% keycode 46 = '.'
                %% Deal with the case where several '.'s are entered, '...'
                prompt_or_not(Console, Input, Prompt, Event);
              (_) -> %% write the newline and prompt to the console
-<<<<<<< HEAD
                prompt_2_console(Console, Prompt)
              end,
       add_cmd(Input),
-      Last(lists:last(Input)),
-      call_parser(Input)
-=======
-               prompt_2_console(Console, Prompt),
-               false
-             end,
-      add_cmd(Input),
       Last(lists:last(Input))
->>>>>>> 5861439cac2f917621793fc16fce35a9da261ffe
   end,
   %% send even when length(Input) = 0, so any error contains the correct line no.
   wx_object:cast(?MODULE, {call_parser, Input, Busy}),
@@ -327,7 +314,8 @@ prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
 			wxEvent:stopPropagation(EvObj),
       false;
 		true ->
-      wxEvent:skip(EvObj),
+      prompt_2_console(Console, Prompt),
+      %wxEvent:skip(EvObj),
       true
 	end;
 
@@ -338,17 +326,10 @@ prompt_or_not(_,_,_,EvObj) ->
 
 %% =====================================================================
 %% @doc
-<<<<<<< HEAD
 
-call_parser(Message) ->
-  % io:format("Message~p~n", [Message]),
-  console_parser:parse_input(Message).
-=======
-% 
 % call_parser(Message) ->
 %   % io:format("Message~p~n", [Message]),
 %   console_parser:parse_input(Message).
->>>>>>> 5861439cac2f917621793fc16fce35a9da261ffe
 
 
 %% =====================================================================
