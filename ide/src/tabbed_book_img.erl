@@ -208,7 +208,6 @@ draw(Btn, Label, ImageList, WxDc, Bg, Options) ->
   {W,H} = wxWindow:getSize(Btn),
 
   % Following colour must match bg of tb panel
-  % Blend = lib_widgets:colour_shade(wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW), 0.8),
   Blend = Bg,
   FillD = {190,190,190}, %% Deselected button fill
   FillA = {170,170,170}, %% Selected
