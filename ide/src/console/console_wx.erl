@@ -325,6 +325,7 @@ prompt_or_not(_,_,_,EvObj) ->
 
 
 %% =====================================================================
+<<<<<<< HEAD
 %% @doc
 
 % call_parser(Message) ->
@@ -333,6 +334,8 @@ prompt_or_not(_,_,_,EvObj) ->
 
 
 %% =====================================================================
+=======
+>>>>>>> 49422d4469b4af67925c5f2d32f229d436cea9a6
 %% @doc Separate the prompt and command on the most recent line.
 
 split_line_at_prompt(Console) ->

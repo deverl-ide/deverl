@@ -49,7 +49,10 @@ placeholder(Parent, Str, Options) ->
 			wxSizer:addStretchSpacer(HSz);
 			_ -> ok
 	end,
+<<<<<<< HEAD
 
+=======
+>>>>>>> 49422d4469b4af67925c5f2d32f229d436cea9a6
 	Text = wxStaticText:new(Panel, ?wxID_ANY, Str, [{style, ?wxALIGN_CENTRE}]),
   wxSizer:add(HSz, Text, [{proportion, 1}, {flag, ?wxEXPAND}]),
 	case os:type() of
