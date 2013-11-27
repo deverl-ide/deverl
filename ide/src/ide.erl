@@ -46,7 +46,7 @@
 -define(SPLIITER_LOG, 3).
 -define(SPLITTER_SIDEBAR_SASH_POS_DEFAULT, 215).
 -define(SPLITTER_UTILITIES_SASH_POS_DEFAULT, -200).
--define(SPLITTER_LOG_SASH_POS_DEFAULT, -400).
+-define(SPLITTER_LOG_SASH_POS_DEFAULT, -500).
 -define(ID_DIALOG_TEXT, 9001).
 -define(LABEL_HIDE_UTIL, "Hide Utilities Pane\tShift+Alt+U").
 -define(LABEL_SHOW_UTIL, "Show Utilities Pane\tShift+Alt+U").
@@ -495,7 +495,7 @@ create_utils(ParentA) ->
 	tabbed_book:set_selection(TabbedWindow, 1),
   
   
-  %% Splitter window 2  
+  %% Splitter window 2
   CreateWindow = fun(Parent, WindowModule) ->
     W = wxPanel:new(Parent),
     WSz = wxBoxSizer:new(?wxHORIZONTAL),
@@ -521,7 +521,8 @@ create_utils(ParentA) ->
   {CompilerOutput, _, _} = CreateWindow(Splitter, compiler_output),
   
   wxPanel:connect(Parent, command_button_clicked, [{userData, Splitter}]), %% Minimise button on each window
-  wxSplitterWindow:initialize(Splitter, TabbedWindow),
+  %wxSplitterWindow:initialize(Splitter, TabbedWindow),
+  wxSplitterWindow:splitVertically(Splitter, TabbedWindow, Log, [{sashPosition, ?SPLITTER_LOG_SASH_POS_DEFAULT}]),
   wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
   %% Button toolbar
