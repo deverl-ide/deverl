@@ -316,11 +316,9 @@ prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
 		true ->
       case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
         true ->
-          io:format("Yar~n"),
           wxEvent:skip(EvObj),
           true;
         false ->
-          io:format("BADDDDD~n"),
           prompt_2_console(Console, Prompt),
           false
       end
@@ -337,8 +335,8 @@ prompt_or_not(_,_,_,EvObj) ->
 
 count_chars(Char, String) ->
   count_chars(Char, String, 0, false).
+  
 count_chars(_Char, [], Acc, _) ->
-  io:format("COUNT: ~p~n", [Acc]),
   case Acc rem 2 of
     0 ->
       true;
@@ -353,7 +351,7 @@ count_chars(Char, [H|T], Acc, Escape) ->
           count_chars(Char, T, Acc, false);
         false ->
           count_chars(Char, T, Acc+1, false)
-        end;
+      end;
     92 -> %% "escape char \"
       count_chars(Char, T, Acc, not Escape);
     _ ->
@@ -361,6 +359,7 @@ count_chars(Char, [H|T], Acc, Escape) ->
   end.
 
 
+%% =====================================================================
 %% @doc Separate the prompt and command on the most recent line.
 
 split_line_at_prompt(Console) ->
