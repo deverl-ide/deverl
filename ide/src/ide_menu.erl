@@ -99,7 +99,7 @@ init(Config) ->
   
   Import = wxMenu:new([]),
   wxMenu:append(Import, ?MENU_ID_IMPORT_FILE, "Import File"),
-  wxMenu:append(Import, ?MENU_ID_IMPORT_PROJECT, "Import Project"),
+  wxMenu:append(Import, ?MENU_ID_IMPORT_PROJECT, "Import Erlang Project"),
   wxMenu:append(File, ?wxID_ANY, "Import", Import),
   
   wxMenu:append(File, ?wxID_SEPARATOR, []),
@@ -338,6 +338,7 @@ init(Config) ->
     {?MENU_ID_IMPORT_PROJECT, {}},
     {?MENU_ID_PROJECT_CONFIG, {project_manager, set_project_configuration, [Frame]},
       [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
+    {?MENU_ID_IMPORT_PROJECT, {project_manager, import, [Frame]}},
     {?wxID_EXIT, {}},
     {?wxID_PREFERENCES, {ide_prefs,start, [[{parent,Frame}]]}},
     
