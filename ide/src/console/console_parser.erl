@@ -65,10 +65,13 @@ loop(R0) ->
   receive
     {data, R1} ->
       %% Split data at newline
+      io:format("R1: ~p~n", [R1]),
+      io:format("SPLIT: ~p~n",[re:split(R1, "(\\R)", [{newline, any}, {return, list}, trim])]),
       case build_response(re:split(R1, "(\\R)", [{newline, any}, {return, list}, trim]), R0) of
         {prompt, []} ->
           loop([]); %% Single prompt, ignore, start over
         {prompt, R2} ->
+          io:format("R2: ~p~n", [R2]),
           console_wx:append_command(R2),
           loop([]); %% Complete response, start over
         {incomplete, R2} ->
@@ -81,15 +84,10 @@ loop(R0) ->
 
 build_response([], Acc) ->
   {incomplete, Acc};
-<<<<<<< HEAD
-%build_response(["\n"], Acc) ->
-  %{incomplete, Acc};
-=======
-% build_response(["\n"], Acc) ->
-%   {incomplete, Acc};
-build_response([[],"\n"], Acc) -> 
+build_response(["\n"], Acc) ->
   {incomplete, Acc};
->>>>>>> bd8bb77aa4b7077878ce76276df6988fcf9c48c9
+%build_response([[],"\n"], Acc) -> 
+  %{incomplete, Acc};
 build_response([H], Acc) ->
   case is_prompt(H) of
     true -> %% Ok, done
