@@ -107,9 +107,4 @@ is_prompt(Cmd) ->
   end.
 
 remove_nl(L) ->
-  case lists:last(L) of
-    10 -> %% newline
-      lists:sublist(L, length(L) - 1);
-    _ ->
-      L
-  end.
+  string:strip(L, both, $\n).
