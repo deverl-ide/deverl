@@ -66,8 +66,8 @@ set_selection(This, Index) ->
 
 init(Options) ->
 	Parent = proplists:get_value(parent, Options),
-	
-	MainPanel = wxPanel:new(Parent, []),
+	WinId = proplists:get_value(id, Options, ?wxID_ANY),
+	MainPanel = wxPanel:new(Parent, [{winid, WinId}]),
 	MainSz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxPanel:setSizer(MainPanel, MainSz),
 	wxSizer:addSpacer(MainSz, 4),

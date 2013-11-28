@@ -115,7 +115,7 @@ loop(From, Name) ->
       log:message("Compiled " ++ Name ++ " successfully."),
       From ! {self(), ok};
     {_Port, {exit_status, _}} ->
-      log:error("ERROR: Compilation failed " ++ Name ++ ". See compiler output."),
+      log:error("ERROR: Compilation failed " ++ Name ++ ". See output.", [{hotspot, "output"}]),
       From ! {self(), error}
   after
     10000 ->

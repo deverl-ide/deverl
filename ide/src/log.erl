@@ -26,7 +26,9 @@
 %% API     
 -export([new/1,
          message/1,
-         error/1]).
+         message/2,
+         error/1,
+         error/2]).
 
 %% Macros
 -define(MARKER_EVEN, 0).
@@ -34,6 +36,7 @@
 -define(stc, wxStyledTextCtrl).
 -define(STYLE_DUMMY, 1).
 -define(STYLE_ERROR, 2).
+-define(STYLE_HOTSPOT, 3).
 
 %% Server state
 -record(state, {win, 
@@ -53,17 +56,34 @@ new(Config) ->
 
 %% =====================================================================
 %% @doc
+%% 
+
+-spec message(string()) -> ok.
 
 message(Msg) ->
-  wx_object:cast(?MODULE, Msg).
+  message(Msg, []).
+
+
+%% =====================================================================
+%% @doc Append a message to the log.
+%% The hotspot will be a clickable link and must be a substring of Msg.
+ 
+-spec message(string(), [Option]) -> ok when
+  Option :: {hotspot, string()}.
+
+message(Msg, Options) ->
+  wx_object:cast(?MODULE, {Msg, Options}).
 
 
 %% =====================================================================
 %% @doc
+%% @see log:message/2 for a description of options.
 
 error(Msg) ->
-  wx_object:cast(?MODULE, {error, Msg}).
-
+  ?MODULE:error(Msg, []).
+error(Msg, Options) ->
+  wx_object:cast(?MODULE, {error, Msg, Options}).
+  
 
 %% =====================================================================
 %% Callback functions
@@ -92,6 +112,9 @@ init(Config) ->
   ?stc:styleSetSpec(Log, ?STYLE_DUMMY, "fore:#234567,size:13"),
   %% Error style
   ?stc:styleSetSpec(Log, ?STYLE_ERROR, "fore:#D8203E"),
+  %% Hotspot style
+  ?stc:styleSetSpec(Log, ?STYLE_HOTSPOT, "fore:#0000FF,underline"),
+  ?stc:styleSetHotSpot(Log, ?STYLE_HOTSPOT, true),
   
   %% Markers for alternate row line colours
   ?stc:markerDefine(Log, ?MARKER_EVEN, ?wxSTC_MARK_BACKGROUND),
@@ -104,8 +127,11 @@ init(Config) ->
 	State=#state{win=Panel, 
 				       log=Log},
                
-  %% Note this stops the samll square artifact from appearing in top left corner.
+  %% Note this stops the small square artifact from appearing in top left corner.
   wxSizer:layout(MainSizer),
+  
+  %% Connect handlers
+  ?stc:connect(Log, stc_hotspot_click),
   
   {Panel, State}.
 
@@ -113,13 +139,25 @@ handle_info(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply, State}.
 
-handle_cast({error, Msg}, State=#state{log=Log}) ->
+handle_cast({error, Msg, Options}, State=#state{log=Log}) ->
   {ok, Length} = append(Log, Msg),
   Start = ?stc:positionFromLine(Log, ?stc:getCurrentLine(Log) - 1),
   ?stc:startStyling(Log, Start, 31),
   ?stc:setStyling(Log, Length, ?STYLE_ERROR),
+  case proplists:get_value(hotspot, Options) of
+    undefined -> ok;
+    Hotspot ->
+      L = string:str(Msg, Hotspot),
+      Sub = string:substr(Msg, L, length(Hotspot)),
+      ?stc:startStyling(Log, Start + L + 9, 31), % (+9) allows for width of timestamp
+      ?stc:setStyling(Log, length(Hotspot), ?STYLE_HOTSPOT)
+  end,
   {noreply, State};
-handle_cast(Msg, State=#state{log=Log}) ->
+handle_cast({Msg, Options}, State=#state{log=Log}) ->
+  case proplists:get_value(hotspot, Options) of
+    undefined -> ok;
+    Hotspot -> ok
+  end,
   append(Log, Msg),
   {noreply, State}.
 
@@ -127,7 +165,34 @@ handle_call(Msg, _From, State) ->
   io:format("Got Call ~p~n",[Msg]),
   {reply,ok, State}.
     
-handle_event(#wx{}, State) ->
+handle_event(#wx{event=#wxStyledText{type=stc_hotspot_click, position=Pos}}, 
+             State=#state{log=Log}) ->
+  Style = ?stc:getStyleAt(Log, Pos),
+  Max = ?stc:getLength(Log),
+  %% Get the leftmost position where the style starts
+  Leftmost = fun(F, 0) -> 0;
+    (F, P) ->
+      case ?stc:getStyleAt(Log, P) of
+        Style -> 
+          F(F, P - 1);
+        _ ->
+          P + 1
+      end
+  end,
+  %% and the rightmost
+  Rightmost = fun(F, Limit) when Limit =:= Max -> Max;
+    (F, P) ->
+      case ?stc:getStyleAt(Log, P) of
+        Style -> 
+          F(F, P + 1);
+        _ ->
+          P
+      end
+  end,
+  L = Leftmost(Leftmost, Pos - 1),
+  R = Rightmost(Rightmost, Pos + 1),
+  Range = ?stc:getTextRange(Log, L, R),
+  hotspot_action(Range),
 	{noreply, State}.
     
 code_change(_, _, State) ->
@@ -170,3 +235,15 @@ append(Log, Msg) ->
   ?stc:newLine(Log),
   ?stc:setReadOnly(Log, true),
   {ok, length(Message)}.
+  
+
+%% =====================================================================
+%% @doc
+
+hotspot_action(Range) ->
+  case Range of
+    "output" ->
+      ide:display_output_window(output);
+    _ ->
+      ok
+  end.

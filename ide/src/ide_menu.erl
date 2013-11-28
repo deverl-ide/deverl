@@ -102,6 +102,10 @@ init(Config) ->
   wxMenu:append(Import, ?MENU_ID_IMPORT_PROJECT, "Import Erlang Project"),
   wxMenu:append(File, ?wxID_ANY, "Import", Import),
   
+  Export = wxMenu:new([]),
+  wxMenu:append(Export, ?MENU_ID_EXPORT_EDOC, "Export eDoc"),
+  wxMenu:append(File, ?wxID_ANY, "Export", Export),
+  
   wxMenu:append(File, ?wxID_SEPARATOR, []),
   wxMenu:append(File, ?MENU_ID_PROJECT_CONFIG, "Project Configuration\tCtrl+Alt+Shift+P"),
   wxMenu:append(File, ?wxID_SEPARATOR, []),
