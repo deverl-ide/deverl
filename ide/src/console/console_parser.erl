@@ -65,14 +65,11 @@ loop(R0) ->
   receive
     {data, R1} ->
       %% Split data at newline
-      io:format("R1: ~p~n", [R1]),
-      io:format("SPLIT: ~p~n",[re:split(R1, "(\\R)", [{newline, any}, {return, list}, trim])]),
       case build_response(re:split(R1, "(\\R)", [{newline, any}, {return, list}, trim]), R0) of
         {prompt, []} ->
           loop([]); %% Single prompt, ignore, start over
         {prompt, R2} ->
-          io:format("R2: ~p~n", [R2]),
-          console_wx:append_command(R2),
+          console_wx:append_command(remove_nl(R2)),
           loop([]); %% Complete response, start over
         {incomplete, R2} ->
           loop(R2) %% No prompt yet, loop again with current data
@@ -83,10 +80,6 @@ loop(R0) ->
 
 build_response([], Acc) ->
   {incomplete, Acc};
-build_response(["\n"], Acc) ->
-  {incomplete, Acc};
-%build_response([[],"\n"], Acc) -> 
-  %{incomplete, Acc};
 build_response([H], Acc) ->
   case is_prompt(H) of
     true -> %% Ok, done
@@ -114,13 +107,4 @@ is_prompt(Cmd) ->
   end.
 
 remove_nl(L) ->
-<<<<<<< HEAD
-  case lists:last(L) of
-    10 -> %% newline
-      lists:sublist(L, length(L) - 1);
-    _ ->
-      L
-  end.
-=======
   string:strip(L, both, $\n).
->>>>>>> 5d9697d5e5aa37b2ad3a0efb98850040bbb6a7cb
