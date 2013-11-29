@@ -27,6 +27,7 @@
 %% API
 -export([start/1,
 				 new_project/1,
+         new_project/2,
 				 open_project_dialog/1,
          open_project/1,
          get_project/1,
@@ -40,7 +41,8 @@
          get_name/1,
          get_build_config/1,
          is_known_project/1,
-         set_project_configuration/1
+         set_project_configuration/1,
+         import/1
          ]).
 
 
@@ -72,7 +74,9 @@ start(Config)->
 	    
 			
 %% =====================================================================
-%% @doc Add a new project.
+%% @doc Add a new project as specified through the dialog.
+%% This function will attempt to create the standard erlang directory
+%% structure. An error dialog will be displayed should this fail.
 
 new_project(Parent) ->
 	Dialog = new_project_wx:start(Parent),
@@ -81,21 +85,25 @@ new_project(Parent) ->
 		?wxID_CANCEL -> 
       ok;
 		?wxID_OK ->
-			new_project(Parent, Dialog),
+      try
+    		Path = ide_io:create_directory_structure(new_project_wx:get_path(Dialog)),
+        new_project(Parent, Path)
+      catch
+        throw:E -> 
+    			lib_dialog_wx:msg_error(Parent, E)
+      end,
 			new_project_wx:close(Dialog)
 	end.
 
-  
-new_project(Parent, Dialog) ->
-  try
-		Path = ide_io:create_directory_structure(new_project_wx:get_path(Dialog)),
-    sys_pref_manager:set_preference(projects, [Path | sys_pref_manager:get_preference(projects)]),
-		Id = gen_server:call(?MODULE, {new_project, Path})
-  catch
-    throw:E -> 
-			lib_dialog_wx:msg_error(Parent, E)
-  end.
-	
+
+%% =====================================================================
+%% @doc Add the project located at Path. No directories will be created.
+
+new_project(Parent, Path) ->
+  sys_pref_manager:set_preference(projects, [Path | sys_pref_manager:get_preference(projects)]),
+  Id = gen_server:call(?MODULE, {new_project, Path}),
+  ok.
+
 	
 %% =====================================================================
 %% @doc Open an existing project using a dialog.
@@ -224,7 +232,19 @@ set_project_configuration(Parent) ->
       wx_object:call(?MODULE, {set_project_configuration, Config})
   end.  
   
-  
+
+%% =====================================================================
+%% @doc 
+
+import(Parent) ->
+  Dialog = import_project_wx:start(Parent),
+  case wxDialog:showModal(Dialog) of
+    ?wxID_CANCEL ->
+      cancelled;
+    ?wxID_OK ->
+      ok
+  end.
+
 %% =====================================================================
 %% Callback functions
 %% =====================================================================

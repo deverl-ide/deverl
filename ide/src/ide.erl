@@ -1,7 +1,6 @@
 %% =====================================================================
 %% @author
 %% @copyright
-%% @title
 %% @version
 %% @doc This module is responsible for building all of the GUI components. 
 %% @end
@@ -18,7 +17,10 @@
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 	
 %% API			 
--export([start/0, set_title/1, toggle_menu_group/2]).
+-export([start/0,
+         set_title/1,
+         display_output_window/1,
+         toggle_menu_group/2]).
 
 %% Server state
 -record(state, {frame,
@@ -46,14 +48,15 @@
 -define(SPLITTER_SIDEBAR_SASH_POS_DEFAULT, 215).
 -define(SPLITTER_UTILITIES_SASH_POS_DEFAULT, -200).
 -define(SPLITTER_LOG_SASH_POS_DEFAULT, -500).
--define(ID_DIALOG_TEXT, 9001).
 -define(LABEL_HIDE_UTIL, "Hide Utilities Pane\tShift+Alt+U").
 -define(LABEL_SHOW_UTIL, "Show Utilities Pane\tShift+Alt+U").
 -define(FRAME_TITLE, "Erlang IDE").
 
-%% Bottom splitter (utils/log)
+%% Windows
+-define(WINDOW_LOG, 4).
+-define(WINDOW_OUTPUT, 5).
 
--define(BUTTON_LOGS_VISIBILITY, 0).
+-define(BUTTON_HIDE_OUTPUT, 0).
 -define(BUTTON_LOG, 1).
 -define(BUTTON_COMPILER_OUTPUT, 2).
 
@@ -86,8 +89,15 @@ set_title(Title) ->
 
 toggle_menu_group(Mask, Toggle) ->
 	wx_object:cast(?MODULE, {toggle_menu_group, Mask, Toggle}).
-	
-		
+
+
+%% =====================================================================
+%% @doc
+
+display_output_window(Window) ->
+  wx_object:cast(?MODULE, {output_display, Window}).		
+
+
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
@@ -227,7 +237,24 @@ handle_cast({title, Title}, State=#state{frame=Frame}) ->
 		T -> Title ++ " - " ++ ?FRAME_TITLE
 	end,
 	wxFrame:setTitle(Frame, Str),
+  {noreply, State};
+handle_cast({output_display, Window}, State=#state{frame=Frame, splitter_log_pos=Pos}) ->
+  Id = case Window of
+    output -> ?WINDOW_OUTPUT;
+    log -> ?WINDOW_LOG
+  end,
+  Splitter = wx:typeCast(wxWindow:findWindowById(?SPLIITER_LOG), wxSplitterWindow),
+  Win = wxWindow:findWindowById(Id),
+  replaceOutputWindow(Splitter, Win, Pos),
   {noreply, State}.
+  
+code_change(_, _, State) ->
+  {stop, not_yet_implemented, State}.
+
+terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
+  io:format("TERMINATE IDE~n"),
+  wxFrame:destroy(Frame),
+  wx:destroy().
 
 %% =====================================================================
 %% Event handlers
@@ -404,12 +431,12 @@ handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=com
 %%
 %% =====================================================================
 
-% Output windows (log, compiler output etc.)
-handle_event(#wx{userData={Splitter, Window1, Window2}, event=#wxCommand{type=command_button_clicked}}, 
+% Output windows (log, output etc.)
+handle_event(#wx{userData={Splitter, Window}, event=#wxCommand{type=command_button_clicked}}, 
              State=#state{splitter_log_pos=Pos}) ->
-  replaceOutputWindow(Splitter, Window1, Window2, Pos),
+  replaceOutputWindow(Splitter, Window, Pos),
   {noreply, State};
-handle_event(#wx{id=123456, userData=Splitter, event=#wxCommand{type=command_button_clicked}}, State) ->
+handle_event(#wx{id=?BUTTON_HIDE_OUTPUT, userData=Splitter, event=#wxCommand{type=command_button_clicked}}, State) ->
   Window2 = wxSplitterWindow:getWindow2(Splitter),
   wxSplitterWindow:unsplit(Splitter, [{toRemove, Window2}]),
   {noreply, State};
@@ -418,29 +445,8 @@ handle_event(#wx{id=123456, userData=Splitter, event=#wxCommand{type=command_but
 handle_event(Ev, State) ->
   io:format("IDE event catchall: ~p\n", [Ev]),
   {noreply, State}.
-
-code_change(_, _, State) ->
-  {stop, not_yet_implemented, State}.
-
-terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
-  io:format("TERMINATE IDE~n"),
-  wxFrame:destroy(Frame),
-  wx:destroy().
-
-replaceOutputWindow(Splitter, Window1, Window2, Pos) ->
-  case wxSplitterWindow:isSplit(Splitter) of
-    true ->
-      case wxWindow:isShown(Window2) of
-        true -> ok;
-        false ->
-          OldWindow2 = wxSplitterWindow:getWindow2(Splitter),
-          wxSplitterWindow:replaceWindow(Splitter, OldWindow2, Window2),
-          wxWindow:hide(OldWindow2),
-          wxWindow:show(Window2)
-      end;
-    _ ->
-      wxSplitterWindow:splitVertically(Splitter, Window1, Window2, [{sashPosition, Pos}])
-  end.
+    
+  
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
@@ -464,12 +470,11 @@ create_utils(ParentA) ->
  		_ -> ?wxSP_3DSASH
  	end,
 	Splitter = wxSplitterWindow:new(Parent, [{id, ?SPLIITER_LOG}, {style, SplitterStyle}]),
-  wxSplitterWindow:setSashGravity(Splitter, 0.0),
+  wxSplitterWindow:setSashGravity(Splitter, 0.5),
   
   %% Splitter window 1
 	TabbedWindow = tabbed_book:new([{parent, Splitter}]),
 	
-  % console_parser:start(),
 	%% Start the port that communicates with the external ERTs
 	Console = case console_sup:start_link([]) of
 		{error, E} ->
@@ -490,8 +495,8 @@ create_utils(ParentA) ->
   
   
   %% Splitter window 2
-  CreateWindow = fun(Parent, WindowModule) ->
-    W = wxPanel:new(Parent),
+  CreateWindow = fun(P, WindowModule, Id) ->
+    W = wxPanel:new(P, [{winid, Id}]),
     WSz = wxBoxSizer:new(?wxHORIZONTAL),
     %% Add toolbar
     Tb = wxPanel:new(W),
@@ -501,7 +506,7 @@ create_utils(ParentA) ->
       {_,darwin} -> []; %%[{style, ?wxBORDER_NONE}];
       _ -> [] %%[{style, ?wxBORDER_DEFAULT}]
     end,
-    Btn = wxBitmapButton:new(Tb, 123456, wxBitmap:new(wxImage:new("../icons/10x10/137.png")), Style),
+    Btn = wxBitmapButton:new(Tb, ?BUTTON_HIDE_OUTPUT, wxBitmap:new(wxImage:new("../icons/10x10/137.png")), Style),
     wxSizer:add(TbSz, Btn, [{flag, ?wxALL}, {border, 0}]),
     wxPanel:setSizer(Tb, TbSz), 
     wxSizer:add(WSz, Tb, [{flag, ?wxEXPAND}]),
@@ -511,8 +516,8 @@ create_utils(ParentA) ->
     {W, Tb, TbSz}
   end,
 
-  {Log, _, _} = CreateWindow(Splitter, log),
-  {CompilerOutput, _, _} = CreateWindow(Splitter, compiler_output),
+  {Log, _, _} = CreateWindow(Splitter, log, ?WINDOW_LOG),
+  {CompilerOutput, _, _} = CreateWindow(Splitter, compiler_output, ?WINDOW_OUTPUT),
   
   wxPanel:connect(Parent, command_button_clicked, [{userData, Splitter}]), %% Minimise button on each window
   wxSplitterWindow:splitVertically(Splitter, TabbedWindow, Log, [{sashPosition, ?SPLITTER_LOG_SASH_POS_DEFAULT}]),
@@ -529,8 +534,8 @@ create_utils(ParentA) ->
   Button2 = wxBitmapButton:new(ToolBar, ?BUTTON_COMPILER_OUTPUT, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
   
   %% Connect button handlers
-  wxPanel:connect(Button1, command_button_clicked, [{userData, {Splitter, TabbedWindow, Log}}]),
-  wxPanel:connect(Button2, command_button_clicked, [{userData, {Splitter, TabbedWindow, CompilerOutput}}]),
+  wxPanel:connect(Button1, command_button_clicked, [{userData, {Splitter, Log}}]),
+  wxPanel:connect(Button2, command_button_clicked, [{userData, {Splitter, CompilerOutput}}]),
   
   % SzFlags = [{flag, ?wxBOTTOM}, {border, 1}],
   SzFlags = [],
@@ -595,3 +600,23 @@ toggle_menu_item(MenuBar, ToolBar, Mask, Id, Groups, Enable) ->
 			wxMenuItem:enable(wxMenuBar:findItem(MenuBar, Id), [{enable, Enable}]),
       wxToolBar:enableTool(ToolBar, Id, Enable)
 	end.
+
+
+%% =====================================================================
+%% @doc Change the current window in the output window.
+  
+replaceOutputWindow(Splitter, Window, Pos) ->
+  case wxSplitterWindow:isSplit(Splitter) of
+    true ->
+      case wxWindow:isShown(Window) of
+        true -> ok;
+        false ->
+          OldWindow = wxSplitterWindow:getWindow2(Splitter),
+          wxSplitterWindow:replaceWindow(Splitter, OldWindow, Window),
+          wxWindow:hide(OldWindow),
+          wxWindow:show(Window)
+      end;
+    _ ->
+      Window1 = wxSplitterWindow:getWindow1(Splitter),
+      wxSplitterWindow:splitVertically(Splitter, Window1, Window, [{sashPosition, Pos}])
+  end.

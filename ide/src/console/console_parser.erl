@@ -114,9 +114,13 @@ is_prompt(Cmd) ->
   end.
 
 remove_nl(L) ->
+<<<<<<< HEAD
   case lists:last(L) of
     10 -> %% newline
       lists:sublist(L, length(L) - 1);
     _ ->
       L
   end.
+=======
+  string:strip(L, both, $\n).
+>>>>>>> 5d9697d5e5aa37b2ad3a0efb98850040bbb6a7cb
