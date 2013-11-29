@@ -44,6 +44,7 @@
 								textctrl,
 								cmd_history,
 								current_cmd,
+                input,
 								wx_env,
                 menu,
                 busy}).
@@ -137,6 +138,7 @@ init(Config) ->
 				       textctrl=Console,
 				       cmd_history=[],
 				       current_cmd=0,
+               input=[],
                menu=Menu},
 
   {Panel, State}.
@@ -176,7 +178,9 @@ handle_cast({append_msg, Msg}, State=#state{textctrl=Console}) ->
   {noreply, State};
 handle_cast({call_parser, Cmd, Busy}, State) ->
   console_parser:parse_input(Cmd),
-  {noreply, State#state{busy=Busy}}.
+  {noreply, State#state{busy=Busy, input=[]}};
+handle_cast({append_input, Input}, State=#state{input=Cmd}) ->
+  {noreply, State#state{input=Cmd++Input}}.
 
 handle_call(text_ctrl, _From, State) ->
   {reply,{State#state.wx_env,State#state.textctrl}, State};
@@ -225,27 +229,28 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 handle_sync_event(#wx{}, _Event, #state{busy=true}) ->
   ok;
-handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Event, _State) ->
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Event, State=#state{input=Cmd}) ->
   {Prompt,Input} = split_line_at_prompt(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  Busy = case length(Input) of
+  case length(Input) of
     0 ->
       %% Single enter key pressed with no other input.
       %% The port will only respond through stdout when a '.' is received.
       prompt_2_console(Console, Prompt),
-      false;
+      wx_object:cast(?MODULE, {append_input, Input});
     _ ->
+      Command = Cmd ++ Input,
+      io:format("Input: ~p~n", [Command]),
       Last = fun(46) -> %% keycode 46 = '.'
                %% Deal with the case where several '.'s are entered, '...'
-               prompt_or_not(Console, Input, Prompt, Event);
+               prompt_or_not(Console, Command, Prompt, Event);
              (_) -> %% write the newline and prompt to the console
+               wx_object:cast(?MODULE, {append_input, Input}),
                prompt_2_console(Console, Prompt)
              end,
-      add_cmd(Input),
-      Last(lists:last(Input))
+      add_cmd(Command),
+      Last(lists:last(Command))
   end,
-  %% send even when length(Input) = 0, so any error contains the correct line no.
-  wx_object:cast(?MODULE, {call_parser, Input, Busy}),
 	ok;
 %%--- Arrow keys
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, _State) ->
@@ -291,18 +296,6 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 %% =====================================================================
 
 %% =====================================================================
-%% @doc Write a newline plus the repeated prompt to the console.
-
-prompt_2_console(Console, Prompt) ->
-  ?stc:newLine(Console),
-  ?stc:addText(Console, Prompt),
-  Start = ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console)),
-  ?stc:startStyling(Console, Start, 31),
-  ?stc:setStyling(Console, length(Prompt) - 1, ?STYLE_PROMPT),
-  ok.
-
-
-%% =====================================================================
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
@@ -312,21 +305,39 @@ prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
 		Penult =:= 46 ->
 			prompt_2_console(Console, Prompt),
 			wxEvent:stopPropagation(EvObj),
-      false;
+      wx_object:cast(?MODULE, {append_input, Input});
 		true ->
+      io:format("Ye~n"),
       case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
         true ->
           wxEvent:skip(EvObj),
-          true;
+          wx_object:cast(?MODULE, {call_parser, Input, true});
         false ->
-          prompt_2_console(Console, Prompt),
-          false
+          wx_object:cast(?MODULE, {append_input, Input}),
+          prompt_2_console(Console, Prompt)
       end
 	end;
 
-prompt_or_not(_,_,_,EvObj) ->
-  wxEvent:skip(EvObj),
-  true.
+prompt_or_not(Console, Input, _Prompt, EvObj) ->
+  case Input of
+    [46] ->
+      ?stc:newLine(Console),
+      wx_object:cast(?MODULE, {call_parser, Input, true});
+    _ ->
+      wxEvent:skip(EvObj)
+  end.
+  
+
+%% =====================================================================
+%% @doc Write a newline plus the repeated prompt to the console.
+
+prompt_2_console(Console, Prompt) ->
+  ?stc:newLine(Console),
+  ?stc:addText(Console, Prompt),
+  Start = ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console)),
+  ?stc:startStyling(Console, Start, 31),
+  ?stc:setStyling(Console, length(Prompt) - 1, ?STYLE_PROMPT),
+  ok.
 
 
 %% =====================================================================

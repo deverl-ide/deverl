@@ -107,8 +107,4 @@ is_prompt(Cmd) ->
   end.
 
 remove_nl(L) ->
-<<<<<<< HEAD
   string:strip(L, both, $\n).
-=======
-  string:strip(L, both, $\n).
->>>>>>> 45623bd72e42c84012783bca22c142f9745c7bf5
