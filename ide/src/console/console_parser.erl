@@ -71,12 +71,8 @@ loop(R0) ->
         {prompt, []} ->
           loop([]); %% Single prompt, ignore, start over
         {prompt, R2} ->
-<<<<<<< HEAD
           io:format("R2: ~p~n", [R2]),
           console_wx:append_command(R2),
-=======
-          console_wx:append_command(remove_nl(R2)),
->>>>>>> 2a2416bc70eebc8d6071141cec60809429699fc2
           loop([]); %% Complete response, start over
         {incomplete, R2} ->
           loop(R2) %% No prompt yet, loop again with current data
@@ -87,13 +83,10 @@ loop(R0) ->
 
 build_response([], Acc) ->
   {incomplete, Acc};
-<<<<<<< HEAD
 build_response(["\n"], Acc) ->
   {incomplete, Acc};
 %build_response([[],"\n"], Acc) -> 
   %{incomplete, Acc};
-=======
->>>>>>> 2a2416bc70eebc8d6071141cec60809429699fc2
 build_response([H], Acc) ->
   case is_prompt(H) of
     true -> %% Ok, done
