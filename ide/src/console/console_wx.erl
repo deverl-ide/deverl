@@ -28,7 +28,8 @@
 				 append_command/1,
          append_message/1,
          set_theme/4,
-         set_font/1]).
+         set_font/1,
+         clear/0]).
 
 %% Macros
 -define(ID_SHELL_TEXT_BOX, 1).
@@ -91,6 +92,13 @@ set_font(Font) ->
 
 
 %% =====================================================================
+%% @doc
+
+clear() ->
+  wx_object:cast(?MODULE, clear).
+  
+
+%% =====================================================================
 %% Callback functions
 %% =====================================================================
 
@@ -129,7 +137,7 @@ init(Config) ->
   ?stc:connect(Console, right_up),
 
   %% Add initial text
-  InitText = "Erlang Evaluator V0.2\n" ++ ?PROMPT,
+  InitText = "Erlang Evaluator\n" ++ ?PROMPT,
   ?stc:setText(Console, InitText),
   ?stc:startStyling(Console, 0, 31),
   ?stc:setStyling(Console, length(InitText) - 1, ?STYLE_PROMPT),
@@ -180,8 +188,11 @@ handle_cast({call_parser, Cmd, Busy}, State) ->
   console_parser:parse_input(Cmd),
   {noreply, State#state{busy=Busy, input=[]}};
 handle_cast({append_input, Input}, State=#state{input=Cmd}) ->
-  {noreply, State#state{input=Cmd++Input}}.
-
+  {noreply, State#state{input=Cmd++Input}};
+handle_cast(clear, State=#state{textctrl=Console}) ->
+  ?stc:clear(Console),
+  {noreply, State}.
+  
 handle_call(text_ctrl, _From, State) ->
   {reply,{State#state.wx_env,State#state.textctrl}, State};
 handle_call(command_history, _From, State) ->
@@ -200,20 +211,10 @@ handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
             State=#state{menu=Menu}) ->
   wxWindow:popupMenu(Console, Menu),
 	{noreply, State};
-handle_event(#wx{obj=Console, id=Id, event=#wxCommand{type=command_menu_selected}},
+handle_event(#wx{obj=Console, id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_selected}},
             State) ->
-  % case Id of
-  %   ?ID_RESET_CONSOLE ->
-  %     console_port:close_port(),
-  %     receive
-  %       after 5000 ->
-  %         io:format("FLUSHING BUFFER~n"),
-  %         console_port:buffer_responses(false),
-  %         console_port:flush_buffer()
-  %     end;
-  %   _ ->
-  %     io:format("NOT IMPLEMENTED")
-  % end,
+  console_port:close_port(),
+  append_message("Console reset"),
 	{noreply, State}.
 
 code_change(_, _, State) ->
@@ -229,30 +230,38 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 handle_sync_event(#wx{}, _Event, #state{busy=true}) ->
   ok;
-handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Event, State=#state{input=Cmd}) ->
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, EvtObj, State=#state{input=Cmd}) ->
   {Prompt,Input} = split_line_at_prompt(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  case length(Input) of
-    0 ->
-      %% Single enter key pressed with no other input.
-      %% The port will only respond through stdout when a '.' is received.
-      io:format("Input length = 0~n"),
-      prompt_2_console(Console, Prompt),
-      wx_object:cast(?MODULE, {append_input, Input}); %% ensures line no. is correct in error msgs
-    _ ->
-      Command = Cmd ++ Input,
-      io:format("Input: ~p~n", [Command]),
-      Last = fun(46) -> %% keycode 46 = '.'
-               %% Deal with the case where several '.'s are entered, '...'
-               prompt_or_not(Console, Command, Prompt, Event);
-             (_) -> %% write the newline and prompt to the console
-               wx_object:cast(?MODULE, {append_input, Input}),
-               prompt_2_console(Console, Prompt)
-             end,
-      add_cmd(Input),
-      Last(lists:last(Input))
+  %% (Console, EvtObj, Prompt, Input, Cmd, 0, Lc, Pc)
+  P = case length(Input) of
+    L when L > 1 -> lists:nth(length(Input)-1, Input);
+    _ -> undefined
   end,
-	ok;
+  eval_input(Console, EvtObj, Prompt, Input, Cmd, length(Input), lists:last(Input), P),
+  
+  %   case length(Input) of
+  %     0 ->
+  %       %% Single enter key pressed with no other input.
+  %       %% The port will only respond through stdout when a '.' is received.
+  %       io:format("Input length = 0~n"),
+  %       prompt_2_console(Console, Prompt),
+  %       wx_object:cast(?MODULE, {append_input, Input}); %% ensures line no. is correct in error msgs
+  %     _ ->
+  %       Command = Cmd ++ Input,
+  %       io:format("Input: ~p~n", [Command]),
+  %       Last = fun(46) -> %% keycode 46 = '.'
+  %                %% Deal with the case where several '.'s are entered, '...'
+  %                prompt_or_not(Console, Command, Prompt, Event);
+  %              (_) -> %% write the newline and prompt to the console
+  %                wx_object:cast(?MODULE, {append_input, Input}),
+  %                prompt_2_console(Console, Prompt)
+  %              end,
+  %       add_cmd(Input),
+  %       Last(lists:last(Input))
+  %   end,
+  
+  ok;
   
   
   
@@ -299,58 +308,63 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 %% Internal functions
 %% =====================================================================
 %% eval_input(EvtObj, Prompt, Input, Cmd, L, Lc, Pc)
-eval_input(EvtObj, Prompt, Input, Cmd, 0, Lc, Pc) ->
+eval_input(Console, EvtObj, Prompt, Input, Cmd, 0, Lc, Pc) ->
   prompt_2_console(Console, Prompt),
   wx_object:cast(?MODULE, {append_input, Input});
-eval_input(EvtObj, Prompt, Input, Cmd, L, 46, 46) ->
-	prompt_2_console(Console, Prompt),
-	wxEvent:stopPropagation(EvObj),
+eval_input(Console, EvtObj, Prompt, [46]=Input, Cmd, 1, Lc, Pc) ->
+  ?stc:newLine(Console),
+  wx_object:cast(?MODULE, {call_parser, Input, true});
+eval_input(Console, EvtObj, Prompt, _, Cmd, 1, Lc, Pc) ->
+  wxEvent:skip(EvtObj);
+eval_input(Console, EvtObj, Prompt, Input, Cmd, L, 46, 46) ->
+  prompt_2_console(Console, Prompt),
+  wxEvent:stopPropagation(EvtObj),
   wx_object:cast(?MODULE, {append_input, Input});
-eval_input(EvtObj, Prompt, Input, Cmd, L, 46, Pc) ->
+eval_input(Console, EvtObj, Prompt, Input, Cmd, L, 46, Pc) ->
   case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
     true ->
-      wxEvent:skip(EvObj),
+      wxEvent:skip(EvtObj),
       wx_object:cast(?MODULE, {call_parser, Input, true});
     false ->
       wx_object:cast(?MODULE, {append_input, Input}),
       prompt_2_console(Console, Prompt)
   end;
-eval_input(EvtObj, Prompt, Input, Cmd, L, Lc, Pc) ->
+eval_input(Console, EvtObj, Prompt, Input, Cmd, L, Lc, Pc) ->
   wx_object:cast(?MODULE, {append_input, Input}),
   prompt_2_console(Console, Prompt).
   
-%% =====================================================================
-%% @doc Determine whether we need to manually prompt_2_console().
-%% @private
-
-prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
-  Penult = lists:nth(length(Input)-1, Input),
-	if
-		Penult =:= 46 ->
-      wx_object:cast(?MODULE, {call_parser, Input, false}),
-			prompt_2_console(Console, Prompt),
-			wxEvent:stopPropagation(EvObj);
-      %wx_object:cast(?MODULE, {append_input, Input});
-		true ->
-      case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
-        true ->
-          wxEvent:skip(EvObj),
-          wx_object:cast(?MODULE, {call_parser, Input, true});
-        false ->
-          %wx_object:cast(?MODULE, {append_input, Input}),
-          wx_object:cast(?MODULE, {call_parser, Input, false}),
-          prompt_2_console(Console, Prompt)
-      end
-	end;
-
-prompt_or_not(Console, Input, _Prompt, EvObj) ->
-  case Input of
-    [46] ->
-      ?stc:newLine(Console),
-      wx_object:cast(?MODULE, {call_parser, Input, true});
-    _ ->
-      wxEvent:skip(EvObj)
-  end.
+% %% =====================================================================
+% %% @doc Determine whether we need to manually prompt_2_console().
+% %% @private
+% 
+% prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
+%   Penult = lists:nth(length(Input)-1, Input),
+%   if
+%     Penult =:= 46 ->
+%       wx_object:cast(?MODULE, {call_parser, Input, false}),
+%       prompt_2_console(Console, Prompt),
+%       wxEvent:stopPropagation(EvObj);
+%       %wx_object:cast(?MODULE, {append_input, Input});
+%     true ->
+%       case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
+%         true ->
+%           wxEvent:skip(EvObj),
+%           wx_object:cast(?MODULE, {call_parser, Input, true});
+%         false ->
+%           %wx_object:cast(?MODULE, {append_input, Input}),
+%           wx_object:cast(?MODULE, {call_parser, Input, false}),
+%           prompt_2_console(Console, Prompt)
+%       end
+%   end;
+% 
+% prompt_or_not(Console, Input, _Prompt, EvObj) ->
+%   case Input of
+%     [46] ->
+%       ?stc:newLine(Console),
+%       wx_object:cast(?MODULE, {call_parser, Input, true});
+%     _ ->
+%       wxEvent:skip(EvObj)
+%   end.
   
 
 %% =====================================================================
