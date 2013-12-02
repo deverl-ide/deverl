@@ -177,9 +177,9 @@ init(Options) ->
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
 
 	%% Testing accelerator table
-	% AccelTab = wxAcceleratorTable:new(1,
-	% [wxAcceleratorEntry:new([{flags, ?wxACCEL_NORMAL}, {keyCode, ?WXK_SPACE}, {cmd, ?MENU_ID_FONT}])]),
-	% wxFrame:setAcceleratorTable(Frame, AccelTab),
+  AccelTab = wxAcceleratorTable:new(1,
+    [wxAcceleratorEntry:new([{flags, ?wxACCEL_NORMAL}, {keyCode, "Ctrl+R"}, {cmd, ?MENU_ID_FONT}])]),
+  wxFrame:setAcceleratorTable(Frame, AccelTab),
   
   %% Toggle menu defaults
   toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY bor 

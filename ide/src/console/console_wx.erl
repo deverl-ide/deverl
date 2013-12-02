@@ -137,7 +137,7 @@ init(Config) ->
   ?stc:connect(Console, right_up),
 
   %% Add initial text
-  InitText = "Erlang Evaluator\n" ++ ?PROMPT,
+  InitText = "Erlang Evaluator (Ctrl-R to reset)\n" ++ ?PROMPT,
   ?stc:setText(Console, InitText),
   ?stc:startStyling(Console, 0, 31),
   ?stc:setStyling(Console, length(InitText) - 1, ?STYLE_PROMPT),
@@ -211,11 +211,12 @@ handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
             State=#state{menu=Menu}) ->
   wxWindow:popupMenu(Console, Menu),
 	{noreply, State};
-handle_event(#wx{obj=Console, id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_selected}},
-            State) ->
+handle_event(#wx{id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_selected}},
+            State=#state{textctrl=Console}) ->
   console_port:close_port(),
   append_message("Console reset"),
-	{noreply, State}.
+  prompt_2_console(Console, ?PROMPT),
+	{noreply, State#state{busy=false}}.
 
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
@@ -233,12 +234,19 @@ handle_sync_event(#wx{}, _Event, #state{busy=true}) ->
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, EvtObj, State=#state{input=Cmd}) ->
   {Prompt,Input} = split_line_at_prompt(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  %% (Console, EvtObj, Prompt, Input, Cmd, 0, Lc, Pc)
-  P = case length(Input) of
-    L when L > 1 -> lists:nth(length(Input)-1, Input);
-    _ -> undefined
+  % %% (Console, EvtObj, Prompt, Input, Cmd, 0, Lc, Pc)
+  % P = case length(Input) of
+  %   L when L > 1 -> lists:nth(length(Input)-1, Input);
+  %   _ -> undefined
+  case length(Input) of
+    0 ->
+      prompt_2_console(Console, Prompt),
+      wx_object:cast(?MODULE, {append_input, Input});
+    _ ->
+      add_cmd(Input),
+      process_input(Input, Cmd, Console, Prompt, EvtObj)
   end,
-  eval_input(Console, EvtObj, Prompt, Input, Cmd, length(Input), lists:last(Input), P),
+  % eval_input(Console, EvtObj, Prompt, Input, Cmd, length(Input), lists:last(Input), P),
   
   %   case length(Input) of
   %     0 ->
@@ -304,6 +312,18 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
   check_cursor(Console, SuccessFun, FailFun, -1).
 
 
+process_input(Input, Cmd, Console, Prompt, Event) ->
+  io:format("PROCESS INPUT~n"),
+  case lists:last(Input) of
+    46 ->
+      io:format("INPUT1: ~p~n", [Cmd++Input]),
+      prompt_or_not(Console, Cmd++Input, Prompt, Event);
+    _ ->
+      wx_object:cast(?MODULE, {append_input, Input}),
+      wx_object:cast(?MODULE, {append_input, "\n"}),
+      prompt_2_console(Console, Prompt)
+  end.
+
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
@@ -365,12 +385,49 @@ eval_input(Console, EvtObj, Prompt, Input, Cmd, L, Lc, Pc) ->
 %     _ ->
 %       wxEvent:skip(EvObj)
 %   end.
+
+%% =====================================================================
+%% @doc Determine whether we need to manually prompt_2_console().
+%% @private
+
+prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
+  io:format("PROMPT OR NOT??? ~n"),
+  Penult = lists:nth(length(Input)-1, Input),
+	if
+		Penult =:= 46 ->
+      wx_object:cast(?MODULE, {call_parser, Input, false}),
+			prompt_2_console(Console, Prompt),
+			wxEvent:stopPropagation(EvObj);
+		true ->
+      case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
+        true ->
+          io:format("WOOOOOO~n"),
+          wxEvent:skip(EvObj),
+          wx_object:cast(?MODULE, {call_parser, Input, true});
+        false ->
+          io:format("NOOOOO~n"),
+          wx_object:cast(?MODULE, {call_parser, Input, false}),
+          prompt_2_console(Console, Prompt)
+      end
+	end;
+
+prompt_or_not(Console, Input, Prompt, EvObj) ->
+  io:format("Input < 1 ~n"),
+  case Input of
+    [46] ->
+      %?stc:newLine(Console),
+      prompt_2_console(Console, Prompt),
+      wx_object:cast(?MODULE, {call_parser, Input, false});
+    _ ->
+      wxEvent:skip(EvObj)
+  end.
   
 
 %% =====================================================================
 %% @doc Write a newline plus the repeated prompt to the console.
 
 prompt_2_console(Console, Prompt) ->
+  %wx_object:cast(?MODULE, {append_input, "\n"}),
   ?stc:newLine(Console),
   ?stc:addText(Console, Prompt),
   Start = ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console)),
@@ -571,6 +628,6 @@ create_menu() ->
   wxMenu:append(Menu, ?wxID_ANY, "Copy", []),
   wxMenu:append(Menu, ?wxID_ANY, "Paste", []),
   wxMenu:appendSeparator(Menu),
-  wxMenu:append(Menu, ?ID_RESET_CONSOLE, "Reset Console", []),
+  wxMenu:append(Menu, ?ID_RESET_CONSOLE, "Reset Console\tCtrl+R", []),
   wxMenu:connect(Menu, command_menu_selected),
   Menu.

@@ -88,14 +88,13 @@ handle_cast(_Msg, State) ->
   {noreply, State}.
 
 handle_info({_From, close}, State) ->
-	%% io:format("PORT CLOSED INFO 1~n"),
-  {stop, {port_closed, quit}, State};
-handle_info({Port,{exit_status,Status}}, State) ->
-	%% io:format("PORT CLOSED INFO 2~n"),
-  % {stop, {port_terminated, ok}, State};
-  {stop, {port_terminated, quit}, State};
+  {stop, normal, State};
+% handle_info({Port,{exit_status,Status}}, State) ->
+%   % io:format("PORT CLOSED INFO 2~n"),
+%   % {stop, {port_terminated, ok}, State};
+%   {stop, normal, State};
 handle_info({'EXIT', Port, Reason}, #state{port=Port}=State) ->
-	%% io:format("PORT CLOSED~n"),
+  io:format("PORT CLOSED~n"),
   {stop, {port_terminated, Reason}, State};
 handle_info({_Port, {data, Response}}, State=#state{respond=Respond}) ->
 	case Respond of
@@ -113,8 +112,8 @@ terminate({port_terminated, _Reason}, _State) ->
 	io:format("TERMINATE CONSOLE YEAHHHH~n"),
   ok;
 terminate(_Reason, #state{port=Port}) ->
-	io:format("TERMINATE CONSOLE~n"),
-  port_close(Port),
+	io:format("TERMINATE CONSOLE PORT~n"),
+  % port_close(Port),
 	ok.
 		
 
