@@ -237,7 +237,7 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Eve
       %% Single enter key pressed with no other input.
       %% The port will only respond through stdout when a '.' is received.
       prompt_2_console(Console, Prompt),
-      wx_object:cast(?MODULE, {append_input, Input});
+      wx_object:cast(?MODULE, {append_input, Input}); %% ensures line no. is correct in error msgs
     _ ->
       Command = Cmd ++ Input,
       io:format("Input: ~p~n", [Command]),
@@ -252,6 +252,9 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Eve
       Last(lists:last(Command))
   end,
 	ok;
+  
+  
+  
 %%--- Arrow keys
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, _State) ->
   SuccessFun = fun() -> ok end,
@@ -294,7 +297,27 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
-
+%% eval_input(EvtObj, Prompt, Input, Cmd, L, Lc, Pc)
+eval_input(EvtObj, Prompt, Input, Cmd, 0, Lc, Pc) ->
+  prompt_2_console(Console, Prompt),
+  wx_object:cast(?MODULE, {append_input, Input});
+eval_input(EvtObj, Prompt, Input, Cmd, L, 46, 46) ->
+	prompt_2_console(Console, Prompt),
+	wxEvent:stopPropagation(EvObj),
+  wx_object:cast(?MODULE, {append_input, Input});
+eval_input(EvtObj, Prompt, Input, Cmd, L, 46, Pc) ->
+  case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
+    true ->
+      wxEvent:skip(EvObj),
+      wx_object:cast(?MODULE, {call_parser, Input, true});
+    false ->
+      wx_object:cast(?MODULE, {append_input, Input}),
+      prompt_2_console(Console, Prompt)
+  end;
+eval_input(EvtObj, Prompt, Input, Cmd, L, Lc, Pc) ->
+  wx_object:cast(?MODULE, {append_input, Input}),
+  prompt_2_console(Console, Prompt).
+  
 %% =====================================================================
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
