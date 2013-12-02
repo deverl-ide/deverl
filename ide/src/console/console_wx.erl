@@ -265,33 +265,7 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Evt
       add_cmd(Input),
       process_input(Input, Cmd, Console, Prompt, EvtObj)
   end,
-  % eval_input(Console, EvtObj, Prompt, Input, Cmd, length(Input), lists:last(Input), P),
-  
-  %   case length(Input) of
-  %     0 ->
-  %       %% Single enter key pressed with no other input.
-  %       %% The port will only respond through stdout when a '.' is received.
-  %       io:format("Input length = 0~n"),
-  %       prompt_2_console(Console, Prompt),
-  %       wx_object:cast(?MODULE, {append_input, Input}); %% ensures line no. is correct in error msgs
-  %     _ ->
-  %       Command = Cmd ++ Input,
-  %       io:format("Input: ~p~n", [Command]),
-  %       Last = fun(46) -> %% keycode 46 = '.'
-  %                %% Deal with the case where several '.'s are entered, '...'
-  %                prompt_or_not(Console, Command, Prompt, Event);
-  %              (_) -> %% write the newline and prompt to the console
-  %                wx_object:cast(?MODULE, {append_input, Input}),
-  %                prompt_2_console(Console, Prompt)
-  %              end,
-  %       add_cmd(Input),
-  %       Last(lists:last(Input))
-  %   end,
-  
   ok;
-  
-  
-  
 %%--- Arrow keys
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, _State) ->
   SuccessFun = fun() -> ok end,
