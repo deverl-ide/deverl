@@ -241,7 +241,7 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Evt
   case length(Input) of
     0 ->
       prompt_2_console(Console, Prompt),
-      wx_object:cast(?MODULE, {append_input, Input});
+      wx_object:cast(?MODULE, {append_input, Input++"\n"});
     _ ->
       add_cmd(Input),
       process_input(Input, Cmd, Console, Prompt, EvtObj)
@@ -313,14 +313,12 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 
 
 process_input(Input, Cmd, Console, Prompt, Event) ->
-  io:format("PROCESS INPUT~n"),
   case lists:last(Input) of
     46 ->
-      io:format("INPUT1: ~p~n", [Cmd++Input]),
+      wx_object:cast(?MODULE, {append_input, Input}),
       prompt_or_not(Console, Cmd++Input, Prompt, Event);
     _ ->
-      wx_object:cast(?MODULE, {append_input, Input}),
-      wx_object:cast(?MODULE, {append_input, "\n"}),
+      wx_object:cast(?MODULE, {append_input, Input ++ "\n"}),
       prompt_2_console(Console, Prompt)
   end.
 
@@ -391,31 +389,27 @@ eval_input(Console, EvtObj, Prompt, Input, Cmd, L, Lc, Pc) ->
 %% @private
 
 prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
-  io:format("PROMPT OR NOT??? ~n"),
   Penult = lists:nth(length(Input)-1, Input),
 	if
 		Penult =:= 46 ->
-      wx_object:cast(?MODULE, {call_parser, Input, false}),
+      %wx_object:cast(?MODULE, {call_parser, Input, false}),
 			prompt_2_console(Console, Prompt),
 			wxEvent:stopPropagation(EvObj);
 		true ->
       case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
         true ->
-          io:format("WOOOOOO~n"),
           wxEvent:skip(EvObj),
           wx_object:cast(?MODULE, {call_parser, Input, true});
         false ->
-          io:format("NOOOOO~n"),
-          wx_object:cast(?MODULE, {call_parser, Input, false}),
+          wx_object:cast(?MODULE, {append_input, "\n"}),
           prompt_2_console(Console, Prompt)
+          %wx_object:cast(?MODULE, {call_parser, Input, false})
       end
 	end;
 
 prompt_or_not(Console, Input, Prompt, EvObj) ->
-  io:format("Input < 1 ~n"),
   case Input of
     [46] ->
-      %?stc:newLine(Console),
       prompt_2_console(Console, Prompt),
       wx_object:cast(?MODULE, {call_parser, Input, false});
     _ ->
