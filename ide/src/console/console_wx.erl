@@ -144,7 +144,9 @@ init(Config) ->
   ?stc:setStyling(Console, length(InitText) - 1, ?STYLE_PROMPT),
   
 	%% Accelerator table
-  AccelTab = wxAcceleratorTable:new(1,[wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, 82}, {cmd, ?ID_RESET_CONSOLE}])]),
+  AccelTab = wxAcceleratorTable:new(1,[wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, 82}, {cmd, ?ID_RESET_CONSOLE}]),
+                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, 67}, {cmd, ?wxSTC_CMD_COPY}]),
+                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, 86}, {cmd, ?wxSTC_CMD_PASTE}])]),
   wxWindow:setAcceleratorTable(Console, AccelTab),
 
 	State=#state{win=Panel,
