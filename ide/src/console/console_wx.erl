@@ -280,20 +280,30 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
   check_cursor(Console, SuccessFun, FailFun, -1).
 
 
-process_input(Input, Cmd, Console, Prompt, Event) ->
-  case lists:last(Input) of
-    46 ->
-      wx_object:cast(?MODULE, {append_input, Input}),
-      prompt_or_not(Console, Cmd++Input, Prompt, Event);
-    _ ->
-      wx_object:cast(?MODULE, {append_input, Input ++ "\n"}),
-      prompt_2_console(Console, Prompt)
-  end.
-
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
 
+%% =====================================================================
+%% @doc 
+
+process_input(Input, Cmd, Console, Prompt, Event) ->
+  case is_comment(Input) of
+    true ->
+      wx_object:cast(?MODULE, {append_input, Input ++ "\n"}),
+      prompt_2_console(Console, Prompt);
+    false ->
+      case lists:last(Input) of
+        46 ->
+          wx_object:cast(?MODULE, {append_input, Input}),
+          prompt_or_not(Console, Cmd++Input, Prompt, Event);
+        _ ->
+          wx_object:cast(?MODULE, {append_input, Input ++ "\n"}),
+          prompt_2_console(Console, Prompt)
+      end
+  end.
+  
+  
 %% =====================================================================
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
@@ -302,7 +312,6 @@ prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
   Penult = lists:nth(length(Input)-1, Input),
 	if
 		Penult =:= 46 ->
-      %wx_object:cast(?MODULE, {call_parser, Input, false}),
 			prompt_2_console(Console, Prompt),
 			wxEvent:stopPropagation(EvObj);
 		true ->
@@ -313,11 +322,11 @@ prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
         false ->
           wx_object:cast(?MODULE, {append_input, "\n"}),
           prompt_2_console(Console, Prompt)
-          %wx_object:cast(?MODULE, {call_parser, Input, false})
       end
 	end;
 
 prompt_or_not(Console, Input, Prompt, EvObj) ->
+  io:format("Input <= 1~n"),
   case Input of
     [46] ->
       prompt_2_console(Console, Prompt),
@@ -367,6 +376,20 @@ count_chars(Char, [H|T], Acc, Escape) ->
       count_chars(Char, T, Acc, not Escape);
     _ ->
       count_chars(Char, T, Acc, Escape)
+  end.
+  
+
+%% =====================================================================
+%% @doc Check for comment character in command.
+
+is_comment([]) ->
+  false;
+is_comment([H|T]) ->
+  case H of
+    '%' ->
+      true;
+    _ ->
+      is_comment(T)
   end.
 
 
