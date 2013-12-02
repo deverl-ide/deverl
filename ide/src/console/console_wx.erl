@@ -236,6 +236,7 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Eve
     0 ->
       %% Single enter key pressed with no other input.
       %% The port will only respond through stdout when a '.' is received.
+      io:format("Input length = 0~n"),
       prompt_2_console(Console, Prompt),
       wx_object:cast(?MODULE, {append_input, Input});
     _ ->
@@ -248,8 +249,8 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Eve
                wx_object:cast(?MODULE, {append_input, Input}),
                prompt_2_console(Console, Prompt)
              end,
-      add_cmd(Command),
-      Last(lists:last(Command))
+      add_cmd(Input),
+      Last(lists:last(Input))
   end,
 	ok;
 %%--- Arrow keys
@@ -303,17 +304,18 @@ prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
   Penult = lists:nth(length(Input)-1, Input),
 	if
 		Penult =:= 46 ->
+      wx_object:cast(?MODULE, {call_parser, Input, false}),
 			prompt_2_console(Console, Prompt),
-			wxEvent:stopPropagation(EvObj),
-      wx_object:cast(?MODULE, {append_input, Input});
+			wxEvent:stopPropagation(EvObj);
+      %wx_object:cast(?MODULE, {append_input, Input});
 		true ->
-      io:format("Ye~n"),
       case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
         true ->
           wxEvent:skip(EvObj),
           wx_object:cast(?MODULE, {call_parser, Input, true});
         false ->
-          wx_object:cast(?MODULE, {append_input, Input}),
+          %wx_object:cast(?MODULE, {append_input, Input}),
+          wx_object:cast(?MODULE, {call_parser, Input, false}),
           prompt_2_console(Console, Prompt)
       end
 	end;
