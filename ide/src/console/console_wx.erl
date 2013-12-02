@@ -28,7 +28,8 @@
 				 append_command/1,
          append_message/1,
          set_theme/4,
-         set_font/1]).
+         set_font/1,
+         clear/0]).
 
 %% Macros
 -define(ID_SHELL_TEXT_BOX, 1).
@@ -91,6 +92,13 @@ set_font(Font) ->
 
 
 %% =====================================================================
+%% @doc
+
+clear() ->
+  wx_object:cast(?MODULE, clear).
+  
+
+%% =====================================================================
 %% Callback functions
 %% =====================================================================
 
@@ -127,12 +135,17 @@ init(Config) ->
 
 	?stc:connect(Console, key_down, [callback]),
   ?stc:connect(Console, right_up),
+  ?stc:connect(Console, command_menu_selected),
 
   %% Add initial text
-  InitText = "Erlang Evaluator V0.2\n" ++ ?PROMPT,
+  InitText = "Erlang Evaluator (Ctrl-R to reset)\n" ++ ?PROMPT,
   ?stc:setText(Console, InitText),
   ?stc:startStyling(Console, 0, 31),
   ?stc:setStyling(Console, length(InitText) - 1, ?STYLE_PROMPT),
+  
+	%% Accelerator table
+  AccelTab = wxAcceleratorTable:new(1,[wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, 82}, {cmd, ?ID_RESET_CONSOLE}])]),
+  wxWindow:setAcceleratorTable(Console, AccelTab),
 
 	State=#state{win=Panel,
 				       textctrl=Console,
@@ -180,8 +193,11 @@ handle_cast({call_parser, Cmd, Busy}, State) ->
   console_parser:parse_input(Cmd),
   {noreply, State#state{busy=Busy, input=[]}};
 handle_cast({append_input, Input}, State=#state{input=Cmd}) ->
-  {noreply, State#state{input=Cmd++Input}}.
-
+  {noreply, State#state{input=Cmd++Input}};
+handle_cast(clear, State=#state{textctrl=Console}) ->
+  ?stc:clear(Console),
+  {noreply, State}.
+  
 handle_call(text_ctrl, _From, State) ->
   {reply,{State#state.wx_env,State#state.textctrl}, State};
 handle_call(command_history, _From, State) ->
@@ -200,22 +216,23 @@ handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
             State=#state{menu=Menu}) ->
   wxWindow:popupMenu(Console, Menu),
 	{noreply, State};
-handle_event(#wx{obj=Console, id=Id, event=#wxCommand{type=command_menu_selected}},
-            State) ->
-  % case Id of
-  %   ?ID_RESET_CONSOLE ->
-  %     console_port:close_port(),
-  %     receive
-  %       after 5000 ->
-  %         io:format("FLUSHING BUFFER~n"),
-  %         console_port:buffer_responses(false),
-  %         console_port:flush_buffer()
-  %     end;
-  %   _ ->
-  %     io:format("NOT IMPLEMENTED")
-  % end,
+handle_event(#wx{id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_selected}},
+            State=#state{textctrl=Console}) ->
+  console_port:close_port(),
+  append_message("Console reset"),
+  prompt_2_console(Console, ?PROMPT),
+	{noreply, State#state{busy=false}};
+handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
+            State=#state{textctrl=Console}) when ((Id >= ?wxSTC_CMD_COPY) and (Id =< ?wxSTC_CMD_PASTE)) ->
+  ?stc:cmdKeyExecute(Console, Id),
 	{noreply, State}.
-
+% handle_event(#wx{id=?wxSTC_CMD_COPY, event=#wxCommand{type=command_menu_selected}},
+%             State=#state{textctrl=Console}) ->
+%   {noreply, State#state{busy=false}}.
+% handle_event(#wx{id=?wxSTC_CMD_PASTE, event=#wxCommand{type=command_menu_selected}},
+%             State=#state{textctrl=Console}) ->
+%   {noreply, State#state{busy=false}}.
+    
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
 
@@ -227,20 +244,54 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 %% Callback Sync event handling
 %% =====================================================================
-handle_sync_event(#wx{}, _Event, #state{busy=true}) ->
+handle_sync_event(#wx{event=#wxKey{keyCode=82, controlDown=true}}, EvtObj, #state{busy=true}) ->
+  wxEvent:skip(EvtObj);
+handle_sync_event(#wx{}, EvtObj, #state{busy=true}) ->
   ok;
-handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Event, State=#state{input=Cmd}) ->
+handle_sync_event(#wx{event=#wxKey{metaDown=true}}, EvtObj, #state{}) ->
+  wxEvent:skip(EvtObj);
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, EvtObj, State=#state{input=Cmd}) ->
   {Prompt,Input} = split_line_at_prompt(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
+  % %% (Console, EvtObj, Prompt, Input, Cmd, 0, Lc, Pc)
+  % P = case length(Input) of
+  %   L when L > 1 -> lists:nth(length(Input)-1, Input);
+  %   _ -> undefined
   case length(Input) of
     0 ->
       prompt_2_console(Console, Prompt),
       wx_object:cast(?MODULE, {append_input, Input++"\n"});
     _ ->
       add_cmd(Input),
-      process_input(Input, Cmd, Console, Prompt, Event)
+      process_input(Input, Cmd, Console, Prompt, EvtObj)
   end,
-	ok;
+  % eval_input(Console, EvtObj, Prompt, Input, Cmd, length(Input), lists:last(Input), P),
+  
+  %   case length(Input) of
+  %     0 ->
+  %       %% Single enter key pressed with no other input.
+  %       %% The port will only respond through stdout when a '.' is received.
+  %       io:format("Input length = 0~n"),
+  %       prompt_2_console(Console, Prompt),
+  %       wx_object:cast(?MODULE, {append_input, Input}); %% ensures line no. is correct in error msgs
+  %     _ ->
+  %       Command = Cmd ++ Input,
+  %       io:format("Input: ~p~n", [Command]),
+  %       Last = fun(46) -> %% keycode 46 = '.'
+  %                %% Deal with the case where several '.'s are entered, '...'
+  %                prompt_or_not(Console, Command, Prompt, Event);
+  %              (_) -> %% write the newline and prompt to the console
+  %                wx_object:cast(?MODULE, {append_input, Input}),
+  %                prompt_2_console(Console, Prompt)
+  %              end,
+  %       add_cmd(Input),
+  %       Last(lists:last(Input))
+  %   end,
+  
+  ok;
+  
+  
+  
 %%--- Arrow keys
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, _State) ->
   SuccessFun = fun() -> ok end,
@@ -283,6 +334,32 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
+%% eval_input(EvtObj, Prompt, Input, Cmd, L, Lc, Pc)
+% eval_input(Console, EvtObj, Prompt, Input, Cmd, 0, Lc, Pc) ->
+%   prompt_2_console(Console, Prompt),
+%   wx_object:cast(?MODULE, {append_input, Input});
+% eval_input(Console, EvtObj, Prompt, [46]=Input, Cmd, 1, Lc, Pc) ->
+%   ?stc:newLine(Console),
+%   wx_object:cast(?MODULE, {call_parser, Input, true});
+% eval_input(Console, EvtObj, Prompt, _, Cmd, 1, Lc, Pc) ->
+%   wxEvent:skip(EvtObj);
+% eval_input(Console, EvtObj, Prompt, Input, Cmd, L, 46, 46) ->
+%   prompt_2_console(Console, Prompt),
+%   wxEvent:stopPropagation(EvtObj),
+%   wx_object:cast(?MODULE, {append_input, Input});
+% eval_input(Console, EvtObj, Prompt, Input, Cmd, L, 46, Pc) ->
+%   case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
+%     true ->
+%       wxEvent:skip(EvtObj),
+%       wx_object:cast(?MODULE, {call_parser, Input, true});
+%     false ->
+%       wx_object:cast(?MODULE, {append_input, Input}),
+%       prompt_2_console(Console, Prompt)
+%   end;
+% eval_input(Console, EvtObj, Prompt, Input, Cmd, L, Lc, Pc) ->
+%   wx_object:cast(?MODULE, {append_input, Input}),
+%   prompt_2_console(Console, Prompt).
+
 
 %% =====================================================================
 %% @doc 
@@ -551,10 +628,9 @@ check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
 
 create_menu() ->
   Menu = wxMenu:new([]),
-  wxMenu:append(Menu, ?wxID_ANY, "Cut", []),
-  wxMenu:append(Menu, ?wxID_ANY, "Copy", []),
-  wxMenu:append(Menu, ?wxID_ANY, "Paste", []),
+  wxMenu:append(Menu, ?wxSTC_CMD_COPY, "Copy\tCtrl+C", []),
+  wxMenu:append(Menu, ?wxSTC_CMD_PASTE, "Paste\tCtrl+V", []),
   wxMenu:appendSeparator(Menu),
-  wxMenu:append(Menu, ?ID_RESET_CONSOLE, "Reset Console", []),
+  wxMenu:append(Menu, ?ID_RESET_CONSOLE, "Reset Console\tCtrl+R", []),
   wxMenu:connect(Menu, command_menu_selected),
   Menu.
