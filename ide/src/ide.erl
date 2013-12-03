@@ -49,13 +49,8 @@
 -define(SPLITTER_UTILITIES_SASH_POS_DEFAULT, -200).
 -define(SPLITTER_LOG_SASH_POS_DEFAULT, -500).
 -define(LABEL_HIDE_UTIL, "Hide Utilities Pane\tShift+Alt+U").
--define(LABEL_SHOW_UTIL, "Show Utilities Pane\tShift+Alt+U").
+-define(LABEL_SHOW_UTIL, "Show Utiities Pane\tShift+Alt+U").
 -define(FRAME_TITLE, "Erlang IDE").
-
-%% Windows
--define(WINDOW_LOG, 4).
--define(WINDOW_OUTPUT, 5).
-
 -define(BUTTON_HIDE_OUTPUT, 0).
 -define(BUTTON_LOG, 1).
 -define(BUTTON_COMPILER_OUTPUT, 2).
@@ -318,7 +313,18 @@ handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}}, State) ->
 handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}}, State) ->
 	ide_status_bar:set_text({field, help}, "testing"),
   {noreply, State};
-
+% handle_event(#wx{id=Id}, State) ->
+%   io:format("OIOIOIOI ~p~n", [Id]),
+%   {noreply, State};
+handle_event(#wx{id=?wxID_COPY}, State) ->
+  Fw = wxWindow:findFocus(),
+  Id = wxWindow:getId(Fw),
+  Ctrl = case Id of
+    ?WINDOW_OUTPUT -> wxTextCtrl:copy(wx:typeCast(Fw, wxTextCtrl));
+    ?WINDOW_FUNCTION_SEARCH -> wxTextCtrl:copy(wx:typeCast(Fw, wxTextCtrl));
+    Else -> wxStyledTextCtrl:copy(wx:typeCast(Fw, wxStyledTextCtrl))
+  end,
+  {noreply, State};
 %% First handle the sub-menus
 handle_event(E=#wx{id=Id, userData={theme_menu,Menu}, event=#wxCommand{type=command_menu_selected}},
              State) ->

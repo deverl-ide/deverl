@@ -10,6 +10,7 @@
 - module(editor).
 
 -include_lib("wx/include/wx.hrl").
+-include("ide.hrl").
 
 %% wx_object
 -behaviour(wx_object).
@@ -380,7 +381,7 @@ init(Config) ->
 
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),
-  Editor = ?stc:new(Panel), 
+  Editor = ?stc:new(Panel, [{id, ?WINDOW_EDITOR}]), 
   wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND}, {proportion, 1}]),              
 
 	%% Immutable editor styles

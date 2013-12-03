@@ -11,6 +11,7 @@
 -module(console_wx).
 
 -include_lib("wx/include/wx.hrl").
+-include("ide.hrl").
 
 %% wx_object
 -behaviour(wx_object).
@@ -32,7 +33,6 @@
          clear/0]).
 
 %% Macros
--define(ID_SHELL_TEXT_BOX, 1).
 -define(stc, wxStyledTextCtrl).
 -define(ID_RESET_CONSOLE, 1).
 -define(ID_CLEAR_CONSOLE, 2).
@@ -109,7 +109,7 @@ init(Config) ->
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Panel, MainSizer),
 
-	Console = ?stc:new(Panel, [{id, ?ID_SHELL_TEXT_BOX}, {style, ?wxBORDER_NONE}]),
+	Console = ?stc:new(Panel, [{id, ?WINDOW_CONSOLE}, {style, ?wxBORDER_NONE}]),
 	?stc:setMarginWidth(Console, 0, 0),
 	?stc:setMarginWidth(Console, 1, 0),
 	?stc:setMarginWidth(Console, 2, 0),
@@ -280,7 +280,7 @@ handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #sta
     %% Discard
     _ -> ok
   end;
-handle_sync_event(#wx{event=#wxKey{keyCode=Key}}, EvtObj, #state{}) ->
+handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
@@ -652,8 +652,8 @@ check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
 
 create_menu() ->
   Menu = wxMenu:new([]),
-  wxMenu:append(Menu, ?wxSTC_CMD_COPY, "Copy\tCtrl+C", []),
-  wxMenu:append(Menu, ?wxSTC_CMD_PASTE, "Paste\tCtrl+V", []),
+  wxMenu:append(Menu, ?wxID_COPY, "Copy\tCtrl+C", []),
+  wxMenu:append(Menu, ?wxID_PASTE, "Paste\tCtrl+V", []),
   wxMenu:appendSeparator(Menu),
   wxMenu:append(Menu, ?ID_RESET_CONSOLE, "Reset Console\tCtrl+R", []),
   wxMenu:append(Menu, ?ID_CLEAR_CONSOLE, "Clear All\tCtrl+K", []),

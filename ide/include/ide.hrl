@@ -82,7 +82,6 @@
 -define(MENU_ID_EXPORT_EDOC,       6053).
 -define(MENU_ID_HIGHEST,					 6999).
 
-
 %% Sub-menus
 %% Reserved range for theme sub-menu
 %% MENU_ID_THEME_LOWEST -> MENU_ID_THEME_HIGHEST
@@ -99,6 +98,13 @@
 %% Documents
 -define(DEFAULT_TAB_LABEL, "untitled").
 -define(ID_WORKSPACE, 3211).
+
+%% Windows
+-define(WINDOW_EDITOR, 0).
+-define(WINDOW_CONSOLE, 1).
+-define(WINDOW_LOG, 2).
+-define(WINDOW_OUTPUT, 3).
+-define(WINDOW_FUNCTION_SEARCH, 4).
 
 %% Global colours
 -define(ROW_BG_EVEN, {250,250,250,255}).
