@@ -281,14 +281,10 @@ handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #sta
     %% Discard
     _ -> ok
   end;
-<<<<<<< HEAD
+
 handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
-  io:format("CTRL DOWN~n"),
-=======
-handle_sync_event(#wx{event=#wxKey{keyCode=Key}}, EvtObj, #state{}) ->
-  wxEvent:skip(EvtObj);
+  io:format("CTRL DOWN~n");
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
->>>>>>> 01cca8be801a50cf0318e00a681846bac95f9831
   wxEvent:skip(EvtObj);
   % case Key of
   %   $C -> wxEvent:skip(EvtObj);
@@ -631,8 +627,8 @@ check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
 
 create_menu() ->
   Menu = wxMenu:new([]),
-  wxMenu:append(Menu, ?wxSTC_CMD_COPY, "Copy\tCtrl+C", []),
-  wxMenu:append(Menu, ?wxSTC_CMD_PASTE, "Paste\tCtrl+V", []),
+  wxMenu:append(Menu, ?wxID_COPY, "Copy\tCtrl+C", []),
+  wxMenu:append(Menu, ?wxID_PASTE, "Paste\tCtrl+V", []),
   wxMenu:appendSeparator(Menu),
   wxMenu:append(Menu, ?ID_RESET_CONSOLE, "Reset Console\tCtrl+R", []),
   wxMenu:append(Menu, ?ID_CLEAR_CONSOLE, "Clear All\tCtrl+K", []),

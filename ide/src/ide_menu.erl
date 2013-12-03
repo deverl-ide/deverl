@@ -125,8 +125,8 @@ init(Config) ->
   wxMenu:append(Edit, ?wxID_REDO, "Redo"),
   wxMenu:append(Edit, ?wxID_SEPARATOR, []),
   wxMenu:append(Edit, ?wxID_CUT, "Cut"),
-  %wxMenu:append(Edit, ?wxID_COPY, "Copy"), 
-  %wxMenu:append(Edit, ?wxID_PASTE, "Paste"),
+  wxMenu:append(Edit, ?wxID_COPY, "Copy"), 
+  wxMenu:append(Edit, ?wxID_PASTE, "Paste"),
   wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
   wxMenu:append(Edit, ?wxID_SEPARATOR, []),
   wxMenu:append(Edit, ?wxID_SELECTALL, "Select All"),
@@ -346,21 +346,13 @@ init(Config) ->
     {?wxID_EXIT, {}},
     {?wxID_PREFERENCES, {ide_prefs,start, [[{parent,Frame}]]}},
     
-<<<<<<< HEAD
-    {?wxID_UNDO, {}},
-    {?wxID_REDO, {}},
-    {?wxID_CUT, {}},
-    %{?wxID_COPY, {}},
-    %{?wxID_PASTE, {}},
-    {?wxID_DELETE, {}},
-=======
-    % {?wxID_UNDO, {}},
-    % {?wxID_REDO, {}},
-    % {?wxID_CUT, {}},
-    % {?wxID_COPY, {}},
-    % {?wxID_PASTE, {}},
-    % {?wxID_DELETE, {}},
->>>>>>> 01cca8be801a50cf0318e00a681846bac95f9831
+     %{?wxID_UNDO, {}},
+     %{?wxID_REDO, {}},
+     %{?wxID_CUT, {}},
+     %{?wxID_COPY, {}},
+     %{?wxID_PASTE, {}},
+     %{?wxID_DELETE, {}},
+
     {?wxID_FIND, {editor_ops,find_replace,[Frame]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
     
@@ -433,9 +425,10 @@ init(Config) ->
 				
 	%% Connect event handlers
 	wxFrame:connect(Frame, menu_highlight,  
-		[{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+		[{userData, {ets_table,TabId}}, {id, ?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
 	wxFrame:connect(Frame, command_menu_selected, 
-		[{userData,{ets_table,TabId}}, {id,?MENU_ID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+		[{userData,{ets_table,TabId}}, {id, ?MENU_ID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+  wxFrame:connect(Frame, command_menu_selected, [{id, ?wxID_COPY}]),
 		
 	%% Submenus
 	wxFrame:connect(Frame, command_menu_selected,  

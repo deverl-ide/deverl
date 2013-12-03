@@ -307,6 +307,11 @@ handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State)
 %%
 %% =====================================================================
 
+handle_event(#wx{id=?wxID_COPY, event=E, obj=O}, State) ->
+  W = wxWindow:findFocus(),
+  TC = wx:typeCast(W, wxStyledTextCtrl),
+  wxStyledTextCtrl:copy(TC),
+  {noreply, State};
 %% See ticket #5
 %% Although a temporary fix has been implemented for ticket #5, using this handler
 %% would be the preferred option
