@@ -151,8 +151,8 @@ init(Config) ->
 	%% Accelerator table
   AccelTab = wxAcceleratorTable:new(4,[wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $R}, {cmd, ?ID_RESET_CONSOLE}]),
                                        wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $K}, {cmd, ?ID_CLEAR_CONSOLE}]),
-                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $C}, {cmd, ?wxSTC_CMD_COPY}]), %% cmdKeyAssign
-                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $V}, {cmd, ?wxSTC_CMD_PASTE}])]),
+                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $C}, {cmd, ?wxID_COPY}]), %% cmdKeyAssign
+                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $V}, {cmd, ?wxID_PASTE}])]),
   wxWindow:setAcceleratorTable(Console, AccelTab),
 
 	State=#state{win=Panel,
@@ -236,12 +236,12 @@ handle_event(#wx{id=?ID_CLEAR_CONSOLE, event=#wxCommand{type=command_menu_select
   ?stc:clearAll(Console),
   prompt_2_console(Console, ?PROMPT, false),
   {noreply, State};
-handle_event(#wx{id=?wxSTC_CMD_COPY, event=#wxCommand{type=command_menu_selected}},
+handle_event(#wx{id=?wxID_COPY, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
   io:format("COPY~n"),
   ?stc:cmdKeyExecute(Console, ?wxSTC_CMD_COPY),
   {noreply, State};
-handle_event(#wx{id=?wxSTC_CMD_PASTE, event=#wxCommand{type=command_menu_selected}},
+handle_event(#wx{id=?wxID_PASTE, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
   io:format("PASTE~n"),
   % ?stc:cmdKeyExecute(Console, ?wxSTC_CMD_PASTE),
@@ -280,6 +280,8 @@ handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #sta
     %% Discard
     _ -> ok
   end;
+handle_sync_event(#wx{event=#wxKey{keyCode=Key}}, EvtObj, #state{}) ->
+  wxEvent:skip(EvtObj);
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
   % case Key of
