@@ -95,7 +95,7 @@ init(Config) ->
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Panel, MainSizer),
 
-	Log = ?stc:new(Panel, [{style, ?wxBORDER_NONE}]),
+	Log = ?stc:new(Panel, [{style, ?wxBORDER_NONE}, {id, ?WINDOW_LOG}]),
   ?stc:setMarginWidth(Log, 0, 0),
   ?stc:setMarginWidth(Log, 1, 0),
   ?stc:setMarginWidth(Log, 2, 0),

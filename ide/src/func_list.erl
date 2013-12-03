@@ -41,7 +41,7 @@ init(Config) ->
 	Panel = wxPanel:new(Parent),
 	Sz = wxBoxSizer:new(?wxVERTICAL),
   
-	Search = wxTextCtrl:new(Panel, ?wxID_ANY, [{style, ?wxTE_PROCESS_ENTER}]),
+	Search = wxTextCtrl:new(Panel, ?WINDOW_FUNCTION_SEARCH, [{style, ?wxTE_PROCESS_ENTER}]),
 	wxTextCtrl:setValue(Search, ?SEARCH_TEXT_DEFAULT),
   wxSizer:addSpacer(Sz, 2),
 	wxSizer:add(Sz, Search, [{flag, ?wxEXPAND bor ?wxALL}, {border, 2}, {proportion, 0}]),

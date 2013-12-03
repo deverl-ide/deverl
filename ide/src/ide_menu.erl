@@ -427,9 +427,14 @@ init(Config) ->
 	wxFrame:connect(Frame, menu_highlight,  
 		[{userData, {ets_table,TabId}}, {id, ?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
 	wxFrame:connect(Frame, command_menu_selected, 
+<<<<<<< HEAD
 		[{userData,{ets_table,TabId}}, {id, ?MENU_ID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
   wxFrame:connect(Frame, command_menu_selected, [{id, ?wxID_COPY}]),
 		
+=======
+		[{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+    
+>>>>>>> a90877f52b43f19a28ee74be4a55b8ce6e4d3eb2
 	%% Submenus
 	wxFrame:connect(Frame, command_menu_selected,  
 		[{userData, {theme_menu,Theme}}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),	

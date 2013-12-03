@@ -11,6 +11,7 @@
 -module(console_wx).
 
 -include_lib("wx/include/wx.hrl").
+-include("ide.hrl").
 
 %% wx_object
 -behaviour(wx_object).
@@ -32,7 +33,6 @@
          clear/0]).
 
 %% Macros
--define(ID_SHELL_TEXT_BOX, 1).
 -define(stc, wxStyledTextCtrl).
 -define(ID_RESET_CONSOLE, 1).
 -define(ID_CLEAR_CONSOLE, 2).
@@ -109,7 +109,7 @@ init(Config) ->
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Panel, MainSizer),
 
-	Console = ?stc:new(Panel, [{id, ?ID_SHELL_TEXT_BOX}, {style, ?wxBORDER_NONE}]),
+	Console = ?stc:new(Panel, [{id, ?WINDOW_CONSOLE}, {style, ?wxBORDER_NONE}]),
 	?stc:setMarginWidth(Console, 0, 0),
 	?stc:setMarginWidth(Console, 1, 0),
 	?stc:setMarginWidth(Console, 2, 0),
@@ -281,9 +281,14 @@ handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #sta
     %% Discard
     _ -> ok
   end;
+<<<<<<< HEAD
 
 handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
   io:format("CTRL DOWN~n");
+=======
+handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
+  wxEvent:skip(EvtObj);
+>>>>>>> a90877f52b43f19a28ee74be4a55b8ce6e4d3eb2
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
   % case Key of

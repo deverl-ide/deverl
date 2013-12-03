@@ -74,7 +74,7 @@ init(Config) ->
                     %[{face, sys_pref_manager:get_preference(console_font_facename)}]
                     ),
 
-	Output = wxTextCtrl:new(Panel, ?wxID_ANY, [{style, ?wxBORDER_NONE bor ?wxTE_DONTWRAP bor ?wxTE_READONLY bor ?wxTE_MULTILINE}]),
+	Output = wxTextCtrl:new(Panel, ?WINDOW_OUTPUT, [{style, ?wxBORDER_NONE bor ?wxTE_DONTWRAP bor ?wxTE_READONLY bor ?wxTE_MULTILINE}]),
   %wxTextCtrl:setFont(Output, wxFont:new(11, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
   wxTextCtrl:setFont(Output, Font),
   wxTextCtrl:setForegroundColour(Output, ?wxBLACK),
