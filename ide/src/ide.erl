@@ -178,7 +178,7 @@ init(Options) ->
 
 	%% Testing accelerator table
   % AccelTab = wxAcceleratorTable:new(1,
-  %   [wxAcceleratorEntry:new([{flags, ?wxACCEL_NORMAL}, {keyCode, "Ctrl+R"}, {cmd, ?MENU_ID_FONT}])]),
+  %   [wxAcceleratorEntry:new([{flags, ?wxACCEL_NORMAL}, {keyCode, ?WXK_SPACE}, {cmd, ?MENU_ID_FONT}])]),
   % wxFrame:setAcceleratorTable(Frame, AccelTab),
   
   %% Toggle menu defaults

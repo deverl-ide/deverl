@@ -35,6 +35,7 @@
 -define(ID_SHELL_TEXT_BOX, 1).
 -define(stc, wxStyledTextCtrl).
 -define(ID_RESET_CONSOLE, 1).
+-define(ID_CLEAR_CONSOLE, 2).
 -define(PROMPT, "> ").
 -define(STYLE_PROMPT, 12).
 -define(STYLE_ERROR, 2).
@@ -143,10 +144,15 @@ init(Config) ->
   ?stc:startStyling(Console, 0, 31),
   ?stc:setStyling(Console, length(InitText) - 1, ?STYLE_PROMPT),
   
+  %% Clear default key bindings
+  ?stc:cmdKeyClearAll(Console),
+  ?stc:cmdKeyAssign(Console, ?wxSTC_KEY_BACK, 0, ?wxSTC_CMD_DELETEBACK),
+  
 	%% Accelerator table
-  AccelTab = wxAcceleratorTable:new(1,[wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, 82}, {cmd, ?ID_RESET_CONSOLE}]),
-                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, 67}, {cmd, ?wxSTC_CMD_COPY}]),
-                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, 86}, {cmd, ?wxSTC_CMD_PASTE}])]),
+  AccelTab = wxAcceleratorTable:new(4,[wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $R}, {cmd, ?ID_RESET_CONSOLE}]),
+                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $K}, {cmd, ?ID_CLEAR_CONSOLE}]),
+                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $C}, {cmd, ?wxSTC_CMD_COPY}]), %% cmdKeyAssign
+                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $V}, {cmd, ?wxSTC_CMD_PASTE}])]),
   wxWindow:setAcceleratorTable(Console, AccelTab),
 
 	State=#state{win=Panel,
@@ -197,7 +203,8 @@ handle_cast({call_parser, Cmd, Busy}, State) ->
 handle_cast({append_input, Input}, State=#state{input=Cmd}) ->
   {noreply, State#state{input=Cmd++Input}};
 handle_cast(clear, State=#state{textctrl=Console}) ->
-  ?stc:clear(Console),
+  ?stc:clearAll(Console),
+  prompt_2_console(Console, ?PROMPT, false),
   {noreply, State}.
   
 handle_call(text_ctrl, _From, State) ->
@@ -224,16 +231,33 @@ handle_event(#wx{id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_select
   append_message("Console reset"),
   prompt_2_console(Console, ?PROMPT),
 	{noreply, State#state{busy=false}};
-handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
-            State=#state{textctrl=Console}) when ((Id >= ?wxSTC_CMD_COPY) and (Id =< ?wxSTC_CMD_PASTE)) ->
-  ?stc:cmdKeyExecute(Console, Id),
-	{noreply, State}.
-% handle_event(#wx{id=?wxSTC_CMD_COPY, event=#wxCommand{type=command_menu_selected}},
-%             State=#state{textctrl=Console}) ->
-%   {noreply, State#state{busy=false}}.
-% handle_event(#wx{id=?wxSTC_CMD_PASTE, event=#wxCommand{type=command_menu_selected}},
-%             State=#state{textctrl=Console}) ->
-%   {noreply, State#state{busy=false}}.
+handle_event(#wx{id=?ID_CLEAR_CONSOLE, event=#wxCommand{type=command_menu_selected}},
+            State=#state{textctrl=Console}) ->
+  ?stc:clearAll(Console),
+  prompt_2_console(Console, ?PROMPT, false),
+  {noreply, State};
+handle_event(#wx{id=?wxSTC_CMD_COPY, event=#wxCommand{type=command_menu_selected}},
+            State=#state{textctrl=Console}) ->
+  io:format("COPY~n"),
+  ?stc:cmdKeyExecute(Console, ?wxSTC_CMD_COPY),
+  {noreply, State};
+handle_event(#wx{id=?wxSTC_CMD_PASTE, event=#wxCommand{type=command_menu_selected}},
+            State=#state{textctrl=Console}) ->
+  io:format("PASTE~n"),
+  % ?stc:cmdKeyExecute(Console, ?wxSTC_CMD_PASTE),
+  Cb = wxClipboard:new(),
+  wxClipboard:open(Cb),
+  Data = wxTextDataObject:new(),
+  wxClipboard:getData(Cb, Data),
+  Text = wxTextDataObject:getText(Data),
+  wxClipboard:close(Cb),
+  io:format("TEXT: ~p~n", [Text]),
+  {noreply, State}.
+% handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
+%             State=#state{textctrl=Console}) when ((Id >= ?wxSTC_CMD_COPY) and (Id =< ?wxSTC_CMD_PASTE)) ->
+%   io:format("COPY/PASTE~n"),
+%   ?stc:cmdKeyExecute(Console, Id),
+%   {noreply, State}.
     
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
@@ -246,12 +270,22 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 %% Callback Sync event handling
 %% =====================================================================
-handle_sync_event(#wx{event=#wxKey{keyCode=82, controlDown=true}}, EvtObj, #state{busy=true}) ->
+
+handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{busy=true}) ->
+  case Key of
+    %% Permit even when busy
+    $R -> wxEvent:skip(EvtObj);
+    $K -> wxEvent:skip(EvtObj);
+    $C -> wxEvent:skip(EvtObj);
+    %% Discard
+    _ -> ok
+  end;
+handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
-handle_sync_event(#wx{}, EvtObj, #state{busy=true}) ->
-  ok;
-handle_sync_event(#wx{event=#wxKey{metaDown=true}}, EvtObj, #state{}) ->
-  wxEvent:skip(EvtObj);
+  % case Key of
+  %   $C -> wxEvent:skip(EvtObj);
+  %   _ -> ok
+  % end;
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, EvtObj, State=#state{input=Cmd}) ->
   {Prompt,Input} = split_line_at_prompt(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
@@ -335,7 +369,7 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 
 process_input(Input, Cmd, Console, Prompt, Event) ->
   case lists:last(Input) of
-    46 ->
+    $. ->
       wx_object:cast(?MODULE, {append_input, Input}),
       prompt_or_not(Console, Cmd++Input, Prompt, Event);
     _ ->
@@ -380,7 +414,7 @@ process_input(Input, Cmd, Console, Prompt, Event) ->
 prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
   Penult = lists:nth(length(Input)-1, Input),
 	if
-		Penult =:= 46 ->
+		Penult =:= $. ->
       %wx_object:cast(?MODULE, {call_parser, Input, false}),
 			prompt_2_console(Console, Prompt),
 			wxEvent:stopPropagation(EvObj);
@@ -407,11 +441,20 @@ prompt_or_not(Console, Input, Prompt, EvObj) ->
   
 
 %% =====================================================================
-%% @doc Write a newline plus the repeated prompt to the console.
+%% @doc Write a newline plus the prompt to the console.
 
 prompt_2_console(Console, Prompt) ->
-  %wx_object:cast(?MODULE, {append_input, "\n"}),
-  ?stc:newLine(Console),
+  prompt_2_console(Console, Prompt, true).
+  
+
+%% =====================================================================
+%% @doc Write an optional newline plus the prompt to the console.
+ 
+prompt_2_console(Console, Prompt, Newline) ->
+  case Newline of
+    true -> ?stc:newLine(Console);
+    false -> ok
+  end,
   ?stc:addText(Console, Prompt),
   Start = ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console)),
   ?stc:startStyling(Console, Start, 31),
@@ -611,5 +654,6 @@ create_menu() ->
   wxMenu:append(Menu, ?wxSTC_CMD_PASTE, "Paste\tCtrl+V", []),
   wxMenu:appendSeparator(Menu),
   wxMenu:append(Menu, ?ID_RESET_CONSOLE, "Reset Console\tCtrl+R", []),
+  wxMenu:append(Menu, ?ID_CLEAR_CONSOLE, "Clear All\tCtrl+K", []),
   wxMenu:connect(Menu, command_menu_selected),
   Menu.
