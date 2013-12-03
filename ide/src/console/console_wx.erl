@@ -272,6 +272,7 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{busy=true}) ->
+  io:format("BUSY CTRL DOWN"),
   case Key of
     %% Permit even when busy
     $R -> wxEvent:skip(EvtObj);
@@ -280,7 +281,8 @@ handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #sta
     %% Discard
     _ -> ok
   end;
-handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
+handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
+  io:format("CTRL DOWN~n"),
   wxEvent:skip(EvtObj);
   % case Key of
   %   $C -> wxEvent:skip(EvtObj);
@@ -341,47 +343,9 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
   check_cursor(Console, SuccessFun, FailFun, -1).
 
 
-<<<<<<< HEAD
-=======
-process_input(Input, Cmd, Console, Prompt, Event) ->
-  case lists:last(Input) of
-    $. ->
-      wx_object:cast(?MODULE, {append_input, Input}),
-      prompt_or_not(Console, Cmd++Input, Prompt, Event);
-    _ ->
-      wx_object:cast(?MODULE, {append_input, Input ++ "\n"}),
-      prompt_2_console(Console, Prompt)
-  end.
-
->>>>>>> c73fbcf3497425b81d761ddb5882e7dc64d6a3e6
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
-%% eval_input(EvtObj, Prompt, Input, Cmd, L, Lc, Pc)
-% eval_input(Console, EvtObj, Prompt, Input, Cmd, 0, Lc, Pc) ->
-%   prompt_2_console(Console, Prompt),
-%   wx_object:cast(?MODULE, {append_input, Input});
-% eval_input(Console, EvtObj, Prompt, [46]=Input, Cmd, 1, Lc, Pc) ->
-%   ?stc:newLine(Console),
-%   wx_object:cast(?MODULE, {call_parser, Input, true});
-% eval_input(Console, EvtObj, Prompt, _, Cmd, 1, Lc, Pc) ->
-%   wxEvent:skip(EvtObj);
-% eval_input(Console, EvtObj, Prompt, Input, Cmd, L, 46, 46) ->
-%   prompt_2_console(Console, Prompt),
-%   wxEvent:stopPropagation(EvtObj),
-%   wx_object:cast(?MODULE, {append_input, Input});
-% eval_input(Console, EvtObj, Prompt, Input, Cmd, L, 46, Pc) ->
-%   case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
-%     true ->
-%       wxEvent:skip(EvtObj),
-%       wx_object:cast(?MODULE, {call_parser, Input, true});
-%     false ->
-%       wx_object:cast(?MODULE, {append_input, Input}),
-%       prompt_2_console(Console, Prompt)
-%   end;
-% eval_input(Console, EvtObj, Prompt, Input, Cmd, L, Lc, Pc) ->
-%   wx_object:cast(?MODULE, {append_input, Input}),
-%   prompt_2_console(Console, Prompt).
 
 
 %% =====================================================================
@@ -411,12 +375,8 @@ process_input(Input, Cmd, Console, Prompt, Event) ->
 prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
   Penult = lists:nth(length(Input)-1, Input),
 	if
-<<<<<<< HEAD
-		Penult =:= 46 ->
-=======
 		Penult =:= $. ->
       %wx_object:cast(?MODULE, {call_parser, Input, false}),
->>>>>>> c73fbcf3497425b81d761ddb5882e7dc64d6a3e6
 			prompt_2_console(Console, Prompt),
 			wxEvent:stopPropagation(EvObj);
 		true ->
