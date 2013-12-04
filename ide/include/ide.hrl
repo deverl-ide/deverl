@@ -100,11 +100,11 @@
 -define(ID_WORKSPACE, 3211).
 
 %% Windows
--define(WINDOW_EDITOR, 0).
--define(WINDOW_CONSOLE, 1).
--define(WINDOW_LOG, 2).
--define(WINDOW_OUTPUT, 3).
--define(WINDOW_FUNCTION_SEARCH, 4).
+-define(WINDOW_EDITOR, 500).
+-define(WINDOW_CONSOLE, 501).
+-define(WINDOW_LOG, 502).
+-define(WINDOW_OUTPUT, 503).
+-define(WINDOW_FUNCTION_SEARCH, 504).
 
 %% Global colours
 -define(ROW_BG_EVEN, {250,250,250,255}).
