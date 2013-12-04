@@ -59,43 +59,23 @@ parse_response(Response) ->
 
 init() ->
   process_flag(trap_exit, true), %% Die when the parent process dies
-  loop([]).
+  loop().
 
-loop(R0) ->
+loop() ->
   receive
     {data, R1} ->
       %% Split data at newline
-      case build_response(re:split(R1, "(\\R)", [{newline, any}, {return, list}, trim]), R0) of
-        {prompt, []} ->
-          loop([]); %% Single prompt, ignore, start over
-        {prompt, R2} ->
-          console_wx:append_command(remove_nl(R2)),
-          loop([]); %% Complete response, start over
-        {incomplete, R2} ->
-          loop(R2) %% No prompt yet, loop again with current data
-      end;
-    {waa, _R} ->
-      ok
+      Split = re:split(R1, "(\\R)", [{newline, any}, {return, list}, trim]),
+      lists:foreach(fun eval_response/1, Split),
+      loop()
   end.
-
-build_response([], Acc) ->
-  {incomplete, Acc};
-build_response([H], Acc) ->
-  case is_prompt(H) of
-    true -> %% Ok, done
-      {prompt, Acc};
+  
+eval_response(R0) ->
+  case is_prompt(R0) of
+    true ->
+      console_wx:append_command({response, complete});
     false ->
-      build_response([], Acc ++ H)
-  end;
-build_response([H|T], Acc) ->
-  %% NOTE currently two prompts on one line would cause any data after
-  %% the first to be lost i.e. "DATA 4> \nLOST_DATA 5> \n",
-  %% This should never happen however, if it does there's an easy fix
-  case is_prompt(H) of
-    true -> %% Ok, done
-      {prompt, Acc};
-    false ->
-      build_response(T, Acc ++ H)
+      console_wx:append_command({response, R0})
   end.
 
 is_prompt(Cmd) ->
@@ -105,6 +85,3 @@ is_prompt(Cmd) ->
     {match, _} ->
       true
   end.
-
-remove_nl(L) ->
-  string:strip(L, both, $\n).

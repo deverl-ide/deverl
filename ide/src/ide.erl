@@ -302,27 +302,15 @@ handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State)
 %%
 %% =====================================================================
 
-%% See ticket #5
-%% Although a temporary fix has been implemented for ticket #5, using this handler
-%% would be the preferred option
-% handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}}, State) ->
-%   ide_status_bar:set_text({field, help}, ?STATUS_BAR_HELP_DEFAULT),
-% {noreply, State};
-
-% %% Handle menu highlight events
-% handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}}, State) ->
-%   ide_status_bar:set_text({field, help}, "testing"),
-%   {noreply, State};
-
 %% Handle copy/paste
-%% Currently on MSW and Linux the menu event is not caught by the in focus control even when
-%% it has a registered handler for it. On OSX the event is caught as expected (and will 
-%% propagate up through the hierarchy). Not sure which of
-%% these behaviours is correct. Due to this we have to catch the copy/paste/cut etc. menu
-%% events here, find out which control was in focus and then execute the correct function on it.
-%% We have tried but failed to find an wxErlang alternative to the wxWidget 
-%% wxEventHandler->proccess_event() function that would allow us to pass the event to the in-focus 
-%% control, and so this is the workaround we have adopted.
+% Currently on MSW and Linux the menu event is not caught by the in focus control even when
+% it has a registered handler for it. On OSX the event is caught as expected (and will 
+% propagate up through the hierarchy). Not sure which of
+% these behaviours is correct. Due to this we have to catch the copy/paste/cut etc. menu
+% events here, find out which control was in focus and then execute the correct function on it.
+% We have tried but failed to find an wxErlang alternative to the wxWidget 
+% wxEventHandler->proccess_event() function that would allow us to pass the event to the in-focus 
+% control, and so this is the workaround we have adopted.
 handle_event(#wx{id=?wxID_PASTE}, State) ->
   Fw = wxWindow:findFocus(),
   Id = wxWindow:getId(Fw),

@@ -104,7 +104,20 @@ clear() ->
 %% @doc
   
 paste(This) ->
+  Cb = wxClipboard:new(),
+  wxClipboard:open(Cb),
+  Data = wxTextDataObject:new(),
+  wxClipboard:getData(Cb, Data),
+  Text = wxTextDataObject:getText(Data),
+  wxClipboard:close(Cb),
+  io:format("TEXT: ~p~n", [Text]),
+  % Split = re:split(Text, "\\R", [{newline, any}, {return, list}, trim]),
+  Split = re:replace(Text, "\\R", ",", [{newline, any}, {return, list}]),
+  io:format("SPLIT ~p~n", [Split]),
+  % do(Split),
   ok.
+do([]) -> ok;
+do([H|T]) -> wx_object:call(?MODULE, {paste, H}), do(T).
   
 
 %% =====================================================================
@@ -190,10 +203,12 @@ handle_cast({set_font, Font}, State=#state{textctrl=Console}) ->
   ?stc:styleSetFont(Console, ?wxSTC_STYLE_DEFAULT, Font),
   ?stc:styleSetFont(Console, ?STYLE_PROMPT, Font),
   {noreply,State};
-handle_cast({append, Response}, State=#state{textctrl=Console}) ->
+handle_cast({append, {response, complete}}, State=#state{textctrl=Console}) ->
+  prompt_2_console(Console, ?PROMPT, false),
+  {noreply, State#state{busy=false}};  
+handle_cast({append, {response, Response}}, State=#state{textctrl=Console}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   ?stc:addText(Console, Response),
-  prompt_2_console(Console, ?PROMPT),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   {noreply, State#state{busy=false}};
 handle_cast({append_msg, Msg}, State=#state{textctrl=Console}) ->
@@ -214,6 +229,7 @@ handle_cast(clear, State=#state{textctrl=Console}) ->
   ?stc:clearAll(Console),
   prompt_2_console(Console, ?PROMPT, false),
   {noreply, State}.
+
   
 handle_call(text_ctrl, _From, State) ->
   {reply,{State#state.wx_env,State#state.textctrl}, State};
@@ -225,9 +241,11 @@ handle_call(command_index, _From, State) ->
 	{reply, {State#state.current_cmd}, State};
 handle_call({update_cmd_index, Index}, _From, State) ->
   {reply, ok, State#state{current_cmd=Index}};
-handle_call(Msg, _From, State) ->
-  io:format("Got Call ~p~n",[Msg]),
-  {reply,ok,State}.
+handle_call({paste, L}, _From, State=#state{textctrl=Console, input=Cmd}) ->
+  ?stc:gotoPos(Console, ?stc:getLength(Console)),
+  ?stc:addText(Console, L),
+  evaluate_cmd(Console, undefined, Cmd),
+  {reply, ok, State}.
 
 handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
             State=#state{menu=Menu}) ->
@@ -246,26 +264,13 @@ handle_event(#wx{id=?ID_CLEAR_CONSOLE, event=#wxCommand{type=command_menu_select
   {noreply, State};
 handle_event(#wx{id=?wxID_COPY, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
-  io:format("COPY~n"),
   ?stc:cmdKeyExecute(Console, ?wxSTC_CMD_COPY),
   {noreply, State};
 handle_event(#wx{id=?wxID_PASTE, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
-  io:format("PASTE~n"),
-  % ?stc:cmdKeyExecute(Console, ?wxSTC_CMD_PASTE),
-  Cb = wxClipboard:new(),
-  wxClipboard:open(Cb),
-  Data = wxTextDataObject:new(),
-  wxClipboard:getData(Cb, Data),
-  Text = wxTextDataObject:getText(Data),
-  wxClipboard:close(Cb),
-  io:format("TEXT: ~p~n", [Text]),
+              Env = wx:get_env(),
+  spawn(fun() -> wx:set_env(Env), paste(Console) end),
   {noreply, State}.
-% handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
-%             State=#state{textctrl=Console}) when ((Id >= ?wxSTC_CMD_COPY) and (Id =< ?wxSTC_CMD_PASTE)) ->
-%   io:format("COPY/PASTE~n"),
-%   ?stc:cmdKeyExecute(Console, Id),
-%   {noreply, State}.
     
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
@@ -292,51 +297,19 @@ handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
-  % case Key of
-  %   $C -> wxEvent:skip(EvtObj);
-  %   _ -> ok
-  % end;
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, EvtObj, State=#state{input=Cmd}) ->
-  {Prompt,Input} = split_line_at_prompt(Console),
-  ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  % %% (Console, EvtObj, Prompt, Input, Cmd, 0, Lc, Pc)
-  % P = case length(Input) of
-  %   L when L > 1 -> lists:nth(length(Input)-1, Input);
-  %   _ -> undefined
-  case length(Input) of
-    0 ->
-      prompt_2_console(Console, Prompt),
-      wx_object:cast(?MODULE, {append_input, Input++"\n"});
-    _ ->
-      add_cmd(Input),
-      process_input(Input, Cmd, Console, Prompt, EvtObj)
-  end,
-  % eval_input(Console, EvtObj, Prompt, Input, Cmd, length(Input), lists:last(Input), P),
-  
-  %   case length(Input) of
-  %     0 ->
-  %       %% Single enter key pressed with no other input.
-  %       %% The port will only respond through stdout when a '.' is received.
-  %       io:format("Input length = 0~n"),
-  %       prompt_2_console(Console, Prompt),
-  %       wx_object:cast(?MODULE, {append_input, Input}); %% ensures line no. is correct in error msgs
-  %     _ ->
-  %       Command = Cmd ++ Input,
-  %       io:format("Input: ~p~n", [Command]),
-  %       Last = fun(46) -> %% keycode 46 = '.'
-  %                %% Deal with the case where several '.'s are entered, '...'
-  %                prompt_or_not(Console, Command, Prompt, Event);
-  %              (_) -> %% write the newline and prompt to the console
-  %                wx_object:cast(?MODULE, {append_input, Input}),
-  %                prompt_2_console(Console, Prompt)
-  %              end,
-  %       add_cmd(Input),
-  %       Last(lists:last(Input))
-  %   end,
-  
+  evaluate_cmd(Console, EvtObj, Cmd),
+  % {Prompt,Input} = split_line_at_prompt(Console),
+  % ?stc:gotoPos(Console, ?stc:getLength(Console)),
+  % case length(Input) of
+  %   0 ->
+  %     prompt_2_console(Console, Prompt),
+  %     wx_object:cast(?MODULE, {append_input, Input++"\n"});
+  %   _ ->
+  %     add_cmd(Input),
+  %     process_input(Input, Cmd, Console, Prompt, EvtObj)
+  % end,
   ok;
-  
-  
   
 %%--- Arrow keys
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, _State) ->
@@ -377,6 +350,25 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
   check_cursor(Console, SuccessFun, FailFun, -1).
 
 
+
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
+
+evaluate_cmd(Console, EvtObj, Cmd) ->
+  {Prompt,Input} = split_line_at_prompt(Console),
+  ?stc:gotoPos(Console, ?stc:getLength(Console)),
+  case length(Input) of
+    0 ->
+      prompt_2_console(Console, Prompt),
+      wx_object:cast(?MODULE, {append_input, Input++"\n"});
+    _ ->
+      add_cmd(Input),
+      process_input(Input, Cmd, Console, Prompt, EvtObj)
+  end,
+  ok.
+
+
 process_input(Input, Cmd, Console, Prompt, Event) ->
   case lists:last(Input) of
     $. ->
@@ -385,53 +377,31 @@ process_input(Input, Cmd, Console, Prompt, Event) ->
     _ ->
       wx_object:cast(?MODULE, {append_input, Input ++ "\n"}),
       prompt_2_console(Console, Prompt)
-  end.
+  end.  
+  
+event_skip(undefined) -> ok;
+event_skip(EvtObj) -> wxEvent:skip(EvtObj).
 
-%% =====================================================================
-%% Internal functions
-%% =====================================================================
-%% eval_input(EvtObj, Prompt, Input, Cmd, L, Lc, Pc)
-% eval_input(Console, EvtObj, Prompt, Input, Cmd, 0, Lc, Pc) ->
-%   prompt_2_console(Console, Prompt),
-%   wx_object:cast(?MODULE, {append_input, Input});
-% eval_input(Console, EvtObj, Prompt, [46]=Input, Cmd, 1, Lc, Pc) ->
-%   ?stc:newLine(Console),
-%   wx_object:cast(?MODULE, {call_parser, Input, true});
-% eval_input(Console, EvtObj, Prompt, _, Cmd, 1, Lc, Pc) ->
-%   wxEvent:skip(EvtObj);
-% eval_input(Console, EvtObj, Prompt, Input, Cmd, L, 46, 46) ->
-%   prompt_2_console(Console, Prompt),
-%   wxEvent:stopPropagation(EvtObj),
-%   wx_object:cast(?MODULE, {append_input, Input});
-% eval_input(Console, EvtObj, Prompt, Input, Cmd, L, 46, Pc) ->
-%   case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
-%     true ->
-%       wxEvent:skip(EvtObj),
-%       wx_object:cast(?MODULE, {call_parser, Input, true});
-%     false ->
-%       wx_object:cast(?MODULE, {append_input, Input}),
-%       prompt_2_console(Console, Prompt)
-%   end;
-% eval_input(Console, EvtObj, Prompt, Input, Cmd, L, Lc, Pc) ->
-%   wx_object:cast(?MODULE, {append_input, Input}),
-%   prompt_2_console(Console, Prompt).
-
+event_stop(undefined) -> ok;
+event_stop(EvtObj) -> wxEvent:stopPropagation(EvtObj).
 
 %% =====================================================================
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
-prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
+prompt_or_not(Console, Input, Prompt, EvtObj) when erlang:length(Input) > 1 ->
   Penult = lists:nth(length(Input)-1, Input),
 	if
 		Penult =:= $. ->
       %wx_object:cast(?MODULE, {call_parser, Input, false}),
 			prompt_2_console(Console, Prompt),
-			wxEvent:stopPropagation(EvObj);
+      % wxEvent:stopPropagation(EvtObj);
+      event_stop(EvtObj);
 		true ->
       case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
         true ->
-          wxEvent:skip(EvObj),
+          % wxEvent:skip(EvtObj),
+          event_skip(EvtObj),
           wx_object:cast(?MODULE, {call_parser, Input, true});
         false ->
           wx_object:cast(?MODULE, {append_input, "\n"}),
@@ -440,13 +410,14 @@ prompt_or_not(Console, Input, Prompt, EvObj) when erlang:length(Input) > 1 ->
       end
 	end;
 
-prompt_or_not(Console, Input, Prompt, EvObj) ->
+prompt_or_not(Console, Input, Prompt, EvtObj) ->
   case Input of
     [46] ->
       prompt_2_console(Console, Prompt),
       wx_object:cast(?MODULE, {call_parser, Input, false});
     _ ->
-      wxEvent:skip(EvObj)
+      % wxEvent:skip(EvtObj)
+      event_skip(EvtObj)
   end.
   
 
