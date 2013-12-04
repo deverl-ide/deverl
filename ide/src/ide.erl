@@ -305,6 +305,7 @@ handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State)
 %% See ticket #5
 %% Although a temporary fix has been implemented for ticket #5, using this handler
 %% would be the preferred option
+<<<<<<< HEAD
 handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}}, State) ->
   ide_status_bar:set_text({field, help}, ?STATUS_BAR_HELP_DEFAULT),
 {noreply, State};
@@ -313,11 +314,44 @@ handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_hig
 	ide_status_bar:set_text({field, help}, "testing"),
   {noreply, State};
 handle_event(#wx{id=?wxID_COPY}, State) ->
+=======
+% handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}}, State) ->
+%   ide_status_bar:set_text({field, help}, ?STATUS_BAR_HELP_DEFAULT),
+% {noreply, State};
+
+% %% Handle menu highlight events
+% handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}}, State) ->
+%   ide_status_bar:set_text({field, help}, "testing"),
+%   {noreply, State};
+
+%% Handle copy/paste
+%% Currently on MSW and Linux the menu event is not caught by the in focus control even when
+%% it has a registered handler for it. On OSX the event is caught as expected (and will 
+%% propagate up through the hierarchy). Not sure which of
+%% these behaviours is correct. Due to this we have to catch the copy/paste/cut etc. menu
+%% events here, find out which control was in focus and then execute the correct function on it.
+%% We have tried but failed to find an wxErlang alternative to the wxWidget 
+%% wxEventHandler->proccess_event() function that would allow us to pass the event to the in-focus 
+%% control, and so this is the workaround we have adopted.
+handle_event(#wx{id=?wxID_PASTE}, State) ->
+>>>>>>> 11a4a48f5d91a74d27c88d9080d258afef25e402
   Fw = wxWindow:findFocus(),
   Id = wxWindow:getId(Fw),
   Ctrl = case Id of
-    ?WINDOW_OUTPUT -> wxTextCtrl:copy(wx:typeCast(Fw, wxTextCtrl));
-    ?WINDOW_FUNCTION_SEARCH -> wxTextCtrl:copy(wx:typeCast(Fw, wxTextCtrl));
+    ?WINDOW_CONSOLE -> 
+      console_wx:paste(wx:typeCast(Fw, wxStyledTextCtrl));
+    Tc when Tc =:= ?WINDOW_OUTPUT; Tc =:= ?WINDOW_FUNCTION_SEARCH ->
+       wxTextCtrl:paste(wx:typeCast(Fw, wxTextCtrl));
+    Else -> 
+      wxStyledTextCtrl:paste(wx:typeCast(Fw, wxStyledTextCtrl))
+  end,
+  {noreply, State};
+handle_event(#wx{id=?wxID_COPY}, State) ->
+  Fw = wxWindow:findFocus(),
+  Id = wxWindow:getId(Fw),
+  case Id of
+    Tc when Tc =:= ?WINDOW_OUTPUT; Tc =:= ?WINDOW_FUNCTION_SEARCH ->
+      wxTextCtrl:copy(wx:typeCast(Fw, wxTextCtrl));
     Else -> wxStyledTextCtrl:copy(wx:typeCast(Fw, wxStyledTextCtrl))
   end,
   {noreply, State};
