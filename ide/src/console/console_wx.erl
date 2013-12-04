@@ -110,14 +110,16 @@ paste(This) ->
   wxClipboard:getData(Cb, Data),
   Text = wxTextDataObject:getText(Data),
   wxClipboard:close(Cb),
-  io:format("TEXT: ~p~n", [Text]),
-  % Split = re:split(Text, "\\R", [{newline, any}, {return, list}, trim]),
-  Split = re:replace(Text, "\\R", ",", [{newline, any}, {return, list}]),
-  io:format("SPLIT ~p~n", [Split]),
-  % do(Split),
+  % io:format("TEXT: ~p~n", [Text]),
+  Split = re:split(Text, "\\R", [{newline, any}, {return, list}, trim]),
+  % io:format("SPLIT ~p~n", [Split]),
+  do(Split),
   ok.
 do([]) -> ok;
-do([H|T]) -> wx_object:call(?MODULE, {paste, H}), do(T).
+do([H|T]) -> 
+  R = wx_object:call(?MODULE, {paste, H}),
+  % io:format("R: ~p~n", [R]),
+  do(T).
   
 
 %% =====================================================================
@@ -168,6 +170,8 @@ init(Config) ->
   %% Clear default key bindings
   ?stc:cmdKeyClearAll(Console),
   ?stc:cmdKeyAssign(Console, ?wxSTC_KEY_BACK, 0, ?wxSTC_CMD_DELETEBACK),
+  ?stc:cmdKeyAssign(Console, ?wxSTC_KEY_LEFT, 0 ,?wxSTC_CMD_CHARLEFT),
+  ?stc:cmdKeyAssign(Console, ?wxSTC_KEY_RIGHT, 0 ,?wxSTC_CMD_CHARRIGHT),
   
 	%% Accelerator table
   AccelTab = wxAcceleratorTable:new(4,[wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $R}, {cmd, ?ID_RESET_CONSOLE}]),
@@ -210,7 +214,7 @@ handle_cast({append, {response, Response}}, State=#state{textctrl=Console}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   ?stc:addText(Console, Response),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  {noreply, State#state{busy=false}};
+  {noreply, State};
 handle_cast({append_msg, Msg}, State=#state{textctrl=Console}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   Line = ?stc:getCurrentLine(Console),
@@ -229,8 +233,7 @@ handle_cast(clear, State=#state{textctrl=Console}) ->
   ?stc:clearAll(Console),
   prompt_2_console(Console, ?PROMPT, false),
   {noreply, State}.
-
-  
+ 
 handle_call(text_ctrl, _From, State) ->
   {reply,{State#state.wx_env,State#state.textctrl}, State};
 handle_call(command_history, _From, State) ->
@@ -242,9 +245,11 @@ handle_call(command_index, _From, State) ->
 handle_call({update_cmd_index, Index}, _From, State) ->
   {reply, ok, State#state{current_cmd=Index}};
 handle_call({paste, L}, _From, State=#state{textctrl=Console, input=Cmd}) ->
+  io:format("PASTE: ~p~n", [L]),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   ?stc:addText(Console, L),
-  evaluate_cmd(Console, undefined, Cmd),
+  % evaluate_cmd(Console, undefined, Cmd),
+  eval(Console, undefined, Cmd),
   {reply, ok, State}.
 
 handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
@@ -293,23 +298,14 @@ handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #sta
     %% Discard
     _ -> ok
   end;
+handle_sync_event(#wx{event=#wxKey{}}, EvtObj, #state{busy=true}) ->
+  ok;
 handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, EvtObj, State=#state{input=Cmd}) ->
-  evaluate_cmd(Console, EvtObj, Cmd),
-  % {Prompt,Input} = split_line_at_prompt(Console),
-  % ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  % case length(Input) of
-  %   0 ->
-  %     prompt_2_console(Console, Prompt),
-  %     wx_object:cast(?MODULE, {append_input, Input++"\n"});
-  %   _ ->
-  %     add_cmd(Input),
-  %     process_input(Input, Cmd, Console, Prompt, EvtObj)
-  % end,
-  ok;
+  eval(Console, EvtObj, Cmd);
   
 %%--- Arrow keys
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, _State) ->
@@ -350,76 +346,55 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
   check_cursor(Console, SuccessFun, FailFun, -1).
 
 
-
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
 
-evaluate_cmd(Console, EvtObj, Cmd) ->
+eval(Console, EvtObj, Cmd) ->
   {Prompt,Input} = split_line_at_prompt(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  case length(Input) of
-    0 ->
-      prompt_2_console(Console, Prompt),
-      wx_object:cast(?MODULE, {append_input, Input++"\n"});
-    _ ->
-      add_cmd(Input),
-      process_input(Input, Cmd, Console, Prompt, EvtObj)
-  end,
-  ok.
+  eval(Console, EvtObj, {Prompt, Input}, Cmd).
 
-
-process_input(Input, Cmd, Console, Prompt, Event) ->
+eval(Console, EvtObj, {Prompt, Input}, Cmd) when length(Input) =:= 0 ->
+  prompt_2_console(Console, Prompt),
+  wx_object:cast(?MODULE, {append_input, Input++"\n"});
+eval(Console, EvtObj, {Prompt, [$.]=Input}, []) -> %% single .
+  add_cmd(Input),
+  wx_object:cast(?MODULE, {append_input, Input}),
+  prompt_2_console(Console, Prompt),
+  wx_object:cast(?MODULE, {call_parser, Input, false});
+eval(Console, EvtObj, {Prompt, Input}, Cmd) ->
+  add_cmd(Input),
   case lists:last(Input) of
     $. ->
       wx_object:cast(?MODULE, {append_input, Input}),
-      prompt_or_not(Console, Cmd++Input, Prompt, Event);
+      C = Cmd++Input,
+      prompt(Console, C, Prompt, EvtObj, lists:nth(length(C)-1, C));
     _ ->
-      wx_object:cast(?MODULE, {append_input, Input ++ "\n"}),
+      wx_object:cast(?MODULE, {append_input, Input++"\n"}),
       prompt_2_console(Console, Prompt)
-  end.  
-  
-event_skip(undefined) -> ok;
-event_skip(EvtObj) -> wxEvent:skip(EvtObj).
-
-event_stop(undefined) -> ok;
-event_stop(EvtObj) -> wxEvent:stopPropagation(EvtObj).
+  end.
 
 %% =====================================================================
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
-prompt_or_not(Console, Input, Prompt, EvtObj) when erlang:length(Input) > 1 ->
-  Penult = lists:nth(length(Input)-1, Input),
-	if
-		Penult =:= $. ->
-      %wx_object:cast(?MODULE, {call_parser, Input, false}),
-			prompt_2_console(Console, Prompt),
-      % wxEvent:stopPropagation(EvtObj);
-      event_stop(EvtObj);
-		true ->
-      case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
-        true ->
-          % wxEvent:skip(EvtObj),
-          event_skip(EvtObj),
-          wx_object:cast(?MODULE, {call_parser, Input, true});
-        false ->
-          wx_object:cast(?MODULE, {append_input, "\n"}),
-          prompt_2_console(Console, Prompt)
-          %wx_object:cast(?MODULE, {call_parser, Input, false})
-      end
-	end;
-
-prompt_or_not(Console, Input, Prompt, EvtObj) ->
-  case Input of
-    [46] ->
-      prompt_2_console(Console, Prompt),
-      wx_object:cast(?MODULE, {call_parser, Input, false});
-    _ ->
-      % wxEvent:skip(EvtObj)
-      event_skip(EvtObj)
+prompt(Console, Cmd, Prompt, _EvtObj, $.) ->
+  wx_object:cast(?MODULE, {call_parser, Cmd, false}),
+  prompt_2_console(Console, Prompt);
+prompt(Console, Cmd, Prompt, EvtObj, _) ->
+  case count_chars($", Cmd) andalso count_chars($', Cmd) of
+    true ->
+      event_skip(EvtObj),
+      wx_object:cast(?MODULE, {call_parser, Cmd, true});
+    false ->
+      wx_object:cast(?MODULE, {append_input, "\n"}),
+      prompt_2_console(Console, Prompt)
   end.
-  
+
+event_skip(undefined) -> ok;
+event_skip(EvtObj) -> wxEvent:skip(EvtObj).
+
 
 %% =====================================================================
 %% @doc Write a newline plus the prompt to the console.
@@ -466,7 +441,7 @@ count_chars(Char, [H|T], Acc, Escape) ->
         false ->
           count_chars(Char, T, Acc+1, false)
       end;
-    92 -> %% "escape char \"
+    $\ -> %% "escape char \"
       count_chars(Char, T, Acc, not Escape);
     _ ->
       count_chars(Char, T, Acc, Escape)
