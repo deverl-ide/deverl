@@ -301,26 +301,17 @@ handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State)
 %% Menu handlers
 %%
 %% =====================================================================
-
-handle_event(#wx{id=?wxID_COPY, event=E, obj=O}, State) ->
-  W = wxWindow:findFocus(),
-  TC = wx:typeCast(W, wxStyledTextCtrl),
-  wxStyledTextCtrl:copy(TC),
-  {noreply, State};
+  
 %% See ticket #5
 %% Although a temporary fix has been implemented for ticket #5, using this handler
 %% would be the preferred option
 handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}}, State) ->
   ide_status_bar:set_text({field, help}, ?STATUS_BAR_HELP_DEFAULT),
 {noreply, State};
-
 %% Handle menu highlight events
 handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}}, State) ->
 	ide_status_bar:set_text({field, help}, "testing"),
   {noreply, State};
-% handle_event(#wx{id=Id}, State) ->
-%   io:format("OIOIOIOI ~p~n", [Id]),
-%   {noreply, State};
 handle_event(#wx{id=?wxID_COPY}, State) ->
   Fw = wxWindow:findFocus(),
   Id = wxWindow:getId(Fw),
