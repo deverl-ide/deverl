@@ -30,7 +30,8 @@
          append_message/1,
          set_theme/4,
          set_font/1,
-         clear/0]).
+         clear/0,
+         paste/1]).
 
 %% Macros
 -define(stc, wxStyledTextCtrl).
@@ -97,6 +98,13 @@ set_font(Font) ->
 
 clear() ->
   wx_object:cast(?MODULE, clear).
+  
+
+%% =====================================================================
+%% @doc
+  
+paste(This) ->
+  ok.
   
 
 %% =====================================================================

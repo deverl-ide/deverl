@@ -423,8 +423,8 @@ init(Config) ->
 		]),
 				
 	%% Connect event handlers
-	wxFrame:connect(Frame, menu_highlight,  
-		[{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+  % wxFrame:connect(Frame, menu_highlight,  
+  %   [{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
 	wxFrame:connect(Frame, command_menu_selected, 
 		[{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
     
