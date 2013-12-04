@@ -37,8 +37,8 @@
 -define(ID_RESET_CONSOLE, 1).
 -define(ID_CLEAR_CONSOLE, 2).
 -define(PROMPT, "> ").
--define(STYLE_PROMPT, 12).
--define(STYLE_ERROR, 2).
+-define(STYLE_PROMPT, 0).
+-define(STYLE_ERROR, 1).
 -define(MARKER_MSG, 1).
 
 %% Server state
