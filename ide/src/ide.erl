@@ -305,16 +305,7 @@ handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State)
 %% See ticket #5
 %% Although a temporary fix has been implemented for ticket #5, using this handler
 %% would be the preferred option
-<<<<<<< HEAD
-handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}}, State) ->
-  ide_status_bar:set_text({field, help}, ?STATUS_BAR_HELP_DEFAULT),
-{noreply, State};
-%% Handle menu highlight events
-handle_event(#wx{id=Id, userData={ets_table, TabId}, event=#wxMenu{type=menu_highlight}}, State) ->
-	ide_status_bar:set_text({field, help}, "testing"),
-  {noreply, State};
-handle_event(#wx{id=?wxID_COPY}, State) ->
-=======
+
 % handle_event(#wx{id=Id, event=#wxMenu{type=menu_close}}, State) ->
 %   ide_status_bar:set_text({field, help}, ?STATUS_BAR_HELP_DEFAULT),
 % {noreply, State};
@@ -334,7 +325,6 @@ handle_event(#wx{id=?wxID_COPY}, State) ->
 %% wxEventHandler->proccess_event() function that would allow us to pass the event to the in-focus 
 %% control, and so this is the workaround we have adopted.
 handle_event(#wx{id=?wxID_PASTE}, State) ->
->>>>>>> 11a4a48f5d91a74d27c88d9080d258afef25e402
   Fw = wxWindow:findFocus(),
   Id = wxWindow:getId(Fw),
   Ctrl = case Id of
