@@ -110,17 +110,20 @@ paste(This) ->
   wxClipboard:getData(Cb, Data),
   Text = wxTextDataObject:getText(Data),
   wxClipboard:close(Cb),
-  % io:format("TEXT: ~p~n", [Text]),
   Split = re:split(Text, "\\R", [{newline, any}, {return, list}, trim]),
-  % io:format("SPLIT ~p~n", [Split]),
   do(Split),
   ok.
+
 do([]) -> ok;
 do([H|T]) -> 
-  R = wx_object:call(?MODULE, {paste, H}),
-  % io:format("R: ~p~n", [R]),
+  wx_object:cast(?MODULE, {paste, H}),
+  % wx_object:call(?MODULE, {paste, H}),
+  receive 
+    after 1000 ->
+    ok
+  end,
   do(T).
-  
+
 
 %% =====================================================================
 %% Callback functions
@@ -232,8 +235,16 @@ handle_cast({append_input, Input}, State=#state{input=Cmd}) ->
 handle_cast(clear, State=#state{textctrl=Console}) ->
   ?stc:clearAll(Console),
   prompt_2_console(Console, ?PROMPT, false),
+  {noreply, State};
+handle_cast({paste, Line}, State=#state{textctrl=Console, input=Cmd}) ->
+  io:format("PASTE: ~p~n", [Line]),
+  ?stc:gotoPos(Console, ?stc:getLength(Console)),
+  ?stc:addText(Console, Line),
+  % receive after 2000 -> ok end,
+  Env = wx:get_env(),
+  spawn(fun() -> wx:set_env(Env), eval(Console, undefined, Cmd) end),
   {noreply, State}.
- 
+  
 handle_call(text_ctrl, _From, State) ->
   {reply,{State#state.wx_env,State#state.textctrl}, State};
 handle_call(command_history, _From, State) ->
@@ -244,14 +255,18 @@ handle_call(command_index, _From, State) ->
 	{reply, {State#state.current_cmd}, State};
 handle_call({update_cmd_index, Index}, _From, State) ->
   {reply, ok, State#state{current_cmd=Index}};
-handle_call({paste, L}, _From, State=#state{textctrl=Console, input=Cmd}) ->
-  io:format("PASTE: ~p~n", [L]),
+handle_call(eval, _From, State=#state{textctrl=Console, input=Cmd}) ->
+  % Could do eval wihin server process so we can return new values i.e. history
+  {reply, ok, State};
+handle_call({paste, Line}, _From, State=#state{textctrl=Console, input=Cmd}) ->
+  % io:format("PASTE: ~p~n", [Line]),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  ?stc:addText(Console, L),
-  % evaluate_cmd(Console, undefined, Cmd),
-  eval(Console, undefined, Cmd),
-  {reply, ok, State}.
-
+  ?stc:addText(Console, Line),
+  % receive after 2000 -> ok end,
+  Env = wx:get_env(),
+  spawn(fun() -> wx:set_env(Env), eval(Console, undefined, Cmd) end),
+  {noreply, State}.
+  
 handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
             State=#state{menu=Menu}) ->
   wxWindow:popupMenu(Console, Menu),
@@ -273,8 +288,8 @@ handle_event(#wx{id=?wxID_COPY, event=#wxCommand{type=command_menu_selected}},
   {noreply, State};
 handle_event(#wx{id=?wxID_PASTE, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
-              Env = wx:get_env(),
-  spawn(fun() -> wx:set_env(Env), paste(Console) end),
+  %             Env = wx:get_env(),
+  % spawn(fun() -> wx:set_env(Env), paste(Console) end),
   {noreply, State}.
     
 code_change(_, _, State) ->
@@ -355,10 +370,10 @@ eval(Console, EvtObj, Cmd) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   eval(Console, EvtObj, {Prompt, Input}, Cmd).
 
-eval(Console, EvtObj, {Prompt, Input}, Cmd) when length(Input) =:= 0 ->
+eval(Console, _EvtObj, {Prompt, Input}, _Cmd) when length(Input) =:= 0 ->
   prompt_2_console(Console, Prompt),
   wx_object:cast(?MODULE, {append_input, Input++"\n"});
-eval(Console, EvtObj, {Prompt, [$.]=Input}, []) -> %% single .
+eval(Console, _EvtObj, {Prompt, [$.]=Input}, []) -> %% single .
   add_cmd(Input),
   wx_object:cast(?MODULE, {append_input, Input}),
   prompt_2_console(Console, Prompt),
@@ -385,15 +400,15 @@ prompt(Console, Cmd, Prompt, _EvtObj, $.) ->
 prompt(Console, Cmd, Prompt, EvtObj, _) ->
   case count_chars($", Cmd) andalso count_chars($', Cmd) of
     true ->
-      event_skip(EvtObj),
+      event_skip(Console, EvtObj),
       wx_object:cast(?MODULE, {call_parser, Cmd, true});
     false ->
       wx_object:cast(?MODULE, {append_input, "\n"}),
       prompt_2_console(Console, Prompt)
   end.
 
-event_skip(undefined) -> ok;
-event_skip(EvtObj) -> wxEvent:skip(EvtObj).
+event_skip(Console, undefined) -> wxStyledTextCtrl:newLine(Console);
+event_skip(_, EvtObj) -> wxEvent:skip(EvtObj).
 
 
 %% =====================================================================
