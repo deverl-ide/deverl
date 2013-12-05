@@ -265,7 +265,7 @@ handle_event(#wx{id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_select
 	{noreply, State#state{busy=false}};
 handle_event(#wx{id=?ID_CLEAR_CONSOLE, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
-  wx_object:cast(?MODULE, clear),
+  clear(),
   {noreply, State};
 handle_event(#wx{id=?wxID_COPY, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
@@ -360,17 +360,16 @@ eval(Console, Cmd, Hst) ->
 
 eval(Console, {Prompt, Input}, _Cmd, _Hst) when length(Input) =:= 0 ->
   prompt_2_console(Console, Prompt),
-  wx_object:cast(?MODULE, {append_input, Input++"\n"});
+  wx_object:cast(?MODULE, {append_input, Input++"\n"}); %% for error's line no
 eval(Console, {Prompt, [$.]=Input}, [], _Hst) -> %% single .
-  wx_object:cast(?MODULE, {append_input, Input}),
-  prompt_2_console(Console, Prompt),
-  wx_object:cast(?MODULE, {call_parser, Input, false});
-eval(Console, {Prompt, Input}, Cmd, Hst) ->
+  ?stc:newLine(Console),
+  wx_object:cast(?MODULE, {call_parser, Input, true});
+eval(Console, {Prompt, Input}, Cmd0, Hst) ->
   case lists:last(Input) of
     $. ->
       wx_object:cast(?MODULE, {append_input, Input}),
-      C = Cmd++Input,
-      prompt(Console, C, Prompt, lists:nth(length(C)-1, C));
+      Cmd1 = Cmd0++Input,
+      prompt(Console, Cmd1, Input, Prompt, lists:nth(length(Cmd1)-1, Cmd1));
     _ ->
       wx_object:cast(?MODULE, {append_input, Input++"\n"}),
       prompt_2_console(Console, Prompt)
@@ -381,10 +380,18 @@ eval(Console, {Prompt, Input}, Cmd, Hst) ->
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
-prompt(Console, Cmd, Prompt, $.) ->
-  wx_object:cast(?MODULE, {call_parser, Cmd, false}),
-  prompt_2_console(Console, Prompt);
-prompt(Console, Cmd, Prompt, _) ->
+prompt(Console, Cmd, Input, Prompt, $.) -> %% Multiple trailing dots
+  {match, [{_,N}]} = re:run(Input, "[.]*$", []), %% Count
+  case ((N - 1) rem 3) of % 1,4,7,10...
+    0 -> %% syntax error from shell
+      ?stc:newLine(Console),
+      wx_object:cast(?MODULE, {call_parser, Cmd, false});
+    _ ->
+      wx_object:cast(?MODULE, {append_input, "\n"}),
+      prompt_2_console(Console, Prompt)
+  end,
+  ok;
+prompt(Console, Cmd, Input, Prompt, _) ->
   case count_chars($", Cmd) andalso count_chars($', Cmd) of
     true ->
       ?stc:newLine(Console),
@@ -440,7 +447,7 @@ count_chars(Char, [H|T], Acc, Escape) ->
         false ->
           count_chars(Char, T, Acc+1, false)
       end;
-    $\ -> %% "escape char \"
+    $\\ -> %% "escape char \"
       count_chars(Char, T, Acc, not Escape);
     _ ->
       count_chars(Char, T, Acc, Escape)
