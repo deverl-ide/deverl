@@ -432,6 +432,7 @@ count_chars(Char, String) ->
   count_chars(Char, String, 0, false).
   
 count_chars(_Char, [], Acc, _) ->
+  io:format("COUNT: ~p~n", [Acc]),
   case Acc rem 2 of
     0 ->
       true;
@@ -450,7 +451,7 @@ count_chars(Char, [H|T], Acc, Escape) ->
     $\\ -> %% "escape char \"
       count_chars(Char, T, Acc, not Escape);
     _ ->
-      count_chars(Char, T, Acc, Escape)
+      count_chars(Char, T, Acc, false)
   end.
 
 
