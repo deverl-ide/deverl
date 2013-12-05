@@ -104,25 +104,18 @@ clear() ->
 %% @doc
   
 paste(This) ->
-  Cb = wxClipboard:new(),
-  wxClipboard:open(Cb),
-  Data = wxTextDataObject:new(),
-  wxClipboard:getData(Cb, Data),
-  Text = wxTextDataObject:getText(Data),
-  wxClipboard:close(Cb),
-  Split = re:split(Text, "\\R", [{newline, any}, {return, list}, trim]),
-  do(Split),
-  ok.
-
-do([]) -> ok;
-do([H|T]) -> 
-  wx_object:cast(?MODULE, {paste, H}),
-  % wx_object:call(?MODULE, {paste, H}),
-  receive 
-    after 1000 ->
-    ok
+  Split = re:split(get_clipboard_text(), "\\R", [{newline, any}, {return, list}, trim]),
+  Fn = fun(Gn, []) -> ok;
+          (Gn, [E]) -> 
+            wait(),
+            ?stc:addText(This, E);
+          (Gn, [H|T]) ->
+            wait(),
+            wx_object:call(?MODULE, {paste, H}),
+            Gn(Gn, T)
   end,
-  do(T).
+  Fn(Fn, Split),
+  ok.
 
 
 %% =====================================================================
@@ -188,7 +181,8 @@ init(Config) ->
 				       cmd_history=[],
 				       current_cmd=0,
                input=[],
-               menu=Menu},
+               menu=Menu,
+               busy=false},
 
   {Panel, State}.
 
@@ -232,40 +226,32 @@ handle_cast({call_parser, Cmd, Busy}, State) ->
   {noreply, State#state{busy=Busy, input=[]}};
 handle_cast({append_input, Input}, State=#state{input=Cmd}) ->
   {noreply, State#state{input=Cmd++Input}};
-handle_cast(clear, State=#state{textctrl=Console}) ->
+handle_cast(clear, State=#state{textctrl=Console, busy=Busy}) ->
   ?stc:clearAll(Console),
-  prompt_2_console(Console, ?PROMPT, false),
+  case Busy of
+    true -> ok;
+    false -> prompt_2_console(Console, ?PROMPT, false)
+  end,
   {noreply, State};
-handle_cast({paste, Line}, State=#state{textctrl=Console, input=Cmd}) ->
-  io:format("PASTE: ~p~n", [Line]),
-  ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  ?stc:addText(Console, Line),
-  % receive after 2000 -> ok end,
-  Env = wx:get_env(),
-  spawn(fun() -> wx:set_env(Env), eval(Console, undefined, Cmd) end),
-  {noreply, State}.
+handle_cast(eval, State=#state{textctrl=Console, input=Cmd, cmd_history=Hst0, current_cmd=Idx0}) ->
+  {Hst1, Idx1} = case eval(Console, Cmd, Hst0) of
+    ok -> {Hst0, Idx0};
+    Upt -> Upt
+  end,
+  {noreply, State#state{cmd_history=Hst1, current_cmd=Idx1}}.
   
-handle_call(text_ctrl, _From, State) ->
-  {reply,{State#state.wx_env,State#state.textctrl}, State};
-handle_call(command_history, _From, State) ->
-	{reply, {State#state.cmd_history}, State};
-handle_call({update_cmd_history, CmdLst}, _From, State) ->
-  {reply, ok, State#state{cmd_history=CmdLst}};
-handle_call(command_index, _From, State) ->
-	{reply, {State#state.current_cmd}, State};
 handle_call({update_cmd_index, Index}, _From, State) ->
   {reply, ok, State#state{current_cmd=Index}};
-handle_call(eval, _From, State=#state{textctrl=Console, input=Cmd}) ->
-  % Could do eval wihin server process so we can return new values i.e. history
-  {reply, ok, State};
-handle_call({paste, Line}, _From, State=#state{textctrl=Console, input=Cmd}) ->
-  % io:format("PASTE: ~p~n", [Line]),
+handle_call({paste, Line}, _From, State=#state{textctrl=Console, input=Cmd, cmd_history=Hst0, current_cmd=Idx0}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   ?stc:addText(Console, Line),
-  % receive after 2000 -> ok end,
-  Env = wx:get_env(),
-  spawn(fun() -> wx:set_env(Env), eval(Console, undefined, Cmd) end),
-  {noreply, State}.
+  {Hst1, Idx1} = case eval(Console, Cmd, Hst0) of
+    ok -> {Hst0, Idx0};
+    Upt -> Upt
+  end,
+  {reply, ok, State#state{cmd_history=Hst1, current_cmd=Idx1}};
+handle_call(busy, _From, State=#state{busy=Busy}) ->
+  {reply, Busy, State}.
   
 handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
             State=#state{menu=Menu}) ->
@@ -279,8 +265,7 @@ handle_event(#wx{id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_select
 	{noreply, State#state{busy=false}};
 handle_event(#wx{id=?ID_CLEAR_CONSOLE, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
-  ?stc:clearAll(Console),
-  prompt_2_console(Console, ?PROMPT, false),
+  wx_object:cast(?MODULE, clear),
   {noreply, State};
 handle_event(#wx{id=?wxID_COPY, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
@@ -288,8 +273,8 @@ handle_event(#wx{id=?wxID_COPY, event=#wxCommand{type=command_menu_selected}},
   {noreply, State};
 handle_event(#wx{id=?wxID_PASTE, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
-  %             Env = wx:get_env(),
-  % spawn(fun() -> wx:set_env(Env), paste(Console) end),
+              Env = wx:get_env(),
+  spawn(fun() -> wx:set_env(Env), paste(Console) end),
   {noreply, State}.
     
 code_change(_, _, State) ->
@@ -319,35 +304,38 @@ handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
-handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, EvtObj, State=#state{input=Cmd}) ->
-  eval(Console, EvtObj, Cmd);
-  
+handle_sync_event(#wx{event=#wxKey{type=key_down, keyCode=13}}, _EvtObj, #state{}) ->
+  wx_object:cast(?MODULE, eval),
+  ok;
 %%--- Arrow keys
-handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, _State) ->
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, 
+                  #state{current_cmd=Idx, cmd_history=Hst}) ->
   SuccessFun = fun() -> ok end,
   FailFun    = fun() -> ?stc:gotoPos(Console, ?stc:getLength(Console)) end,
   check_cursor(Console, SuccessFun, FailFun, -1),
-  case cmd_index() of
+  case Idx of
     0 ->
       ok;
     _ ->
-      cycle_cmd_text(Console, -1)
+      cycle_cmd_text(Console, -1, Hst, Idx)
+      
   end,
 	ok;
-handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_DOWN}}, _Event, _State) ->
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_DOWN}}, _Event,
+                  #state{cmd_history=Hst, current_cmd=Idx}) ->
   SuccessFun = fun() -> ok end,
   FailFun    = fun() -> ?stc:gotoPos(Console, ?stc:getLength(Console)) end,
   check_cursor(Console, SuccessFun, FailFun, -1),
-  LastCmd = length(cmd_history()) - 1,
+  LastCmd = length(Hst) - 1,
   Limit = LastCmd + 1,
-  case cmd_index() of
+  case Idx of
     LastCmd ->
       replace_cmd_text(Console, ""),
-      update_cmd_index(cmd_index()+1);
+      update_cmd_index(Idx+1);
     Limit ->
       ok;
     _ ->
-      cycle_cmd_text(Console, 1)
+      cycle_cmd_text(Console, 1, Hst, Idx)
   end;
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_LEFT}}, Event, _State) ->
   check_cursor(Console, fun() -> wxEvent:skip(Event) end, fun() -> ok end, 0);
@@ -365,50 +353,46 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 %% Internal functions
 %% =====================================================================
 
-eval(Console, EvtObj, Cmd) ->
+eval(Console, Cmd, Hst) ->
   {Prompt,Input} = split_line_at_prompt(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  eval(Console, EvtObj, {Prompt, Input}, Cmd).
+  eval(Console, {Prompt, Input}, Cmd, Hst).
 
-eval(Console, _EvtObj, {Prompt, Input}, _Cmd) when length(Input) =:= 0 ->
+eval(Console, {Prompt, Input}, _Cmd, _Hst) when length(Input) =:= 0 ->
   prompt_2_console(Console, Prompt),
   wx_object:cast(?MODULE, {append_input, Input++"\n"});
-eval(Console, _EvtObj, {Prompt, [$.]=Input}, []) -> %% single .
-  add_cmd(Input),
+eval(Console, {Prompt, [$.]=Input}, [], _Hst) -> %% single .
   wx_object:cast(?MODULE, {append_input, Input}),
   prompt_2_console(Console, Prompt),
   wx_object:cast(?MODULE, {call_parser, Input, false});
-eval(Console, EvtObj, {Prompt, Input}, Cmd) ->
-  add_cmd(Input),
+eval(Console, {Prompt, Input}, Cmd, Hst) ->
   case lists:last(Input) of
     $. ->
       wx_object:cast(?MODULE, {append_input, Input}),
       C = Cmd++Input,
-      prompt(Console, C, Prompt, EvtObj, lists:nth(length(C)-1, C));
+      prompt(Console, C, Prompt, lists:nth(length(C)-1, C));
     _ ->
       wx_object:cast(?MODULE, {append_input, Input++"\n"}),
       prompt_2_console(Console, Prompt)
-  end.
+  end,
+  add_cmd(Input, Hst).
 
 %% =====================================================================
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
-prompt(Console, Cmd, Prompt, _EvtObj, $.) ->
+prompt(Console, Cmd, Prompt, $.) ->
   wx_object:cast(?MODULE, {call_parser, Cmd, false}),
   prompt_2_console(Console, Prompt);
-prompt(Console, Cmd, Prompt, EvtObj, _) ->
+prompt(Console, Cmd, Prompt, _) ->
   case count_chars($", Cmd) andalso count_chars($', Cmd) of
     true ->
-      event_skip(Console, EvtObj),
+      ?stc:newLine(Console),
       wx_object:cast(?MODULE, {call_parser, Cmd, true});
     false ->
       wx_object:cast(?MODULE, {append_input, "\n"}),
       prompt_2_console(Console, Prompt)
   end.
-
-event_skip(Console, undefined) -> wxStyledTextCtrl:newLine(Console);
-event_skip(_, EvtObj) -> wxEvent:skip(EvtObj).
 
 
 %% =====================================================================
@@ -505,30 +489,26 @@ get_line_start_pos(Console, Pos) ->
 %% =====================================================================
 %% @doc Append new command to end of command history iff last element not same as new element.
 
-add_cmd(Command) ->
-	CommandList = cmd_history(),
-	case length(CommandList) of
-		0 ->
-			update_cmd_history(CommandList, Command),
-			update_cmd_index(length(CommandList)+1);
-		_ ->
-			case Command =:= get_command(length(CommandList) - 1) of
-				true ->
-					update_cmd_index(length(CommandList));
-				false ->
-					update_cmd_history(CommandList, Command),
-					update_cmd_index(length(CommandList)+1)
-			end
-	end.
-
+add_cmd(Cmd, Hst) when length(Hst) =:= 0 ->
+  add_cmd(insert, Cmd, Hst);
+add_cmd(Cmd, Hst) ->
+  case Cmd =:= get_cmd(Hst, length(Hst) - 1) of
+    true -> 
+      {Hst, length(Hst)};
+    false ->
+      add_cmd(insert, Cmd, Hst)
+  end.
+add_cmd(insert, Cmd, Hst) ->
+  {Hst++[Cmd], length(Hst)+1}.
+  
 
 %% =====================================================================
 %% @doc Cycle through command history by one entry.
 %% param Direction: -1 for prev cmd, +1 for next cmd.
 
-cycle_cmd_text(Console, Direction) ->
-	update_cmd_index(cmd_index() + Direction),
-	Cmd = get_command(cmd_index()),
+cycle_cmd_text(Console, Direction, Hst, Idx) ->
+  update_cmd_index(Idx + Direction),
+	Cmd = get_cmd(Hst, Idx + Direction),
   replace_cmd_text(Console, Cmd).
 
 
@@ -543,62 +523,18 @@ replace_cmd_text(Console, Cmd) ->
   ?stc:replaceSelection(Console, Cmd).
 
 
-%% =====================================================================
-%% @doc
-
-cmd_index() ->
-	{CommandIndex} = wx_object:call(?MODULE, command_index),
-	CommandIndex.
-
-
-%% =====================================================================
-%% @doc
-
-cmd_history() ->
-	{CommandList} = wx_object:call(?MODULE, command_history),
-	CommandList.
-
-
-%% =====================================================================
-%% @doc
+% %% =====================================================================
+% %% @doc
 
 update_cmd_index(NewIndex) ->
-	wx_object:call(?MODULE, {update_cmd_index, NewIndex}).
+  wx_object:call(?MODULE, {update_cmd_index, NewIndex}).
 
 
 %% =====================================================================
-%% @doc
+%% @doc Retrieve command from history based on indexed position. 
 
-update_cmd_history(CommandList, Command) ->
-	wx_object:call(?MODULE, {update_cmd_history, CommandList ++ [Command]}).
-
-
-%% =====================================================================
-%% @doc Retrieve command from history based on indexed position.
-
-get_command(Index) ->
-	get_command(Index, cmd_history(), 0).
-get_command(Index, [H|T], Count) ->
-	case Index =:= Count of
-		true ->
-			H;
-		false ->
-			get_command(Index, T, Count + 1)
-	end.
-
-
-%% =====================================================================
-%% @doc Replace element at given index in a list. (Not yet used)
-
-replace(Index, Elem, List) ->
-	replace(Index, Elem, List, 0, []).
-replace(Index, Elem, [H|T], Count, Acc) ->
-	case Index =:= Count of
-		true ->
-			Acc ++ [Elem] ++ T;
-		false ->
-			replace(Index, Elem, T, Count + 1, Acc ++ [H])
-	end.
+get_cmd(Hst, Idx) ->
+  lists:nth(Idx+1, Hst).
 
 
 %% =====================================================================
@@ -628,3 +564,26 @@ create_menu() ->
   wxMenu:append(Menu, ?ID_CLEAR_CONSOLE, "Clear All\tCtrl+K", []),
   wxMenu:connect(Menu, command_menu_selected),
   Menu.
+
+
+%% =====================================================================
+%% @doc
+
+get_clipboard_text() ->
+  Cb = wxClipboard:new(),
+  wxClipboard:open(Cb),
+  Data = wxTextDataObject:new(),
+  wxClipboard:getData(Cb, Data),
+  Text = wxTextDataObject:getText(Data),
+  wxClipboard:close(Cb),
+  Text.
+
+
+%% =====================================================================
+%% @doc
+
+wait() ->
+  case wx_object:call(?MODULE, busy) of
+    true -> wait();
+    false -> ok
+  end.
