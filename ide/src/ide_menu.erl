@@ -121,15 +121,15 @@ init(Config) ->
 
   
   Edit        = wxMenu:new([]),
-  wxMenu:append(Edit, ?wxID_UNDO, "Undo"),
-  wxMenu:append(Edit, ?wxID_REDO, "Redo"),
+  wxMenu:append(Edit, ?wxID_UNDO, "Undo\tCtrl+Z"),
+  wxMenu:append(Edit, ?wxID_REDO, "Redo\tCtrl+Shift+Z"),
   wxMenu:append(Edit, ?wxID_SEPARATOR, []),
-  wxMenu:append(Edit, ?wxID_CUT, "Cut"),
-  wxMenu:append(Edit, ?wxID_COPY, "Copy"), 
-  wxMenu:append(Edit, ?wxID_PASTE, "Paste"),
+  wxMenu:append(Edit, ?wxID_CUT, "Cut\tCtrl+X"),
+  wxMenu:append(Edit, ?wxID_COPY, "Copy\tCtrl+C"), 
+  wxMenu:append(Edit, ?wxID_PASTE, "Paste\tCtrl+V"),
   wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
   wxMenu:append(Edit, ?wxID_SEPARATOR, []),
-  wxMenu:append(Edit, ?wxID_SELECTALL, "Select All"),
+  wxMenu:append(Edit, ?wxID_SELECTALL, "Select All\tCtrl+A"),
   wxMenu:appendSeparator(Edit),
   wxMenu:append(Edit, ?wxID_FIND, "Find\tCtrl+F"),
   
