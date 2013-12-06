@@ -300,23 +300,6 @@ handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, EvtObj, State=#state{input=Cmd}) ->
-<<<<<<< HEAD
-  {Prompt,Input} = split_line_at_prompt(Console),
-  ?stc:gotoPos(Console, ?stc:getLength(Console)),
-  % %% (Console, EvtObj, Prompt, Input, Cmd, 0, Lc, Pc)
-  % P = case length(Input) of
-  %   L when L > 1 -> lists:nth(length(Input)-1, Input);
-  %   _ -> undefined
-  case length(Input) of
-    0 ->
-      prompt_2_console(Console, Prompt),
-      wx_object:cast(?MODULE, {append_input, Input++"\n"});
-    _ ->
-      add_cmd(Input),
-      process_input(Input, Cmd, Console, Prompt, EvtObj)
-  end,
-  ok;
-=======
   evaluate_cmd(Console, EvtObj, Cmd),
   % {Prompt,Input} = split_line_at_prompt(Console),
   % ?stc:gotoPos(Console, ?stc:getLength(Console)),
@@ -330,7 +313,6 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=13}}, Evt
   % end,
   ok;
   
->>>>>>> 64781774f7b3639951145fb57d572167ddbd9401
 %%--- Arrow keys
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, _State) ->
   SuccessFun = fun() -> ok end,
@@ -370,12 +352,6 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
   check_cursor(Console, SuccessFun, FailFun, -1).
 
 
-<<<<<<< HEAD
-%% =====================================================================
-%% Internal functions
-%% =====================================================================
-=======
-
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
@@ -406,29 +382,10 @@ process_input(Input, Cmd, Console, Prompt, Event) ->
   
 event_skip(undefined) -> ok;
 event_skip(EvtObj) -> wxEvent:skip(EvtObj).
->>>>>>> 64781774f7b3639951145fb57d572167ddbd9401
+
 
 event_stop(undefined) -> ok;
 event_stop(EvtObj) -> wxEvent:stopPropagation(EvtObj).
-
-%% =====================================================================
-%% @doc 
-
-process_input(Input, Cmd, Console, Prompt, Event) ->
-  case is_comment(Input) of
-    true ->
-      wx_object:cast(?MODULE, {append_input, Input ++ "\n"}),
-      prompt_2_console(Console, Prompt);
-    false ->
-      case lists:last(Input) of
-        46 ->
-          wx_object:cast(?MODULE, {append_input, Input}),
-          prompt_or_not(Console, Cmd++Input, Prompt, Event);
-        _ ->
-          wx_object:cast(?MODULE, {append_input, Input ++ "\n"}),
-          prompt_2_console(Console, Prompt)
-      end
-  end.
   
   
 %% =====================================================================
@@ -455,12 +412,8 @@ prompt_or_not(Console, Input, Prompt, EvtObj) when erlang:length(Input) > 1 ->
       end
 	end;
 
-<<<<<<< HEAD
-prompt_or_not(Console, Input, Prompt, EvObj) ->
-  io:format("Input <= 1~n"),
-=======
+
 prompt_or_not(Console, Input, Prompt, EvtObj) ->
->>>>>>> 64781774f7b3639951145fb57d572167ddbd9401
   case Input of
     [46] ->
       prompt_2_console(Console, Prompt),
