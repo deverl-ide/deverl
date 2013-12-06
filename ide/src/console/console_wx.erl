@@ -271,7 +271,7 @@ handle_event(#wx{id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_select
   console_port:close_port(),
   append_message("Console reset"),
   prompt_2_console(Console, ?PROMPT),
-	{noreply, State#state{busy=false}};
+	{noreply, State#state{busy=false, input=[]}};
 handle_event(#wx{id=?ID_CLEAR_CONSOLE, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
   clear(),
@@ -308,12 +308,9 @@ handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #sta
     %% Discard
     _ -> ok
   end;
-<<<<<<< HEAD
 
-=======
 handle_sync_event(#wx{event=#wxKey{}}, EvtObj, #state{busy=true}) ->
   ok;
->>>>>>> 47ccc6deee7046cc55564b22d14f22216daa6df6
 handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
@@ -387,59 +384,18 @@ eval(Console, {Prompt, Input}, Cmd0, Hst) ->
     _ ->
       wx_object:cast(?MODULE, {append_input, Input++"\n"}),
       prompt_2_console(Console, Prompt)
-<<<<<<< HEAD
-  end.  
-  
-event_skip(undefined) -> ok;
-event_skip(EvtObj) -> wxEvent:skip(EvtObj).
-
-
-event_stop(undefined) -> ok;
-event_stop(EvtObj) -> wxEvent:stopPropagation(EvtObj).
-  
-  
-=======
   end,
   add_cmd(Input, Hst).
 
->>>>>>> 47ccc6deee7046cc55564b22d14f22216daa6df6
+
 %% =====================================================================
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
-<<<<<<< HEAD
-prompt_or_not(Console, Input, Prompt, EvtObj) when erlang:length(Input) > 1 ->
-  Penult = lists:nth(length(Input)-1, Input),
-	if
-		Penult =:= $. ->
-      %wx_object:cast(?MODULE, {call_parser, Input, false}),
-			prompt_2_console(Console, Prompt),
-      % wxEvent:stopPropagation(EvtObj);
-      event_stop(EvtObj);
-		true ->
-      case count_chars(34, Input) andalso count_chars(39, Input) of %% 34 = ", 39 = '
-        true ->
-          % wxEvent:skip(EvtObj),
-          event_skip(EvtObj),
-          wx_object:cast(?MODULE, {call_parser, Input, true});
-        false ->
-          wx_object:cast(?MODULE, {append_input, "\n"}),
-          prompt_2_console(Console, Prompt)
-      end
-	end;
-
-
-prompt_or_not(Console, Input, Prompt, EvtObj) ->
-  case Input of
-    [46] ->
-      prompt_2_console(Console, Prompt),
-      wx_object:cast(?MODULE, {call_parser, Input, false});
-=======
 prompt(Console, Cmd, Input, Prompt, $$) -> % $. (Ascii)
   case length(Cmd++Input) of
     2 ->
       wx_object:cast(?MODULE, {call_parser, Cmd, false});
->>>>>>> 47ccc6deee7046cc55564b22d14f22216daa6df6
     _ ->
       wx_object:cast(?MODULE, {append_input, "\n"}),
       prompt_2_console(Console, Prompt)
@@ -516,20 +472,6 @@ count_chars(Char, [H|T], Acc, Escape) ->
       count_chars(Char, T, Acc, not Escape);
     _ ->
       count_chars(Char, T, Acc, false)
-  end.
-  
-
-%% =====================================================================
-%% @doc Check for comment character in command.
-
-is_comment([]) ->
-  false;
-is_comment([H|T]) ->
-  case H of
-    '%' ->
-      true;
-    _ ->
-      is_comment(T)
   end.
 
 
@@ -650,9 +592,7 @@ create_menu() ->
   wxMenu:append(Menu, ?ID_CLEAR_CONSOLE, "Clear All\tCtrl+K", []),
   wxMenu:connect(Menu, command_menu_selected),
   Menu.
-<<<<<<< HEAD
-=======
-
+  
 
 %% =====================================================================
 %% @doc
@@ -675,4 +615,3 @@ wait() ->
     true -> wait();
     false -> ok
   end.
->>>>>>> 47ccc6deee7046cc55564b22d14f22216daa6df6
