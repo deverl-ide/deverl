@@ -368,8 +368,7 @@ eval(Console, Cmd, Hst) ->
   eval(Console, {Prompt, Input}, Cmd, Hst).
 
 eval(Console, {Prompt, Input}, _Cmd, _Hst) when length(Input) =:= 0 ->
-  prompt_2_console(Console, Prompt),
-  wx_object:cast(?MODULE, {append_input, Input++"\n"}); %% for error's line no
+  prompt(Console, Prompt, Input++"\n"); %% for error's line no
 eval(Console, {Prompt, [$.]=Input}, [], _Hst) -> %% single .
   ?stc:newLine(Console),
   wx_object:cast(?MODULE, {call_parser, Input, true});
@@ -380,8 +379,7 @@ eval(Console, {Prompt, Input}, Cmd0, Hst) ->
       Cmd1 = Cmd0++Input,
       prompt(Console, Cmd1, Input, Prompt, lists:nth(length(Cmd1)-1, Cmd1));
     _ ->
-      wx_object:cast(?MODULE, {append_input, Input++"\n"}),
-      prompt_2_console(Console, Prompt)
+      prompt(Console, Prompt, Input++"\n")
   end,
   add_cmd(Input, Hst).
 
@@ -389,13 +387,12 @@ eval(Console, {Prompt, Input}, Cmd0, Hst) ->
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
-prompt(Console, Cmd, Input, Prompt, $$) -> % $. (Ascii)
+prompt(Console, Cmd, Input, Prompt, $$) -> % $. (Ascii shortcut)
   case length(Cmd++Input) of
     2 ->
       wx_object:cast(?MODULE, {call_parser, Cmd, false});
     _ ->
-      wx_object:cast(?MODULE, {append_input, "\n"}),
-      prompt_2_console(Console, Prompt)
+      prompt(Console, Prompt, "\n")
   end;
 prompt(Console, Cmd, Input, Prompt, $.) -> %% Multiple trailing dots
   {match, [{_,N}]} = re:run(Input, "[.]*$", []), %% Count
@@ -404,8 +401,7 @@ prompt(Console, Cmd, Input, Prompt, $.) -> %% Multiple trailing dots
       ?stc:newLine(Console),
       wx_object:cast(?MODULE, {call_parser, Cmd, false});
     _ ->
-      wx_object:cast(?MODULE, {append_input, "\n"}),
-      prompt_2_console(Console, Prompt)
+      prompt(Console, Prompt, "\n")
   end,
   ok;
 prompt(Console, Cmd, Input, Prompt, _) ->
@@ -414,10 +410,12 @@ prompt(Console, Cmd, Input, Prompt, _) ->
       ?stc:newLine(Console),
       wx_object:cast(?MODULE, {call_parser, Cmd, true});
     false ->
-      wx_object:cast(?MODULE, {append_input, "\n"}),
-      prompt_2_console(Console, Prompt)
+      prompt(Console, Prompt, "\n")
   end.
-
+  
+prompt(Console, Prompt, Str) ->
+  wx_object:cast(?MODULE, {append_input, Str}),
+  prompt_2_console(Console, Prompt).
 
 %% =====================================================================
 %% @doc Write a newline plus the prompt to the console.

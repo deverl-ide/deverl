@@ -31,20 +31,25 @@ compile_file() ->
     cancelled ->
       ok
   end.
-
   
 make_project() ->
   case doc_manager:save_active_project() of
     ok ->
       ProjectId = project_manager:get_active_project(),
       Path = project_manager:get_root(ProjectId),
-      console_port:eval("cd(\"" ++ Path ++ "\"), make:all()." ++ io_lib:nl()),
-      ide_projects_tree:set_has_children(Path ++ "/ebin"),
-      {ok, ProjectId, Path};
+      compiler_port:start(Path),
+      receive
+        {From, ok} ->
+          ide_projects_tree:set_has_children(Path ++ "/ebin"),
+          console_wx:append_message("Project " ++ filename:basename(Path) ++ " ready"),
+          change_dir(Path ++ "/ebin"),
+          {ok, ProjectId, Path};
+        {From, error} ->
+          {error, compile}
+      end;
     cancelled ->
       {error, not_saved}
   end.
-  
   
 run_project(Parent) ->
   case make_project() of
@@ -106,3 +111,6 @@ parse_config(Config) ->
 
 execute_function({M, F, Args}) ->
   ok.
+
+change_dir(Path) ->
+  console_port:eval("cd(\"" ++ Path ++ "\")." ++ io_lib:nl(), false).
