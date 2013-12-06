@@ -6,6 +6,15 @@
 %% @doc This module initalises the console, which is currently
 %% implemented as a wxStyledTextCtrl.
 %% @end
+%% In the current implementation we manage the prompt ourselves 
+%% (console_parser strips the prompt returned from the port), so that
+%% we can write to the textctrl anywhere we like without having to 
+%% worry about deleting/re-numbering prompts.
+%% We settled on this current implementation as a comprimise (in the
+%% original implementation everything received from the port was
+%% written to the textctrl). The optimal solution would be to use the
+%% erl_parse/erl_eval/erl_scan APIs in the same way that shell.erl does
+%% from std lib. We may well use that approach in the future.
 %% =====================================================================
 
 -module(console_wx).
@@ -380,6 +389,14 @@ eval(Console, {Prompt, Input}, Cmd0, Hst) ->
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
+prompt(Console, Cmd, Input, Prompt, $$) ->
+  case length(Cmd++Input) of
+    2 ->
+      wx_object:cast(?MODULE, {call_parser, Cmd, false});
+    _ ->
+      wx_object:cast(?MODULE, {append_input, "\n"}),
+      prompt_2_console(Console, Prompt)
+  end;
 prompt(Console, Cmd, Input, Prompt, $.) -> %% Multiple trailing dots
   {match, [{_,N}]} = re:run(Input, "[.]*$", []), %% Count
   case ((N - 1) rem 3) of % 1,4,7,10...
