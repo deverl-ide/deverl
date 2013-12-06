@@ -389,7 +389,7 @@ eval(Console, {Prompt, Input}, Cmd0, Hst) ->
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
-prompt(Console, Cmd, Input, Prompt, $$) ->
+prompt(Console, Cmd, Input, Prompt, $$) -> % $. (Ascii)
   case length(Cmd++Input) of
     2 ->
       wx_object:cast(?MODULE, {call_parser, Cmd, false});
