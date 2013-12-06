@@ -90,7 +90,7 @@ compile(From, Path, Config) ->
       {Path, lists:append(DirFlags, Files)}
   end,
   
-  compiler_output:clear(),
+  % compiler_output:clear(),
   
   open_port({spawn_executable, erlc()}, [use_stdio, 
                                        exit_status, 
