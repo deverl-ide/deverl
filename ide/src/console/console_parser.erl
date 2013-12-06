@@ -37,16 +37,6 @@ parse_input(Message) ->
 
 
 %% =====================================================================
-%% @doc OLD IMPLEMENTATION - KEPT FOR COMPARISON
-%
-% parse_response(Response) ->
-%   io:format("RESPONSE FROM PORT: ~p~n", [Response]),
-%   console_wx:append_command(Response).
-%
-% loop(_) -> ok.
-
-
-%% =====================================================================
 %% @doc
 
 parse_response(Response) ->
