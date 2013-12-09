@@ -181,7 +181,7 @@ init(Config) ->
 
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
   wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
-  wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
+  % wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
   wxTreeCtrl:connect(Tree, right_up),
@@ -544,6 +544,13 @@ print_tree_debug(Tree, Node, Indent) ->
 %% =====================================================================
 %% @doc Add Item to Tree. 
 %% Calls wxTreeCtrl:appendItem/4 but applys any formatting to the item.
+
+%% header -> {header, ID}
+%% project_root -> {project_root, ProjId, Path}
+%% project_dir -> {project_dir, ProjId, Path}
+%% project_file -> {project_file, ProjId, Path}
+%% standalone_file -> {standalone_file, Path}
+%% placeholder
 
 append_item(Tree, Item, Filename) ->
   append_item(Tree, Item, Filename, []).

@@ -267,7 +267,7 @@ handle_cast(freeze_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   
 handle_cast(thaw_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   wxWindow:thaw(Parent),
-	{noreply, State};
+	{noreply, State}.
 
 handle_call({create_doc, Path, ProjectId}, _From,
 						State=#state{notebook=Nb, sizer=Sz, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
