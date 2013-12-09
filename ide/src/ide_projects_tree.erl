@@ -182,6 +182,7 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
   wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
   % wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
+  wxTreeCtrl:connect(Tree, command_tree_item_expanding, []),
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
   wxTreeCtrl:connect(Tree, right_up),
@@ -244,6 +245,24 @@ handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item}}, State) ->
+  io:format("EXPANDing "),
+  case is_selectable(Tree, Item) of
+    true ->
+      io:format("TRUE~n"),
+      Image = wxTreeCtrl:getItemImage(Tree, Item),
+      Idx = case Image of
+        ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
+        ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
+      end,
+      wxTreeCtrl:setItemImage(Tree, Item, Idx),
+      
+      {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
+      insert(Tree, Item, FilePath),
+      alternate_background_all(Tree);
+    false -> ok
+  end,
+	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
   io:format("EXPANDED "),
   case is_selectable(Tree, Item) of
