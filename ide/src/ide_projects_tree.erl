@@ -691,9 +691,13 @@ toggle_or_open(Tree, Item) ->
       io:format("IS DIR~n"),
       wxTreeCtrl:toggle(Tree, Item);
     false ->
-      io:format("IS NOT DIR~n"),
-      {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
-      doc_manager:create_document(FilePath, Id)
+      case wxTreeCtrl:getItemData(Tree, Item) of
+        {Id, _Path} ->
+          %wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
+          doc_manager:create_document(FilePath, Id);
+        _Path ->
+          doc_manager:create_document(FilePath, undefined)
+      end
   end.
 
 
