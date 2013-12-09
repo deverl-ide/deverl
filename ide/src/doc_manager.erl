@@ -267,7 +267,7 @@ handle_cast(freeze_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   
 handle_cast(thaw_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   wxWindow:thaw(Parent),
-	{noreply, State}.
+	{noreply, State};
 
 
 handle_call({create_doc, Path, ProjectId}, _From,
@@ -385,7 +385,8 @@ handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_record
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
   DocId = page_id_to_doc_id(Nb, wxAuiNotebookEvent:getSelection(Event), PageToDoc),
-	close_documents([DocId]),
+  Env = wx:get_env(),
+  spawn(fun() -> wx:set_env(Env), close_documents([DocId]) end),
 	ok.
 
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed,
