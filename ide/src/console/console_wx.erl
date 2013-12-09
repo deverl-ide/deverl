@@ -271,7 +271,7 @@ handle_event(#wx{id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_select
   console_port:close_port(),
   append_message("Console reset"),
   prompt_2_console(Console, ?PROMPT),
-	{noreply, State#state{busy=false}};
+	{noreply, State#state{busy=false, input=[]}};
 handle_event(#wx{id=?ID_CLEAR_CONSOLE, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
   clear(),
@@ -299,6 +299,7 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{busy=true}) ->
+  io:format("BUSY CTRL DOWN"),
   case Key of
     %% Permit even when busy
     $R -> wxEvent:skip(EvtObj);
@@ -307,6 +308,7 @@ handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #sta
     %% Discard
     _ -> ok
   end;
+
 handle_sync_event(#wx{event=#wxKey{}}, EvtObj, #state{busy=true}) ->
   ok;
 handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
@@ -382,6 +384,7 @@ eval(Console, {Prompt, Input}, Cmd0, Hst) ->
       prompt(Console, Prompt, Input++"\n")
   end,
   add_cmd(Input, Hst).
+
 
 %% =====================================================================
 %% @doc Determine whether we need to manually prompt_2_console().
@@ -587,7 +590,7 @@ create_menu() ->
   wxMenu:append(Menu, ?ID_CLEAR_CONSOLE, "Clear All\tCtrl+K", []),
   wxMenu:connect(Menu, command_menu_selected),
   Menu.
-
+  
 
 %% =====================================================================
 %% @doc

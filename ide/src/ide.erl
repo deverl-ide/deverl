@@ -417,7 +417,6 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UT
 	end,
   wxFrame:thaw(Frame),
 	{noreply, State};
-
 %% The menu items from the ETS table
 handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=command_menu_selected}},
              State=#state{frame=Frame}) ->

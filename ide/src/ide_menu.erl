@@ -346,12 +346,13 @@ init(Config) ->
     {?wxID_EXIT, {}},
     {?wxID_PREFERENCES, {ide_prefs,start, [[{parent,Frame}]]}},
     
-    % {?wxID_UNDO, {}},
-    % {?wxID_REDO, {}},
-    % {?wxID_CUT, {}},
-    % {?wxID_COPY, {}},
-    % {?wxID_PASTE, {}},
-    % {?wxID_DELETE, {}},
+     %{?wxID_UNDO, {}},
+     %{?wxID_REDO, {}},
+     %{?wxID_CUT, {}},
+     %{?wxID_COPY, {}},
+     %{?wxID_PASTE, {}},
+     %{?wxID_DELETE, {}},
+
     {?wxID_FIND, {editor_ops,find_replace,[Frame]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
     
@@ -423,8 +424,8 @@ init(Config) ->
 		]),
 				
 	%% Connect event handlers
-  % wxFrame:connect(Frame, menu_highlight,  
-  %   [{userData, {ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
+	%wxFrame:connect(Frame, menu_highlight,  
+		%[{userData, {ets_table,TabId}}, {id, ?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
 	wxFrame:connect(Frame, command_menu_selected, 
 		[{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
     

@@ -45,7 +45,6 @@
          import/1
          ]).
 
-
 %% Records
 -record(project, {root :: path(),
                   build_config,
