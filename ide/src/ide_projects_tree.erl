@@ -275,9 +275,9 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
       end,
       wxTreeCtrl:setItemImage(Tree, Item, Idx),
       
-      {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
-      insert(Tree, Item, FilePath),
-      alternate_background_all(Tree);
+      % {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
+      % insert(Tree, Item, FilePath),
+      % alternate_background_all(Tree);
     false -> ok
   end,
 	{noreply, State};
