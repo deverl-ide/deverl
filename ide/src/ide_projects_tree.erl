@@ -296,6 +296,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
     	io:format("toggle~n"),
       wxTreeCtrl:toggle(Tree, Item)
   end,
+  print_tree_debug(Tree),
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxMouse{type=right_up, x=XPos, y=YPos}},
             State=#state{frame=Frame}) ->
