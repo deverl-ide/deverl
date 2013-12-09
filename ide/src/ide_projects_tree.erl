@@ -202,7 +202,7 @@ handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
   wxTreeCtrl:setItemImage(Tree, Item, ?ICON_PROJECT),
   check_dir_has_contents(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
-  wxTreeCtrl:toggle(Tree, Item),
+  % wxTreeCtrl:toggle(Tree, Item),
   alternate_background_of_children(Tree, Root),
   wxPanel:thaw(Tree),
   {noreply,State};
