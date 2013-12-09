@@ -245,7 +245,6 @@ handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
-  io:format("EXPANDED~n"),
   case is_selectable(Tree, Item) of
     true ->
       Image = wxTreeCtrl:getItemImage(Tree, Item),
@@ -683,10 +682,13 @@ find_standalone(Tree, Path) ->
 
 toggle_or_open(Tree, Item) ->
   FilePath = get_path(Tree, Item),
+  io:format("FILEPATH: ~p ", [FilePath]),
   case filelib:is_dir(FilePath) of
     true ->
+      io:format("IS DIR~n"),
       wxTreeCtrl:toggle(Tree, Item);
     false ->
+      io:format("IS NOT DIR~n"),
       {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
       doc_manager:create_document(FilePath, Id)
   end.
