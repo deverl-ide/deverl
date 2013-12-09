@@ -181,7 +181,7 @@ init(Config) ->
 
   wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
   wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
-  wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
+  % wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
   wxTreeCtrl:connect(Tree, right_up),
@@ -245,8 +245,10 @@ handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
+  io:format("EXPANDED "),
   case is_selectable(Tree, Item) of
     true ->
+      io:format("TRUE~n"),
       Image = wxTreeCtrl:getItemImage(Tree, Item),
       Idx = case Image of
         ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
@@ -285,10 +287,13 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
             State=#state{frame=Frame}) ->
+  io:format("ACTIVATED~n"),
   case is_selectable(Tree, Item) of
     true ->
+	  io:format("toggle_or_open~n"),
       toggle_or_open(Tree, Item);
     false ->
+    	io:format("toggle~n"),
       wxTreeCtrl:toggle(Tree, Item)
   end,
 	{noreply, State};
@@ -434,8 +439,9 @@ get_item_from_path(Tree, [H|T], Path) ->
 %% @doc Get a list of files in a given root directory then build its
 %% subdirectories.
 
-insert(Tree, Parent, Dir) ->
-	Files = filelib:wildcard(Dir ++ "/*"),
+insert(Tree, Parent, Dir0) ->
+  Dir1 = filename:join([Dir0, "*"]),
+	Files = filelib:wildcard(Dir1),
 	add_files(Tree, Parent, lists:reverse(Files)).
 
 
@@ -514,7 +520,7 @@ get_item_from_list(Tree, ProjectId, [Project|Projects]) ->
 %% @doc Check if tree item has children. If so, set item has children.
 
 check_dir_has_contents(Tree, Item, FilePath) ->
-  Children = filelib:wildcard(FilePath ++ "/*"),
+  Children = filelib:wildcard(filename:join([FilePath, "*"])),
   case Children of
     [] ->
       ok;
@@ -549,6 +555,13 @@ print_tree_debug(Tree, Node, Indent) ->
 %% =====================================================================
 %% @doc Add Item to Tree. 
 %% Calls wxTreeCtrl:appendItem/4 but applys any formatting to the item.
+
+%% header -> {header, ID}
+%% project_root -> {project_root, ProjId, Path}
+%% project_dir -> {project_dir, ProjId, Path}
+%% project_file -> {project_file, ProjId, Path}
+%% standalone_file -> {standalone_file, Path}
+%% placeholder
 
 append_item(Tree, Item, Filename) ->
   append_item(Tree, Item, Filename, []).
@@ -671,10 +684,13 @@ find_standalone(Tree, Path) ->
 
 toggle_or_open(Tree, Item) ->
   FilePath = get_path(Tree, Item),
+  io:format("FILEPATH: ~p ", [FilePath]),
   case filelib:is_dir(FilePath) of
     true ->
+      io:format("IS DIR~n"),
       wxTreeCtrl:toggle(Tree, Item);
     false ->
+<<<<<<< HEAD
       case wxTreeCtrl:getItemData(Tree, Item) of
         {Id, _Path} ->
           %wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
@@ -682,6 +698,11 @@ toggle_or_open(Tree, Item) ->
         _Path ->
           doc_manager:create_document(FilePath, undefined)
       end
+=======
+      io:format("IS NOT DIR~n"),
+      {Id, _Root} = wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
+      doc_manager:create_document(FilePath, Id)
+>>>>>>> 5e9cf320d8eeb700976568a734ddbe6fd178bb53
   end.
 
 
@@ -808,4 +829,3 @@ is_in_tree(Tree, Path, [Child|Children]) ->
     _ ->
       is_in_tree(Tree, Path, Children)
   end.
-  
