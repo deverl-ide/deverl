@@ -435,7 +435,7 @@ get_item_from_path(Tree, [H|T], Path) ->
 %% subdirectories.
 
 insert(Tree, Parent, Dir0) ->
-  Dir1 = filename:join([Dir0, "*"]).
+  Dir1 = filename:join([Dir0, "*"]),
 	Files = filelib:wildcard(Dir1),
 	add_files(Tree, Parent, lists:reverse(Files)).
 
