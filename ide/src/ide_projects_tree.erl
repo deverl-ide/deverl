@@ -250,12 +250,12 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
   case is_selectable(Tree, Item) of
     true ->
       io:format("TRUE~n"),
-      Image = wxTreeCtrl:getItemImage(Tree, Item),
-      Idx = case Image of
-        ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
-        ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
-      end,
-      wxTreeCtrl:setItemImage(Tree, Item, Idx),
+      % Image = wxTreeCtrl:getItemImage(Tree, Item),
+      % Idx = case Image of
+      %   ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
+      %   ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
+      % end,
+      % wxTreeCtrl:setItemImage(Tree, Item, Idx),
       
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
