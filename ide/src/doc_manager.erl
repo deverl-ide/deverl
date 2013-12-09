@@ -267,7 +267,7 @@ handle_cast(freeze_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   
 handle_cast(thaw_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   wxWindow:thaw(Parent),
-	{noreply, State};
+	{noreply, State}.
 
 
 handle_call({create_doc, Path, ProjectId}, _From,
@@ -457,7 +457,7 @@ show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocNames, 
 save_and_close(DocIdList) ->
   case save_documents(DocIdList) of
     {Saved, []} ->
-      close(Saved),
+      close(Saved);
     {Saved, Failed} ->
       close(Saved),
       cancelled
