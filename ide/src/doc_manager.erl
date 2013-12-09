@@ -341,6 +341,7 @@ handle_call({get_path, DocId}, _From,
 handle_call({save, DocId}, _From,
 				    State=#state{parent=Parent, doc_records=DocRecords}) ->
   Record=#document{path=Path} = proplists:get_value(DocId, DocRecords),
+  io:format("Editor: ~p~n", [Record#document.editor]),
   Contents = editor:get_text(Record#document.editor),
   Result = try
     ide_io:save(Path, Contents),
@@ -498,6 +499,7 @@ save_documents(DocIdList) ->
 save_documents([], Acc) ->
   Acc;
 save_documents([DocId|DocIdList], {Saved, Failed}) ->
+  io:format("Save documents~n"),
 	case wx_object:call(?MODULE, {save, DocId}) of
     {ok, DocRecords} ->
       Record = get_record(DocId, DocRecords),
