@@ -245,6 +245,7 @@ handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
+  io:format("EXPANDED~n"),
   case is_selectable(Tree, Item) of
     true ->
       Image = wxTreeCtrl:getItemImage(Tree, Item),
