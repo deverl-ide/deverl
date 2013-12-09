@@ -286,10 +286,13 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
             State=#state{frame=Frame}) ->
+  io:format("ACTIVATED~n"),
   case is_selectable(Tree, Item) of
     true ->
+	  io:format("toggle_or_open~n"),
       toggle_or_open(Tree, Item);
     false ->
+    	io:format("toggle~n"),
       wxTreeCtrl:toggle(Tree, Item)
   end,
 	{noreply, State};
@@ -812,4 +815,3 @@ is_in_tree(Tree, Path, [Child|Children]) ->
     _ ->
       is_in_tree(Tree, Path, Children)
   end.
-  
