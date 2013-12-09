@@ -434,8 +434,9 @@ get_item_from_path(Tree, [H|T], Path) ->
 %% @doc Get a list of files in a given root directory then build its
 %% subdirectories.
 
-insert(Tree, Parent, Dir) ->
-	Files = filelib:wildcard(Dir ++ "/*"),
+insert(Tree, Parent, Dir0) ->
+  Dir1 = filename:join([Dir0, "*"]).
+	Files = filelib:wildcard(Dir1),
 	add_files(Tree, Parent, lists:reverse(Files)).
 
 
@@ -514,7 +515,7 @@ get_item_from_list(Tree, ProjectId, [Project|Projects]) ->
 %% @doc Check if tree item has children. If so, set item has children.
 
 check_dir_has_contents(Tree, Item, FilePath) ->
-  Children = filelib:wildcard(FilePath ++ "/*"),
+  Children = filelib:wildcard(filename:join([FilePath, "*"])),
   case Children of
     [] ->
       ok;
