@@ -273,7 +273,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
         ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
         ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
       end,
-      wxTreeCtrl:setItemImage(Tree, Item, Idx),
+      wxTreeCtrl:setItemImage(Tree, Item, Idx);
       
       % {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       % insert(Tree, Item, FilePath),
