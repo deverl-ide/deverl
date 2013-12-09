@@ -269,6 +269,7 @@ handle_cast(thaw_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   wxWindow:thaw(Parent),
 	{noreply, State}.
 
+
 handle_call({create_doc, Path, ProjectId}, _From,
 						State=#state{notebook=Nb, sizer=Sz, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
 	case is_already_open(Path, DocRecords) of
@@ -341,6 +342,7 @@ handle_call({get_path, DocId}, _From,
 handle_call({save, DocId}, _From,
 				    State=#state{parent=Parent, doc_records=DocRecords}) ->
   Record=#document{path=Path} = proplists:get_value(DocId, DocRecords),
+  io:format("Editor: ~p~n", [Record#document.editor]),
   Contents = editor:get_text(Record#document.editor),
   Result = try
     ide_io:save(Path, Contents),
@@ -454,7 +456,7 @@ show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocNames, 
 save_and_close(DocIdList) ->
   case save_documents(DocIdList) of
     {Saved, []} ->
-      close(Saved);
+      close(Saved),
     {Saved, Failed} ->
       close(Saved),
       cancelled
@@ -497,6 +499,7 @@ save_documents(DocIdList) ->
 save_documents([], Acc) ->
   Acc;
 save_documents([DocId|DocIdList], {Saved, Failed}) ->
+  io:format("Save documents~n"),
 	case wx_object:call(?MODULE, {save, DocId}) of
     {ok, DocRecords} ->
       Record = get_record(DocId, DocRecords),
