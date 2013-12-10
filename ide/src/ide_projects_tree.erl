@@ -246,17 +246,9 @@ handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item}}, State) ->
-  io:format("EXPANDing "),
+  io:format("EXPANDING"),
   case is_selectable(Tree, Item) of
     true ->
-      io:format("TRUE~n"),
-      % Image = wxTreeCtrl:getItemImage(Tree, Item),
-      % Idx = case Image of
-      %   ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
-      %   ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
-      % end,
-      % wxTreeCtrl:setItemImage(Tree, Item, Idx),
-      
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
       alternate_background_all(Tree);
@@ -267,17 +259,12 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
   io:format("EXPANDED "),
   case is_selectable(Tree, Item) of
     true ->
-      io:format("TRUE~n"),
       Image = wxTreeCtrl:getItemImage(Tree, Item),
       Idx = case Image of
         ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
         ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
       end,
       wxTreeCtrl:setItemImage(Tree, Item, Idx);
-      
-      % {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
-      % insert(Tree, Item, FilePath),
-      % alternate_background_all(Tree);
     false -> ok
   end,
 	{noreply, State};
