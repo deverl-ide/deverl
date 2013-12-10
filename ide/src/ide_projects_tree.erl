@@ -257,6 +257,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
   io:format("ITEM: ~p, OLD: ~p~n", [Item, Old]),
   
   wxTreeCtrl:freeze(Tree),
+  wxTreeCtrl:deleteChildren(Tree, Item),
   case is_selectable(Tree, Item) of
     true ->
       io:format("INSERTING~n"),
@@ -582,12 +583,12 @@ check_dir_has_contents(Tree, Item, FilePath) ->
       ok;
     _ ->
       wxTreeCtrl:setItemHasChildren(Tree, Item, []),
-      % case os:type() of
-      %   {win32, _} -> %% MSW has strange way of handling events
-      %     add_dummy_child(Tree, Item);
-      %   _ ->
-      %     ok
-      % end,
+      case os:type() of
+        {win32, _} -> %% MSW has strange way of handling events
+          add_dummy_child(Tree, Item);
+        _ ->
+          ok
+      end,
       ok
   end.
   
