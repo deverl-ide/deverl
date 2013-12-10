@@ -187,7 +187,7 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsing, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
-  wxTreeCtrl:connect(Tree, right_up),
+  % wxTreeCtrl:connect(Tree, right_up),
   
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
 
