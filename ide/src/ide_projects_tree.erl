@@ -249,15 +249,19 @@ handle_call(tree, _From, State) ->
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item}}, State) ->
   io:format("EXPANDING~n"),
+  wxTreeCtrl:freeze(Tree),
+  
   case is_selectable(Tree, Item) of
     true ->
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
-      % receive after 2000 -> ok end,
+      receive after 2000 -> ok end,
       % alternate_background_all(Tree),
       ok;
     false -> ok
   end,
+  wxTreeCtrl:thaw(Tree),
+  
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
   io:format("EXPANDED~n"),
@@ -494,8 +498,7 @@ add_files(Tree, Item, [File|Files]) ->
 		true ->
 			Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
       wxTreeCtrl:setItemImage(Tree, Child, ?ICON_FOLDER),
-      % check_dir_has_contents(Tree, Child, File);
-      ok;
+      check_dir_has_contents(Tree, Child, File);
 		_ ->
       Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
       wxTreeCtrl:setItemImage(Tree, Child, ?ICON_DOCUMENT)
