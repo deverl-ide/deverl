@@ -695,7 +695,7 @@ toggle_or_open(Tree, Item) ->
           %wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
           doc_manager:create_document(FilePath, Id);
         _Path ->
-          doc_manager:create_document(FilePath, undefined)
+          doc_manager:create_document(FilePath, undefined)  %% UNDEFINED??????????????????
       end
   end.
 
