@@ -180,9 +180,8 @@ init(Config) ->
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   wxTreeCtrl:connect(Tree, command_tree_item_activated, [{skip, true}]),
-  % wxTreeCtrl:connect(Tree, command_tree_item_activated, [callback]),
   % wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
-  % wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
+  wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
   wxTreeCtrl:connect(Tree, command_tree_item_expanding, []),
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsing, []),
@@ -298,23 +297,17 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=
     false -> ok
   end,
 	{noreply, State};
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}},
-						 State) ->
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}}, State) ->
 	case wxTreeCtrl:isTreeItemIdOk(OldItem) of
-		false ->  %% Deleted item
-			ok;
-		true ->
-      select(Tree, Item)
+		false -> ok;
+		true -> select(Tree, Item)
 	end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
             State=#state{frame=Frame}) ->
   case is_selectable(Tree, Item) of
-    true ->
-      toggle_or_open(Tree, Item);
-    false ->
-      ok
-      % wxTreeCtrl:toggle(Tree, Item)
+    true -> open_file(Tree, Item);
+    false -> ok
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_menu}},
@@ -344,22 +337,8 @@ handle_event(#wx{obj=Menu, id=Id, event=#wxCommand{type=command_menu_selected}},
   end,
 	{noreply, State}.
 
-  
-% handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
-%             Event, State=#state{frame=Frame}) ->
-%   wxTreeEvent:veto(Event),
-%   io:format("ACTIVATED~n"),
-%   case is_selectable(Tree, Item) of
-%     true ->
-%     io:format("toggle_or_open~n"),
-%       toggle_or_open(Tree, Item);
-%     false ->
-%       io:format("toggle~n"),
-%       wxTreeCtrl:toggle(Tree, Item)
-%   end,
-%   ok;
-
-handle_sync_event(#wx{obj=Tree}, Event, _State) ->
+%% 
+handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changing}}, Event, _State) ->
   Item = wxTreeEvent:getItem(Event),
   case is_selectable(Tree, Item) of
     true ->
@@ -367,7 +346,6 @@ handle_sync_event(#wx{obj=Tree}, Event, _State) ->
     false ->
       wxTreeEvent:veto(Event)
   end.
-  
   
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
@@ -721,16 +699,13 @@ find_standalone(Tree, Path) ->
 %% @doc If the node represents a file then open the file, otherwise
 %% toggle the item to display any children.
 
-toggle_or_open(Tree, Item) ->
+open_file(Tree, Item) ->
   FilePath = get_path(Tree, Item),
   case filelib:is_dir(FilePath) of
-    true ->
-      % wxTreeCtrl:toggle(Tree, Item);
-      ok;
+    true -> ok;
     false ->
       case wxTreeCtrl:getItemData(Tree, Item) of
         {Id, _Path} ->
-          %wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
           doc_manager:create_document(FilePath, Id);
         _Path ->
           doc_manager:create_document(FilePath, undefined)
