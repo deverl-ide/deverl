@@ -142,13 +142,13 @@ init(Config) ->
 	MainSz = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(Panel, MainSz),
 
-  Tree = wxTreeCtrl:new(Panel, [{style, ?wxTR_HAS_BUTTONS bor
+  Tree = wxTreeCtrl:new(Panel, [{style, % ?wxTR_HAS_BUTTONS bor
                                         ?wxTR_HIDE_ROOT bor
                                         ?wxTR_FULL_ROW_HIGHLIGHT bor
                                         ?wxTR_HAS_VARIABLE_ROW_HEIGHT bor
-                                        ?wxTR_NO_LINES bor
-                                        ?wxTR_LINES_AT_ROOT bor
-                                        ?wxTR_TWIST_BUTTONS bor
+                                        % ?wxTR_NO_LINES bor
+                                        % ?wxTR_LINES_AT_ROOT bor
+                                        % ?wxTR_TWIST_BUTTONS bor
                                         ?wxBORDER_NONE}]),
 	wxTreeCtrl:setIndent(Tree, 10),
 	ImgList = wxImageList:new(14,14),
