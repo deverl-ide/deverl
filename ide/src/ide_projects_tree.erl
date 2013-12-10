@@ -256,6 +256,8 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
       % receive after 2000 -> ok end,
+      {N,_} = wxTreeCtrl:getFirstChild(Tree, Item),
+      wxTreeCtrl:ensureVisible(Tree, N),
       % alternate_background_all(Tree),
       ok;
     false -> ok
