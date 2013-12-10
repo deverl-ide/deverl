@@ -608,6 +608,7 @@ append_item(Tree, Item, Filename) ->
   
 append_item(Tree, Item, Filename, Data) ->
   Itm = wxTreeCtrl:appendItem(Tree, Item, Filename, Data),
+  wxTreeCtrl:ensureVisible(Tree, Item),
   case os:type() of
     {_,darwin} ->
       Font = wxTreeCtrl:getItemFont(Tree, Itm),
