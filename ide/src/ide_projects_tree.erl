@@ -179,8 +179,8 @@ init(Config) ->
 
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-  % wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
-  wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
+  wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
+  % wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
   % wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
   wxTreeCtrl:connect(Tree, command_tree_item_expanding, []),
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
