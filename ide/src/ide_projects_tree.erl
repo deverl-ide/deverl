@@ -180,7 +180,7 @@ init(Config) ->
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   wxTreeCtrl:connect(Tree, command_tree_item_activated, [{skip, true}]),
-  % wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
+  wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
   wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
   wxTreeCtrl:connect(Tree, command_tree_item_expanding, []),
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
@@ -337,7 +337,6 @@ handle_event(#wx{obj=Menu, id=Id, event=#wxCommand{type=command_menu_selected}},
   end,
 	{noreply, State}.
 
-%% 
 handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changing}}, Event, _State) ->
   Item = wxTreeEvent:getItem(Event),
   case is_selectable(Tree, Item) of
