@@ -72,31 +72,31 @@ compile(From, Path, Config) ->
            (_, Acc) -> Acc end,
            
   Flags = lists:foldl(CFlags, [], Config),
-  
+
   {Cwd, Args} = case proplists:get_value(file, Config) of
-    true -> 
+    true ->
       %% Single file
       {filename:dirname(Path), [filename:basename(Path)]};
-    _ -> 
+    _ ->
       %% Directory
       IncludeDir = ["-I", lists:append([Path, "/include"])],
       OutputDir = ["-o", lists:append([Path, "/ebin"])],
       DirFlags = lists:append(IncludeDir, OutputDir),
-      
+
       %% Get a list of all erl,hrl,yrl,mib,rel files in any subdirectory of Cwd
       Files = lists:filter(fun(X) -> not filelib:is_dir(X) end,
         filelib:wildcard([Path | "/src/**/*.{erl,hrl,yrl,mib,rel}"])),
-        
+
       {Path, lists:append(DirFlags, Files)}
   end,
-  
+
   compiler_output:clear(),
-  
-  open_port({spawn_executable, erlc()}, [use_stdio, 
-                                       exit_status, 
-                                       {cd, Cwd}, 
+
+  open_port({spawn_executable, erlc()}, [use_stdio,
+                                       exit_status,
+                                       {cd, Cwd},
                                        {args, lists:append(Flags, Args)}]),
-  
+
   loop(From, filename:basename(Path)).
 
   
