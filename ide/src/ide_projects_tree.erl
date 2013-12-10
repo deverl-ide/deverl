@@ -581,9 +581,17 @@ check_dir_has_contents(Tree, Item, FilePath) ->
     [] ->
       ok;
     _ ->
-      wxTreeCtrl:setItemHasChildren(Tree, Item, [])
+      wxTreeCtrl:setItemHasChildren(Tree, Item, []),
+      case os:type() of
+        {win32, _} -> %% MSW has strange way of handling events
+          add_dummy_child(Tree, Item);
+        _ ->
+          ok
+      end
   end.
   
+add_dummy_child(Tree, Item) ->
+  wxTreeCtrl:appendItem(Tree, Item, "DUMMY").
       
 %% =====================================================================
 %% @doc Print the tree for debugging purposes
