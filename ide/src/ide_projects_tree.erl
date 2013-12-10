@@ -184,6 +184,7 @@ init(Config) ->
   % wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
   wxTreeCtrl:connect(Tree, command_tree_item_expanding, []),
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
+  wxTreeCtrl:connect(Tree, command_tree_item_collapsing, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
   wxTreeCtrl:connect(Tree, right_up),
   
@@ -246,7 +247,7 @@ handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item}}, State) ->
-  io:format("EXPANDING"),
+  io:format("EXPANDING~n"),
   case is_selectable(Tree, Item) of
     true ->
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
@@ -256,7 +257,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
-  io:format("EXPANDED "),
+  io:format("EXPANDED~n"),
   case is_selectable(Tree, Item) of
     true ->
       Image = wxTreeCtrl:getItemImage(Tree, Item),
@@ -268,7 +269,23 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
     false -> ok
   end,
 	{noreply, State};
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsing, item=Item}}, State) ->
+  io:format("COLLAPSING~n"),
+  case is_selectable(Tree, Item) of
+    true ->
+      % Image = wxTreeCtrl:getItemImage(Tree, Item),
+      % Idx = case Image of
+      %   ?ICON_FOLDER_OPEN -> ?ICON_FOLDER;
+      %   ?ICON_PROJECT_OPEN -> ?ICON_PROJECT
+      % end,
+      % wxTreeCtrl:setItemImage(Tree, Item, Idx),
+      wxTreeCtrl:deleteChildren(Tree, Item);
+      % alternate_background_all(Tree);
+    false -> ok
+  end,
+	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
+  io:format("COLLAPSED~n"),
   case is_selectable(Tree, Item) of
     true ->
       Image = wxTreeCtrl:getItemImage(Tree, Item),
@@ -277,7 +294,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=
         ?ICON_PROJECT_OPEN -> ?ICON_PROJECT
       end,
       wxTreeCtrl:setItemImage(Tree, Item, Idx),
-      wxTreeCtrl:deleteChildren(Tree, Item),
+      % wxTreeCtrl:deleteChildren(Tree, Item),
       alternate_background_all(Tree);
     false -> ok
   end,
