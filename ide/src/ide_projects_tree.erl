@@ -664,7 +664,8 @@ is_selectable(Tree, Item) ->
   Bool = is_projects_root(Tree, Item) orelse
   is_standalone_root(Tree, Item) orelse
   is_placeholder(Tree, Item),
-  not Bool.
+  not Bool,
+  true.
 
 
 %% =====================================================================
