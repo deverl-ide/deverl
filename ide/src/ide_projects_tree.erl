@@ -266,7 +266,6 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
       
       case os:type() of
         {win32,_} ->
-          receive after 4000 -> ok end,
           % wxTreeCtrl:expand(Tree, Item);
           Is = wxTreeCtrl:isExpanded(Tree, Item),
           io:format("IS EXPANDED: ~p~n", [Is]);
