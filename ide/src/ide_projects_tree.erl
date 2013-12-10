@@ -249,34 +249,32 @@ handle_call(tree, _From, State) ->
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item, itemOld=Old}}, State) ->
   io:format("EXPANDING~n"),
-  
   io:format("ITEM: ~p, OLD: ~p~n", [Item, Old]),
   
-  wxTreeCtrl:freeze(Tree),
-  
-  case is_selectable(Tree, Item) of
-    true ->
-      io:format("INSERTING~n"),
-      {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
-      insert(Tree, Item, FilePath),
-      io:format("INSERTED~n"),
+  case wxTreeCtrl:isExpanded(Tree, Item) of
+    true -> ok;
+    _ ->
+      wxTreeCtrl:freeze(Tree),
+      case is_selectable(Tree, Item) of
+        true ->
+          io:format("INSERTING~n"),
+          {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
+          insert(Tree, Item, FilePath),
+          io:format("INSERTED~n"),
       
-      case os:type() of
-        {win32,_} ->
-          % wxTreeCtrl:expand(Tree, Item);
-          Is = wxTreeCtrl:isExpanded(Tree, Item),
-          io:format("IS EXPANDED: ~p~n", [Is]);
-        _ -> ok
+          case os:type() of
+            {win32,_} ->
+              wxTreeCtrl:expand(Tree, Item),
+              Is = wxTreeCtrl:isExpanded(Tree, Item),
+              io:format("IS EXPANDED: ~p~n", [Is]);
+            _ -> ok
+          end,
+
+          ok;
+        false -> ok
       end,
-      
-      % wxTreeCtrl:expand(Tree, Item),
- %      receive after 2000 -> ok end,
-      % alternate_background_all(Tree),
-      ok;
-    false -> ok
+      wxTreeCtrl:thaw(Tree)
   end,
-  wxTreeCtrl:thaw(Tree),
-  
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
   io:format("EXPANDED~n"),
