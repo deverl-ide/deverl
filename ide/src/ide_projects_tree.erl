@@ -260,17 +260,26 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
   io:format("EXPANDED~n"),
   case is_selectable(Tree, Item) of
     true ->
-      Image = wxTreeCtrl:getItemImage(Tree, Item),
-      Idx = case Image of
-        ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
-        ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
-      end,
-      wxTreeCtrl:setItemImage(Tree, Item, Idx);
+      % Image = wxTreeCtrl:getItemImage(Tree, Item),
+      % Idx = case Image of
+      %   ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
+      %   ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
+      % end,
+      % wxTreeCtrl:setItemImage(Tree, Item, Idx);
+      ok;
     false -> ok
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsing, item=Item}}, State) ->
   io:format("COLLAPSING~n"),
+  case is_selectable(Tree, Item) of
+    true ->
+      wxTreeCtrl:deleteChildren(Tree, Item);
+    false -> ok
+  end,
+	{noreply, State};
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
+  io:format("COLLAPSED~n"),
   case is_selectable(Tree, Item) of
     true ->
       % Image = wxTreeCtrl:getItemImage(Tree, Item),
@@ -279,22 +288,6 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsing, item
       %   ?ICON_PROJECT_OPEN -> ?ICON_PROJECT
       % end,
       % wxTreeCtrl:setItemImage(Tree, Item, Idx),
-      wxTreeCtrl:deleteChildren(Tree, Item);
-      % alternate_background_all(Tree);
-    false -> ok
-  end,
-	{noreply, State};
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
-  io:format("COLLAPSED~n"),
-  case is_selectable(Tree, Item) of
-    true ->
-      Image = wxTreeCtrl:getItemImage(Tree, Item),
-      Idx = case Image of
-        ?ICON_FOLDER_OPEN -> ?ICON_FOLDER;
-        ?ICON_PROJECT_OPEN -> ?ICON_PROJECT
-      end,
-      wxTreeCtrl:setItemImage(Tree, Item, Idx),
-      % wxTreeCtrl:deleteChildren(Tree, Item),
       alternate_background_all(Tree);
     false -> ok
   end,
