@@ -299,7 +299,13 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsing, item
   io:format("COLLAPSING~n"),
   case is_selectable(Tree, Item) of
     true ->
-      wxTreeCtrl:deleteChildren(Tree, Item);
+      wxTreeCtrl:deleteChildren(Tree, Item),
+      case os:type() of
+        {win32, _} ->
+          add_dummy_child(Tree, Item);
+        _ ->
+          ok
+      end;
     false -> ok
   end,
 	{noreply, State};
