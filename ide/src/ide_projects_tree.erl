@@ -179,7 +179,8 @@ init(Config) ->
 
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-  wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
+  % wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
+  wxTreeCtrl:connect(Tree, command_tree_item_activated, [callback]),
   % wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
   % wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
   wxTreeCtrl:connect(Tree, command_tree_item_expanding, []),
@@ -349,7 +350,22 @@ handle_event(#wx{obj=Menu, id=Id, event=#wxCommand{type=command_menu_selected}},
       ok
   end,
 	{noreply, State}.
+
   
+handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
+            Event, State=#state{frame=Frame}) ->
+  wxTreeEvent:veto(Event),
+  io:format("ACTIVATED~n"),
+  case is_selectable(Tree, Item) of
+    true ->
+	  io:format("toggle_or_open~n"),
+      toggle_or_open(Tree, Item);
+    false ->
+    	io:format("toggle~n"),
+      wxTreeCtrl:toggle(Tree, Item)
+  end,
+	ok;
+
 handle_sync_event(#wx{obj=Tree}, Event, _State) ->
   Item = wxTreeEvent:getItem(Event),
   case is_selectable(Tree, Item) of
@@ -358,7 +374,8 @@ handle_sync_event(#wx{obj=Tree}, Event, _State) ->
     false ->
       wxTreeEvent:veto(Event)
   end.
-
+  
+  
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
 
@@ -703,12 +720,9 @@ find_standalone(Tree, Path) ->
 
 toggle_or_open(Tree, Item) ->
   FilePath = get_path(Tree, Item),
-  io:format("FILEPATH: ~p ", [FilePath]),
   case filelib:is_dir(FilePath) of
     true ->
-      io:format("IS DIR~n"),
-      % wxTreeCtrl:toggle(Tree, Item),
-      ok;
+      wxTreeCtrl:toggle(Tree, Item);
     false ->
       case wxTreeCtrl:getItemData(Tree, Item) of
         {Id, _Path} ->
