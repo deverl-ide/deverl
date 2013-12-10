@@ -179,7 +179,7 @@ init(Config) ->
 
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-  % wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
+  wxTreeCtrl:connect(Tree, command_tree_item_activated, [{skip, true}]),
   % wxTreeCtrl:connect(Tree, command_tree_item_activated, [callback]),
   % wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
   % wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
@@ -187,7 +187,7 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsing, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
-  % wxTreeCtrl:connect(Tree, right_up),
+  wxTreeCtrl:connect(Tree, command_tree_item_menu, []),
   
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
 
@@ -266,7 +266,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
       Idx = case Image of
         ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
         ?ICON_FOLDER -> ?ICON_FOLDER_OPEN;
-        Else -> io:format("ELSE: ~p~n", [Else]), Else
+        Else -> Else %% required for MSW
       end,
       wxTreeCtrl:setItemImage(Tree, Item, Idx);
     false -> ok
@@ -309,27 +309,18 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
             State=#state{frame=Frame}) ->
-  io:format("ACTIVATED~n"),
   case is_selectable(Tree, Item) of
     true ->
-	  io:format("toggle_or_open~n"),
       toggle_or_open(Tree, Item);
     false ->
-    	io:format("toggle~n"),
-      wxTreeCtrl:toggle(Tree, Item)
+      ok
+      % wxTreeCtrl:toggle(Tree, Item)
   end,
 	{noreply, State};
-handle_event(#wx{obj=Tree, event=#wxMouse{type=right_up, x=XPos, y=YPos}},
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_menu}},
             State=#state{frame=Frame}) ->
-  {Item, _Flags} = wxTreeCtrl:hitTest(Tree, {XPos, YPos}),
-  wxTreeCtrl:selectItem(Tree, Item),
-  case is_selectable(Tree, Item) of
-    true ->
-      Menu = create_menu(),
-      wxWindow:popupMenu(Tree, Menu);
-    false ->
-      ok
-  end,
+  Menu = create_menu(),
+  wxWindow:popupMenu(Tree, Menu),
 	{noreply, State};
 handle_event(#wx{obj=Menu, id=Id, event=#wxCommand{type=command_menu_selected}},
             State=#state{frame=Frame}) ->
@@ -734,7 +725,8 @@ toggle_or_open(Tree, Item) ->
   FilePath = get_path(Tree, Item),
   case filelib:is_dir(FilePath) of
     true ->
-      wxTreeCtrl:toggle(Tree, Item);
+      % wxTreeCtrl:toggle(Tree, Item);
+      ok;
     false ->
       case wxTreeCtrl:getItemData(Tree, Item) of
         {Id, _Path} ->
