@@ -247,8 +247,11 @@ handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item}}, State) ->
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item, itemOld=Old}}, State) ->
   io:format("EXPANDING~n"),
+  
+  io:format("ITEM: ~p, OLD: ~p~n", [Item, Old]),
+  
   wxTreeCtrl:freeze(Tree),
   
   case is_selectable(Tree, Item) of
@@ -268,10 +271,6 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
   io:format("EXPANDED~n"),
   case is_selectable(Tree, Item) of
     true ->
-      
-      {N,_} = wxTreeCtrl:getFirstChild(Tree, Item),
-      wxTreeCtrl:ensureVisible(Tree, N),
-      
       alternate_background_all(Tree),
       % Image = wxTreeCtrl:getItemImage(Tree, Item),
       % Idx = case Image of
