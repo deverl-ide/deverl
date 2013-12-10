@@ -187,7 +187,6 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsing, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
-  % wxTreeCtrl:connect(Tree, command_tree_state_image_click, []),
   % wxTreeCtrl:connect(Tree, right_up),
   
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
@@ -206,7 +205,7 @@ handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
   wxTreeCtrl:setItemImage(Tree, Item, ?ICON_PROJECT),
   check_dir_has_contents(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
-  % wxTreeCtrl:toggle(Tree, Item),
+  wxTreeCtrl:toggle(Tree, Item),
   alternate_background_of_children(Tree, Root),
   wxPanel:thaw(Tree),
   {noreply,State};
@@ -247,35 +246,28 @@ handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
 
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
-  
-% handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_state_image_click}}, State) ->
-%   io:format("IMAGE CLICKED~n"),
-%   {noreply, State};
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item, itemOld=Old}}, State) ->
   wxTreeCtrl:freeze(Tree),
-  wxTreeCtrl:deleteChildren(Tree, Item), %% MSW command_tree_item_expanding workaround
   case is_selectable(Tree, Item) of
     true ->
+      wxTreeCtrl:deleteChildren(Tree, Item), %% MSW command_tree_item_expanding workaround removes dummy     
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath);
     false -> ok
   end,
-  wxTreeCtrl:thaw(Tree),
-  
+  wxTreeCtrl:thaw(Tree),  
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
-  io:format("EXPANDED~n"),
   case is_selectable(Tree, Item) of
     true ->
       alternate_background_all(Tree),
-      % Image = wxTreeCtrl:getItemImage(Tree, Item),
-      % Idx = case Image of
-      %   ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
-      %   ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
-      % end,
-      % wxTreeCtrl:setItemImage(Tree, Item, Idx);
-      ok;
+      Image = wxTreeCtrl:getItemImage(Tree, Item),
+      Idx = case Image of
+        ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
+        ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
+      end,
+      wxTreeCtrl:setItemImage(Tree, Item, Idx);
     false -> ok
   end,
 	{noreply, State};
@@ -295,12 +287,12 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsing, item
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
   case is_selectable(Tree, Item) of
     true ->
-      % Image = wxTreeCtrl:getItemImage(Tree, Item),
-      % Idx = case Image of
-      %   ?ICON_FOLDER_OPEN -> ?ICON_FOLDER;
-      %   ?ICON_PROJECT_OPEN -> ?ICON_PROJECT
-      % end,
-      % wxTreeCtrl:setItemImage(Tree, Item, Idx),
+      Image = wxTreeCtrl:getItemImage(Tree, Item),
+      Idx = case Image of
+        ?ICON_FOLDER_OPEN -> ?ICON_FOLDER;
+        ?ICON_PROJECT_OPEN -> ?ICON_PROJECT
+      end,
+      wxTreeCtrl:setItemImage(Tree, Item, Idx),
       alternate_background_all(Tree);
     false -> ok
   end,
@@ -579,7 +571,8 @@ check_dir_has_contents(Tree, Item, FilePath) ->
       end,
       ok
   end.
-  
+
+%% MSW command_tree_item_expanding workaround
 add_dummy_child(Tree, Item) ->
   wxTreeCtrl:appendItem(Tree, Item, "DUMMY").
       
