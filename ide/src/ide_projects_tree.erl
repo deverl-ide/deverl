@@ -256,11 +256,12 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
   
   case is_selectable(Tree, Item) of
     true ->
+      io:format("INSERTING~n")
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
-      
-      wxTreeCtrl:expand(Tree, Item),
-      receive after 2000 -> ok end,
+      wxTreeCtrl:toglle(Tree, Item),
+      % wxTreeCtrl:expand(Tree, Item),
+ %      receive after 2000 -> ok end,
       % alternate_background_all(Tree),
       ok;
     false -> ok
@@ -361,19 +362,19 @@ handle_event(#wx{obj=Menu, id=Id, event=#wxCommand{type=command_menu_selected}},
 	{noreply, State}.
 
   
-handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
-            Event, State=#state{frame=Frame}) ->
-  wxTreeEvent:veto(Event),
-  io:format("ACTIVATED~n"),
-  case is_selectable(Tree, Item) of
-    true ->
-	  io:format("toggle_or_open~n"),
-      toggle_or_open(Tree, Item);
-    false ->
-    	io:format("toggle~n"),
-      wxTreeCtrl:toggle(Tree, Item)
-  end,
-	ok;
+% handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
+%             Event, State=#state{frame=Frame}) ->
+%   wxTreeEvent:veto(Event),
+%   io:format("ACTIVATED~n"),
+%   case is_selectable(Tree, Item) of
+%     true ->
+%     io:format("toggle_or_open~n"),
+%       toggle_or_open(Tree, Item);
+%     false ->
+%       io:format("toggle~n"),
+%       wxTreeCtrl:toggle(Tree, Item)
+%   end,
+%   ok;
 
 handle_sync_event(#wx{obj=Tree}, Event, _State) ->
   Item = wxTreeEvent:getItem(Event),
