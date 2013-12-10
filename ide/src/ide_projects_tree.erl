@@ -184,6 +184,7 @@ init(Config) ->
   % wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
   wxTreeCtrl:connect(Tree, command_tree_item_expanding, []),
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
+  wxTreeCtrl:connect(Tree, command_tree_item_collapsing, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
   wxTreeCtrl:connect(Tree, right_up),
   
@@ -246,17 +247,9 @@ handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item}}, State) ->
-  io:format("EXPANDing "),
+  io:format("EXPANDING~n"),
   case is_selectable(Tree, Item) of
     true ->
-      io:format("TRUE~n"),
-      % Image = wxTreeCtrl:getItemImage(Tree, Item),
-      % Idx = case Image of
-      %   ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
-      %   ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
-      % end,
-      % wxTreeCtrl:setItemImage(Tree, Item, Idx),
-      
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
       alternate_background_all(Tree);
@@ -264,33 +257,37 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
-  io:format("EXPANDED "),
+  io:format("EXPANDED~n"),
   case is_selectable(Tree, Item) of
     true ->
-      io:format("TRUE~n"),
-      Image = wxTreeCtrl:getItemImage(Tree, Item),
-      Idx = case Image of
-        ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
-        ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
-      end,
-      wxTreeCtrl:setItemImage(Tree, Item, Idx);
-      
-      % {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
-      % insert(Tree, Item, FilePath),
-      % alternate_background_all(Tree);
+      % Image = wxTreeCtrl:getItemImage(Tree, Item),
+      % Idx = case Image of
+      %   ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
+      %   ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
+      % end,
+      % wxTreeCtrl:setItemImage(Tree, Item, Idx);
+      ok;
+    false -> ok
+  end,
+	{noreply, State};
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsing, item=Item}}, State) ->
+  io:format("COLLAPSING~n"),
+  case is_selectable(Tree, Item) of
+    true ->
+      wxTreeCtrl:deleteChildren(Tree, Item);
     false -> ok
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
+  io:format("COLLAPSED~n"),
   case is_selectable(Tree, Item) of
     true ->
-      Image = wxTreeCtrl:getItemImage(Tree, Item),
-      Idx = case Image of
-        ?ICON_FOLDER_OPEN -> ?ICON_FOLDER;
-        ?ICON_PROJECT_OPEN -> ?ICON_PROJECT
-      end,
-      wxTreeCtrl:setItemImage(Tree, Item, Idx),
-      wxTreeCtrl:deleteChildren(Tree, Item),
+      % Image = wxTreeCtrl:getItemImage(Tree, Item),
+      % Idx = case Image of
+      %   ?ICON_FOLDER_OPEN -> ?ICON_FOLDER;
+      %   ?ICON_PROJECT_OPEN -> ?ICON_PROJECT
+      % end,
+      % wxTreeCtrl:setItemImage(Tree, Item, Idx),
       alternate_background_all(Tree);
     false -> ok
   end,

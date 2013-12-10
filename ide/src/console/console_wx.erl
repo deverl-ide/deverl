@@ -117,6 +117,7 @@ paste(This) ->
   Fn = fun(Gn, []) -> ok;
           (Gn, [E]) -> 
             wait(),
+            ?stc:gotoPos(This, ?stc:getLength(This)),
             ?stc:addText(This, E);
           (Gn, [H|T]) ->
             wait(),
@@ -167,7 +168,7 @@ init(Config) ->
   ?stc:connect(Console, command_menu_selected),
 
   %% Add initial text
-  InitText = "Erlang Evaluator (Ctrl-R to reset)\n" ++ ?PROMPT,
+  InitText = "Erlang Evaluator (Alt-R to reset)\n" ++ ?PROMPT,
   ?stc:setText(Console, InitText),
   ?stc:startStyling(Console, 0, 31),
   ?stc:setStyling(Console, length(InitText) - 1, ?STYLE_PROMPT),
@@ -179,10 +180,8 @@ init(Config) ->
   ?stc:cmdKeyAssign(Console, ?wxSTC_KEY_RIGHT, 0 ,?wxSTC_CMD_CHARRIGHT),
   
 	%% Accelerator table
-  AccelTab = wxAcceleratorTable:new(4,[wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $R}, {cmd, ?ID_RESET_CONSOLE}]),
-                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $K}, {cmd, ?ID_CLEAR_CONSOLE}]),
-                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $C}, {cmd, ?wxID_COPY}]), %% cmdKeyAssign
-                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_CTRL}, {keyCode, $V}, {cmd, ?wxID_PASTE}])]),
+  AccelTab = wxAcceleratorTable:new(4,[wxAcceleratorEntry:new([{flags, ?wxACCEL_ALT}, {keyCode, $R}, {cmd, ?ID_RESET_CONSOLE}]),
+                                       wxAcceleratorEntry:new([{flags, ?wxACCEL_ALT}, {keyCode, $K}, {cmd, ?ID_CLEAR_CONSOLE}])]),
   wxWindow:setAcceleratorTable(Console, AccelTab),
 
 	State=#state{win=Panel,
@@ -586,8 +585,8 @@ create_menu() ->
   wxMenu:append(Menu, ?wxID_COPY, "Copy\tCtrl+C", []),
   wxMenu:append(Menu, ?wxID_PASTE, "Paste\tCtrl+V", []),
   wxMenu:appendSeparator(Menu),
-  wxMenu:append(Menu, ?ID_RESET_CONSOLE, "Reset Console\tCtrl+R", []),
-  wxMenu:append(Menu, ?ID_CLEAR_CONSOLE, "Clear All\tCtrl+K", []),
+  wxMenu:append(Menu, ?ID_RESET_CONSOLE, "Reset Console\tAlt+R", []),
+  wxMenu:append(Menu, ?ID_CLEAR_CONSOLE, "Clear All\tAlt+K", []),
   wxMenu:connect(Menu, command_menu_selected),
   Menu.
   

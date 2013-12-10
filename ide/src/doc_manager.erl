@@ -274,10 +274,6 @@ handle_call({create_doc, Path, ProjectId}, _From,
 	case is_already_open(Path, DocRecords) of
 		false ->
 			ensure_notebook_visible(Nb, Sz),
-			%Font = wxFont:new(sys_pref_manager:get_preference(editor_font_size),
-												%sys_pref_manager:get_preference(editor_font_family),
-												%sys_pref_manager:get_preference(editor_font_style),
-												%sys_pref_manager:get_preference(editor_font_weight), []),
       Font = sys_pref_manager:get_font(editor),
 		  Editor = editor:start([{parent, Nb}, {font, Font}]),
 		  wxAuiNotebook:addPage(Nb, Editor, filename:basename(Path), [{select, true}]),
