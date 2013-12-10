@@ -187,7 +187,7 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsing, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
-  wxTreeCtrl:connect(Tree, command_tree_state_image_click, []),
+  % wxTreeCtrl:connect(Tree, command_tree_state_image_click, []),
   % wxTreeCtrl:connect(Tree, right_up),
   
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
@@ -248,9 +248,9 @@ handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
   
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_state_image_click}}, State) ->
-  io:format("IMAGE CLICKED~n"),
-  {noreply, State};
+% handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_state_image_click}}, State) ->
+%   io:format("IMAGE CLICKED~n"),
+%   {noreply, State};
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item, itemOld=Old}}, State) ->
   io:format("EXPANDING~n"),
@@ -266,6 +266,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
       
       case os:type() of
         {win32,_} ->
+          receive after 4000 -> ok end,
           % wxTreeCtrl:expand(Tree, Item);
           Is = wxTreeCtrl:isExpanded(Tree, Item),
           io:format("IS EXPANDED: ~p~n", [Is]);
