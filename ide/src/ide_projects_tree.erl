@@ -265,7 +265,8 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
       Image = wxTreeCtrl:getItemImage(Tree, Item),
       Idx = case Image of
         ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
-        ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
+        ?ICON_FOLDER -> ?ICON_FOLDER_OPEN;
+        Else -> io:format("ELSE: ~p~n", [Else])
       end,
       wxTreeCtrl:setItemImage(Tree, Item, Idx);
     false -> ok
