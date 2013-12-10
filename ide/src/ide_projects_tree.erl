@@ -260,6 +260,13 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
       io:format("INSERTED~n"),
+      
+      case os:type() of
+        {win32,_} ->
+          wxTreeCtrl:expand(Tree, Item);
+        _ -> ok
+      end,
+      
       % wxTreeCtrl:expand(Tree, Item),
  %      receive after 2000 -> ok end,
       % alternate_background_all(Tree),
