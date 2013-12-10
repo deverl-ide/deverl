@@ -253,28 +253,12 @@ handle_call(tree, _From, State) ->
 %   {noreply, State};
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item, itemOld=Old}}, State) ->
-  io:format("EXPANDING~n"),
-  io:format("ITEM: ~p, OLD: ~p~n", [Item, Old]),
-  
   wxTreeCtrl:freeze(Tree),
-  wxTreeCtrl:deleteChildren(Tree, Item),
+  wxTreeCtrl:deleteChildren(Tree, Item), %% MSW command_tree_item_expanding workaround
   case is_selectable(Tree, Item) of
     true ->
-      io:format("INSERTING~n"),
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
-      insert(Tree, Item, FilePath),
-      io:format("INSERTED~n"),
-      
-      case os:type() of
-        {win32,_} ->
-          % wxTreeCtrl:expand(Tree, Item);
-          wxTreeCtrl:setItemHasChildren(Tree, Item, []),
-          Is = wxTreeCtrl:isExpanded(Tree, Item),
-          io:format("IS EXPANDED: ~p~n", [Is]);
-        _ -> ok
-      end,
-
-      ok;
+      insert(Tree, Item, FilePath);
     false -> ok
   end,
   wxTreeCtrl:thaw(Tree),
@@ -296,11 +280,10 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsing, item=Item}}, State) ->
-  io:format("COLLAPSING~n"),
   case is_selectable(Tree, Item) of
     true ->
       wxTreeCtrl:deleteChildren(Tree, Item),
-      case os:type() of
+      case os:type() of %% MSW command_tree_item_expanding workaround
         {win32, _} ->
           add_dummy_child(Tree, Item);
         _ ->
@@ -310,7 +293,6 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsing, item
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
-  io:format("COLLAPSED~n"),
   case is_selectable(Tree, Item) of
     true ->
       % Image = wxTreeCtrl:getItemImage(Tree, Item),
