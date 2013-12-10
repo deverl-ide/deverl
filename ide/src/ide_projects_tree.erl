@@ -267,6 +267,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
       case os:type() of
         {win32,_} ->
           % wxTreeCtrl:expand(Tree, Item);
+          wxTreeCtrl:setItemHasChildren(Tree, Item, []),
           Is = wxTreeCtrl:isExpanded(Tree, Item),
           io:format("IS EXPANDED: ~p~n", [Is]);
         _ -> ok
@@ -581,12 +582,13 @@ check_dir_has_contents(Tree, Item, FilePath) ->
       ok;
     _ ->
       wxTreeCtrl:setItemHasChildren(Tree, Item, []),
-      case os:type() of
-        {win32, _} -> %% MSW has strange way of handling events
-          add_dummy_child(Tree, Item);
-        _ ->
-          ok
-      end
+      % case os:type() of
+      %   {win32, _} -> %% MSW has strange way of handling events
+      %     add_dummy_child(Tree, Item);
+      %   _ ->
+      %     ok
+      % end,
+      ok
   end.
   
 add_dummy_child(Tree, Item) ->
