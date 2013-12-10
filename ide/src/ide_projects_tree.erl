@@ -495,6 +495,7 @@ add_files(Tree, Item, [File|Files]) ->
 			Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
       wxTreeCtrl:setItemImage(Tree, Child, ?ICON_FOLDER),
       % check_dir_has_contents(Tree, Child, File);
+      ok;
 		_ ->
       Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
       wxTreeCtrl:setItemImage(Tree, Child, ?ICON_DOCUMENT)
