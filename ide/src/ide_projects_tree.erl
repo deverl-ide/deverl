@@ -251,8 +251,8 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
   case is_selectable(Tree, Item) of
     true ->
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
-      append_item(Tree, Item, "TESTING", []),
-      % insert(Tree, Item, FilePath),
+      % append_item(Tree, Item, "TESTING", []),
+      insert(Tree, Item, FilePath),
       % alternate_background_all(Tree),
       ok;
     false -> ok
