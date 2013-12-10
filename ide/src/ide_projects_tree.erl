@@ -256,7 +256,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
   
   case is_selectable(Tree, Item) of
     true ->
-      io:format("INSERTING~n")
+      io:format("INSERTING~n"),
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
       wxTreeCtrl:toglle(Tree, Item),
