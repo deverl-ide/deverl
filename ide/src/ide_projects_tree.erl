@@ -256,8 +256,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
       % receive after 2000 -> ok end,
-      {N,_} = wxTreeCtrl:getFirstChild(Tree, Item),
-      wxTreeCtrl:ensureVisible(Tree, N),
+
       % alternate_background_all(Tree),
       ok;
     false -> ok
@@ -269,6 +268,10 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
   io:format("EXPANDED~n"),
   case is_selectable(Tree, Item) of
     true ->
+      
+      {N,_} = wxTreeCtrl:getFirstChild(Tree, Item),
+      wxTreeCtrl:ensureVisible(Tree, N),
+      
       alternate_background_all(Tree),
       % Image = wxTreeCtrl:getItemImage(Tree, Item),
       % Idx = case Image of
