@@ -252,7 +252,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
     true ->
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath),
-      alternate_background_all(Tree),
+      % alternate_background_all(Tree),
       wxTreeCtrl:refresh(Tree);
     false -> ok
   end,
