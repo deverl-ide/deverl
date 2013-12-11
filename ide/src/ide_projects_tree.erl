@@ -219,6 +219,7 @@ handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) -
   {noreply,State};
   
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
+  io:format("add standalone~n"),
   Root = get_standalone_root(Tree),
   remove_placeholder(Tree, Root),
   case is_in_tree(Tree, Path, get_children_recursively(Tree, Root)) of
@@ -306,17 +307,8 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
             State=#state{frame=Frame}) ->
   case is_selectable(Tree, Item) of
-<<<<<<< HEAD
-    true ->
-      io:format("toggle_or_open~n"),
-      toggle_or_open(Tree, Item);
-    false ->
-    	io:format("toggle~n"),
-      wxTreeCtrl:toggle(Tree, Item)
-=======
     true -> open_file(Tree, Item);
     false -> ok
->>>>>>> 219b667f8037f91d8de5277d58c7beb6ba2932dd
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_menu}},
