@@ -179,14 +179,14 @@ init(Config) ->
 
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
-  wxTreeCtrl:connect(Tree, command_tree_item_activated, []),
+  wxTreeCtrl:connect(Tree, command_tree_item_activated, [{skip, true}]),
   wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
-  % wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
+  wxTreeCtrl:connect(Tree, command_tree_sel_changing, [callback]), %% To veto a selection
   wxTreeCtrl:connect(Tree, command_tree_item_expanding, []),
   wxTreeCtrl:connect(Tree, command_tree_item_expanded, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsing, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
-  wxTreeCtrl:connect(Tree, right_up),
+  wxTreeCtrl:connect(Tree, command_tree_item_menu, []),
   
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
 
@@ -204,7 +204,7 @@ handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
   wxTreeCtrl:setItemImage(Tree, Item, ?ICON_PROJECT),
   check_dir_has_contents(Tree, Item, Dir),
   wxTreeCtrl:selectItem(Tree, Item),
-  % wxTreeCtrl:toggle(Tree, Item),
+  wxTreeCtrl:toggle(Tree, Item),
   alternate_background_of_children(Tree, Root),
   wxPanel:thaw(Tree),
   {noreply,State};
@@ -246,84 +246,83 @@ handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State}.
 
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item}}, State) ->
-  io:format("EXPANDING~n"),
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item, itemOld=Old}}, State) ->
+  wxTreeCtrl:freeze(Tree),
   case is_selectable(Tree, Item) of
     true ->
+      wxTreeCtrl:deleteChildren(Tree, Item), %% MSW command_tree_item_expanding workaround removes dummy     
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
-      insert(Tree, Item, FilePath),
-      alternate_background_all(Tree);
+      insert(Tree, Item, FilePath);
     false -> ok
   end,
+  wxTreeCtrl:thaw(Tree),  
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
-  io:format("EXPANDED~n"),
   case is_selectable(Tree, Item) of
     true ->
-      % Image = wxTreeCtrl:getItemImage(Tree, Item),
-      % Idx = case Image of
-      %   ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
-      %   ?ICON_FOLDER -> ?ICON_FOLDER_OPEN
-      % end,
-      % wxTreeCtrl:setItemImage(Tree, Item, Idx);
-      ok;
+      alternate_background_all(Tree),
+      Image = wxTreeCtrl:getItemImage(Tree, Item),
+      Idx = case Image of
+        ?ICON_PROJECT -> ?ICON_PROJECT_OPEN;
+        ?ICON_FOLDER -> ?ICON_FOLDER_OPEN;
+        Else -> Else %% required for MSW
+      end,
+      wxTreeCtrl:setItemImage(Tree, Item, Idx);
     false -> ok
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsing, item=Item}}, State) ->
-  io:format("COLLAPSING~n"),
   case is_selectable(Tree, Item) of
     true ->
-      wxTreeCtrl:deleteChildren(Tree, Item);
+      wxTreeCtrl:deleteChildren(Tree, Item),
+      case os:type() of %% MSW command_tree_item_expanding workaround
+        {win32, _} ->
+          add_dummy_child(Tree, Item);
+        _ ->
+          ok
+      end;
     false -> ok
   end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
-  io:format("COLLAPSED~n"),
   case is_selectable(Tree, Item) of
     true ->
-      % Image = wxTreeCtrl:getItemImage(Tree, Item),
-      % Idx = case Image of
-      %   ?ICON_FOLDER_OPEN -> ?ICON_FOLDER;
-      %   ?ICON_PROJECT_OPEN -> ?ICON_PROJECT
-      % end,
-      % wxTreeCtrl:setItemImage(Tree, Item, Idx),
+      Image = wxTreeCtrl:getItemImage(Tree, Item),
+      Idx = case Image of
+        ?ICON_FOLDER_OPEN -> ?ICON_FOLDER;
+        ?ICON_PROJECT_OPEN -> ?ICON_PROJECT
+      end,
+      wxTreeCtrl:setItemImage(Tree, Item, Idx),
       alternate_background_all(Tree);
     false -> ok
   end,
 	{noreply, State};
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}},
-						 State) ->
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}}, State) ->
 	case wxTreeCtrl:isTreeItemIdOk(OldItem) of
-		false ->  %% Deleted item
-			ok;
-		true ->
-      select(Tree, Item)
+		false -> ok;
+		true -> select(Tree, Item)
 	end,
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
             State=#state{frame=Frame}) ->
-  io:format("ACTIVATED~n"),
   case is_selectable(Tree, Item) of
+<<<<<<< HEAD
     true ->
       io:format("toggle_or_open~n"),
       toggle_or_open(Tree, Item);
     false ->
     	io:format("toggle~n"),
       wxTreeCtrl:toggle(Tree, Item)
+=======
+    true -> open_file(Tree, Item);
+    false -> ok
+>>>>>>> 219b667f8037f91d8de5277d58c7beb6ba2932dd
   end,
 	{noreply, State};
-handle_event(#wx{obj=Tree, event=#wxMouse{type=right_up, x=XPos, y=YPos}},
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_menu}},
             State=#state{frame=Frame}) ->
-  {Item, _Flags} = wxTreeCtrl:hitTest(Tree, {XPos, YPos}),
-  wxTreeCtrl:selectItem(Tree, Item),
-  case is_selectable(Tree, Item) of
-    true ->
-      Menu = create_menu(),
-      wxWindow:popupMenu(Tree, Menu);
-    false ->
-      ok
-  end,
+  Menu = create_menu(),
+  wxWindow:popupMenu(Tree, Menu),
 	{noreply, State};
 handle_event(#wx{obj=Menu, id=Id, event=#wxCommand{type=command_menu_selected}},
             State=#state{frame=Frame}) ->
@@ -346,8 +345,8 @@ handle_event(#wx{obj=Menu, id=Id, event=#wxCommand{type=command_menu_selected}},
       ok
   end,
 	{noreply, State}.
-  
-handle_sync_event(#wx{obj=Tree}, Event, _State) ->
+
+handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changing}}, Event, _State) ->
   Item = wxTreeEvent:getItem(Event),
   case is_selectable(Tree, Item) of
     true ->
@@ -355,7 +354,7 @@ handle_sync_event(#wx{obj=Tree}, Event, _State) ->
     false ->
       wxTreeEvent:veto(Event)
   end.
-
+  
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
 
@@ -541,9 +540,19 @@ check_dir_has_contents(Tree, Item, FilePath) ->
     [] ->
       ok;
     _ ->
-      wxTreeCtrl:setItemHasChildren(Tree, Item, [])
+      wxTreeCtrl:setItemHasChildren(Tree, Item, []),
+      case os:type() of
+        {win32, _} -> %% MSW has strange way of handling events
+          add_dummy_child(Tree, Item);
+        _ ->
+          ok
+      end,
+      ok
   end.
-  
+
+%% MSW command_tree_item_expanding workaround
+add_dummy_child(Tree, Item) ->
+  wxTreeCtrl:appendItem(Tree, Item, "DUMMY").
       
 %% =====================================================================
 %% @doc Print the tree for debugging purposes
@@ -698,17 +707,13 @@ find_standalone(Tree, Path) ->
 %% @doc If the node represents a file then open the file, otherwise
 %% toggle the item to display any children.
 
-toggle_or_open(Tree, Item) ->
+open_file(Tree, Item) ->
   FilePath = get_path(Tree, Item),
-  io:format("FILEPATH: ~p ", [FilePath]),
   case filelib:is_dir(FilePath) of
-    true ->
-      io:format("IS DIR~n"),
-      wxTreeCtrl:toggle(Tree, Item);
+    true -> ok;
     false ->
       case wxTreeCtrl:getItemData(Tree, Item) of
         {Id, _Path} ->
-          %wxTreeCtrl:getItemData(Tree, get_project_root(Tree, Item)),
           doc_manager:create_document(FilePath, Id);
         _Path ->
           doc_manager:create_document(FilePath, undefined)  %% UNDEFINED??????????????????
