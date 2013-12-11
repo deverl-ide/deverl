@@ -306,7 +306,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
   io:format("ACTIVATED~n"),
   case is_selectable(Tree, Item) of
     true ->
-	  io:format("toggle_or_open~n"),
+      io:format("toggle_or_open~n"),
       toggle_or_open(Tree, Item);
     false ->
     	io:format("toggle~n"),
@@ -830,6 +830,7 @@ select(Tree, Item) ->
   
 
 %% used for standalone files only
+%% return false if file with path is not in tree, or return item if it is.
 is_in_tree(_Tree, _Path, []) ->
   false;
 is_in_tree(Tree, Path, [Child|Children]) ->
