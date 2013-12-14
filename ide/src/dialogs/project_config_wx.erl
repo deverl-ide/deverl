@@ -239,13 +239,13 @@ handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State};
   
 handle_call(build_config, _From, State=#state{module=Module, function=Function, args=Args}) ->
-  io:format("M: ~p~nF: ~p~nA: ~p~n", [Module, Function, Args]),
-  Config = [{module, list_to_atom(Module)}, {function, list_to_atom(Function)}],
+  Config = [{module, Module}, {function, Function}],
   Result = case Args of
     [] -> 
       Config;
     Args -> 
-      [{args, lists:map(fun(Str) -> string:strip(Str) end, string:tokens(Args, ","))} | Config]
+      % Config ++ [{args, lists:map(fun(Str) -> string:strip(Str) end, string:tokens(Args, ","))}]
+      Config ++ [{args, Args}]
   end,
   {reply, Result, State}.
   

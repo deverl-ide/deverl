@@ -501,7 +501,6 @@ save_documents(DocIdList) ->
 save_documents([], Acc) ->
   Acc;
 save_documents([DocId|DocIdList], {Saved, Failed}) ->
-  io:format("Save documents~n"),
 	case wx_object:call(?MODULE, {save, DocId}) of
     {ok, DocRecords} ->
       Record = get_record(DocId, DocRecords),

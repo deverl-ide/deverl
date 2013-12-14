@@ -90,7 +90,8 @@ build_project(Parent, ProjectId) ->
     Config ->
       try
         ParsedConfig = parse_config(Config),
-        execute_function(ParsedConfig)
+        execute_function(ParsedConfig),
+        ok
       catch
         error:_ ->
           error("ERROR")
@@ -105,12 +106,14 @@ notify_missing_config(Parent) ->
 		?wxID_OK ->
       project_manager:set_project_configuration(Parent)
 	end.
-  
-parse_config(Config) ->
-  ok.
 
+parse_config([{module, M}, {function, F}]) -> {M,F};
+parse_config([{module, M}, {function, F}, {args, Args}]) -> {M,F,Args}.
+
+execute_function({M, F}) ->
+  console_port:eval(M ++ ":" ++ F ++ "()." ++ io_lib:nl());
 execute_function({M, F, Args}) ->
-  ok.
+  console_port:eval("erlang:apply(" ++ M ++ "," ++ F ++ ",[" ++ Args ++ "])." ++ io_lib:nl()).
 
 change_dir(Path) ->
   console_port:eval("cd(\"" ++ Path ++ "\")." ++ io_lib:nl(), false).

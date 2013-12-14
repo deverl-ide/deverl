@@ -291,17 +291,17 @@ handle_call({get_root, ProjectId}, _From, State=#state{projects=Projects}) ->
 	#project{root=Root} = proplists:get_value(ProjectId, Projects),
 	{reply, Root, State};
 
-handle_call({get_build_config, ProjectId}, _From, State=#state{projects=Projects}) ->
-	#project{build_config=Build, root=Root}=Project = proplists:get_value(ProjectId, Projects),
-  {Conf, UpdatedProjects} = case Build of
+handle_call({get_build_config, ProjectId}, _From, State=#state{projects=Projects0}) ->
+	#project{build_config=Bc0, root=Root}=Project = proplists:get_value(ProjectId, Projects0),
+  {Bc1, Projects1} = case Bc0 of
     undefined -> %% Attempt to read the config file
-      B = load_build_config(Root),
-      W = proplists:delete(ProjectId, Projects),
-      {B, [{ProjectId, Project#project{build_config=B}} | W]};
+      Bc2 = load_build_config(Root),
+      Tmp = proplists:delete(ProjectId, Projects0),
+      {Bc2, [{ProjectId, Project#project{build_config=Bc2}} | Tmp]};
     C ->
-      {C, Projects}
+      {C, Projects0}
   end,
-	{reply, Conf, State#state{projects=UpdatedProjects}};
+	{reply, Bc1, State#state{projects=Projects1}};
 
 handle_call(close_project, _From, State=#state{frame=Frame, active_project=ActiveProject, projects=Projects}) ->
   ide_projects_tree:remove_project(ActiveProject),

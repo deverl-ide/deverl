@@ -571,13 +571,13 @@ check_if_finished(Parent, Filename, Desc) ->
   Filename = get_filename(Parent),
   case length(Filename) of
     0 ->
-      wxListBox:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
+      wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
     _ ->
       case validate_name(Filename, Desc) of
         true ->
-          wxListBox:enable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
+          wxButton:enable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
         false ->
-          wxListBox:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON))
+          wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON))
       end
   end.
 
