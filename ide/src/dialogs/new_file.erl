@@ -207,14 +207,14 @@ handle_call(win, _From, State) ->
 handle_call(dialog1, _From, State) ->
   {reply, State#state.dialog1, State};
 handle_call(dialog2, _From, State) ->
-    {reply, State#state.dialog2, State};
+  {reply, State#state.dialog2, State};
 handle_call(projects, _From, State) ->
-    {reply, State#state.projects, State};
+  {reply, State#state.projects, State};
 handle_call(get_path, _From, State) ->
-    {reply, State#state.path, State};
+  {reply, State#state.path, State};
 handle_call(get_project_id, _From, State) ->
-    {reply, State#state.project_id, State}.
-    
+  {reply, State#state.project_id, State}.
+  
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 

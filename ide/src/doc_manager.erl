@@ -129,8 +129,8 @@ close_active_document() ->
 
 close_project(ProjectId) ->
   close_documents(get_project_documents(ProjectId)).
-  
-  
+
+
 %% =====================================================================
 %% @doc
 
@@ -157,7 +157,7 @@ save_document(DocId) ->
     {_Saved, _Failed} ->
       cancelled
   end.
-  
+
 
 %% =====================================================================
 %% @doc
@@ -191,8 +191,8 @@ apply_to_all_documents(Fun, Args) ->
 
 apply_to_active_document(Fun, Args) ->
 	apply_to_documents(Fun, Args, [get_active_document()]).
-  
-  
+
+
 %% =====================================================================
 %% @doc
 
@@ -205,7 +205,7 @@ get_active_document() ->
 
 get_path(DocId) ->
   wx_object:call(?MODULE, {get_path, DocId}).
-  
+
 
 %% =====================================================================
 %% Callbacks
@@ -265,11 +265,11 @@ handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
 	show_placeholder(Sz),
 	ide:set_title([]),
 	{noreply, State};
-  
+
 handle_cast(freeze_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   wxWindow:freeze(Parent),
 	{noreply, State};
-  
+
 handle_cast(thaw_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   wxWindow:thaw(Parent),
 	{noreply, State}.
@@ -287,6 +287,13 @@ handle_call({create_doc, Path, ProjectId}, _From,
 		  NewDocRecords = [{DocId, Document}|DocRecords],
 		  Key = wxAuiNotebook:getPage(Nb, wxAuiNotebook:getPageCount(Nb)-1),
 			load_editor_contents(Editor, Path),
+      io:format("ProjectId: ~p~n", [ProjectId]),
+      case ProjectId of
+        undefined ->
+          ok;
+        _ ->
+          ide_projects_tree:set_has_children(filename:dirname(Path))
+      end,
 			{reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}};
 		DocId ->
 			wxAuiNotebook:setSelection(Nb, doc_id_to_page_id(Nb, DocId, PageToDocId)),
@@ -333,7 +340,7 @@ handle_call({get_doc_names, DocIdList}, _From,
       filename:basename(Record#document.path)
     end, DocIdList),
   {reply, DocNameList, State};
-  
+
 handle_call({get_path, DocId}, _From,
 				    State=#state{doc_records=DocRecords}) ->
   #document{path=Path} = proplists:get_value(DocId, DocRecords),
@@ -432,7 +439,7 @@ close_documents(Documents) ->
       show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs, get_doc_names(Documents), Documents)
   end,
   wx_object:cast(?MODULE, thaw_notebook).
-  
+
 
 %% =====================================================================
 %% @doc
@@ -452,7 +459,7 @@ show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocNames, 
 
 %% =====================================================================
 %% @doc
-  
+
 save_and_close(DocIdList) ->
   case save_documents(DocIdList) of
     {Saved, []} ->
