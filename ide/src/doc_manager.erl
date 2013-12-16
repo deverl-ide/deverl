@@ -248,7 +248,6 @@ handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords
   Record = proplists:get_value(DocId, DocRecords),
   case Record#document.project_id of
     undefined ->
-      io:format("REMOVE DOC~n"),
       ide_projects_tree:remove_standalone_document(Record#document.path);
     _ ->
       ok
@@ -343,7 +342,6 @@ handle_call({get_path, DocId}, _From,
 handle_call({save, DocId}, _From,
 				    State=#state{parent=Parent, doc_records=DocRecords}) ->
   Record=#document{path=Path} = proplists:get_value(DocId, DocRecords),
-  io:format("Editor: ~p~n", [Record#document.editor]),
   Contents = editor:get_text(Record#document.editor),
   Result = try
     ide_io:save(Path, Contents),

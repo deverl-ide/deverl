@@ -67,10 +67,16 @@ run_project(Parent) ->
 compile_file(Path) ->
   %% Remember to send the output directory to load_file/1 if the flag is set
   %% for the compiler (-o). 
-  compiler_port:start(Path, [file, project]),
+  compiler_port:start(Path, [file]),
   receive
     {From, ok} ->
-      load_file(Path, []);
+      case project_manager:is_known_project(Path) of
+        {true, P0} ->
+          P1 = filename:join([P0, "ebin", filename:basename(Path)]),
+          load_file(P1, []);
+        _ ->
+          load_file(Path, [])
+      end;
     {From, error} ->
       ok
   end.
