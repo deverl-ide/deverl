@@ -64,7 +64,7 @@ start(Config) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Create a new file and insert it into the workspace.
 
 new_document(Parent) ->
   OpenProjects = project_manager:get_open_projects(),
@@ -79,7 +79,7 @@ new_document(Parent) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Insert a documents into the workspace.
 
 create_document(Path, ProjectId) ->
   case ide_io:create_new_file(Path) of
@@ -237,21 +237,6 @@ handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
 
-handle_cast({close_doc, DocId}, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
-  Record = proplists:get_value(DocId, DocRecords),
-  case Record#document.project_id of
-    undefined ->
-      ide_projects_tree:remove_standalone_document(Record#document.path);
-    _ ->
-      ok
-  end,
-  {NewDocRecords, NewPageToDocId} = remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, PageToDocId), DocRecords, PageToDocId),
-  case wxAuiNotebook:getPageCount(Nb) of
- 		0 -> wx_object:cast(?MODULE, notebook_empty);
- 		_ -> ok
- 	end,
-  {noreply, State#state{doc_records=NewDocRecords, page_to_doc_id=NewPageToDocId}};
-
 handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
 	%% Called when the last document is closed.
   ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, false),
@@ -378,7 +363,30 @@ handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_record
 			Record#document.editor
 		end, DocIds),
 	lists:foreach(Fun2, List),
-	{reply, ok, State}.
+	{reply, ok, State};
+  
+handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+  F = fun(G, [], Dr, P2d) -> {Dr, P2d};
+         (G, [DocId | T], Dr, P2d) ->
+           
+            Record = proplists:get_value(DocId, DocRecords),
+            case Record#document.project_id of
+              undefined ->
+                ide_projects_tree:remove_standalone_document(Record#document.path);
+              _ ->
+                ok
+            end,
+            {NewDocRecords, NewPageToDocId} = remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, P2d), Dr, P2d),
+            G(G, T, NewDocRecords, NewPageToDocId)
+
+  end,
+  {S, D} = F(F, Docs, DocRecords, PageToDocId),
+  % case wxAuiNotebook:getPageCount(Nb) of
+  %      0 -> wx_object:cast(?MODULE, notebook_empty);
+  %      _ -> ok
+  % end,
+  % [Fun(N) || N <- Docs],
+	{reply, ok, State#state{doc_records=S, page_to_doc_id=D}}.
 
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
@@ -423,14 +431,15 @@ load_editor_contents(Editor, Path) ->
 %% point will be saved.
 
 close_documents(Documents) ->
-  wx_object:cast(?MODULE, freeze_notebook),
+  % wx_object:cast(?MODULE, freeze_notebook),
   case get_modified_docs(Documents) of
     {[], _Parent} ->
       close(Documents);
     {ModifiedDocs, Parent} ->
       show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs, get_doc_names(Documents), Documents)
-  end,
-  wx_object:cast(?MODULE, thaw_notebook).
+  end.
+  % wx_object:cast(?MODULE, thaw_notebook).
+
 
 
 %% =====================================================================
@@ -465,11 +474,8 @@ save_and_close(DocIdList) ->
 %% =====================================================================
 %% @doc
 
-close([]) ->
-  ok;
-close([DocId|Documents]) ->
-  wx_object:cast(?MODULE, {close_doc, DocId}),
-  close(Documents).
+close(Docs) ->
+  wx_object:call(?MODULE, {close_docs, Docs}).
 
 
 %% =====================================================================

@@ -259,7 +259,12 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 %% Window close event
 handle_event(#wx{event=#wxClose{}}, State) ->
   io:format("~p Closing window ~n",[self()]),
-  {stop, normal, State};
+  case doc_manager:close_all() of
+    cancelled ->
+      {noreply, State};
+    _ ->
+      {stop, normal, State}
+  end;
 
 
 %% =====================================================================
