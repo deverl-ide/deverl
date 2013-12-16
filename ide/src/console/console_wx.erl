@@ -6,9 +6,9 @@
 %% @doc This module initalises the console, which is currently
 %% implemented as a wxStyledTextCtrl.
 %% @end
-%% In the current implementation we manage the prompt ourselves 
+%% In the current implementation we manage the prompt ourselves
 %% (console_parser strips the prompt returned from the port), so that
-%% we can write to the textctrl anywhere we like without having to 
+%% we can write to the textctrl anywhere we like without having to
 %% worry about deleting/re-numbering prompts.
 %% We settled on this current implementation as a comprimise (in the
 %% original implementation everything received from the port was
@@ -47,6 +47,7 @@
 -define(ID_RESET_CONSOLE, 1).
 -define(ID_CLEAR_CONSOLE, 2).
 -define(PROMPT, "> ").
+-define(CONSOLE_HEADER, "Erlang Evaluator (Alt-R to reset, Alt-K to clear)\n").
 -define(STYLE_PROMPT, 0).
 -define(STYLE_ERROR, 1).
 -define(MARKER_MSG, 1).
@@ -107,15 +108,16 @@ set_font(Font) ->
 
 clear() ->
   wx_object:cast(?MODULE, clear).
-  
+
 
 %% =====================================================================
 %% @doc
-  
+
 paste(This) ->
   Split = re:split(get_clipboard_text(), "\\R", [{newline, any}, {return, list}, trim]),
-  Fn = fun(Gn, []) -> ok;
-          (Gn, [E]) -> 
+  Fn = fun(Gn, []) ->
+            ok;
+          (Gn, [E]) ->
             wait(),
             ?stc:gotoPos(This, ?stc:getLength(This)),
             ?stc:addText(This, E);
@@ -143,15 +145,15 @@ init(Config) ->
 	?stc:setMarginWidth(Console, 1, 0),
 	?stc:setMarginWidth(Console, 2, 0),
 	?stc:setMarginLeft(Console, 2),
-	?stc:setLexer(Console, ?wxSTC_LEX_NULL),  
-	?stc:setCaretWidth(Console, 1), 
+	?stc:setLexer(Console, ?wxSTC_LEX_NULL),
+	?stc:setCaretWidth(Console, 1),
 	?stc:cmdKeyClear(Console, ?wxSTC_KEY_UP, 0),
 
   %% Saved styles
   {_Name, Fg, Bg, MrkrBg, ErrFg} = sys_pref_manager:get_preference(console_theme),
   set_theme(Fg, Bg, MrkrBg, ErrFg),
   set_font(sys_pref_manager:get_font(console)),
-  
+
   %% Other styles
   % ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "fore:#FF0000,bold,underline"), % For the prompt
 
@@ -168,17 +170,17 @@ init(Config) ->
   ?stc:connect(Console, command_menu_selected),
 
   %% Add initial text
-  InitText = "Erlang Evaluator (Alt-R to reset)\n" ++ ?PROMPT,
+  InitText = ?CONSOLE_HEADER ?PROMPT,
   ?stc:setText(Console, InitText),
   ?stc:startStyling(Console, 0, 31),
   ?stc:setStyling(Console, length(InitText) - 1, ?STYLE_PROMPT),
-  
+
   %% Clear default key bindings
   ?stc:cmdKeyClearAll(Console),
   ?stc:cmdKeyAssign(Console, ?wxSTC_KEY_BACK, 0, ?wxSTC_CMD_DELETEBACK),
   ?stc:cmdKeyAssign(Console, ?wxSTC_KEY_LEFT, 0 ,?wxSTC_CMD_CHARLEFT),
   ?stc:cmdKeyAssign(Console, ?wxSTC_KEY_RIGHT, 0 ,?wxSTC_CMD_CHARRIGHT),
-  
+
 	%% Accelerator table
   AccelTab = wxAcceleratorTable:new(4,[wxAcceleratorEntry:new([{flags, ?wxACCEL_ALT}, {keyCode, $R}, {cmd, ?ID_RESET_CONSOLE}]),
                                        wxAcceleratorEntry:new([{flags, ?wxACCEL_ALT}, {keyCode, $K}, {cmd, ?ID_CLEAR_CONSOLE}])]),
@@ -214,7 +216,7 @@ handle_cast({set_font, Font}, State=#state{textctrl=Console}) ->
   {noreply,State};
 handle_cast({append, {response, complete}}, State=#state{textctrl=Console}) ->
   prompt_2_console(Console, ?PROMPT, false),
-  {noreply, State#state{busy=false}};  
+  {noreply, State#state{busy=false}};
 handle_cast({append, {response, Response}}, State=#state{textctrl=Console}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   ?stc:addText(Console, Response),
@@ -237,8 +239,11 @@ handle_cast({append_input, Input}, State=#state{input=Cmd}) ->
 handle_cast(clear, State=#state{textctrl=Console, busy=Busy}) ->
   ?stc:clearAll(Console),
   case Busy of
-    true -> ok;
-    false -> prompt_2_console(Console, ?PROMPT, false)
+    true ->
+      ok;
+    false ->
+      ?stc:addText(Console, ?CONSOLE_HEADER),
+      prompt_2_console(Console, ?PROMPT, false)
   end,
   {noreply, State};
 handle_cast(eval, State=#state{textctrl=Console, input=Cmd, cmd_history=Hst0, current_cmd=Idx0}) ->
@@ -247,7 +252,7 @@ handle_cast(eval, State=#state{textctrl=Console, input=Cmd, cmd_history=Hst0, cu
     Upt -> Upt
   end,
   {noreply, State#state{cmd_history=Hst1, current_cmd=Idx1}}.
-  
+
 handle_call({update_cmd_index, Index}, _From, State) ->
   {reply, ok, State#state{current_cmd=Index}};
 handle_call({paste, Line}, _From, State=#state{textctrl=Console, input=Cmd, cmd_history=Hst0, current_cmd=Idx0}) ->
@@ -260,7 +265,7 @@ handle_call({paste, Line}, _From, State=#state{textctrl=Console, input=Cmd, cmd_
   {reply, ok, State#state{cmd_history=Hst1, current_cmd=Idx1}};
 handle_call(busy, _From, State=#state{busy=Busy}) ->
   {reply, Busy, State}.
-  
+
 handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
             State=#state{menu=Menu}) ->
   wxWindow:popupMenu(Console, Menu),
@@ -284,7 +289,7 @@ handle_event(#wx{id=?wxID_PASTE, event=#wxCommand{type=command_menu_selected}},
               Env = wx:get_env(),
   spawn(fun() -> wx:set_env(Env), paste(Console) end),
   {noreply, State}.
-    
+
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
 
@@ -318,7 +323,7 @@ handle_sync_event(#wx{event=#wxKey{type=key_down, keyCode=13}}, _EvtObj, #state{
   wx_object:cast(?MODULE, eval),
   ok;
 %%--- Arrow keys
-handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event, 
+handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}, _Event,
                   #state{current_cmd=Idx, cmd_history=Hst}) ->
   SuccessFun = fun() -> ok end,
   FailFun    = fun() -> ?stc:gotoPos(Console, ?stc:getLength(Console)) end,
@@ -328,7 +333,7 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_UP}}
       ok;
     _ ->
       cycle_cmd_text(Console, -1, Hst, Idx)
-      
+
   end,
 	ok;
 handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down, keyCode=?WXK_DOWN}}, _Event,
@@ -414,7 +419,7 @@ prompt(Console, Cmd, Input, Prompt, _) ->
     false ->
       prompt(Console, Prompt, "\n")
   end.
-  
+
 prompt(Console, Prompt, Str) ->
   wx_object:cast(?MODULE, {append_input, Str}),
   prompt_2_console(Console, Prompt).
@@ -424,11 +429,11 @@ prompt(Console, Prompt, Str) ->
 
 prompt_2_console(Console, Prompt) ->
   prompt_2_console(Console, Prompt, true).
-  
+
 
 %% =====================================================================
 %% @doc Write an optional newline plus the prompt to the console.
- 
+
 prompt_2_console(Console, Prompt, Newline) ->
   case Newline of
     true -> ?stc:newLine(Console);
@@ -447,7 +452,7 @@ prompt_2_console(Console, Prompt, Newline) ->
 
 count_chars(Char, String) ->
   count_chars(Char, String, 0, false).
-  
+
 count_chars(_Char, [], Acc, _) ->
   io:format("COUNT: ~p~n", [Acc]),
   case Acc rem 2 of
@@ -457,7 +462,7 @@ count_chars(_Char, [], Acc, _) ->
       false
   end;
 count_chars(Char, [H|T], Acc, Escape) ->
-  case H of 
+  case H of
     Char ->
       case Escape of
         true ->
@@ -518,14 +523,14 @@ add_cmd(Cmd, Hst) when length(Hst) =:= 0 ->
   add_cmd(insert, Cmd, Hst);
 add_cmd(Cmd, Hst) ->
   case Cmd =:= get_cmd(Hst, length(Hst) - 1) of
-    true -> 
+    true ->
       {Hst, length(Hst)};
     false ->
       add_cmd(insert, Cmd, Hst)
   end.
 add_cmd(insert, Cmd, Hst) ->
   {Hst++[Cmd], length(Hst)+1}.
-  
+
 
 %% =====================================================================
 %% @doc Cycle through command history by one entry.
@@ -556,7 +561,7 @@ update_cmd_index(NewIndex) ->
 
 
 %% =====================================================================
-%% @doc Retrieve command from history based on indexed position. 
+%% @doc Retrieve command from history based on indexed position.
 
 get_cmd(Hst, Idx) ->
   lists:nth(Idx+1, Hst).
@@ -589,7 +594,7 @@ create_menu() ->
   wxMenu:append(Menu, ?ID_CLEAR_CONSOLE, "Clear All\tAlt+K", []),
   wxMenu:connect(Menu, command_menu_selected),
   Menu.
-  
+
 
 %% =====================================================================
 %% @doc
