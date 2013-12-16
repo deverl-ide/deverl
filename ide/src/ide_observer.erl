@@ -139,7 +139,7 @@ setup(#state{parent=Frame}=State) ->
     wxSizer:add(MainSizer, Notebook, [{proportion, 1}, {flag, ?wxEXPAND}]),
     wxPanel:setSizer(Panel, MainSizer),
 
-    wxAuiNotebook:connect(Notebook, command_notebook_page_changing),
+    % wxAuiNotebook:connect(Notebook, command_notebook_page_changing),
     % wxFrame:connect(Frame, close_window, [{skip, true}]),
     % wxMenu:connect(Frame, command_menu_selected),
     % wxFrame:show(Frame),

@@ -245,7 +245,7 @@ handle_cast({append_msg, Msg, Prompt}, State=#state{textctrl=Console}) ->
   ?stc:newLine(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   ?stc:thaw(Console),
-  {noreply, State};
+  {noreply, State#state{busy=not Prompt}};
 handle_cast({call_parser, Cmd, Busy}, State) ->
   console_parser:parse_input(Cmd),
   {noreply, State#state{busy=Busy, input=[]}};
@@ -257,7 +257,7 @@ handle_cast(clear, State=#state{textctrl=Console, busy=Busy}) ->
     true ->
       ok;
     false ->
-      ?stc:addText(Console, ?CONSOLE_HEADER),
+      % ?stc:addText(Console, ?CONSOLE_HEADER), --- Why ?
       prompt_2_console(Console, ?PROMPT, false)
   end,
   {noreply, State};
@@ -318,16 +318,21 @@ terminate(_Reason, #state{win=Frame}) ->
 %% =====================================================================
 
 handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{busy=true}) ->
-  io:format("BUSY CTRL DOWN"),
   case Key of
     %% Permit even when busy
-    $R -> wxEvent:skip(EvtObj);
-    $K -> wxEvent:skip(EvtObj);
     $C -> wxEvent:skip(EvtObj);
     %% Discard
     _ -> ok
   end;
-
+handle_sync_event(#wx{event=#wxKey{keyCode=Key, altDown=true}}, EvtObj, #state{busy=true}) ->
+  case Key of
+    %% Permit even when busy
+    $R -> wxEvent:skip(EvtObj);
+    $K -> wxEvent:skip(EvtObj);
+    %% Discard
+    _ -> ok
+  end;
+  
 handle_sync_event(#wx{event=#wxKey{}}, EvtObj, #state{busy=true}) ->
   ok;
 handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
