@@ -33,7 +33,6 @@
         add_standalone_document/1,
 				remove_project/1,
         remove_standalone_document/1,
-        insert_file/1,
         set_has_children/1
         ]).
 
@@ -87,26 +86,6 @@ add_project(Id, Dir, Pos) ->
 
 remove_project(Id) ->
 	wx_object:cast(?MODULE, {remove_project, Id}).
-
-
-%% =====================================================================
-%% @doc
-  
-insert_file(FilePath) ->
-  Tree = wx_object:call(?MODULE, tree),
-  FileDir = filename:dirname(FilePath),
-  case get_item_from_path(Tree, get_all_items(Tree), FileDir) of
-    no_item ->
-      find_root(FilePath);
-    Item ->
-      {Id, _} = wxTreeCtrl:getItemData(Tree, Item),
-      case wxTreeCtrl:isExpanded(Tree, Item) of
-        true ->
-          append_item(Tree, Item, filename:basename(FilePath), [{image, ?ICON_DOCUMENT}, {data, {Id, FilePath}}]);
-        false ->
-          wxTreeCtrl:setItemHasChildren(Tree, Item)
-      end
-  end.
   
   
 %% =====================================================================

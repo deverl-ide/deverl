@@ -73,14 +73,7 @@ new_document(Parent) ->
     ?wxID_CANCEL ->
       ok;
     ?wxID_OK ->
-      Id0 = case new_file:get_project_id(Dialog) of
-        undefined ->
-          ide_projects_tree:add_standalone_document(new_file:get_path(Dialog)),
-          undefined;
-        Id ->
-          Id
-      end,
-      create_document(new_file:get_path(Dialog), Id0),
+      create_document(new_file:get_path(Dialog), new_file:get_project_id(Dialog)),
       new_file:close(Dialog)
   end.
 
@@ -288,10 +281,9 @@ handle_call({create_doc, Path, ProjectId}, _From,
 		  NewDocRecords = [{DocId, Document}|DocRecords],
 		  Key = wxAuiNotebook:getPage(Nb, wxAuiNotebook:getPageCount(Nb)-1),
 			load_editor_contents(Editor, Path),
-      io:format("ProjectId: ~p~n", [ProjectId]),
       case ProjectId of
         undefined ->
-          ok;
+          ide_projects_tree:add_standalone_document(Path);
         _ ->
           ide_projects_tree:set_has_children(filename:dirname(Path))
       end,
