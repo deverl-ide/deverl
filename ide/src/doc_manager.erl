@@ -287,7 +287,6 @@ handle_call({create_doc, Path, ProjectId}, _From,
 		  NewDocRecords = [{DocId, Document}|DocRecords],
 		  Key = wxAuiNotebook:getPage(Nb, wxAuiNotebook:getPageCount(Nb)-1),
 			load_editor_contents(Editor, Path),
-      io:format("ProjectId: ~p~n", [ProjectId]),
       case ProjectId of
         undefined ->
           ok;
