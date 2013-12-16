@@ -555,10 +555,6 @@ create_utils(ParentA) ->
   Button1 = wxBitmapButton:new(ToolBar, ?BUTTON_LOG, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
   Button2 = wxBitmapButton:new(ToolBar, ?BUTTON_COMPILER_OUTPUT, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
   
-  wxBitmapButton:setBitmapSelected(Button1, wxArtProvider:getBitmap("wxART_INFORMATION", [{size, {16,16}}])),
-  wxBitmapButton:setBitmapFocus(Button1, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}])),
-  wxBitmapButton:setBitmapSelected(Button1, wxArtProvider:getBitmap("wxART_PRINT", [{size, {16,16}}])),
-  
   %% Connect button handlers
   wxPanel:connect(Button1, command_button_clicked, [{userData, {Splitter, Log}}]),
   wxPanel:connect(Button2, command_button_clicked, [{userData, {Splitter, CompilerOutput}}]),
