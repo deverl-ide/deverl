@@ -237,12 +237,12 @@ handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
 
-handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
-	%% Called when the last document is closed.
-  ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, false),
-	show_placeholder(Sz),
-	ide:set_title([]),
-	{noreply, State};
+% handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
+%   %% Called when the last document is closed.
+%   ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, false),
+%   show_placeholder(Sz),
+%   ide:set_title([]),
+%   {noreply, State};
 
 handle_cast(freeze_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   wxWindow:freeze(Parent),
@@ -365,10 +365,9 @@ handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_record
 	lists:foreach(Fun2, List),
 	{reply, ok, State};
   
-handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId, sizer=Sz}) ->
   F = fun(G, [], Dr, P2d) -> {Dr, P2d};
-         (G, [DocId | T], Dr, P2d) ->
-           
+         (G, [DocId | T], Dr, P2d) ->    
             Record = proplists:get_value(DocId, DocRecords),
             case Record#document.project_id of
               undefined ->
@@ -378,14 +377,16 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
             end,
             {NewDocRecords, NewPageToDocId} = remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, P2d), Dr, P2d),
             G(G, T, NewDocRecords, NewPageToDocId)
-
-  end,
+       end,
   {S, D} = F(F, Docs, DocRecords, PageToDocId),
-  % case wxAuiNotebook:getPageCount(Nb) of
-  %      0 -> wx_object:cast(?MODULE, notebook_empty);
-  %      _ -> ok
-  % end,
-  % [Fun(N) || N <- Docs],
+  case wxAuiNotebook:getPageCount(Nb) of
+    0 -> 
+      %% Called when the last document is closed.
+      ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, false),
+      show_placeholder(Sz),
+      ide:set_title([]);
+    _ -> ok
+  end,
 	{reply, ok, State#state{doc_records=S, page_to_doc_id=D}}.
 
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->

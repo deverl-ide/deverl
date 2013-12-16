@@ -99,7 +99,8 @@ add_standalone_document(Path) ->
 %% @doc
  
 remove_standalone_document(Path) ->
-  wx_object:cast(?MODULE, {remove_standalone, Path}).
+  % wx_object:cast(?MODULE, {remove_standalone, Path}).
+  wx_object:call(?MODULE, {remove_standalone, Path}).
 
 
 %% =====================================================================
@@ -209,21 +210,19 @@ handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
     Item ->
       wxTreeCtrl:selectItem(Tree, Item)
   end,
-  {noreply,State};
-
-handle_cast({remove_standalone, Path}, State=#state{tree=Tree}) ->
-  Item = find_standalone(Tree, Path),
-  wxTreeCtrl:delete(Tree, Item),
-  alternate_background_of_children(Tree, get_standalone_root(Tree)),
-  insert_placeholder(Tree, get_standalone_root(Tree), ?HEADER_FILES_EMPTY),
-  {noreply,State};
-  
+  {noreply,State}; 
 handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
   wxTreeCtrl:setItemHasChildren(Tree, get_item_from_path(Tree, get_all_items(Tree), Path)),
   {noreply, State}.
 
 handle_call(tree, _From, State) ->
-  {reply,State#state.tree,State}.
+  {reply,State#state.tree,State};
+handle_call({remove_standalone, Path}, _From, State=#state{tree=Tree}) ->
+  Item = find_standalone(Tree, Path),
+  wxTreeCtrl:delete(Tree, Item),
+  alternate_background_of_children(Tree, get_standalone_root(Tree)),
+  insert_placeholder(Tree, get_standalone_root(Tree), ?HEADER_FILES_EMPTY),
+  {reply, ok, State}.
 
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item, itemOld=Old}}, State) ->
   wxTreeCtrl:freeze(Tree),
@@ -691,7 +690,7 @@ open_file(Tree, Item) ->
         {Id, _Path} ->
           doc_manager:create_document(FilePath, Id);
         _Path ->
-          doc_manager:create_document(FilePath, undefined)  %% UNDEFINED??????????????????
+          doc_manager:create_document(FilePath, undefined)
       end
   end.
 
