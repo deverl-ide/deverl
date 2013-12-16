@@ -457,18 +457,23 @@ insert(Tree, Parent, Dir0) ->
 add_files(_, _, []) ->
   ok;
 add_files(Tree, Item, [File|Files]) ->
-  FileName = filename:basename(File),
-	IsDir = filelib:is_dir(File),
-  {Id, _} = wxTreeCtrl:getItemData(Tree, Item),
-	case IsDir of
-		true ->
-			Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
-      wxTreeCtrl:setItemImage(Tree, Child, ?ICON_FOLDER),
-      check_dir_has_contents(Tree, Child, File);
-		_ ->
-      Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
-      wxTreeCtrl:setItemImage(Tree, Child, ?ICON_DOCUMENT)
-	end,
+  
+  case hd(filename:basename(File)) of
+    $. -> ok; %% Hide hidden files
+    _ ->
+      FileName = filename:basename(File),
+    	IsDir = filelib:is_dir(File),
+      {Id, _} = wxTreeCtrl:getItemData(Tree, Item),
+    	case IsDir of
+    		true ->
+    			Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
+          wxTreeCtrl:setItemImage(Tree, Child, ?ICON_FOLDER),
+          check_dir_has_contents(Tree, Child, File);
+    		_ ->
+          Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
+          wxTreeCtrl:setItemImage(Tree, Child, ?ICON_DOCUMENT)
+    	end
+    end,
 	add_files(Tree, Item, Files).
 
 

@@ -36,7 +36,6 @@ create_directory_structure(Path) ->
     create_dir(filename:join([Path, "priv"])),
     create_dir(filename:join([Path, "include"])),
     create_dir(filename:join([Path, "src"])),
-		copy_emakefile(Path),
 		Path
   catch
     throw:E -> throw(E)
@@ -174,14 +173,3 @@ copy_file(Source, Dest) ->
 		{ok, _BytesCopied} -> ok;
 		{error, Reason} -> throw("Copy failed: " ++ atom_to_list(Reason))
 	end.
-
-
-%% =====================================================================
-%% @doc
-
-copy_emakefile(Root) ->
-	case filelib:is_file("../priv/templates/emakefile.txt") of
-		true ->
-			copy_file("../priv/templates/emakefile.txt", filename:join([Root, "Emakefile"]));
-		false -> throw("Emakefile template not found.")
-	end.	
