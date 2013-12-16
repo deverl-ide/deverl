@@ -76,7 +76,14 @@ compile(From, Path, Config) ->
   {Cwd, Args} = case proplists:get_value(file, Config) of
     true -> 
       %% Single file
-      {filename:dirname(Path), [filename:basename(Path)]};
+      % {filename:dirname(Path), [filename:basename(Path)]};
+      case proplists:get_value(project, Config) of
+        true -> 
+          Path1 = filename:dirname(filename:dirname(Path)),
+          {filename:dirname(Path), ["-o", lists:append([Path1, "/ebin"])] ++ [filename:basename(Path)]};
+        false ->
+          {filename:dirname(Path), [filename:basename(Path)]}
+      end;
     _ -> 
       %% Directory
       IncludeDir = ["-I", lists:append([Path, "/include"])],
@@ -131,8 +138,6 @@ erlc() ->
   case os:type() of
 		{win32,_} ->
 			"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erlc";
-    {_,darwin} ->
-      "/usr/local/lib/erlang/erts-5.10.1/bin/erlc";
-		_ ->
-			"/usr/local/lib/erlang/erts-5.10.2/bin/erlc"
+    _ ->
+      string:strip(os:cmd("which erlc"), both, $\n)
   end.

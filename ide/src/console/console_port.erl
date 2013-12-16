@@ -62,15 +62,11 @@ close_port() ->
 %% =====================================================================
    
 init(Args) ->
-  %% io:format("STARTING PORT~n"),
-	% process_flag(trap_exit, true), %% Die when the parent process dies
 	{Path, Options} = case os:type() of
 		{win32,_} ->
 			{"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erl", [use_stdio]};
-    {_,darwin} ->
-      {"/usr/local/lib/erlang/erts-5.10.1/bin/erl", [use_stdio, exit_status]}; %% For Tom, for now.
 		_Other ->
-			{"/usr/local/lib/erlang/erts-5.10.2/bin/erl", [use_stdio, exit_status]}
+      {string:strip(os:cmd("which erl"), both, $\n), [use_stdio, exit_status]}
 	end,
 	try open(Path, Options) of
 		Port -> 
@@ -89,10 +85,6 @@ handle_cast(_Msg, State) ->
 
 handle_info({_From, close}, State) ->
   {stop, normal, State};
-% handle_info({Port,{exit_status,Status}}, State) ->
-%   % io:format("PORT CLOSED INFO 2~n"),
-%   % {stop, {port_terminated, ok}, State};
-%   {stop, normal, State};
 handle_info({'EXIT', Port, Reason}, #state{port=Port}=State) ->
   io:format("PORT CLOSED~n"),
   {stop, {port_terminated, Reason}, State};

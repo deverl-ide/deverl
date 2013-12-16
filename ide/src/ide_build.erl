@@ -67,7 +67,7 @@ run_project(Parent) ->
 compile_file(Path) ->
   %% Remember to send the output directory to load_file/1 if the flag is set
   %% for the compiler (-o). 
-  compiler_port:start(Path, [file]),
+  compiler_port:start(Path, [file, project]),
   receive
     {From, ok} ->
       load_file(Path, []);
@@ -90,8 +90,8 @@ build_project(Parent, ProjectId) ->
     Config ->
       try
         ParsedConfig = parse_config(Config),
-        execute_function(ParsedConfig),
-        ok
+        receive after 50 -> ok end, %% NASTY pause so we dont print the chang_dir response
+        execute_function(ParsedConfig)
       catch
         error:_ ->
           error("ERROR")
