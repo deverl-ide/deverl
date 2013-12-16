@@ -73,6 +73,7 @@ compile_file(Path) ->
       case project_manager:is_known_project(Path) of
         {true, P0} ->
           P1 = filename:join([P0, "ebin", filename:basename(Path)]),
+          ide_projects_tree:set_has_children(filename:dirname(P1)),
           load_file(P1, []);
         _ ->
           load_file(Path, [])
