@@ -76,13 +76,14 @@ compile(From, Path, Config) ->
   {Cwd, Args} = case proplists:get_value(file, Config) of
     true ->
       %% Single file
-      case proplists:get_value(project, Config) of
-        true -> 
-          Path1 = filename:dirname(filename:dirname(Path)),
-          {filename:dirname(Path), ["-o", lists:append([Path1, "/ebin"])] ++ [filename:basename(Path)]};
-        false ->
-          {filename:dirname(Path), [filename:basename(Path)]}
-      end;
+      A0 = [filename:basename(Path)], 
+      A1 = case project_manager:is_known_project(Path) of %% beam goes to /ebin
+        {true, P} ->
+          OutputDir = ["-o", lists:append([P, "/ebin"])],
+          lists:append(OutputDir, A0);
+        _ -> A0
+      end,
+      {filename:dirname(Path), A1};
     _ -> 
       %% Directory
       IncludeDir = ["-I", lists:append([Path, "/include"])],

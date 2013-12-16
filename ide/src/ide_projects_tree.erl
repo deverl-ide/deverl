@@ -198,7 +198,6 @@ handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) -
   {noreply,State};
   
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
-  io:format("add standalone~n"),
   Root = get_standalone_root(Tree),
   remove_placeholder(Tree, Root),
   case is_in_tree(Tree, Path, get_children_recursively(Tree, Root)) of
