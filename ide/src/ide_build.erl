@@ -31,8 +31,10 @@ compile_file() ->
     cancelled ->
       ok
   end.
-  
+
 make_project() ->
+  make_project(true).
+make_project(PrintMsg) ->
   case doc_manager:save_active_project() of
     ok ->
       ProjectId = project_manager:get_active_project(),
@@ -41,7 +43,11 @@ make_project() ->
       receive
         {From, ok} ->
           ide_projects_tree:set_has_children(Path ++ "/ebin"),
-          console_wx:append_message("Project " ++ filename:basename(Path) ++ " ready"),
+          case PrintMsg of
+            true ->
+              console_wx:append_message("Project " ++ filename:basename(Path) ++ " ready");
+            _ -> ok
+          end,
           change_dir(Path ++ "/ebin"),
           {ok, ProjectId, Path};
         {From, error} ->
@@ -52,7 +58,7 @@ make_project() ->
   end.
   
 run_project(Parent) ->
-  case make_project() of
+  case make_project(false) of
     {ok, ProjectId, ProjectPath} ->
       build_project(Parent, ProjectId);
     {error, _} ->
@@ -98,6 +104,7 @@ build_project(Parent, ProjectId) ->
       try
         ParsedConfig = parse_config(Config),
         receive after 50 -> ok end, %% NASTY pause so we dont print the chang_dir response
+        console_wx:append_message("Running project:", false),
         execute_function(ParsedConfig)
       catch
         error:_ ->
