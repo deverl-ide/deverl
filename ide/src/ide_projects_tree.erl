@@ -219,6 +219,7 @@ handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) -
   {noreply,State};
   
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
+  io:format("add standalone~n"),
   Root = get_standalone_root(Tree),
   remove_placeholder(Tree, Root),
   case is_in_tree(Tree, Path, get_children_recursively(Tree, Root)) of
@@ -712,7 +713,7 @@ open_file(Tree, Item) ->
         {Id, _Path} ->
           doc_manager:create_document(FilePath, Id);
         _Path ->
-          doc_manager:create_document(FilePath, undefined)
+          doc_manager:create_document(FilePath, undefined)  %% UNDEFINED??????????????????
       end
   end.
 
@@ -831,6 +832,7 @@ select(Tree, Item) ->
   
 
 %% used for standalone files only
+%% return false if file with path is not in tree, or return item if it is.
 is_in_tree(_Tree, _Path, []) ->
   false;
 is_in_tree(Tree, Path, [Child|Children]) ->

@@ -76,7 +76,12 @@ get_path(This) ->
   wx_object:call(This, get_path).
   
 get_project_id(This) ->
-  wx_object:call(This, get_project_id).
+  case wx_object:call(This, get_project_id) of
+    "No Project" ->
+      undefined;
+    Id ->
+      Id
+  end.
   
 close(This) ->
   wx_object:call(This, shutdown).
@@ -158,6 +163,7 @@ init({Parent, Projects, ActiveProject}) ->
   wxSizer:addSpacer(MainSizer, 20),
   wxDialog:connect(ButtonPanel, command_button_clicked, [{skip, true}]),
   wxDialog:connect(Dialog, close_window, []),
+  wxDialog:connect(Dialog, command_choice_selected, []),
 
   wxButton:disable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
   wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON)),
@@ -295,7 +301,7 @@ handle_event(#wx{id=?FILENAME_BOX, event=#wxCommand{type=command_text_updated, c
   {noreply, State};
 handle_event(#wx{id=?PROJECT_CHOICE, event=#wxCommand{type=command_choice_selected}},
              State=#state{win=Parent}) ->
-  ProjectChoiceBox = wxWindow:findWindow(Parent, ?PROJECT_CHOICE),
+  ProjectChoiceBox = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_CHOICE), wxChoice),
   ProjectChoice = wxChoice:getSelection(ProjectChoiceBox),
   ProjectId = wxChoice:getClientData(ProjectChoiceBox, ProjectChoice),
   {noreply, State#state{project_id=ProjectId}}.

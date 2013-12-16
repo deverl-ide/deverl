@@ -74,7 +74,7 @@ new_document(Parent) ->
       ok;
     ?wxID_OK ->
       Id0 = case new_file:get_project_id(Dialog) of
-        undefined -> 
+        undefined ->
           ide_projects_tree:add_standalone_document(new_file:get_path(Dialog)),
           undefined;
         Id ->
