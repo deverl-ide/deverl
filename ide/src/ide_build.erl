@@ -50,7 +50,7 @@ make_project() ->
     cancelled ->
       {error, not_saved}
   end.
-  
+
 run_project(Parent) ->
   case make_project() of
     {ok, ProjectId, ProjectPath} ->
