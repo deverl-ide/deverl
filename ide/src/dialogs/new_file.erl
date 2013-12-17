@@ -571,7 +571,6 @@ get_file_extension(Parent) ->
 %% @doc Check if the dialog is in a finished state.
 
 check_if_finished(Parent, Filename, Desc) ->
-  % Filename = get_filename(Parent),
   case length(Filename) of
     0 ->
       wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
@@ -592,6 +591,7 @@ validate_name([], _) -> false;
 validate_name(Str, Desc) ->
 	case validate_name(Str) of
 		nomatch -> 
+      insert_desc(Desc, "Create a new file."),
 			true;
 		{match, [{Pos,_}]} -> 
 			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),

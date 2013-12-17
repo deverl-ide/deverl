@@ -254,7 +254,7 @@ handle_cast(thaw_notebook, State=#state{notebook=Nb, parent=Parent}) ->
 handle_cast({set_sel, Direction}, State=#state{notebook=Nb, sizer=Sz}) ->
   Cur = wxAuiNotebook:getSelection(Nb),
   N = wxAuiNotebook:getPageCount(Nb),
-vc  Idx = case Direction of
+  Idx = case Direction of
     left -> 
       (Cur - 1) rem N;
     right ->

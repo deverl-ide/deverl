@@ -56,7 +56,7 @@ make_project(PrintMsg) ->
     cancelled ->
       {error, not_saved}
   end.
-  
+
 run_project(Parent) ->
   case make_project(false) of
     {ok, ProjectId, ProjectPath} ->
