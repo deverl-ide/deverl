@@ -180,7 +180,6 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_text_updated, cmdString=St
   
 handle_event(E=#wx{id=Id, event=#wxCommand{type=command_button_clicked}}, 
              State=#state{data=Data}) ->
-  io:format("E: ~p~n", [E]),
   case Id of
     ?FIND_ALL ->
       {ok, {_Index,Pid}} = doc_manager:get_active_document(),
@@ -210,7 +209,6 @@ handle_info(Msg, State) ->
   {noreply,State}.
 
 handle_call(shutdown, _From, State=#state{frame=Dialog}) ->
-  io:format("FIND SHUTDOWN~n"),
   wxWindow:destroy(Dialog),
   {stop, normal, ok, State};
 
@@ -232,6 +230,5 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 
 terminate(_Reason, #state{frame=Dialog}) ->
-  io:format("TERMINATE FIND/REPLACE~n"),
   erlang:unregister(?MODULE),
   wxDialog:destroy(Dialog).

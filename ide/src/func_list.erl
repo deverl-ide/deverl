@@ -101,7 +101,6 @@ init(Config) ->
 
 %% Window close event
 handle_event(#wx{event=#wxClose{}}, State) ->
-  io:format("~p Closing window ~n",[self()]),
   {stop, normal, State};
 
 handle_event(#wx{event=#wxKey{type=key_down, keyCode=Kc, controlDown=Ctrl}}, State)
@@ -132,15 +131,14 @@ handle_event(#wx{event=#wxKey{type=key_down}},
 handle_event(#wx{event=#wxCommand{type=command_text_enter, cmdString=Str}},
 	State=#state{textctrl=Search, list=ListBox, editor_pid=Ed}) ->
 	% send_to_editor(Str, Ed),
-	io:format("Symbol: ~p Line: ~p~n", [Str, undefined]),
+  % io:format("Symbol: ~p Line: ~p~n", [Str, undefined]),
 	{noreply, State};
 
 handle_event(#wx{event=#wxList{type=command_list_item_selected, itemIndex=Item}},
 	State=#state{list=ListCtrl, editor_pid=Ed}) ->
 	% send_to_editor(Str, Ed),
-	io:format("List selected: ~p~n", [Item]),
-	io:format("Symbol: ~p Line: ~p~n", [wxListCtrl:getItemText(ListCtrl, Item),
-		wxListCtrl:getItemData(ListCtrl, Item)]),
+  % io:format("List selected: ~p~n", [Item]),
+  % io:format("Symbol: ~p Line: ~p~n", [wxListCtrl:getItemText(ListCtrl, Item), wxListCtrl:getItemData(ListCtrl, Item)]),
 	{noreply, State};
 
 handle_event(#wx{event=#wxFocus{type=set_focus}}, State) ->
@@ -174,7 +172,6 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 
 terminate(_Reason, #state{panel=Panel}) ->
-	io:format("TERMINATE FUNCTIONS~n"),
   wxPanel:destroy(Panel),
   ok.
 
@@ -219,8 +216,6 @@ insert_items(ListCtrl, Items) ->
 	wx:foreach(Insert, Items).
 
 send_to_editor(Str, Editor) ->
-	io:format("To editor: ~p~n", [Str]),
-	io:format("Editor: ~p~n", [Editor]),
 	editor:fn_list(Editor, Str),
 	ok.
 

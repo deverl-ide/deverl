@@ -86,7 +86,6 @@ handle_cast(_Msg, State) ->
 handle_info({_From, close}, State) ->
   {stop, normal, State};
 handle_info({'EXIT', Port, Reason}, #state{port=Port}=State) ->
-  io:format("PORT CLOSED~n"),
   {stop, {port_terminated, Reason}, State};
 handle_info({_Port, {data, Response}}, State=#state{respond=Respond}) ->
 	case Respond of
@@ -101,10 +100,8 @@ code_change(_OldVsn, State, _Extra) ->
   {ok, State}.
 
 terminate({port_terminated, _Reason}, _State) ->
-	io:format("TERMINATE CONSOLE YEAHHHH~n"),
   ok;
 terminate(_Reason, #state{port=Port}) ->
-	io:format("TERMINATE CONSOLE PORT~n"),
   % port_close(Port),
 	ok.
 		

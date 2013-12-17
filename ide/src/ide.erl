@@ -202,7 +202,6 @@ handle_info({'EXIT',_, shutdown}, State) ->
   io:format("Got Info 2~n"),
   {noreply,State};
 handle_info({'EXIT',A, normal}, State) ->
-	io:format("IN IDE INFO~n"),
   io:format("Got Info 3~n~p~n", [A]),
   {noreply,State};
 handle_info(Msg, State) ->
@@ -247,7 +246,6 @@ code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
-  io:format("TERMINATE IDE~n"),
   wxFrame:destroy(Frame),
   wx:destroy().
 

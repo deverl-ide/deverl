@@ -219,7 +219,6 @@ code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{win=Dialog}) ->
-  io:format("TERMINATE NEW FILE DIALOG~n"),
   wxDialog:endModal(Dialog, ?wxID_CANCEL),
   wxDialog:destroy(Dialog).
 

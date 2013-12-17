@@ -136,7 +136,6 @@ code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{sb=Sb}) ->
-	io:format("TERMINATE STATUS BAR~n"),
 	wxPanel:destroy(Sb).
 
 

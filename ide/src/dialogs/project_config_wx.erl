@@ -249,7 +249,6 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 
 terminate(_Reason, #state{dialog=Dialog}) ->
-  io:format("TERMINATE OPEN PROJECT DIALOG~n"),
 	wxDialog:endModal(Dialog, ?wxID_CANCEL),
 	wxDialog:destroy(Dialog),
 	ok.

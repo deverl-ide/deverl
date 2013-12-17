@@ -181,7 +181,6 @@ handle_event(#wx{obj=Btn, event=#wxMouse{type=left_down}},
 	change_selection(ActiveBtn, Btn, Pages, Tabs, Cont),
 	{noreply, State#state{active_btn=Btn}};
 handle_event(#wx{event=#wxClose{}}, State) ->
-	io:format("~p Closing window ~n",[self()]),
 	{stop, normal, State};
 handle_event(#wx{id=Id}=E,State) ->
   case Id of

@@ -328,7 +328,6 @@ code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{panel=Panel}) ->
-	io:format("TERMINATE PROJECTS TREE~n"),
 	wxPanel:destroy(Panel).
 
 

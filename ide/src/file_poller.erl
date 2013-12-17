@@ -61,16 +61,15 @@ handle_info(trap, State=#state{type=file, root_path=Path, root_lm=Lm}) ->
 	Mod = filelib:last_modified(Path),
 	case Mod of
 		0 -> 
-			io:format("File poller: file moved.~n"),
 			%% Prompt user to save or close the file
 			file_not_found();
 			%% Returns the new path, update the state
 		Lm -> 
 			ok;
 		_ ->
-			io:format("File poller: file modified.~n")
 			%% save the changes to the file
 			%% DONE THROUGH DOC_MANAGER
+      ok
 	end,
 	erlang:send_after(?INTERVAL, self(), trap),
 	{noreply, State#state{root_lm=Mod}}.
@@ -91,7 +90,6 @@ code_change(_, _, State) ->
 	{stop, ignore, State}.
 
 terminate(_Reason, _) ->
-	io:format("TERMINATE POLLER"),
   ok.
 
 

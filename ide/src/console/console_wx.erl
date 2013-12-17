@@ -309,7 +309,6 @@ code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{win=Frame}) ->
-	io:format("TERMINATE SHELL~n"),
 	wxPanel:destroy(Frame).
 
 
@@ -474,7 +473,6 @@ count_chars(Char, String) ->
   count_chars(Char, String, 0, false).
 
 count_chars(_Char, [], Acc, _) ->
-  io:format("COUNT: ~p~n", [Acc]),
   case Acc rem 2 of
     0 ->
       true;

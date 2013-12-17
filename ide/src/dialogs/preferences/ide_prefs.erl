@@ -127,7 +127,6 @@ code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{frame=Frame}) ->
-  io:format("TERMINATE PREFS~n"),
   wxFrame:destroy(Frame).
     
 

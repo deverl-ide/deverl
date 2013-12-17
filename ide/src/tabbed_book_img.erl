@@ -169,7 +169,7 @@ handle_event(#wx{id=Id, userData=Ud, obj=Obj}=E,State) ->
 	  ?wxID_EXIT ->
 	    {stop, normal, State};
 	  _ ->
-			io:format("Id: ~p~nObj: ~p~nUserData: ~p~n", [Id, Obj, Ud]),
+      % io:format("Id: ~p~nObj: ~p~nUserData: ~p~n", [Id, Obj, Ud]),
 	    {noreply, State}
   end.
 

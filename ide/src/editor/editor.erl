@@ -606,7 +606,6 @@ code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, State=#state{parent_panel=Panel}) ->
-  io:format("TERMINATE EDITOR~n"),
   wxPanel:destroy(Panel).
 
 
@@ -864,7 +863,6 @@ set_font_size(Editor, Id, Size) ->
 indent(EditorPid, Cmd) ->
 	Editor = wx_object:call(EditorPid, stc),
 	{S, E} = ?stc:getSelection(Editor),
-	io:format("S: ~p E:~p~n", [S, E]),
 	R = ?stc:lineFromPosition(Editor, E),
 	case ?stc:lineFromPosition(Editor, S) of
 		R -> %% Single line

@@ -112,7 +112,6 @@ code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{win=Frame}) ->
-	io:format("TERMINATE LOG~n"),
 	wxPanel:destroy(Frame).
 
 	

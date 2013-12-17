@@ -398,7 +398,6 @@ handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) -
 
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed,
 			selection=Index}}, State=#state{notebook=Nb}) ->
-  io:format("PAGE CHANGED~n"),
   {noreply, State}.
 
 code_change(_, _, State) ->

@@ -107,4 +107,4 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 
 terminate(_Reason, _) ->
-  io:format("TERMINATE PREF PANE~n").
+  ok.
