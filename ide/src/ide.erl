@@ -315,6 +315,12 @@ handle_event(#wx{id=?wxID_EXIT}, State) ->
       {stop, normal, State}
   end;
   
+handle_event(#wx{id=?MENU_ID_AUTO_INDENT=Id}, State=#state{frame=Frame}) ->
+  
+  Bool = wxMenuItem:isChecked(wxMenuBar:findItem(wxFrame:getMenuBar(Frame), Id)),
+  sys_pref_manager:set_preference(auto_indent, Bool),
+  {noreply, State};
+  
 %% Handle copy/paste
 % Currently on MSW and Linux the menu event is not caught by the in focus control even when
 % it has a registered handler for it. On OSX the event is caught as expected (and will 
