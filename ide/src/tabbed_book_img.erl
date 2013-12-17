@@ -147,15 +147,7 @@ handle_sync_event(#wx{obj=Btn, userData={Label, Options}, event=#wxPaint{}}, _,
 		_ -> draw(Btn, Label, ImageList, wxPaintDC, Bg, Options)
 	end,
 	ok.
-	
-% handle_event(#wx{obj=Btn, userData={Label, Options}, event=#wxMouse{type=enter_window}}, 
-% 						 State=#state{active_btn=ActiveBtn, image_list=ImageList, tabs={Tabs, _}}) ->
-% 	trigger_tab_paint(Tabs, ActiveBtn, Btn),
-% 	{noreply, State};
-% handle_event(#wx{obj=Btn, userData={Label, Options}, event=#wxMouse{type=leave_window}}, 
-% 						 State=#state{active_btn=ActiveBtn, image_list=ImageList, tabs={Tabs, _}}) ->
-% 	trigger_tab_paint(Tabs, ActiveBtn, Btn),	
-% 	{noreply, State};
+
 handle_event(#wx{obj=Btn, userData={Label, Options}, event=#wxMouse{type=left_down}}, 
 						 State=#state{pages=Pages, active_btn=ActiveBtn, tabs={Tabs, _}, content={Cont,_}, 
 						 							image_list=ImageList}) ->
@@ -169,7 +161,6 @@ handle_event(#wx{id=Id, userData=Ud, obj=Obj}=E,State) ->
 	  ?wxID_EXIT ->
 	    {stop, normal, State};
 	  _ ->
-      % io:format("Id: ~p~nObj: ~p~nUserData: ~p~n", [Id, Obj, Ud]),
 	    {noreply, State}
   end.
 
@@ -190,13 +181,10 @@ terminate(_Reason, _State) ->
 create_button(Parent, Sz, Label, Options) ->
 	SzFlags = wxSizerFlags:new([{proportion, 0}]),
 	wxSizerFlags:right(SzFlags),
-  % Btn = wxWindow:new(Parent, ?wxID_ANY, [{size,{34,34}}, {style, ?wxFULL_REPAINT_ON_RESIZE}]),
 	Btn = wxWindow:new(Parent, ?wxID_ANY, [{size,{34,34}}]), %% TESTING
 	wxSizer:add(Sz, Btn, SzFlags),
   wxPanel:connect(Btn, paint, [callback, {userData, {Label, Options}}]),
 	wxPanel:connect(Btn, left_down, [{skip, true}, {userData, {Label, Options}}]),
-	% wxPanel:connect(Btn, enter_window, [{skip, true}, {userData, {Label, Options}}]),
-	% wxPanel:connect(Btn, leave_window, [{skip, true}, {userData, {Label, Options}}]),
 	{Btn, Label}.
 	
 	

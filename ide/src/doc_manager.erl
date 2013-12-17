@@ -33,7 +33,8 @@
 				 apply_to_all_documents/2,
 				 apply_to_active_document/2,
          get_active_document/0,
-         get_path/1]).
+         get_path/1,
+         set_selection/1]).
 
 %% Records
 -record(document, {path :: string(),
@@ -201,6 +202,13 @@ get_path(DocId) ->
 
 
 %% =====================================================================
+%% @doc
+
+set_selection(Direction) ->
+  wx_object:cast(?MODULE, {set_sel, Direction}).
+
+
+%% =====================================================================
 %% Callbacks
 %% =====================================================================
 
@@ -237,20 +245,23 @@ handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
 
-% handle_cast(notebook_empty, State=#state{sizer=Sz}) ->
-%   %% Called when the last document is closed.
-%   ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, false),
-%   show_placeholder(Sz),
-%   ide:set_title([]),
-%   {noreply, State};
-
 handle_cast(freeze_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   wxWindow:freeze(Parent),
 	{noreply, State};
-
 handle_cast(thaw_notebook, State=#state{notebook=Nb, parent=Parent}) ->
   wxWindow:thaw(Parent),
-	{noreply, State}.
+	{noreply, State};
+handle_cast({set_sel, Direction}, State=#state{notebook=Nb, sizer=Sz}) ->
+  Cur = wxAuiNotebook:getSelection(Nb),
+  N = wxAuiNotebook:getPageCount(Nb),
+vc  Idx = case Direction of
+    left -> 
+      (Cur - 1) rem N;
+    right ->
+      (Cur + 1) rem N
+  end,
+  wxAuiNotebook:setSelection(Nb, Idx),
+  {noreply, State}.
 
 handle_call({create_doc, Path, ProjectId}, _From,
 						State=#state{notebook=Nb, sizer=Sz, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->

@@ -26,6 +26,7 @@
 -record(state, {frame,
                 workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 utilities,                                     %% The utilities pane
+                util_tabbed, %% tabbed_book
                 left_pane,                                     %% The test pane
                 workspace_manager,                             %% Tabbed UI manager for editors
                 splitter_sidebar :: wxSpliiterWindow:wxSplitterWindow(), %% The vertical splitter
@@ -89,8 +90,8 @@ toggle_menu_group(Mask, Toggle) ->
 
 display_output_window(Window) ->
   wx_object:cast(?MODULE, {output_display, Window}).		
-
-
+  
+  
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
@@ -151,7 +152,7 @@ init(Options) ->
 	LeftWindow = create_left_window(Frame, SplitterSidebar),
 
 	%% The bottom pane/utility window
-	{Utilities, ActiveLogWindow} = create_utils(SplitterUtilities),
+	{Utilities, TabbedWindow, ActiveLogWindow} = create_utils(SplitterUtilities),
 
 	wxSplitterWindow:splitVertically(SplitterSidebar, LeftWindow, Workspace,
 	                  [{sashPosition, ?SPLITTER_SIDEBAR_SASH_POS_DEFAULT}]),
@@ -182,6 +183,7 @@ init(Options) ->
 						frame=Frame,
             left_pane=LeftWindow,
             utilities=Utilities,
+            util_tabbed=TabbedWindow,
             splitter_sidebar_pos=?SPLITTER_SIDEBAR_SASH_POS_DEFAULT,
             splitter_utilities_pos=?SPLITTER_UTILITIES_SASH_POS_DEFAULT,
             splitter_log_pos=?SPLITTER_LOG_SASH_POS_DEFAULT,
@@ -314,9 +316,28 @@ handle_event(#wx{id=?wxID_EXIT}, State) ->
   end;
   
 handle_event(#wx{id=?MENU_ID_AUTO_INDENT=Id}, State=#state{frame=Frame}) ->
-  
   Bool = wxMenuItem:isChecked(wxMenuBar:findItem(wxFrame:getMenuBar(Frame), Id)),
   sys_pref_manager:set_preference(auto_indent, Bool),
+  {noreply, State};
+  
+handle_event(#wx{id=Id}, State=#state{frame=Frame, left_pane=LeftPane}) 
+    when (Id >= ?MENU_ID_PROJECTS_WINDOW) and (Id =< ?MENU_ID_FUNC_WINDOW) ->
+  Idx = case Id of
+    ?MENU_ID_PROJECTS_WINDOW -> 1;
+    ?MENU_ID_TESTS_WINDOW -> 2;
+    ?MENU_ID_FUNC_WINDOW -> 3
+  end,
+  tabbed_book_img:set_selection(LeftPane, Idx), %% Default to projects
+  {noreply, State};
+
+handle_event(#wx{id=Id}, State=#state{frame=Frame, util_tabbed=Utils}) 
+    when (Id >= ?MENU_ID_CONSOLE_WINDOW) and (Id =< ?MENU_ID_DEBUGGER_WINDOW) ->
+  Idx = case Id of
+    ?MENU_ID_CONSOLE_WINDOW -> 1;
+    ?MENU_ID_DIALYSER_WINDOW -> 2;
+    ?MENU_ID_DEBUGGER_WINDOW -> 3
+  end,
+  tabbed_book:set_selection(Utils, Idx), %% Default to projects
   {noreply, State};
   
 %% Handle copy/paste
@@ -513,10 +534,12 @@ create_utils(ParentA) ->
   % Observer = ide_observer:start([{parent, TabbedWindow}]),
   % tabbed_book:add_page(TabbedWindow, Observer, "Observer"),
   
-	Dialyser = wxPanel:new(TabbedWindow, []),
+  % Dialyser = wxPanel:new(TabbedWindow, []),
+  Dialyser = lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
 	tabbed_book:add_page(TabbedWindow, Dialyser, "Dialyser"),
 	
-	Debugger = wxPanel:new(TabbedWindow, []),
+  % Debugger = wxPanel:new(TabbedWindow, []),
+  Debugger = lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
 	tabbed_book:add_page(TabbedWindow, Debugger, "Debugger"),
 	
 	tabbed_book:set_selection(TabbedWindow, 1),
@@ -574,7 +597,7 @@ create_utils(ParentA) ->
   
   log:message("Application started."),
   
-	{Parent, Log}.
+	{Parent, TabbedWindow, Log}.
 
 
 %% =====================================================================
@@ -590,9 +613,9 @@ create_left_window(Frame, Parent) ->
 	tabbed_book_img:assign_image_list(Toolbook, ImgList),
 
 	ProjectTrees = ide_projects_tree:start([{parent, Toolbook}, {frame, Frame}]),
-	tabbed_book_img:add_page(Toolbook, ProjectTrees, "Projects", [{imageId, 0}]),
+	tabbed_book_img:add_page(Toolbook, ProjectTrees, "Browser", [{imageId, 0}]),
 	
-	TestPanel = wxPanel:new(Toolbook),
+  TestPanel = lib_widgets:placeholder(Toolbook, "No Tests"),
 	tabbed_book_img:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
 	
 	FunctionsPanel = func_list:start([{parent, Toolbook}]),

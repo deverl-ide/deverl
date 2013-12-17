@@ -67,8 +67,8 @@
 -define(MENU_ID_DEBUGGER,          6035).
 -define(MENU_ID_PROJECTS_WINDOW,   6036).
 -define(MENU_ID_TESTS_WINDOW,      6037).
--define(MENU_ID_CONSOLE_WINDOW,    6038).
--define(MENU_ID_OBSERVER_WINDOW,   6039).
+-define(MENU_ID_FUNC_WINDOW,       6038).
+-define(MENU_ID_CONSOLE_WINDOW,    6039).
 -define(MENU_ID_DIALYSER_WINDOW,   6040).
 -define(MENU_ID_DEBUGGER_WINDOW,   6041).
 -define(MENU_ID_NEXT_TAB,          6042).
@@ -80,6 +80,7 @@
 -define(MENU_ID_IMPORT_FILE,       6051).
 -define(MENU_ID_IMPORT_PROJECT,    6052).
 -define(MENU_ID_EXPORT_EDOC,       6053).
+-define(MENU_ID_RUN_OBSERVER,      6055).
 -define(MENU_ID_HIGHEST,					 6999).
 
 %% Sub-menus

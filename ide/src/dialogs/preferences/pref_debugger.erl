@@ -28,8 +28,6 @@ do_init(Config) ->
   wxSizer:addSpacer(VertSizer, 20),
   wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Nothing here yet.")),
   
-  
-  
   wxSizer:addSpacer(VertSizer, 20),   
   
   wxSizer:add(LRSizer, VertSizer),

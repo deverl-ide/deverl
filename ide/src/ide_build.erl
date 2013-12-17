@@ -45,7 +45,7 @@ make_project(PrintMsg) ->
           ide_projects_tree:set_has_children(Path ++ "/ebin"),
           case PrintMsg of
             true ->
-              console_wx:append_message("Project " ++ filename:basename(Path) ++ " ready");
+              console_wx:append_message("Project ready: " ++ filename:basename(Path));
             _ -> ok
           end,
           change_dir(Path ++ "/ebin"),
