@@ -415,10 +415,18 @@ eval(Console, {Prompt, Input}, Cmd0, Hst) ->
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
+prompt(Console, Cmd, "$..", Prompt, _) -> 
+    wx_object:cast(?MODULE, {call_parser, Cmd, false}),
+    ?stc:newLine(Console);
+prompt(Console, Cmd, "$$.", Prompt, _) ->
+    wx_object:cast(?MODULE, {call_parser, Cmd, false}),
+    ?stc:newLine(Console);
+
 prompt(Console, Cmd, Input, Prompt, $$) -> % $. (Ascii shortcut)
   case length(Cmd++Input) of
     2 ->
-      wx_object:cast(?MODULE, {call_parser, Cmd, false});
+      wx_object:cast(?MODULE, {call_parser, Cmd, false}),
+      prompt(Console, Prompt, "\n");
     _ ->
       prompt(Console, Prompt, "\n")
   end;
