@@ -592,7 +592,6 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position=Pos, margin=
 %% =====================================================================
 
 handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State) ->
-  
   {noreply, State#state{dirty=false}};
 
 handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State) ->
@@ -630,11 +629,16 @@ keywords() ->
 %% @private	
 
 to_indent(Input) ->
-	Regex = "^[^%]*((?:if|case|receive|after|fun|try|catch|begin|query)|(?:->))(?:\\s*%+.*)?",
-	case re:run(Input, Regex, [unicode, {newline, anycrlf}]) of
-		nomatch -> false;
-		{_,_} -> true
-	end.
+  case sys_pref_manager:get_preference(auto_indent) of
+    true ->
+    	Regex = "^[^%]*((?:if|case|receive|after|fun|try|catch|begin|query)|(?:->))(?:\\s*%+.*)?",
+    	case re:run(Input, Regex, [unicode, {newline, anycrlf}]) of
+    		nomatch -> false;
+    		{_,_} -> true
+	    end;
+    _ ->
+      false
+  end.
 
 
 %% =====================================================================  
@@ -853,12 +857,6 @@ set_font_size(Editor, Id, Size) ->
 
 %% =====================================================================
 %% @doc
-%% @private
-
-% indent_line(Editor, Ln, Indent) ->
-% 	?stc:setLineIndentation(Editor, Ln, (?stc:getLineIndentation(Editor, Ln) + Indent)),
-% 	ok.
-	
 
 indent(EditorPid, Cmd) ->
 	Editor = wx_object:call(EditorPid, stc),
