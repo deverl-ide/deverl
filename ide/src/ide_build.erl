@@ -103,7 +103,7 @@ build_project(Parent, ProjectId) ->
     Config ->
       try
         ParsedConfig = parse_config(Config),
-        receive after 50 -> ok end, %% NASTY pause so we dont print the chang_dir response
+        receive after 50 -> ok end, %% NASTY pause so we dont print the chang_dir response WTF
         console_wx:append_message("Running project:", false),
         execute_function(ParsedConfig)
       catch

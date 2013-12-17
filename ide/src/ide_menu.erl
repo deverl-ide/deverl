@@ -241,7 +241,7 @@ init(Config) ->
   wxMenuBar:append(MenuBar, Document, "Document"),
   wxMenuBar:append(MenuBar, Wrangler, "Wrangler"),
   wxMenuBar:append(MenuBar, ToolMenu, "Tools"),
-  wxMenuBar:append(MenuBar, Window, "Window"),
+  wxMenuBar:append(MenuBar, Window, "Windows"),
   wxMenuBar:append(MenuBar, Help, "Help"),
 		
 	wxFrame:setMenuBar(Frame, MenuBar),

@@ -258,7 +258,6 @@ terminate(_Reason, #state{frame=Frame, workspace_manager=Manager}) ->
 
 %% Window close event
 handle_event(#wx{event=#wxClose{}}, State) ->
-  io:format("~p Closing window ~n",[self()]),
   case doc_manager:close_all() of
     cancelled ->
       {noreply, State};
@@ -309,6 +308,15 @@ handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State)
 handle_event(#wx{id=?MENU_ID_SEARCH_DOC}, State) ->
   wx_misc:launchDefaultBrowser("http://www.erlang.org/erldoc"),
   {noreply, State};
+  
+handle_event(#wx{id=?wxID_EXIT}, State) ->
+  case doc_manager:close_all() of
+    cancelled ->
+      {noreply, State};
+    _ ->
+      {stop, normal, State}
+  end;
+  
 %% Handle copy/paste
 % Currently on MSW and Linux the menu event is not caught by the in focus control even when
 % it has a registered handler for it. On OSX the event is caught as expected (and will 
