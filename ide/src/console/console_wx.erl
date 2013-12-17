@@ -257,7 +257,7 @@ handle_cast(clear, State=#state{textctrl=Console, busy=Busy}) ->
     true ->
       ok;
     false ->
-      % ?stc:addText(Console, ?CONSOLE_HEADER), --- Why ?
+      % ?stc:addText(Console, ?CONSOLE_HEADER), --- Did you mean for this to go in reset handler?
       prompt_2_console(Console, ?PROMPT, false)
   end,
   {noreply, State};

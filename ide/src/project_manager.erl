@@ -322,13 +322,6 @@ handle_call({set_project_configuration, Config}, _From,
   Tmp = proplists:delete(ActiveProject, Projects),
   UpdatedProjects = [{ActiveProject, Project#project{build_config=Config}} | Tmp],
  {reply, Result, State#state{projects=UpdatedProjects}}.
- 
-% handle_call({close_project, ProjectId}, _From, State=#state{projects=Projects, frame=Frame}) ->
-%   doc_manager:close_project(ProjectId),
-%   ide_projects_tree:remove_project(ProjectId),
-%   update_ui(Frame, undefined),
-%   ProjectsList = proplists:delete(ProjectId, Projects),
-%   {reply, ProjectId, State#state{active_project=undefined, projects=ProjectsList}}.
   
 handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Projects}) ->
   case ProjectId of
@@ -418,5 +411,6 @@ load_build_config(Path) ->
       io:format("ERROR: ~p~n", [E]),
       undefined;
     {ok, [Terms]} ->
+      io:format("TERMS: ~p~n", [Terms]),
       Terms
   end.
