@@ -80,15 +80,10 @@ do_init(Parent) ->
              args=io_lib:format("~s", [proplists:get_value(args, BuildConfig, [])])}
   end,
   
-  % io:format("EEEEEEEEE: ~p~n", [State#state.module]),
-  % io:format("EEEEEEEEE: ~p~n", [State#state.function]),
-  % io:format("EEEEEEEEE: ~p~n", [State#state.args]),
-  
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, Title, 
 		[{style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}]),
 	wxDialog:centre(Dialog),
 	
-	%% Conditional compilation OSX
 	case os:type() of
 		{_, darwin} ->
 			wxPanel:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL);
@@ -137,7 +132,7 @@ do_init(Parent) ->
   wxSizer:add(FlexGridSizer, ArgsInput, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(FlexGridSizer, 0, 0, []),
  
-  StaticText = wxStaticText:new(Dialog, ?wxID_ANY, "VM Options:"), %% Disabled, here for now but likely to be removed
+  StaticText = wxStaticText:new(Dialog, ?wxID_ANY, "VM Options:"), %% Disabled. Here for now but likely to be removed
   wxSizer:add(FlexGridSizer, StaticText, []),
   wxStaticText:enable(StaticText, [{enable, false}]),
   TextCtrl = wxTextCtrl:new(Dialog, ?wxID_ANY, []),
@@ -216,7 +211,6 @@ handle_event(#wx{id=Id, event=#wxFocus{type=set_focus}},
   {noreply, State};
 handle_event(#wx{id=?INPUT_MODULE, event=#wxCommand{type=command_text_updated, cmdString=Input}}, 
              State) ->
-  io:format("EVT: MODULE ~p~n", [Input]),
   {noreply, State#state{module=Input}};
 handle_event(#wx{id=?INPUT_FUNCTION, event=#wxCommand{type=command_text_updated, cmdString=Input}}, 
              State) ->
@@ -244,7 +238,6 @@ handle_call(build_config, _From, State=#state{module=Module, function=Function, 
     [] -> 
       Config;
     Args -> 
-      % Config ++ [{args, lists:map(fun(Str) -> string:strip(Str) end, string:tokens(Args, ","))}]
       Config ++ [{args, Args}]
   end,
   {reply, Result, State}.

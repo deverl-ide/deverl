@@ -592,6 +592,7 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position=Pos, margin=
 %% =====================================================================
 
 handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State) ->
+  
   {noreply, State#state{dirty=false}};
 
 handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State) ->

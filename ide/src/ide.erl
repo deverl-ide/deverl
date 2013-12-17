@@ -306,7 +306,9 @@ handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State)
 %% Menu handlers
 %%
 %% =====================================================================
-
+handle_event(#wx{id=?MENU_ID_SEARCH_DOC}, State) ->
+  wx_misc:launchDefaultBrowser("http://www.erlang.org/erldoc"),
+  {noreply, State};
 %% Handle copy/paste
 % Currently on MSW and Linux the menu event is not caught by the in focus control even when
 % it has a registered handler for it. On OSX the event is caught as expected (and will 
@@ -502,6 +504,9 @@ create_utils(ParentA) ->
 	end,
 	tabbed_book:add_page(TabbedWindow, Console, "Console"),
 
+  % Observer = ide_observer:start([{parent, TabbedWindow}]),
+  % tabbed_book:add_page(TabbedWindow, Observer, "Observer"),
+  
 	Dialyser = wxPanel:new(TabbedWindow, []),
 	tabbed_book:add_page(TabbedWindow, Dialyser, "Dialyser"),
 	
@@ -549,10 +554,6 @@ create_utils(ParentA) ->
   ButtonFlags = [],  
   Button1 = wxBitmapButton:new(ToolBar, ?BUTTON_LOG, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
   Button2 = wxBitmapButton:new(ToolBar, ?BUTTON_COMPILER_OUTPUT, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
-  
-  wxBitmapButton:setBitmapSelected(Button1, wxArtProvider:getBitmap("wxART_INFORMATION", [{size, {16,16}}])),
-  wxBitmapButton:setBitmapFocus(Button1, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}])),
-  wxBitmapButton:setBitmapSelected(Button1, wxArtProvider:getBitmap("wxART_PRINT", [{size, {16,16}}])),
   
   %% Connect button handlers
   wxPanel:connect(Button1, command_button_clicked, [{userData, {Splitter, Log}}]),
