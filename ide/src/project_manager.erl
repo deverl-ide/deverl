@@ -301,7 +301,13 @@ handle_call({get_build_config, ProjectId}, _From, State=#state{projects=Projects
     C ->
       {C, Projects0}
   end,
-	{reply, Bc1, State#state{projects=Projects1}};
+  M = proplists:get_value(module, Bc1),
+  F = proplists:get_value(function, Bc1),
+  Bc3 = case M =:= [] orelse F =:= [] of
+    true -> undefined;
+    _ -> Bc1
+  end,
+	{reply, Bc3, State#state{projects=Projects1}};
 
 handle_call(close_project, _From, State=#state{frame=Frame, active_project=ActiveProject, projects=Projects}) ->
   ide_projects_tree:remove_project(ActiveProject),
