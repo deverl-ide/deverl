@@ -114,7 +114,8 @@ handle_event(Ev = #wx{id=Id, event=#wxCommand{type=command_menu_selected}, userD
   NewPref = load_pref(Str, State),
   wxSizer:add(Sz, NewPref, [{proportion,1}, {flag, ?wxEXPAND}]),
   wxSizer:fit(Sz, Frame),
-  wxSizer:layout(Sz),  
+  wxSizer:layout(Sz),
+  wxPanel:layout(Panel),
   wxPanel:show(Panel),
   {noreply, State#state{pref=NewPref}};
     

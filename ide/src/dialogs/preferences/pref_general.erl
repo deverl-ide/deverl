@@ -18,7 +18,7 @@ init(Config) ->
 
 do_init(Config) ->
   Parent = proplists:get_value(parent, Config),
-  Panel = wxWindow:new(Parent, ?wxID_ANY),
+  Panel = wxWindow:new(Parent, ?wxID_ANY, []),
      
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxWindow:setSizer(Panel, LRSizer),
@@ -26,58 +26,15 @@ do_init(Config) ->
   
   VertSizer = wxBoxSizer:new(?wxVERTICAL),
   wxSizer:addSpacer(VertSizer, 20),
+  wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Nothing here yet.")),
   
-  
-  ConfigSizer = wxBoxSizer:new(?wxHORIZONTAL),
-
-  Choices = ["Default Config"],
-  Choice = wxChoice:new(Panel, ?wxID_ANY, [{choices, Choices}]),
-  wxChoice:setToolTip(Choice, "Select a configuration"),
-  
-  wxSizer:add(ConfigSizer, wxStaticText:new(Panel, ?wxID_ANY, "Configuration:")),
-  wxSizer:add(ConfigSizer, 10, 0),
-  wxSizer:add(ConfigSizer, Choice, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(ConfigSizer, 10, 0),
-  wxSizer:add(ConfigSizer, wxButton:new(Panel, ?wxID_ANY, [{label, "New..."}]), [{proportion, 0}, {flag, ?wxEXPAND}]),
-  wxSizer:add(ConfigSizer, 10, 0),
-  wxSizer:add(ConfigSizer, wxButton:new(Panel, ?wxID_ANY, [{label, "Delete..."}]), [{proportion, 0}, {flag, ?wxEXPAND}]),
-
-  wxSizer:add(VertSizer, ConfigSizer),
-  
-  
-  wxSizer:addSpacer(VertSizer, 20),
-  wxSizer:add(VertSizer, wxStaticLine:new(Panel, [{style, ?wxLI_HORIZONTAL}]), 
-              [{flag, ?wxEXPAND}]),
-  wxSizer:addSpacer(VertSizer, 20),
-  
-              
-  FlexGridSizer = wxFlexGridSizer:new(3, 3, 10, 10),
-  wxSizer:add(FlexGridSizer, wxStaticText:new(Panel, ?wxID_ANY, "Module:"), []),
-  wxSizer:add(FlexGridSizer, wxTextCtrl:new(Panel, 22222221, []), [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(FlexGridSizer, wxButton:new(Panel, ?wxID_ANY, [{label, "Browse..."}]), [{proportion, 0}]),
- 
-  wxSizer:add(FlexGridSizer, wxStaticText:new(Panel, ?wxID_ANY, "Main Function:"), []),
-  wxSizer:add(FlexGridSizer, wxTextCtrl:new(Panel, 22222222, []), [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(FlexGridSizer, 0, 0, []),
- 
-  wxSizer:add(FlexGridSizer, wxStaticText:new(Panel, ?wxID_ANY, "Arguments:"), []),
-  wxSizer:add(FlexGridSizer, wxTextCtrl:new(Panel, 22222223, []), [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(FlexGridSizer, 0, 0, []),
- 
-  wxSizer:add(FlexGridSizer, wxStaticText:new(Panel, ?wxID_ANY, "VM Options:"), []),
-  wxSizer:add(FlexGridSizer, wxTextCtrl:new(Panel, 22222224, []), [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(FlexGridSizer, 0, 0, []),
-  
-  wxFlexGridSizer:addGrowableCol(FlexGridSizer, 1),
-              
-                         
-  wxSizer:add(VertSizer, FlexGridSizer, [{flag, ?wxEXPAND}, {proportion, 1}]),      
   wxSizer:addSpacer(VertSizer, 20),   
   
   wxSizer:add(LRSizer, VertSizer),
   wxSizer:addSpacer(LRSizer, 20),
+                      
+	wxSizer:layout(LRSizer),
   
-  wxSizer:layout(LRSizer),
   {Panel, #state{parent=Panel}}.
   
     
