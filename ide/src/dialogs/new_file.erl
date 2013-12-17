@@ -295,8 +295,6 @@ handle_event(#wx{id=?FILE_TYPE_CHOICE, event=#wxCommand{type=command_listbox_sel
 handle_event(#wx{id=?FILENAME_BOX, event=#wxCommand{type=command_text_updated, cmdString=Filename}},
              State=#state{win=Parent, path=ProjectPath, desc_panel=Desc}) ->
   check_if_finished(Parent, Filename, Desc),
-  %PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
-  %wxTextCtrl:clear(PathTextBox),
   set_path_text(Parent, ProjectPath, Filename),
   {noreply, State};
 handle_event(#wx{id=?PROJECT_CHOICE, event=#wxCommand{type=command_choice_selected}},
@@ -574,7 +572,6 @@ get_file_extension(Parent) ->
 %% @doc Check if the dialog is in a finished state.
 
 check_if_finished(Parent, Filename, Desc) ->
-  Filename = get_filename(Parent),
   case length(Filename) of
     0 ->
       wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
@@ -595,6 +592,7 @@ validate_name([], _) -> false;
 validate_name(Str, Desc) ->
 	case validate_name(Str) of
 		nomatch -> 
+      insert_desc(Desc, "Create a new file."),
 			true;
 		{match, [{Pos,_}]} -> 
 			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),

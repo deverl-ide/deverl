@@ -87,18 +87,11 @@ append_command(Response) ->
 %% @doc
 
 append_message(Msg) ->
-<<<<<<< HEAD
-  %wx_object:cast(?MODULE, {append_msg, Msg}).
   append_message(Msg, true).
-=======
-  append_message(Msg, true).
+  
 append_message(Msg, Bool) ->
   wx_object:cast(?MODULE, {append_msg, Msg, Bool}).
 
->>>>>>> 2b3f2cf71686c21990cc5e14071029b99251bb7e
-
-append_message(Msg, Bool) ->
-  wx_object:cast(?MODULE, {append_msg, Msg, Bool}).
   
 %% =====================================================================
 %% @doc Update the shell's theme
@@ -234,8 +227,6 @@ handle_cast({append, {response, Response}}, State=#state{textctrl=Console}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   {noreply, State};
 handle_cast({append_msg, Msg, Prompt}, State=#state{textctrl=Console}) ->
-<<<<<<< HEAD
-=======
   ?stc:freeze(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   case Prompt of
@@ -247,7 +238,6 @@ handle_cast({append_msg, Msg, Prompt}, State=#state{textctrl=Console}) ->
       ?stc:replaceTarget(Console, "");
     _ -> ok
   end,
->>>>>>> 2b3f2cf71686c21990cc5e14071029b99251bb7e
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   Line = ?stc:getCurrentLine(Console),
   ?stc:markerAdd(Console, Line, ?MARKER_MSG),
@@ -255,20 +245,8 @@ handle_cast({append_msg, Msg, Prompt}, State=#state{textctrl=Console}) ->
   ?stc:addText(Console, Msg),
   ?stc:newLine(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
-<<<<<<< HEAD
-  case Prompt of
-    true ->
-      ok;
-    false ->
-      ?stc:setTargetStart(Console, ?stc:positionFromLine(Console, ?stc:getCurrentLine(Console))),
-      ?stc:setTargetEnd(Console, ?stc:getLength(Console)),
-      ?stc:replaceTarget(Console, 0, "")
-  end,
-  {noreply, State};
-=======
   ?stc:thaw(Console),
   {noreply, State#state{busy=not Prompt}};
->>>>>>> 2b3f2cf71686c21990cc5e14071029b99251bb7e
 handle_cast({call_parser, Cmd, Busy}, State) ->
   console_parser:parse_input(Cmd),
   {noreply, State#state{busy=Busy, input=[]}};
