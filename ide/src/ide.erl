@@ -48,8 +48,6 @@
 -define(SPLITTER_SIDEBAR_SASH_POS_DEFAULT, 215).
 -define(SPLITTER_UTILITIES_SASH_POS_DEFAULT, -200).
 -define(SPLITTER_LOG_SASH_POS_DEFAULT, -500).
--define(LABEL_HIDE_UTIL, "Hide Utilities Pane\tShift+Alt+U").
--define(LABEL_SHOW_UTIL, "Show Utiities Pane\tShift+Alt+U").
 -define(FRAME_TITLE, "Erlang IDE").
 -define(BUTTON_HIDE_OUTPUT, 0).
 -define(BUTTON_LOG, 1).
@@ -376,11 +374,10 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSC
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_TEST=Id},
 						 State=#state{frame=Frame, splitter_sidebar=V, left_pane=LeftPane, workspace=Ws, splitter_sidebar_pos=VPos}) ->
    wxWindow:freeze(V),
-   Str = case wxSplitterWindow:isSplit(V) of
-       true -> wxSplitterWindow:unsplit(V,[{toRemove, LeftPane}]), "Show Left Pane\tShift+Alt+T";
-       false -> wxSplitterWindow:splitVertically(V, LeftPane, Ws, [{sashPosition, VPos}]), "Hide Left Pane\tShift+Alt+T"
+   case wxSplitterWindow:isSplit(V) of
+       true -> wxSplitterWindow:unsplit(V,[{toRemove, LeftPane}]);
+       false -> wxSplitterWindow:splitVertically(V, LeftPane, Ws, [{sashPosition, VPos}])
    end,
-	 ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, Str),
    wxWindow:thaw(V),
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_UTIL=Id},
@@ -388,14 +385,12 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_U
 	IsShown = wxSplitterWindow:isShown(Utils),
 	case wxSplitterWindow:isSplit(H) of
 		true -> ok;
-		false -> 
-			wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
-			ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, ?LABEL_HIDE_UTIL)
+		false ->
+			wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}])
 	end,
 	case IsShown of
-		true -> 
-			wxSplitterWindow:unsplit(H,[{toRemove, Utils}]),
-			ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, ?LABEL_SHOW_UTIL);
+		true ->
+			wxSplitterWindow:unsplit(H,[{toRemove, Utils}]);
 		false -> ok
 	end,
 	{noreply, State};
@@ -426,8 +421,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UT
 	IsSplit = wxSplitterWindow:isSplit(H),
 	IsShown = wxSplitterWindow:isShown(Utils),
 	case IsSplit of
-		false -> wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
-						 ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_HIDE_UTIL, ?LABEL_HIDE_UTIL);
+		false -> wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]);
 		true -> ok
 	end,
 	case IsSplit =:= IsShown of
