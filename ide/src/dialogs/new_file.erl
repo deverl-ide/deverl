@@ -327,7 +327,7 @@ dialog1(Parent, Projects, ActiveProject) ->
   wxChoice:setSelection(ProjectChoice, wxChoice:findString(ProjectChoice, ActiveProject)),
   wxSizer:addSpacer(DialogSizer1, 20),
 
-  FileSizer = wxFlexGridSizer:new(2, 2, 5, 20),
+  FileSizer = wxFlexGridSizer:new(2, [{vgap, 5}, {hgap, 20}]),
   wxSizer:add(DialogSizer1, FileSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(FileSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "File Type:"), []),
   wxSizer:add(FileSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "Module Type:"), []),
@@ -355,7 +355,7 @@ dialog1(Parent, Projects, ActiveProject) ->
 
 dialog2(Parent) ->
   Dialog2 = wxPanel:new(Parent),
-  DialogSizer2 = wxFlexGridSizer:new(4, 3, 20, 20),
+  DialogSizer2 = wxFlexGridSizer:new(3, [{vgap, 20}, {hgap, 20}]),
   wxPanel:setSizer(Dialog2, DialogSizer2),
   
   wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Project Name:"), []),

@@ -110,7 +110,7 @@ do_init(Parent) ->
   end,
 	
   %% Project properties
-  FlexGridSizer = wxFlexGridSizer:new(3, 3, 10, 10),
+  FlexGridSizer = wxFlexGridSizer:new(3, [{vgap, 10}, {hgap, 10}]),
   wxSizer:add(FlexGridSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Module:"), []),
   ModuleInput = wxTextCtrl:new(Dialog, ?INPUT_MODULE, [{size, {250,-1}}, 
     {value, State#state.module}]),

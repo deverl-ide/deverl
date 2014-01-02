@@ -83,7 +83,7 @@ do_init(Parent) ->
               [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(VertSizer, 20),
   
-  FlexGridSz = wxFlexGridSizer:new(2, 3, 10, 10),
+  FlexGridSz = wxFlexGridSizer:new(3, [{vgap, 10}, {hgap, 10}]),
 
 	%% Erlang project
   wxSizer:add(FlexGridSz, wxStaticText:new(Dialog, ?wxID_ANY, "Erlang Project:"), []),

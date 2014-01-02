@@ -101,7 +101,8 @@ do_init(Parent) ->
   wxSizer:addSpacer(VertSizer, 20),
 	
 	%% Project name
-  FlexGridSz = wxFlexGridSizer:new(3, 3, 10, 10),
+  % FlexGridSz = wxFlexGridSizer:new(3, 3, 10, 10),
+  FlexGridSz = wxFlexGridSizer:new(3, [{vgap, 10}, {hgap, 10}]),
   wxSizer:add(FlexGridSz, wxStaticText:new(Dialog, ?wxID_ANY, "Project Name:"), []),
 	ProjName = wxTextCtrl:new(Dialog, ?ID_PROJ_NAME, []),
   wxSizer:add(FlexGridSz, ProjName, [{proportion, 1}, {flag, ?wxEXPAND}]),
