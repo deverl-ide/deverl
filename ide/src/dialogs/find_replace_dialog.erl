@@ -35,7 +35,7 @@ do_init(Config) ->
   wxWindow:setSizer(Panel, MainSz),
   wxSizer:addSpacer(MainSz, 20),
   
-  FlexGridSz = wxFlexGridSizer:new(4, [{vgap, 10}, {hgap, 5}]),
+  FlexGridSz = wxFlexGridSizer:new(2, [{vgap, 10}, {hgap, 5}]),
   wxSizer:add(FlexGridSz, wxStaticText:new(Panel, ?wxID_ANY, "Find:"), [{flag, ?wxALIGN_RIGHT bor ?wxALIGN_CENTRE_VERTICAL}]),
   ToFocus = wxTextCtrl:new(Panel, ?FIND_INPUT, []),
 	wxSizer:add(FlexGridSz, ToFocus, [{flag, ?wxEXPAND}, {proportion, 1}]),

@@ -101,7 +101,6 @@ do_init(Parent) ->
   wxSizer:addSpacer(VertSizer, 20),
 	
 	%% Project name
-  % FlexGridSz = wxFlexGridSizer:new(3, 3, 10, 10),
   FlexGridSz = wxFlexGridSizer:new(3, [{vgap, 10}, {hgap, 10}]),
   wxSizer:add(FlexGridSz, wxStaticText:new(Dialog, ?wxID_ANY, "Project Name:"), []),
 	ProjName = wxTextCtrl:new(Dialog, ?ID_PROJ_NAME, []),
@@ -348,7 +347,6 @@ insert_desc(Description, Msg) ->
 insert_desc(Description, Msg, Options) ->
 	SzFlags = wxSizerFlags:new([{proportion, 0}]),
 	wxSizerFlags:expand(wxSizerFlags:border(SzFlags, ?wxTOP, 10)),
-	wxWindow:freeze(Description),
 	wxPanel:destroyChildren(Description),
 	Sz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxPanel:setSizer(Description, Sz),
@@ -359,9 +357,7 @@ insert_desc(Description, Msg, Options) ->
 			wxSizer:add(Sz, wxStaticBitmap:new(Description, ?wxID_ANY, Bitmap), [{border, 5}, {flag, ?wxTOP bor ?wxRIGHT}])
 	end,
 	wxSizer:add(Sz, wxStaticText:new(Description, ?wxID_ANY, Msg), SzFlags),
-	wxPanel:layout(Description),	
-	wxWindow:thaw(Description),
-	ok.
+	wxPanel:layout(Description).
 
 	
 %% =====================================================================

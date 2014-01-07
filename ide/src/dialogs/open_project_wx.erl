@@ -87,10 +87,12 @@ do_init({Parent, Projects}) ->
   wxListCtrl:insertColumn(ListCtrl, 0, "Project", []),
   wxListCtrl:insertColumn(ListCtrl, 1, "Last Modified", []),
   wxListCtrl:insertColumn(ListCtrl, 2, "Path", []),
-  wxListCtrl:setColumnWidth(ListCtrl, 2, 300),
+
   wxSizer:add(VertSizer, ListCtrl, [{flag, ?wxEXPAND}, {proportion, 1}]),
   
   insert_projects(ListCtrl, Projects),
+  
+  [wxListCtrl:setColumnWidth(ListCtrl, N, ?wxLIST_AUTOSIZE) || N <- lists:seq(0, wxListCtrl:getColumnCount(ListCtrl) - 1)],
   
   wxSizer:addSpacer(VertSizer, 40),
   wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 

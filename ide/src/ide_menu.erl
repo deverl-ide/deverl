@@ -159,18 +159,18 @@ init(Config) ->
 			true -> "Tabs";
 			_ -> "Spaces"
 		end,
-  {IndentType, _} = generate_radio_submenu(wxMenu:new([]), ["Tabs", "Spaces"],
+  {IndentType, _MaxId} = generate_radio_submenu(wxMenu:new([]), ["Tabs", "Spaces"],
   TabPref, ?MENU_ID_INDENT_TABS),
 		
   wxMenu:append(View, ?MENU_ID_INDENT_TYPE, "Indent Type", IndentType),
 		
-  {IndentWidth, IndentMax} = generate_radio_submenu(wxMenu:new([]),
+  {IndentWidth, _MaxId} = generate_radio_submenu(wxMenu:new([]),
   [integer_to_list(Width) || Width <- lists:seq(2, 8)], 
   sys_pref_manager:get_preference(tab_width), ?MENU_ID_TAB_WIDTH_LOWEST),
 			
   wxMenu:append(View, ?MENU_ID_TAB_WIDTH, "Tab Width", IndentWidth),
 		
-  {Theme, ThemeMax} = generate_radio_submenu(wxMenu:new([]),
+  {Theme, _MaxId} = generate_radio_submenu(wxMenu:new([]),
   editor_theme:get_theme_names(), sys_pref_manager:get_preference(theme), ?MENU_ID_THEME_LOWEST),
 		
   wxMenu:append(View, ?MENU_ID_INDENT_GUIDES, "Indent Guides\tCtrl+Alt+G", [{kind, ?wxITEM_CHECK}]),
@@ -437,7 +437,7 @@ init(Config) ->
 	wxFrame:connect(Frame, command_menu_selected,  
 		[{userData, IndentWidth}, {id,?MENU_ID_TAB_WIDTH_LOWEST}, {lastId, ?MENU_ID_TAB_WIDTH_HIGHEST}]),        
   
-	{MenuBar, TabId}.
+	TabId.
 
 
 %% =====================================================================
@@ -455,7 +455,7 @@ init(Config) ->
 	Result :: {wxMenu:wxMenu(), integer()}. %% The complete menu and id of the last item added
 
 generate_radio_submenu(Menu, [], _, Id) -> 
-	{Menu, Id -1};
+	{Menu, Id - 1};
 	
 generate_radio_submenu(Menu, [Label|T], Label, StartId) ->
 	wxMenu:appendRadioItem(Menu, StartId, Label),
