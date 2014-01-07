@@ -159,18 +159,18 @@ init(Config) ->
 			true -> "Tabs";
 			_ -> "Spaces"
 		end,
-  {IndentType, _MaxId} = generate_radio_submenu(wxMenu:new([]), ["Tabs", "Spaces"],
+  {IndentType, _MaxId0} = generate_radio_submenu(wxMenu:new([]), ["Tabs", "Spaces"],
   TabPref, ?MENU_ID_INDENT_TABS),
 		
   wxMenu:append(View, ?MENU_ID_INDENT_TYPE, "Indent Type", IndentType),
 		
-  {IndentWidth, _MaxId} = generate_radio_submenu(wxMenu:new([]),
+  {IndentWidth, _MaxId1} = generate_radio_submenu(wxMenu:new([]),
   [integer_to_list(Width) || Width <- lists:seq(2, 8)], 
   sys_pref_manager:get_preference(tab_width), ?MENU_ID_TAB_WIDTH_LOWEST),
 			
   wxMenu:append(View, ?MENU_ID_TAB_WIDTH, "Tab Width", IndentWidth),
 		
-  {Theme, _MaxId} = generate_radio_submenu(wxMenu:new([]),
+  {Theme, _MaxId2} = generate_radio_submenu(wxMenu:new([]),
   editor_theme:get_theme_names(), sys_pref_manager:get_preference(theme), ?MENU_ID_THEME_LOWEST),
 		
   wxMenu:append(View, ?MENU_ID_INDENT_GUIDES, "Indent Guides\tCtrl+Alt+G", [{kind, ?wxITEM_CHECK}]),

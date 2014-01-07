@@ -352,7 +352,7 @@ handle_event(#wx{id=?wxID_PASTE}, State) ->
   Id = wxWindow:getId(Fw),
   case Id of
     ?WINDOW_CONSOLE -> 
-      console_wx:paste(wx:typeCast(Fw, wxStyledTextCtrl));
+      ide_console_wx:paste(wx:typeCast(Fw, wxStyledTextCtrl));
     Tc when Tc =:= ?WINDOW_OUTPUT; Tc =:= ?WINDOW_FUNCTION_SEARCH ->
        wxTextCtrl:paste(wx:typeCast(Fw, wxTextCtrl));
     _ -> 
@@ -520,12 +520,12 @@ create_utils(ParentA) ->
 	TabbedWindow = tabbed_book:new([{parent, Splitter}]),
 	
 	%% Start the port that communicates with the external ERTs
-	Console = case console_sup:start_link([]) of
+	Console = case ide_console_sup:start_link([]) of
 		{error, _E} ->
 			lib_widgets:placeholder(TabbedWindow, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
 			%% Disable console menu/toolbar items
 		_Port ->
-			console_wx:new([{parent, TabbedWindow}])
+			ide_console_wx:new([{parent, TabbedWindow}])
 	end,
 	tabbed_book:add_page(TabbedWindow, Console, "Console"),
 

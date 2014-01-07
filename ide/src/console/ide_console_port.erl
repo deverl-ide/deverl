@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(console_port).
+-module(ide_console_port_gen).
 
 %% gen_server
 -export([init/1, 
@@ -92,7 +92,7 @@ handle_info({_Port, {data, Response}}, State=#state{respond=Respond}) ->
 		false -> 
       ok;
 		true -> 
-			console_parser:parse_response(Response)
+			ide_console_parser:parse_response(Response)
 	end,
 	{noreply, State}.
 
