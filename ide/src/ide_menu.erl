@@ -345,7 +345,7 @@ init(Config) ->
       [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?MENU_ID_IMPORT_PROJECT, {project_manager, import, [Frame]}},
     {?wxID_EXIT, {}},
-    {?wxID_PREFERENCES, {ide_prefs,start, [[{parent,Frame}]]}},
+    {?wxID_PREFERENCES, {ide_prefs_wx,start, [[{parent,Frame}]]}},
     
      %{?wxID_UNDO, {}},
      %{?wxID_REDO, {}},

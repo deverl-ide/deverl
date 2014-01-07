@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
   
--module(ide_prefs).
+-module(ide_prefs_wx).
   
 -include_lib("wx/include/wx.hrl").
   
@@ -27,10 +27,10 @@
 %% Server state
 -record(state, {frame, pref_panel, pref}).        
 
--define(PREF_GENERAL,  1).
+-define(PREF_GENERAL, 1).
 -define(PREF_EDITOR, 2).
--define(PREF_CONSOLE,  3).
--define(PREF_DEBUG,   4).
+-define(PREF_CONSOLE, 3).
+-define(PREF_DEBUG, 4).
   
 
 %% =====================================================================

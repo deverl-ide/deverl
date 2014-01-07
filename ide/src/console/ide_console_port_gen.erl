@@ -10,6 +10,7 @@
 -module(ide_console_port_gen).
 
 %% gen_server
+-behaviour(gen_server).
 -export([init/1, 
          handle_call/3,
          handle_cast/2, 

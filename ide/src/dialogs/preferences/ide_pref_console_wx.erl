@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(pref_console).
+-module(ide_pref_console_wx).
 
 -include_lib("wx/include/wx.hrl").
 
