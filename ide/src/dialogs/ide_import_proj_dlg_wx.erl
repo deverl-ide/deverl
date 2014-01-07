@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(import_project_wx).
+-module(ide_import_proj_dlg_wx).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -172,7 +172,7 @@ handle_event(#wx{event=#wxCommand{type=command_text_updated, cmdString=Str}}, St
   {noreply, State};
 handle_event(#wx{id=?ID_BROWSE_PROJECTS, event=#wxCommand{type=command_button_clicked}}, 
              State=#state{parent=Parent, project_path_text_ctrl=PathTc}) ->
-	case lib_dialog_wx:get_dir(Parent) of
+	case ide_lib_dlg_wx:get_dir(Parent) of
 		cancelled -> ok;
 		Path -> 
       wxTextCtrl:setValue(PathTc, Path),
@@ -192,7 +192,7 @@ handle_event(#wx{id=?wxID_OK, event=#wxCommand{type=command_button_clicked}},
       io:format("NOT IMPLEMENTED"),
       ok;
     false -> %% Leave where it is
-      project_manager:new_project(Parent, Path)
+      ide_proj_man:new_project(Parent, Path)
   end,
   {stop, normal, State}.
   % {noreply, State#state{project_path=Path}}.

@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(ide_projects_tree).
+-module(ide_proj_tree_wx).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -297,7 +297,7 @@ handle_event(#wx{obj=Menu, id=Id, event=#wxCommand{type=command_menu_selected}},
             State=#state{frame=Frame}) ->
   case Id of
     ?wxID_NEW ->
-      doc_manager:new_document(Frame);
+      ide_doc_man_wx:new_document(Frame);
     ?MENU_ID_CLOSE_PROJECT ->
       ok;   
     ?ID_NEW_FOLDER ->
@@ -687,9 +687,9 @@ open_file(Tree, Item) ->
     false ->
       case wxTreeCtrl:getItemData(Tree, Item) of
         {Id, _Path} ->
-          doc_manager:create_document(FilePath, Id);
+          ide_doc_man_wx:create_document(FilePath, Id);
         _Path ->
-          doc_manager:create_document(FilePath, undefined)
+          ide_doc_man_wx:create_document(FilePath, undefined)
       end
   end.
 
@@ -801,9 +801,9 @@ select(Tree, Item) ->
   case wxTreeCtrl:getItemData(Tree, Item) of
     {ProjectId, _Path} ->
       get_project_root(Tree, Item),
-      project_manager:set_active_project(ProjectId);
+      ide_proj_man:set_active_project(ProjectId);
     Path -> %% Standalone document
-      project_manager:set_active_project(undefined)
+      ide_proj_man:set_active_project(undefined)
   end.
   
 

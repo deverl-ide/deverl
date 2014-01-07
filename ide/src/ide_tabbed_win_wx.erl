@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(tabbed_book).
+-module(ide_tabbed_win_wx).
 -include_lib("wx/include/wx.hrl").
 
 %% wx_object
@@ -144,7 +144,7 @@ handle_sync_event(#wx{obj=TabPanel, userData=tab_panel, event=#wxPaint{}},_,_Sta
 	{W,H} = wxWindow:getSize(TabPanel),
 	DC = wxPaintDC:new(TabPanel),
 	Grad1 = wxWindow:getBackgroundColour(TabPanel),
-	Grad2 = lib_widgets:colour_shade(Grad1, 0.9),
+	Grad2 = ide_lib_widgets:colour_shade(Grad1, 0.9),
 	wxDC:gradientFillLinear(DC, {0,0,W,H}, Grad1, Grad2, [{nDirection, ?wxRIGHT}]),
 	wxPaintDC:destroy(DC),
 	ok;
@@ -231,10 +231,10 @@ draw(Btn, Label, WxDc, Options) ->
 	
 	%% Colours - could keep these in the state to save calculating on paint
 	StdBg = wxWindow:getBackgroundColour(Btn),
-	Dark1 = lib_widgets:colour_shade(StdBg, 0.7),
-	Dark2 = lib_widgets:colour_shade(StdBg, 0.4),
-	Hover = lib_widgets:colour_shade(StdBg, 0.75),
-	Font = lib_widgets:colour_shade(Dark2, 0.5), 
+	Dark1 = ide_lib_widgets:colour_shade(StdBg, 0.7),
+	Dark2 = ide_lib_widgets:colour_shade(StdBg, 0.4),
+	Hover = ide_lib_widgets:colour_shade(StdBg, 0.75),
+	Font = ide_lib_widgets:colour_shade(Dark2, 0.5), 
 	
 	Canvas = case proplists:get_value(button_state, Options) of
 		active -> draw_setup(DC, Dark2, Dark2, ?wxWHITE);

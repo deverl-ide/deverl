@@ -61,7 +61,7 @@ do_init(Config) ->
   %% Font
   add_bold_label(Panel, MainSz, "Font"),
   
-  Font = sys_pref_manager:get_font(console),
+  Font = ide_sys_pref_gen:get_font(console),
   
   FontSz = wxBoxSizer:new(?wxHORIZONTAL),
   FontStr = wxStaticText:new(Panel, ?wxID_ANY, get_font_string(Font)),
@@ -82,7 +82,7 @@ do_init(Config) ->
   
   ThemeSz = wxBoxSizer:new(?wxHORIZONTAL),
   
-  SavedTheme = sys_pref_manager:get_preference(console_theme),
+  SavedTheme = ide_sys_pref_gen:get_preference(console_theme),
   
   ThemeEx = 
     fun({Name, Fg, Bg, MrkrBf, ErrFg}=Theme) ->
@@ -123,7 +123,7 @@ do_init(Config) ->
 
 handle_event(#wx{id=Id, event=#wxCommand{type=command_radiobutton_selected}, userData={_Name,Fg,Bg,MrkrBg,ErrFg}=Theme}, State) ->
   ide_console_wx:set_theme(Fg, Bg, MrkrBg, ErrFg),
-  sys_pref_manager:set_preference(console_theme, Theme),
+  ide_sys_pref_gen:set_preference(console_theme, Theme),
   {noreply, State};
 handle_event(#wx{obj=Browse, event=#wxCommand{type=command_button_clicked}}, 
              State=#state{parent=Parent, font=Font, font_string=FontStr}) ->
@@ -135,11 +135,11 @@ handle_event(#wx{obj=Browse, event=#wxCommand{type=command_button_clicked}},
       NewFont = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
       wxStaticText:setLabel(FontStr, get_font_string(NewFont)),
       %% Crap way to set font prefs, need a function that does all this lot
-      sys_pref_manager:set_preference(console_font_size, wxFont:getPointSize(NewFont)),
-      sys_pref_manager:set_preference(console_font_family, wxFont:getFamily(NewFont)),
-      sys_pref_manager:set_preference(console_font_style, wxFont:getStyle(NewFont)),
-      sys_pref_manager:set_preference(console_font_weight, wxFont:getWeight(NewFont)),
-      sys_pref_manager:set_preference(console_font_facename, wxFont:getFaceName(NewFont)),
+      ide_sys_pref_gen:set_preference(console_font_size, wxFont:getPointSize(NewFont)),
+      ide_sys_pref_gen:set_preference(console_font_family, wxFont:getFamily(NewFont)),
+      ide_sys_pref_gen:set_preference(console_font_style, wxFont:getStyle(NewFont)),
+      ide_sys_pref_gen:set_preference(console_font_weight, wxFont:getWeight(NewFont)),
+      ide_sys_pref_gen:set_preference(console_font_facename, wxFont:getFaceName(NewFont)),
       ide_console_wx:set_font(NewFont),
       NewFont;
     ?wxID_CANCEL ->

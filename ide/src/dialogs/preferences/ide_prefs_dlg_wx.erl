@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
   
--module(ide_prefs_wx).
+-module(ide_prefs_dlg_wx).
   
 -include_lib("wx/include/wx.hrl").
   
@@ -139,7 +139,7 @@ terminate(_Reason, #state{frame=Frame}) ->
 %% @doc Load a preference pane.
 
 load_pref(Pref, #state{frame=Frame, pref_panel={Panel,Sz}}) ->
-  ModStr = "pref_" ++ string:to_lower(Pref),
+  ModStr = "ide_pref_" ++ string:to_lower(Pref) ++ "_wx",
   Mod = list_to_atom(ModStr),
   ModFile = ModStr ++ ".erl",
   Mod:start([{parent, Panel}]).

@@ -154,9 +154,9 @@ init(Config) ->
 	?stc:cmdKeyClear(Console, ?wxSTC_KEY_UP, 0),
 
   %% Saved styles
-  {_Name, Fg, Bg, MrkrBg, ErrFg} = sys_pref_manager:get_preference(console_theme),
+  {_Name, Fg, Bg, MrkrBg, ErrFg} = ide_sys_pref_gen:get_preference(console_theme),
   set_theme(Fg, Bg, MrkrBg, ErrFg),
-  set_font(sys_pref_manager:get_font(console)),
+  set_font(ide_sys_pref_gen:get_font(console)),
 
   %% Other styles
   % ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "fore:#FF0000,bold,underline"), % For the prompt

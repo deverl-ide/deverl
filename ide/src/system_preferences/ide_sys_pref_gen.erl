@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(sys_pref_manager).
+-module(ide_sys_pref_gen).
 
 %% gen_server
 -behaviour(gen_server).
@@ -57,22 +57,22 @@ get_preference(Key) ->
 get_font(Window) ->
   case Window of 
     editor ->
-      wxFont:new(sys_pref_manager:get_preference(editor_font_size),
-                 sys_pref_manager:get_preference(editor_font_family),
-                 sys_pref_manager:get_preference(editor_font_style),
-                 sys_pref_manager:get_preference(editor_font_weight));
+      wxFont:new(ide_sys_pref_gen:get_preference(editor_font_size),
+                 ide_sys_pref_gen:get_preference(editor_font_family),
+                 ide_sys_pref_gen:get_preference(editor_font_style),
+                 ide_sys_pref_gen:get_preference(editor_font_weight));
     console ->
-      wxFont:new(sys_pref_manager:get_preference(console_font_size),
-                 sys_pref_manager:get_preference(console_font_family),
-                 sys_pref_manager:get_preference(console_font_style),
-                 sys_pref_manager:get_preference(console_font_weight),
-                 [{face, sys_pref_manager:get_preference(console_font_facename)}]);
+      wxFont:new(ide_sys_pref_gen:get_preference(console_font_size),
+                 ide_sys_pref_gen:get_preference(console_font_family),
+                 ide_sys_pref_gen:get_preference(console_font_style),
+                 ide_sys_pref_gen:get_preference(console_font_weight),
+                 [{face, ide_sys_pref_gen:get_preference(console_font_facename)}]);
     log ->
-      wxFont:new(sys_pref_manager:get_preference(log_font_size),
-                 sys_pref_manager:get_preference(log_font_family),
-                 sys_pref_manager:get_preference(log_font_style),
-                 sys_pref_manager:get_preference(log_font_weight),
-                 [{face, sys_pref_manager:get_preference(log_font_facename)}])
+      wxFont:new(ide_sys_pref_gen:get_preference(log_font_size),
+                 ide_sys_pref_gen:get_preference(log_font_family),
+                 ide_sys_pref_gen:get_preference(log_font_style),
+                 ide_sys_pref_gen:get_preference(log_font_weight),
+                 [{face, ide_sys_pref_gen:get_preference(log_font_facename)}])
   end.
 
 
@@ -81,7 +81,7 @@ get_font(Window) ->
 %% =====================================================================
 
 init(Config) ->
-  % wx:set_env(proplists:get_value(wx_env, Config)),
+  wx:set_env(proplists:get_value(wx_env, Config)),
   Table = case filelib:is_file(system_prefs) of
     true ->
       load_prefs();
@@ -157,7 +157,7 @@ write_dets(PrefsTable) ->
 %% @doc
 
 insert_default_prefs(PrefsTable) ->
-  [ets:insert(PrefsTable, {Key, Value}) || {Key, Value} <- sys_pref_defaults:get_defaults()],
+  [ets:insert(PrefsTable, {Key, Value}) || {Key, Value} <- ide_sys_pref_defs:get_defaults()],
   Folder = case os:type() of
     {_,linux} -> "erlang_projects";
     _ -> "ErlangProjects"

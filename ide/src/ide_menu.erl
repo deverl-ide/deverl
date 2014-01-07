@@ -145,17 +145,17 @@ init(Config) ->
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_LINE_WRAP, "Line Wrap\tCtrl+W", [{kind, ?wxITEM_CHECK}]),
   Pref = 
-    case sys_pref_manager:get_preference(line_wrap) of
+    case ide_sys_pref_gen:get_preference(line_wrap) of
       0 -> false;
 			_ -> true
 		end,
   wxMenu:check(View, ?MENU_ID_LINE_WRAP, Pref),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_LN_TOGGLE, "Toggle Line Numbers\tCtrl+Alt+L", [{kind, ?wxITEM_CHECK}]),
-  wxMenu:check(View, ?MENU_ID_LN_TOGGLE, sys_pref_manager:get_preference(show_line_no)),
+  wxMenu:check(View, ?MENU_ID_LN_TOGGLE, ide_sys_pref_gen:get_preference(show_line_no)),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   TabPref = 
-    case sys_pref_manager:get_preference(use_tabs) of
+    case ide_sys_pref_gen:get_preference(use_tabs) of
 			true -> "Tabs";
 			_ -> "Spaces"
 		end,
@@ -166,15 +166,15 @@ init(Config) ->
 		
   {IndentWidth, _MaxId1} = generate_radio_submenu(wxMenu:new([]),
   [integer_to_list(Width) || Width <- lists:seq(2, 8)], 
-  sys_pref_manager:get_preference(tab_width), ?MENU_ID_TAB_WIDTH_LOWEST),
+  ide_sys_pref_gen:get_preference(tab_width), ?MENU_ID_TAB_WIDTH_LOWEST),
 			
   wxMenu:append(View, ?MENU_ID_TAB_WIDTH, "Tab Width", IndentWidth),
 		
   {Theme, _MaxId2} = generate_radio_submenu(wxMenu:new([]),
-  editor_theme:get_theme_names(), sys_pref_manager:get_preference(theme), ?MENU_ID_THEME_LOWEST),
+  ide_editor_theme:get_theme_names(), ide_sys_pref_gen:get_preference(theme), ?MENU_ID_THEME_LOWEST),
 		
   wxMenu:append(View, ?MENU_ID_INDENT_GUIDES, "Indent Guides\tCtrl+Alt+G", [{kind, ?wxITEM_CHECK}]),
-  wxMenu:check(View, ?MENU_ID_INDENT_GUIDES, sys_pref_manager:get_preference(indent_guides)),
+  wxMenu:check(View, ?MENU_ID_INDENT_GUIDES, ide_sys_pref_gen:get_preference(indent_guides)),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_THEME_SELECT, "Theme", Theme),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
@@ -187,7 +187,7 @@ init(Config) ->
   
   Document    = wxMenu:new([]),	
   wxMenu:append(Document, ?MENU_ID_AUTO_INDENT, "Auto-Indent\tCtrl+Alt+I", [{kind, ?wxITEM_CHECK}]),
-  wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, sys_pref_manager:get_preference(auto_indent)),
+  wxMenu:check(Document, ?MENU_ID_AUTO_INDENT, ide_sys_pref_gen:get_preference(auto_indent)),
   wxMenu:append(Document, ?wxID_SEPARATOR, []),
   wxMenu:append(Document, ?MENU_ID_INDENT_RIGHT, "Indent Right\tCtrl+]"),
   wxMenu:append(Document, ?MENU_ID_INDENT_LEFT, "Indent Left\tCtrl+["),
@@ -318,34 +318,34 @@ init(Config) ->
   
   TabId = ets:new(myTable, []),
   ets:insert(TabId, [
-		{?wxID_NEW, {doc_manager, new_document, [Frame]}},
-		{?MENU_ID_NEW_PROJECT, {project_manager, new_project, [Frame]}},
-    {?wxID_OPEN, {doc_manager, open_document_dialog,[Frame]}},
-		{?MENU_ID_OPEN_PROJECT,{project_manager, open_project_dialog, [Frame]}},
-    {?wxID_SAVE, {doc_manager, save_active_document,[]},
+		{?wxID_NEW, {ide_doc_man_wx, new_document, [Frame]}},
+		{?MENU_ID_NEW_PROJECT, {ide_proj_man, new_project, [Frame]}},
+    {?wxID_OPEN, {ide_doc_man_wx, open_document_dialog,[Frame]}},
+		{?MENU_ID_OPEN_PROJECT,{ide_proj_man, open_project_dialog, [Frame]}},
+    {?wxID_SAVE, {ide_doc_man_wx, save_active_document,[]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?wxID_SAVEAS, {doc_manager, save_as,[]},
+    {?wxID_SAVEAS, {ide_doc_man_wx, save_as,[]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
     {?MENU_ID_SAVE_ALL, {},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?MENU_ID_SAVE_PROJECT, {doc_manager, save_active_project, []},
+    {?MENU_ID_SAVE_PROJECT, {ide_doc_man_wx, save_active_project, []},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?wxID_PRINT, {},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?wxID_CLOSE, {doc_manager, close_active_document, []},
+    {?wxID_CLOSE, {ide_doc_man_wx, close_active_document, []},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?wxID_CLOSE_ALL, {doc_manager, close_all, []},
+    {?wxID_CLOSE_ALL, {ide_doc_man_wx, close_all, []},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_CLOSE_PROJECT, {project_manager, close_active_project, []},
+		{?MENU_ID_CLOSE_PROJECT, {ide_proj_man, close_active_project, []},
       [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?MENU_ID_IMPORT_FILE, {},
       [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?MENU_ID_IMPORT_PROJECT, {}},
-    {?MENU_ID_PROJECT_CONFIG, {project_manager, set_project_configuration, [Frame]},
+    {?MENU_ID_PROJECT_CONFIG, {ide_proj_man, set_project_configuration, [Frame]},
       [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
-    {?MENU_ID_IMPORT_PROJECT, {project_manager, import, [Frame]}},
+    {?MENU_ID_IMPORT_PROJECT, {ide_proj_man, import, [Frame]}},
     {?wxID_EXIT, {}},
-    {?wxID_PREFERENCES, {ide_prefs_wx,start, [[{parent,Frame}]]}},
+    {?wxID_PREFERENCES, {ide_prefs_dlg_wx, start, [[{parent,Frame}]]}},
     
      %{?wxID_UNDO, {}},
      %{?wxID_REDO, {}},
@@ -354,32 +354,32 @@ init(Config) ->
      %{?wxID_PASTE, {}},
      %{?wxID_DELETE, {}},
 
-    {?wxID_FIND, {editor_ops,find_replace,[Frame]},
+    {?wxID_FIND, {ide_editor_ops,find_replace,[Frame]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
     
-    {?MENU_ID_FONT,          {editor_ops,update_styles,[Frame]}},
-    {?MENU_ID_FONT_BIGGER,   {editor_ops,zoom_in,[]},
+    {?MENU_ID_FONT,          {ide_editor_ops,update_styles,[Frame]}},
+    {?MENU_ID_FONT_BIGGER,   {ide_editor_ops,zoom_in,[]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?MENU_ID_FONT_SMALLER,  {editor_ops,zoom_out,[]},
+    {?MENU_ID_FONT_SMALLER,  {ide_editor_ops,zoom_out,[]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?MENU_ID_LINE_WRAP,     {editor_ops,set_line_wrap,[View]}},
-    {?MENU_ID_LN_TOGGLE,     {editor_ops,set_line_margin_visible,[View]}},
-    {?MENU_ID_INDENT_TABS,   {editor_ops,set_indent_tabs,[]}, [{send_event, true}]},
-    {?MENU_ID_INDENT_SPACES, {editor_ops,set_indent_tabs,[]}, [{send_event, true}]},
-    {?MENU_ID_INDENT_GUIDES, {editor_ops,set_indent_guides,[View]}},		
+    {?MENU_ID_LINE_WRAP,     {ide_editor_ops,set_line_wrap,[View]}},
+    {?MENU_ID_LN_TOGGLE,     {ide_editor_ops,set_line_margin_visible,[View]}},
+    {?MENU_ID_INDENT_TABS,   {ide_editor_ops,set_indent_tabs,[]}, [{send_event, true}]},
+    {?MENU_ID_INDENT_SPACES, {ide_editor_ops,set_indent_tabs,[]}, [{send_event, true}]},
+    {?MENU_ID_INDENT_GUIDES, {ide_editor_ops,set_indent_guides,[View]}},		
       
-		{?MENU_ID_INDENT_RIGHT, {editor_ops, indent_right,[]},
+		{?MENU_ID_INDENT_RIGHT, {ide_editor_ops, indent_right,[]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_INDENT_LEFT, {editor_ops, indent_left,[]},
+		{?MENU_ID_INDENT_LEFT, {ide_editor_ops, indent_left,[]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_TOGGLE_COMMENT, {editor_ops, comment,[]},
+		{?MENU_ID_TOGGLE_COMMENT, {ide_editor_ops, comment,[]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_GOTO_LINE, {editor_ops,go_to_line,[Frame]},
+		{?MENU_ID_GOTO_LINE, {ide_editor_ops,go_to_line,[Frame]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_UC_SEL, {editor_ops,transform_selection,[]}, 
+		{?MENU_ID_UC_SEL, {ide_editor_ops,transform_selection,[]}, 
       [{send_event, true},
        {group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_LC_SEL, {editor_ops,transform_selection,[]}, 
+		{?MENU_ID_LC_SEL, {ide_editor_ops,transform_selection,[]}, 
       [{send_event, true},
        {group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},			
 		{?MENU_ID_FOLD_ALL, {},
@@ -413,16 +413,16 @@ init(Config) ->
     % {?MENU_ID_DEBUGGER_WINDOW, {}, 
     %       []},
     
-  	{?MENU_ID_NEXT_TAB, {doc_manager, set_selection, [right]}, 
+  	{?MENU_ID_NEXT_TAB, {ide_doc_man_wx, set_selection, [right]}, 
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-  	{?MENU_ID_PREV_TAB, {doc_manager, set_selection, [left]}, 
+  	{?MENU_ID_PREV_TAB, {ide_doc_man_wx, set_selection, [left]}, 
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
   
     {?wxID_HELP, {}},
     {?MENU_ID_HOTKEYS, {}},
     {?MENU_ID_SEARCH_DOC, {}},
     {?MENU_ID_MANUAL, {}},
-    {?wxID_ABOUT, {about, new, [{parent, Frame}]}}
+    {?wxID_ABOUT, {ide_about_dlg_wx, new, [{parent, Frame}]}}
 		]),
 				
 	%% Connect event handlers

@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(tabbed_book_img).
+-module(ide_tabbed_win_img_wx).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -76,7 +76,7 @@ init(Options) ->
 	wxPanel:setSizer(MainPanel, MainSz),
 		
 	Tabs = wxPanel:new(MainPanel),
-  wxWindow:setBackgroundColour(Tabs, lib_widgets:colour_shade(wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW), 0.8)),
+  wxWindow:setBackgroundColour(Tabs, ide_lib_widgets:colour_shade(wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW), 0.8)),
 	Sz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxPanel:setSizer(Tabs, Sz),
 	wxSizer:add(MainSz, Tabs, [{proportion, 0}, {flag, ?wxEXPAND}]),

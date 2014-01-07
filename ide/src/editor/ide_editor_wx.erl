@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
-- module(editor).
+- module(ide_editor_wx).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -89,7 +89,7 @@
 -record(state, {parent_panel    :: erlangEditor(), 
                 stc          :: ?stc:?stc(),
 								dirty :: boolean(),
-								func_list,
+								ide_sl_wx,
 								test_list,
 								indent
                }).
@@ -189,7 +189,7 @@ set_text(This, Text) ->
 %% @doc Change the theme of the editor.
 
 set_theme(Editor, Theme, Font) ->
-	case editor_theme:load_theme(Theme) of
+	case ide_editor_theme:load_theme(Theme) of
 		{error, load_theme} -> ok;
 		NewTheme -> setup_theme(wx_object:call(Editor, stc), NewTheme, Font)
 	end,
@@ -243,7 +243,7 @@ set_line_margin_visible(EditorPid, Bool) ->
 	Editor = wx_object:call(EditorPid, stc),
 	case Bool of
 		true -> 
-      set_linenumber_default(Editor, sys_pref_manager:get_font(editor));
+      set_linenumber_default(Editor, ide_sys_pref_gen:get_font(editor));
 		false -> ?stc:setMarginWidth(Editor, 0, 0)
 	end.			
 	
@@ -414,16 +414,16 @@ init(Config) ->
   ?stc:indicatorSetStyle(Editor,1,?wxSTC_INDIC_BOX),
   ?stc:indicatorSetStyle(Editor,2,?wxSTC_INDIC_PLAIN), %% underline
 
-	case editor_theme:load_theme(sys_pref_manager:get_preference(theme)) of
+	case ide_editor_theme:load_theme(ide_sys_pref_gen:get_preference(theme)) of
 		{error, load_theme} -> ok; %% Default STC settings
 		Theme -> setup_theme(Editor, Theme, Font)
 	end,
 
 	%% Indentation
 	?stc:setTabWidth(Editor, 
-		list_to_integer(sys_pref_manager:get_preference(tab_width))),
-	?stc:setUseTabs(Editor, sys_pref_manager:get_preference(use_tabs)), 
-	?stc:setIndentationGuides(Editor, sys_pref_manager:get_preference(indent_guides)),
+		list_to_integer(ide_sys_pref_gen:get_preference(tab_width))),
+	?stc:setUseTabs(Editor, ide_sys_pref_gen:get_preference(use_tabs)), 
+	?stc:setIndentationGuides(Editor, ide_sys_pref_gen:get_preference(indent_guides)),
 	?stc:setBackSpaceUnIndents(Editor, true),
 	
 	%% Scrolling
@@ -433,7 +433,7 @@ init(Config) ->
   ?stc:setVisiblePolicy(Editor, Policy, 3),
 
 	%% Wrapping
-	?stc:setWrapMode(Editor, sys_pref_manager:get_preference(line_wrap)),
+	?stc:setWrapMode(Editor, ide_sys_pref_gen:get_preference(line_wrap)),
 
 	%% Attach events
   ?stc:connect(Editor, stc_marginclick, []),
@@ -488,7 +488,7 @@ handle_call(Msg, _From, State) ->
   {reply,State,State}.
 
 handle_cast({link_poller, Path}, State) ->
-	file_poller_sup:start_link([{editor_pid, self()}, {path, Path}]),
+	ide_file_poll_sup:start_link([{editor_pid, self()}, {path, Path}]),
   {noreply,State};
 	
 handle_cast({goto_pos, {Line, Col}}, State=#state{stc=Stc}) ->
@@ -629,7 +629,7 @@ keywords() ->
 %% @private	
 
 to_indent(Input) ->
-  case sys_pref_manager:get_preference(auto_indent) of
+  case ide_sys_pref_gen:get_preference(auto_indent) of
     true ->
     	Regex = "^[^%]*((?:if|case|receive|after|fun|try|catch|begin|query)|(?:->))(?:\\s*%+.*)?",
     	case re:run(Input, Regex, [unicode, {newline, anycrlf}]) of
@@ -647,8 +647,8 @@ to_indent(Input) ->
 
 update_sb_line(Editor) ->
 	{X,Y} = get_caret_position(Editor),
-	ide_status_bar:set_text({field,line}, io_lib:format("~w:~w",[X, Y])),
-	ide_status_bar:set_text({field,selection}, "").
+	ide_sb_wx:set_text({field,line}, io_lib:format("~w:~w",[X, Y])),
+	ide_sb_wx:set_text({field,selection}, "").
 
 
 %% =====================================================================  
@@ -661,8 +661,8 @@ update_sb_selection(Editor) ->
 	{X,Y} -> 
 	{X1,Y1} = position_to_x_y(Editor, X),
 	{X2,Y2} = position_to_x_y(Editor, Y),
-	ide_status_bar:set_text({field,selection}, io_lib:format("~w:~w-~w:~w",[X1,Y1,X2,Y2])),
-	ide_status_bar:set_text({field,line}, "")
+	ide_sb_wx:set_text({field,selection}, io_lib:format("~w:~w-~w:~w",[X1,Y1,X2,Y2])),
+	ide_sb_wx:set_text({field,line}, "")
 	end.
 
 
@@ -680,7 +680,7 @@ Ln = ?stc:lineFromPosition(Editor, Pos),
 %% x=line no, y=col no.
 %% @private
 
--spec editor:get_caret_position(Editor) -> Result when
+-spec ide_editor_wx:get_caret_position(Editor) -> Result when
 Editor :: ?stc:?stc(),
 Result :: {integer(), integer()}.
 
@@ -694,12 +694,12 @@ position_to_x_y(Editor, ?stc:getCurrentPos(Editor)).
 %% @private	
 
 update_line_margin(Editor) ->
-	case sys_pref_manager:get_preference(show_line_no) of
+	case ide_sys_pref_gen:get_preference(show_line_no) of
 		true ->
-			Font = wxFont:new(sys_pref_manager:get_preference(editor_font_size),
-												sys_pref_manager:get_preference(editor_font_family),
-												sys_pref_manager:get_preference(editor_font_style),
-												sys_pref_manager:get_preference(editor_font_weight), []),
+			Font = wxFont:new(ide_sys_pref_gen:get_preference(editor_font_size),
+												ide_sys_pref_gen:get_preference(editor_font_family),
+												ide_sys_pref_gen:get_preference(editor_font_style),
+												ide_sys_pref_gen:get_preference(editor_font_weight), []),
 			set_linenumber_default(Editor, Font);
 		false ->
 			ok
@@ -752,9 +752,9 @@ set_font_style(Editor, Font) ->
 %% @private
 
 setup_theme(Editor, [Def | Lex], Font) ->
-	Fg = editor_theme:hexstr_to_rgb(proplists:get_value(fgColour, Def)),
+	Fg = ide_editor_theme:hexstr_to_rgb(proplists:get_value(fgColour, Def)),
 	set_default_styles(Editor, Fg,
-		editor_theme:hexstr_to_rgb(proplists:get_value(bgColour, Def)), Font),
+		ide_editor_theme:hexstr_to_rgb(proplists:get_value(bgColour, Def)), Font),
 	set_theme_styles(Editor, Def, Font),
 	apply_lexer_styles(Editor, Lex, Fg),
 	ok.
@@ -779,17 +779,17 @@ set_default_styles(Editor, Fg, Bg, Font) ->
 
 set_theme_styles(Editor, Styles, Font) ->
   ?stc:setCaretForeground(Editor, 
-		editor_theme:hexstr_to_rgb(proplists:get_value(caret, Styles))),
+		ide_editor_theme:hexstr_to_rgb(proplists:get_value(caret, Styles))),
   ?stc:setSelBackground(Editor, true, 
-		editor_theme:hexstr_to_rgb(proplists:get_value(selection, Styles))),
+		ide_editor_theme:hexstr_to_rgb(proplists:get_value(selection, Styles))),
 	?stc:styleSetBackground(Editor, ?wxSTC_STYLE_LINENUMBER, 
-		editor_theme:hexstr_to_rgb(proplists:get_value(marginBg, Styles))),
+		ide_editor_theme:hexstr_to_rgb(proplists:get_value(marginBg, Styles))),
 	?stc:styleSetForeground(Editor, ?wxSTC_STYLE_LINENUMBER, 
-		editor_theme:hexstr_to_rgb(proplists:get_value(marginFg, Styles))),
+		ide_editor_theme:hexstr_to_rgb(proplists:get_value(marginFg, Styles))),
 	update_line_margin(Editor),
  	set_font_style(Editor, Font),
-  set_marker_colour(Editor, {editor_theme:hexstr_to_rgb(proplists:get_value(markers, Styles)), 
-		editor_theme:hexstr_to_rgb(proplists:get_value(markers, Styles))}).
+  set_marker_colour(Editor, {ide_editor_theme:hexstr_to_rgb(proplists:get_value(markers, Styles)), 
+		ide_editor_theme:hexstr_to_rgb(proplists:get_value(markers, Styles))}).
 
 
 %% =====================================================================
@@ -999,7 +999,7 @@ parse_functions(Editor) ->
 		nomatch -> false, [];
 		{_,Captured} -> Captured
 	end,
-	% func_list:set(Result),
+	% ide_sl_wx:set(Result),
 	ok.
 
 

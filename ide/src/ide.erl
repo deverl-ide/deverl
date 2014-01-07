@@ -26,7 +26,7 @@
 -record(state, {frame,
                 workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
                 utilities,                                     %% The utilities pane
-                util_tabbed, %% tabbed_book
+                util_tabbed, %% ide_tabbed_win_wx
                 left_pane,                                     %% The test pane
                 workspace_manager,                             %% Tabbed UI manager for editors
                 splitter_sidebar :: wxSplitterWindow:wxSplitterWindow(), %% The vertical splitter
@@ -107,15 +107,15 @@ init(Options) ->
 	wxFrame:setMinSize(Frame, {300,200}),
 	
 	%% Load modules that should be started by OTP Application and not here
-  sys_pref_manager:start([{wx_env, WxEnv}]),
-  ProjDir = sys_pref_manager:get_preference(project_directory),
+  ide_sys_pref_gen:start([{wx_env, WxEnv}]),
+  ProjDir = ide_sys_pref_gen:get_preference(project_directory),
   case filelib:is_dir(ProjDir) of
     false ->
       file:make_dir(ProjDir);
     true ->
       ok
   end,
-	project_manager:start([{frame, Frame}, {wx_env, WxEnv}]),
+	ide_proj_man:start([{frame, Frame}, {wx_env, WxEnv}]),
 
 	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Frame, FrameSizer),
@@ -136,7 +136,7 @@ init(Options) ->
 	wxSizer:add(FrameSizer, SplitterUtilities, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
 	%% Status bar %%
-	StatusBar = ide_status_bar:start([{parent, Frame}]),
+	StatusBar = ide_sb_wx:start([{parent, Frame}]),
 
 	%% Menubar %%
   MenuEts = ide_menu:create([{parent, Frame}]),
@@ -193,9 +193,6 @@ init(Options) ->
             }}.
 
 %% Deal with trapped exit signals
-handle_info({'EXIT',_, wx_deleted}, State) ->
-  io:format("Got Info 1~n"),
-  {noreply,State};
 handle_info({'EXIT',_, shutdown}, State) ->
   io:format("Got Info 2~n"),
   {noreply,State};
@@ -254,7 +251,7 @@ terminate(_Reason, #state{frame=Frame}) ->
 
 %% Window close event
 handle_event(#wx{event=#wxClose{}}, State) ->
-  case doc_manager:close_all() of
+  case ide_doc_man_wx:close_all() of
     cancelled ->
       {noreply, State};
     _ ->
@@ -306,7 +303,7 @@ handle_event(#wx{id=?MENU_ID_SEARCH_DOC}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?wxID_EXIT}, State) ->
-  case doc_manager:close_all() of
+  case ide_doc_man_wx:close_all() of
     cancelled ->
       {noreply, State};
     _ ->
@@ -315,7 +312,7 @@ handle_event(#wx{id=?wxID_EXIT}, State) ->
   
 handle_event(#wx{id=?MENU_ID_AUTO_INDENT=Id}, State=#state{frame=Frame}) ->
   Bool = wxMenuItem:isChecked(wxMenuBar:findItem(wxFrame:getMenuBar(Frame), Id)),
-  sys_pref_manager:set_preference(auto_indent, Bool),
+  ide_sys_pref_gen:set_preference(auto_indent, Bool),
   {noreply, State};
   
 handle_event(#wx{id=Id}, State=#state{left_pane=LeftPane}) 
@@ -325,7 +322,7 @@ handle_event(#wx{id=Id}, State=#state{left_pane=LeftPane})
     ?MENU_ID_TESTS_WINDOW -> 2;
     ?MENU_ID_FUNC_WINDOW -> 3
   end,
-  tabbed_book_img:set_selection(LeftPane, Idx), %% Default to projects
+  ide_tabbed_win_img_wx:set_selection(LeftPane, Idx), %% Default to projects
   {noreply, State};
 
 handle_event(#wx{id=Id}, State=#state{util_tabbed=Utils}) 
@@ -335,7 +332,7 @@ handle_event(#wx{id=Id}, State=#state{util_tabbed=Utils})
     ?MENU_ID_DIALYSER_WINDOW -> 2;
     ?MENU_ID_DEBUGGER_WINDOW -> 3
   end,
-  tabbed_book:set_selection(Utils, Idx), %% Default to projects
+  ide_tabbed_win_wx:set_selection(Utils, Idx), %% Default to projects
   {noreply, State};
   
 %% Handle copy/paste
@@ -371,14 +368,14 @@ handle_event(#wx{id=?wxID_COPY}, State) ->
 %% First handle the sub-menus
 handle_event(#wx{userData={theme_menu,Menu}, event=#wxCommand{type=command_menu_selected}},
              State) ->
-	editor_ops:set_theme(Menu),
+	ide_editor_ops:set_theme(Menu),
 	{noreply, State};
 
 handle_event(#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_selected}},
              State) when Id >= ?MENU_ID_TAB_WIDTH_LOWEST,
 						 Id =< ?MENU_ID_TAB_WIDTH_HIGHEST  ->
-  doc_manager:apply_to_all_documents(fun editor:set_tab_width/2, [list_to_integer(wxMenu:getLabel(Menu, Id))]),
-  sys_pref_manager:set_preference(tab_width, wxMenu:getLabel(Menu, Id)),
+  ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_tab_width/2, [list_to_integer(wxMenu:getLabel(Menu, Id))]),
+  ide_sys_pref_gen:set_preference(tab_width, wxMenu:getLabel(Menu, Id)),
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSCREEN=Id},
 						 State=#state{frame=Frame}) ->
@@ -517,30 +514,28 @@ create_utils(ParentA) ->
   wxSplitterWindow:setSashGravity(Splitter, 0.5),
   
   %% Splitter window 1
-	TabbedWindow = tabbed_book:new([{parent, Splitter}]),
+	TabbedWindow = ide_tabbed_win_wx:new([{parent, Splitter}]),
 	
 	%% Start the port that communicates with the external ERTs
 	Console = case ide_console_sup:start_link([]) of
 		{error, _E} ->
-			lib_widgets:placeholder(TabbedWindow, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
+			ide_lib_widgets:placeholder(TabbedWindow, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
 			%% Disable console menu/toolbar items
 		_Port ->
 			ide_console_wx:new([{parent, TabbedWindow}])
 	end,
-	tabbed_book:add_page(TabbedWindow, Console, "Console"),
+	ide_tabbed_win_wx:add_page(TabbedWindow, Console, "Console"),
 
   % Observer = ide_observer:start([{parent, TabbedWindow}]),
-  % tabbed_book:add_page(TabbedWindow, Observer, "Observer"),
+  % ide_tabbed_win_wx:add_page(TabbedWindow, Observer, "Observer"),
   
-  % Dialyser = wxPanel:new(TabbedWindow, []),
-  Dialyser = lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
-	tabbed_book:add_page(TabbedWindow, Dialyser, "Dialyser"),
+  Dialyser = ide_lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
+	ide_tabbed_win_wx:add_page(TabbedWindow, Dialyser, "Dialyser"),
 	
-  % Debugger = wxPanel:new(TabbedWindow, []),
-  Debugger = lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
-	tabbed_book:add_page(TabbedWindow, Debugger, "Debugger"),
+  Debugger = ide_lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
+	ide_tabbed_win_wx:add_page(TabbedWindow, Debugger, "Debugger"),
 	
-	tabbed_book:set_selection(TabbedWindow, 1),
+	ide_tabbed_win_wx:set_selection(TabbedWindow, 1),
   
   
   %% Splitter window 2
@@ -549,7 +544,7 @@ create_utils(ParentA) ->
     WSz = wxBoxSizer:new(?wxHORIZONTAL),
     %% Add toolbar
     Tb = wxPanel:new(W),
-    wxWindow:setBackgroundColour(Tb, lib_widgets:colour_shade(wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW), 0.8)),
+    wxWindow:setBackgroundColour(Tb, ide_lib_widgets:colour_shade(wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW), 0.8)),
     TbSz = wxBoxSizer:new(?wxVERTICAL),
     Style = case os:type() of
       {_,darwin} -> [{style, ?wxBORDER_NONE}];
@@ -565,8 +560,8 @@ create_utils(ParentA) ->
     {W, Tb, TbSz}
   end,
 
-  {Log, _, _} = CreateWindow(Splitter, log, ?WINDOW_LOG),
-  {CompilerOutput, _, _} = CreateWindow(Splitter, compiler_output, ?WINDOW_OUTPUT),
+  {Log, _, _} = CreateWindow(Splitter, ide_log_out_wx, ?WINDOW_LOG),
+  {CompilerOutput, _, _} = CreateWindow(Splitter, ide_compiler_out_wx, ?WINDOW_OUTPUT),
   
   wxPanel:connect(Parent, command_button_clicked, [{userData, Splitter}]), %% Minimise button on each window
   wxSplitterWindow:splitVertically(Splitter, TabbedWindow, Log, [{sashPosition, ?SPLITTER_LOG_SASH_POS_DEFAULT}]),
@@ -597,7 +592,7 @@ create_utils(ParentA) ->
     
   wxSizer:add(Sz, ToolBar, [{flag, ?wxEXPAND}, {proportion, 0}]),
   
-  log:message("Application started."),
+  ide_log_out_wx:message("Application started."),
   
 	{Parent, TabbedWindow, Log}.
 
@@ -611,19 +606,19 @@ create_left_window(Frame, Parent) ->
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/clipboard-task.png"))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/function.png"))),
 	
-	Toolbook = tabbed_book_img:new([{parent, Parent}]),
-	tabbed_book_img:assign_image_list(Toolbook, ImgList),
+	Toolbook = ide_tabbed_win_img_wx:new([{parent, Parent}]),
+	ide_tabbed_win_img_wx:assign_image_list(Toolbook, ImgList),
 
-	ProjectTrees = ide_projects_tree:start([{parent, Toolbook}, {frame, Frame}]),
-	tabbed_book_img:add_page(Toolbook, ProjectTrees, "Browser", [{imageId, 0}]),
+	ProjectTrees = ide_proj_tree_wx:start([{parent, Toolbook}, {frame, Frame}]),
+	ide_tabbed_win_img_wx:add_page(Toolbook, ProjectTrees, "Browser", [{imageId, 0}]),
 	
-  TestPanel = lib_widgets:placeholder(Toolbook, "No Tests"),
-	tabbed_book_img:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
+  TestPanel = ide_lib_widgets:placeholder(Toolbook, "No Tests"),
+	ide_tabbed_win_img_wx:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
 	
-	FunctionsPanel = func_list:start([{parent, Toolbook}]),
-	tabbed_book_img:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
+	FunctionsPanel = ide_sl_wx:start([{parent, Toolbook}]),
+	ide_tabbed_win_img_wx:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
 	
-	tabbed_book_img:set_selection(Toolbook, 1), %% Default to projects
+	ide_tabbed_win_img_wx:set_selection(Toolbook, 1), %% Default to projects
 	Toolbook.
 
 
@@ -631,7 +626,7 @@ create_left_window(Frame, Parent) ->
 %% @doc
 
 create_workspace(Parent) ->
-	doc_manager:start([{parent, Parent}]).
+	ide_doc_man_wx:start([{parent, Parent}]).
 
 
 %% =====================================================================

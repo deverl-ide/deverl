@@ -8,7 +8,7 @@
 %% @end
 %% =====================================================================
 
--module(log).
+-module(ide_log_out_wx).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -77,7 +77,7 @@ message(Msg, Options) ->
 
 %% =====================================================================
 %% @doc
-%% @see log:message/2 for a description of options.
+%% @see ide_log_out_wx:message/2 for a description of options.
 
 error(Msg) ->
   ?MODULE:error(Msg, []).
@@ -104,7 +104,7 @@ init(Config) ->
   ?stc:setCaretWidth(Log, 0),
   
   %% Default "normal" style
-  ?stc:styleSetFont(Log, ?wxSTC_STYLE_DEFAULT, sys_pref_manager:get_font(log)),
+  ?stc:styleSetFont(Log, ?wxSTC_STYLE_DEFAULT, ide_sys_pref_gen:get_font(log)),
   ?stc:styleSetSize(Log, ?wxSTC_STYLE_DEFAULT, 11),
   ?stc:styleClearAll(Log),
   

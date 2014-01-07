@@ -8,7 +8,7 @@
 %% @end
 %% =====================================================================
 
--module(sys_pref_defaults).
+-module(ide_sys_pref_defs).
 
 -include_lib("wx/include/wx.hrl").
 -include("../../include/ide.hrl").

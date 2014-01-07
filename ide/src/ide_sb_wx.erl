@@ -9,7 +9,7 @@
 %% @end
 %% =====================================================================
 
--module(ide_status_bar).
+-module(ide_sb_wx).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -54,7 +54,7 @@ start(Config) ->
 %% =====================================================================
 %% @doc Set the text in the specified field.
 
--spec ide_status_bar:set_text(Field, Label) -> Result when
+-spec ide_sb_wx:set_text(Field, Label) -> Result when
       Field :: {field, atom()},
       Label :: unicode:chardata(),
       Result :: atom().
