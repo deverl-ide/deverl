@@ -81,7 +81,7 @@ get_font(Window) ->
 %% =====================================================================
 
 init(Config) ->
-  wx:set_env(proplists:get_value(wx_env, Config)),
+  % wx:set_env(proplists:get_value(wx_env, Config)),
   Table = case filelib:is_file(system_prefs) of
     true ->
       load_prefs();

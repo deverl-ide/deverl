@@ -45,7 +45,7 @@ make_project(PrintMsg) ->
           ide_projects_tree:set_has_children(Path ++ "/ebin"),
           case PrintMsg of
             true ->
-              console_wx:append_message("Project ready: " ++ filename:basename(Path));
+              ide_console_wx:append_message("Project ready: " ++ filename:basename(Path));
             _ -> ok
           end,
           change_dir(Path ++ "/ebin"),
@@ -92,8 +92,8 @@ compile_file(Path) ->
 load_file(Path, _Options) ->
   Mod = filename:basename(Path, ".erl"),
   Beam = filename:join([filename:dirname(Path), Mod]),
-  console_port:eval("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl(), false),
-  console_wx:append_message("Loaded module: " ++ Mod).
+  ide_console_port_gen:eval("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl(), false),
+  ide_console_wx:append_message("Loaded module: " ++ Mod).
   
   
 build_project(Parent, ProjectId) ->
@@ -104,7 +104,7 @@ build_project(Parent, ProjectId) ->
       try
         ParsedConfig = parse_config(Config),
         receive after 50 -> ok end, %% NASTY pause so we dont print the chang_dir response WTF
-        console_wx:append_message("Running project:", false),
+        ide_console_wx:append_message("Running project:", false),
         execute_function(ParsedConfig)
       catch
         error:_ ->
@@ -125,9 +125,9 @@ parse_config([{module, M}, {function, F}]) -> {M,F};
 parse_config([{module, M}, {function, F}, {args, Args}]) -> {M,F,Args}.
 
 execute_function({M, F}) ->
-  console_port:eval(M ++ ":" ++ F ++ "()." ++ io_lib:nl());
+  ide_console_port_gen:eval(M ++ ":" ++ F ++ "()." ++ io_lib:nl());
 execute_function({M, F, Args}) ->
-  console_port:eval("erlang:apply(" ++ M ++ "," ++ F ++ ",[" ++ Args ++ "])." ++ io_lib:nl()).
+  ide_console_port_gen:eval("erlang:apply(" ++ M ++ "," ++ F ++ ",[" ++ Args ++ "])." ++ io_lib:nl()).
 
 change_dir(Path) ->
-  console_port:eval("cd(\"" ++ Path ++ "\")." ++ io_lib:nl(), false).
+  ide_console_port_gen:eval("cd(\"" ++ Path ++ "\")." ++ io_lib:nl(), false).

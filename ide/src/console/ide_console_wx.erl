@@ -7,7 +7,7 @@
 %% implemented as a wxStyledTextCtrl.
 %% @end
 %% In the current implementation we manage the prompt ourselves
-%% (console_parser strips the prompt returned from the port), so that
+%% (ide_console_parser strips the prompt returned from the port), so that
 %% we can write to the textctrl anywhere we like without having to
 %% worry about deleting/re-numbering prompts.
 %% We settled on this current implementation as a comprimise (in the
@@ -17,7 +17,7 @@
 %% from std lib. We may well use that approach in the future.
 %% =====================================================================
 
--module(console_wx).
+-module(ide_console_wx).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -248,7 +248,7 @@ handle_cast({append_msg, Msg, Prompt}, State=#state{textctrl=Console}) ->
   ?stc:thaw(Console),
   {noreply, State#state{busy=not Prompt}};
 handle_cast({call_parser, Cmd, Busy}, State) ->
-  console_parser:parse_input(Cmd),
+  ide_console_parser:parse_input(Cmd),
   {noreply, State#state{busy=Busy, input=[]}};
 handle_cast({append_input, Input}, State=#state{input=Cmd}) ->
   {noreply, State#state{input=Cmd++Input}};
@@ -288,7 +288,7 @@ handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
 	{noreply, State};
 handle_event(#wx{id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
-  console_port:close_port(),
+  ide_console_port_gen:close_port(),
   append_message("Console reset"),
   prompt_2_console(Console, ?PROMPT),
 	{noreply, State#state{busy=false, input=[]}};

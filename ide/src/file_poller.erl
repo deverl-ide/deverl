@@ -15,7 +15,8 @@
 				 handle_event/2, code_change/3, terminate/2]).
 
 %% API
--export([start/1, stop/0]).
+-export([start/1, 
+         stop/0]).
 
 %% Macros
 -define(INTERVAL, 500).
@@ -34,11 +35,7 @@ start(Config) ->
 
 stop() ->
 	gen_server:cast(?MODULE, stop).
-	
-	
-update_path() ->
-	ok.
-	
+
 	
 %% =====================================================================
 %% Callback functions

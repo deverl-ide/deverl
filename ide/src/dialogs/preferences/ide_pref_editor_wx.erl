@@ -1,4 +1,4 @@
--module(pref_debugger).
+-module(ide_pref_editor_wx).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -26,7 +26,7 @@ do_init(Config) ->
   
   VertSizer = wxBoxSizer:new(?wxVERTICAL),
   wxSizer:addSpacer(VertSizer, 20),
-  wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Nothing here yet.")),
+  wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Nothing here yet.")), 
   
   wxSizer:addSpacer(VertSizer, 20),   
   
@@ -36,6 +36,7 @@ do_init(Config) ->
 	wxSizer:layout(LRSizer),
   
   {Panel, #state{parent=Panel}}.
+
   
     
 %% =====================================================================

@@ -136,6 +136,8 @@ init({Parent, Projects, ActiveProject}) ->
 	wxSizer:add(MainSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Description"), []),
 	wxSizer:addSpacer(MainSizer, 5),  
 	Desc = wxPanel:new(Dialog, [{size, {400, 150}}]),
+	DSz = wxBoxSizer:new(?wxHORIZONTAL),
+	wxPanel:setSizer(Desc, DSz),
 	wxPanel:setBackgroundColour(Desc, ?wxWHITE),
 	wxPanel:setForegroundColour(Desc, ?wxBLACK),
   insert_desc(Desc, "Create a new file."),
@@ -165,8 +167,8 @@ init({Parent, Projects, ActiveProject}) ->
   wxDialog:connect(Dialog, close_window, []),
   wxDialog:connect(Dialog, command_choice_selected, []),
 
-  wxButton:disable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
-  wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON)),
+  wxButton:disable(wxWindow:findWindow(ButtonPanel, ?BACK_BUTTON)),
+  wxButton:disable(wxWindow:findWindow(ButtonPanel, ?FINISH_BUTTON)),
   
 	%% Setup the image list
 	ImageList = wxImageList:new(24,24),
@@ -327,7 +329,7 @@ dialog1(Parent, Projects, ActiveProject) ->
   wxChoice:setSelection(ProjectChoice, wxChoice:findString(ProjectChoice, ActiveProject)),
   wxSizer:addSpacer(DialogSizer1, 20),
 
-  FileSizer = wxFlexGridSizer:new(2, 2, 5, 20),
+  FileSizer = wxFlexGridSizer:new(2, [{vgap, 5}, {hgap, 20}]),
   wxSizer:add(DialogSizer1, FileSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:add(FileSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "File Type:"), []),
   wxSizer:add(FileSizer, wxStaticText:new(Dialog1, ?wxID_ANY, "Module Type:"), []),
@@ -355,7 +357,7 @@ dialog1(Parent, Projects, ActiveProject) ->
 
 dialog2(Parent) ->
   Dialog2 = wxPanel:new(Parent),
-  DialogSizer2 = wxFlexGridSizer:new(4, 3, 20, 20),
+  DialogSizer2 = wxFlexGridSizer:new(3, [{vgap, 20}, {hgap, 20}]),
   wxPanel:setSizer(Dialog2, DialogSizer2),
   
   wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Project Name:"), []),
@@ -375,7 +377,6 @@ dialog2(Parent) ->
   wxSizer:add(DialogSizer2, wxButton:new(Dialog2, ?BROWSE_BUTTON, [{label, "Browse"}])),
 
   wxFlexGridSizer:addGrowableCol(DialogSizer2, 1),
-  wxFlexGridSizer:addGrowableRow(DialogSizer2, 3),
 
   wxPanel:connect(Dialog2, command_button_clicked, []),
   wxPanel:connect(wxWindow:findWindow(Parent, ?FILENAME_BOX), command_text_updated, []),
@@ -467,9 +468,9 @@ set_path_text(Parent, Path, Filename) ->
   wxTextCtrl:clear(PathTextBox),
   case string:len(Filename) of
     0 ->
-      wxTextCtrl:writeText(PathTextBox, Path);
+      wxTextCtrl:appendText(PathTextBox, Path);
     _ ->
-      wxTextCtrl:writeText(PathTextBox, Path ++ Filename ++ get_file_extension(Parent))
+      wxTextCtrl:appendText(PathTextBox, Path ++ Filename ++ get_file_extension(Parent))
   end.
   
 
@@ -573,13 +574,13 @@ get_file_extension(Parent) ->
 check_if_finished(Parent, Filename, Desc) ->
   case length(Filename) of
     0 ->
-      wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
+      wxWindow:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
     _ ->
       case validate_name(Filename, Desc) of
         true ->
-          wxButton:enable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
+          wxWindow:enable(wxWindow:findWindow(Parent, ?FINISH_BUTTON));
         false ->
-          wxButton:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON))
+          wxWindow:disable(wxWindow:findWindow(Parent, ?FINISH_BUTTON))
       end
   end.
 
@@ -633,10 +634,8 @@ insert_desc(Description, Msg) ->
 insert_desc(Description, Msg, Options) ->
 	SzFlags = wxSizerFlags:new([{proportion, 0}]),
 	wxSizerFlags:expand(wxSizerFlags:border(SzFlags, ?wxTOP, 10)),
-	wxWindow:freeze(Description),
-	wxPanel:destroyChildren(Description),
-	Sz = wxBoxSizer:new(?wxHORIZONTAL),
-	wxPanel:setSizer(Description, Sz),
+  Sz = wxWindow:getSizer(Description),
+  wxSizer:clear(Sz, [{delete_windows, true}]),
 	wxSizer:addSpacer(Sz, 10),
 	case proplists:get_value(bitmap, Options) of
 		undefined -> ok;
@@ -644,9 +643,7 @@ insert_desc(Description, Msg, Options) ->
 			wxSizer:add(Sz, wxStaticBitmap:new(Description, ?wxID_ANY, Bitmap), [{border, 5}, {flag, ?wxTOP bor ?wxRIGHT}])
 	end,
 	wxSizer:add(Sz, wxStaticText:new(Description, ?wxID_ANY, Msg), SzFlags),
-	wxPanel:layout(Description),	
-	wxWindow:thaw(Description),
-	ok.
+	wxPanel:layout(Description).
 
 
 %% =====================================================================

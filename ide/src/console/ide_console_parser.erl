@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(console_parser).
+-module(ide_console_parser).
 
 -export([start/0,
 		     parse_input/1,
@@ -33,7 +33,7 @@ start()->
 
 parse_input(Message) ->
 	M = Message ++ io_lib:nl(),
-	console_port:eval(M).
+	ide_console_port_gen:eval(M).
 
 
 %% =====================================================================
@@ -63,9 +63,9 @@ loop() ->
 eval_response(R0) ->
   case is_prompt(R0) of
     true ->
-      console_wx:append_command({response, complete});
+      ide_console_wx:append_command({response, complete});
     false ->
-      console_wx:append_command({response, R0})
+      ide_console_wx:append_command({response, R0})
   end.
 
 is_prompt(Cmd) ->

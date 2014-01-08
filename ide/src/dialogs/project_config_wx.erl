@@ -19,7 +19,10 @@
 	       handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 				 
 %% API
--export([start/1, set_focus/1, get_build_config/1, close/1]).
+-export([start/1,
+         % set_focus/1,
+         get_build_config/1, 
+         close/1]).
 			
 %% inherited functions
 -export([show/1, showModal/1]).
@@ -48,8 +51,8 @@
 start(Parent) ->
   wx_object:start(?MODULE, Parent, []).
 
-set_focus(This) ->
-	wx_object:cast(This, setfocus).
+% set_focus(This) ->
+%   wx_object:cast(This, setfocus).
 	
 get_build_config(This) ->
 	wx_object:call(This, build_config).
@@ -110,7 +113,7 @@ do_init(Parent) ->
   end,
 	
   %% Project properties
-  FlexGridSizer = wxFlexGridSizer:new(3, 3, 10, 10),
+  FlexGridSizer = wxFlexGridSizer:new(3, [{vgap, 10}, {hgap, 10}]),
   wxSizer:add(FlexGridSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Module:"), []),
   ModuleInput = wxTextCtrl:new(Dialog, ?INPUT_MODULE, [{size, {250,-1}}, 
     {value, State#state.module}]),
@@ -148,6 +151,8 @@ do_init(Parent) ->
 	wxSizer:add(VertSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Description"), []),
 	wxSizer:addSpacer(VertSizer, 5),  
 	Desc = wxPanel:new(Dialog, []),
+  DSz = wxBoxSizer:new(?wxHORIZONTAL),
+  wxPanel:setSizer(Desc, DSz),
 	wxPanel:setBackgroundColour(Desc, ?wxWHITE),
 	wxPanel:setForegroundColour(Desc, ?wxBLACK),
 	wxSizer:add(VertSizer, Desc, [{proportion, 0}, {flag, ?wxEXPAND}]),
@@ -267,10 +272,8 @@ insert_desc(Description, Msg) ->
 insert_desc(Description, Msg, Options) ->
 	SzFlags = wxSizerFlags:new([{proportion, 0}]),
 	wxSizerFlags:expand(wxSizerFlags:border(SzFlags, ?wxTOP, 10)),
-	wxWindow:freeze(Description),
-	wxPanel:destroyChildren(Description),
-	Sz = wxBoxSizer:new(?wxHORIZONTAL),
-	wxPanel:setSizer(Description, Sz),
+  Sz = wxWindow:getSizer(Description),
+  wxSizer:clear(Sz, [{delete_windows, true}]),
 	wxSizer:addSpacer(Sz, 10),
 	case proplists:get_value(bitmap, Options) of
 		undefined -> ok;
@@ -278,9 +281,7 @@ insert_desc(Description, Msg, Options) ->
 			wxSizer:add(Sz, wxStaticBitmap:new(Description, ?wxID_ANY, Bitmap), [{border, 5}, {flag, ?wxTOP bor ?wxRIGHT}])
 	end,
 	wxSizer:add(Sz, wxStaticText:new(Description, ?wxID_ANY, Msg), SzFlags),
-	wxPanel:layout(Description),	
-	wxWindow:thaw(Description),
-	ok.
+	wxPanel:layout(Description).
 
 
 format_args([]) -> [];

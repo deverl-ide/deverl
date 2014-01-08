@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(pref_console).
+-module(ide_pref_console_wx).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -122,7 +122,7 @@ do_init(Config) ->
   {Panel, State}.
 
 handle_event(#wx{id=Id, event=#wxCommand{type=command_radiobutton_selected}, userData={_Name,Fg,Bg,MrkrBg,ErrFg}=Theme}, State) ->
-  console_wx:set_theme(Fg, Bg, MrkrBg, ErrFg),
+  ide_console_wx:set_theme(Fg, Bg, MrkrBg, ErrFg),
   sys_pref_manager:set_preference(console_theme, Theme),
   {noreply, State};
 handle_event(#wx{obj=Browse, event=#wxCommand{type=command_button_clicked}}, 
@@ -140,7 +140,7 @@ handle_event(#wx{obj=Browse, event=#wxCommand{type=command_button_clicked}},
       sys_pref_manager:set_preference(console_font_style, wxFont:getStyle(NewFont)),
       sys_pref_manager:set_preference(console_font_weight, wxFont:getWeight(NewFont)),
       sys_pref_manager:set_preference(console_font_facename, wxFont:getFaceName(NewFont)),
-      console_wx:set_font(NewFont),
+      ide_console_wx:set_font(NewFont),
       NewFont;
     ?wxID_CANCEL ->
 			Font
