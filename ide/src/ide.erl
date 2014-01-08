@@ -79,6 +79,8 @@ start(Options) ->
 %% =====================================================================
 %% @doc Update the frame's title.
 
+-spec set_title(string()) -> ok.
+
 set_title(Title) ->
 	wx_object:cast(?MODULE, {title, Title}).
 
@@ -90,6 +92,8 @@ set_title(Title) ->
 %% every menu item. If the menu item has the group bit set then it will
 %% be enabled when Toggle is true and disabled when Toggle is false.
 
+-spec toggle_menu_group(integer(), boolean()) -> ok.
+
 toggle_menu_group(Mask, Toggle) ->
 	wx_object:cast(?MODULE, {toggle_menu_group, Mask, Toggle}).
 
@@ -98,8 +102,10 @@ toggle_menu_group(Mask, Toggle) ->
 %% @doc Show the window identified by WinId in the output window, hiding the
 %% window currently displayed. 
 
-display_output_window(Window) ->
-  wx_object:cast(?MODULE, {output_display, Window}).		
+-spec display_output_window(integer()) -> ok.
+
+display_output_window(WinId) ->
+  wx_object:cast(?MODULE, {output_display, WinId}).		
   
   
 %% =====================================================================
@@ -250,7 +256,7 @@ handle_cast({output_display, Window}, State=#state{splitter_output_pos=Pos}) ->
   end,
   Splitter = wx:typeCast(wxWindow:findWindowById(?SPLIITER_LOG), wxSplitterWindow),
   Win = wxWindow:findWindowById(Id),
-  replaceOutputWindow(Splitter, Win, Pos),
+  replace_output_window(Splitter, Win, Pos),
   {noreply, State}.
 
 %% @hidden  
@@ -493,7 +499,7 @@ handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=com
 % Output windows (log, output etc.)
 handle_event(#wx{userData={Splitter, Window}, event=#wxCommand{type=command_button_clicked}}, 
              State=#state{splitter_output_pos=Pos}) ->
-  replaceOutputWindow(Splitter, Window, Pos),
+  replace_output_window(Splitter, Window, Pos),
   {noreply, State};
 handle_event(#wx{id=?BUTTON_HIDE_OUTPUT=Id, userData=Splitter, event=#wxCommand{type=command_button_clicked}}, 
              State=#state{splitter_output_active=Aw, splitter_output_pos=Pos}) ->
@@ -531,7 +537,6 @@ handle_event(Ev, State) ->
   OutWin :: wxPanel:wxPanel().
 
 create_utils(ParentA) ->
-  
   Parent = wxPanel:new(ParentA),
   Sz = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(Parent, Sz),
@@ -618,6 +623,8 @@ create_utils(ParentA) ->
 %% =====================================================================
 %% @doc Create the left window, and its child components.
 
+-spec create_left_window(wxFrame:wxFrame(), wxWindow:wxWindow()) -> ide_tabbed_win_img_wx:ide_tabbed_win_img_wx().
+
 create_left_window(Frame, Parent) ->
 	ImgList = wxImageList:new(16,16),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/books-stack.png"))),
@@ -642,6 +649,8 @@ create_left_window(Frame, Parent) ->
 
 %% =====================================================================
 %% @doc Create the editor workspace.
+
+-spec create_workspace(wxWindow:wxWindow()) -> wx_object:wx_object().
 
 create_workspace(Parent) ->
 	ide_doc_man_wx:start([{parent, Parent}]).
@@ -675,7 +684,9 @@ toggle_menu_item(MenuBar, ToolBar, Mask, Id, Groups, Enable) ->
 %% =====================================================================
 %% @doc Change the currently shown window in the output window.
   
-replaceOutputWindow(Splitter, Window, Pos) ->
+-spec replace_output_window(wxWindow:wxWindow(), wxWindow:wxWindow(), integer()) -> ok | boolean().
+
+replace_output_window(Splitter, Window, Pos) ->
   case wxSplitterWindow:isSplit(Splitter) of
     true ->
       case wxWindow:isShown(Window) of

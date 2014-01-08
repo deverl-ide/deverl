@@ -3,7 +3,7 @@
 %% @copyright
 %% @title
 %% @version
-%% @doc 
+%% @doc
 %% @end
 %% =====================================================================
 
@@ -11,16 +11,19 @@
 -include_lib("wx/include/wx.hrl").
 
 %% API
--export([
-        compile_file/0,
-        make_project/0,
-        run_project/1
-        ]).
+-export([compile_file/0,
+         make_project/0,
+         run_project/1]).
 
 
 %% =====================================================================
 %% Client API
 %% =====================================================================
+
+%% =====================================================================
+%% @doc
+
+-spec compile_file() -> ok.
 
 compile_file() ->
   DocId = ide_doc_man_wx:get_active_document(),
@@ -32,8 +35,21 @@ compile_file() ->
       ok
   end.
 
+
+%% =====================================================================
+%% @doc
+
+-spec make_project() -> {ok, ide_proj_man:project_id(), string()} | {atom(), atom()}.
+
 make_project() ->
   make_project(true).
+
+
+%% =====================================================================
+%% @doc
+
+-spec make_project(boolean()) -> {ok, ide_proj_man:project_id(), string()} | {atom(), atom()}.
+
 make_project(PrintMsg) ->
   case ide_doc_man_wx:save_active_project() of
     ok ->
@@ -57,6 +73,12 @@ make_project(PrintMsg) ->
       {error, not_saved}
   end.
 
+
+%% =====================================================================
+%% @doc
+
+-spec run_project(wxFrame:wxFrame()) -> ok | cancelled | error | no_return().
+
 run_project(Parent) ->
   case make_project(false) of
     {ok, ProjectId, _ProjectPath} ->
@@ -70,9 +92,14 @@ run_project(Parent) ->
 %% Internal functions
 %% =====================================================================
 
+%% =====================================================================
+%% @doc
+
+-spec compile_file(string()) -> ok.
+
 compile_file(Path) ->
   %% Remember to send the output directory to load_file/1 if the flag is set
-  %% for the compiler (-o). 
+  %% for the compiler (-o).
   ide_compiler_port:start(Path, [file]),
   receive
     {_From, ok} ->
@@ -87,18 +114,28 @@ compile_file(Path) ->
     {_From, error} ->
       ok
   end.
-  
-  
+
+
+%% =====================================================================
+%% @doc
+
+-spec load_file(string(), list()) -> ok.
+
 load_file(Path, _Options) ->
   Mod = filename:basename(Path, ".erl"),
   Beam = filename:join([filename:dirname(Path), Mod]),
   ide_console_port_gen:eval("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl(), false),
   ide_console_wx:append_message("Loaded module: " ++ Mod).
-  
-  
+
+
+%% =====================================================================
+%% @doc
+
+-spec build_project(wxFrame:wxFrame(), ide_proj_man:project_id()) -> ok | cancelled | error | no_return().
+
 build_project(Parent, ProjectId) ->
   case ide_proj_man:get_build_config(ProjectId) of
-    undefined -> 
+    undefined ->
       notify_missing_config(Parent);
     Config ->
       try
@@ -111,7 +148,13 @@ build_project(Parent, ProjectId) ->
           error("ERROR")
       end
   end.
-  
+
+
+%% =====================================================================
+%% @doc
+
+-spec notify_missing_config(wxFrame:wxFrame()) -> ok | cancelled | error.
+
 notify_missing_config(Parent) ->
   Dialog = ide_lib_dlg_wx:notify_missing_config(Parent),
   case wxDialog:showModal(Dialog) of
@@ -121,13 +164,31 @@ notify_missing_config(Parent) ->
       ide_proj_man:set_project_configuration(Parent)
 	end.
 
+
+%% =====================================================================
+%% @doc
+
+-spec parse_config(list()) -> tuple().
+
 parse_config([{module, M}, {function, F}]) -> {M,F};
 parse_config([{module, M}, {function, F}, {args, Args}]) -> {M,F,Args}.
+
+
+%% =====================================================================
+%% @doc
+
+-spec execute_function(tuple()) -> ok.
 
 execute_function({M, F}) ->
   ide_console_port_gen:eval(M ++ ":" ++ F ++ "()." ++ io_lib:nl());
 execute_function({M, F, Args}) ->
   ide_console_port_gen:eval("erlang:apply(" ++ M ++ "," ++ F ++ ",[" ++ Args ++ "])." ++ io_lib:nl()).
+
+
+%% =====================================================================
+%% @doc
+
+-spec change_dir(string()) -> ok.
 
 change_dir(Path) ->
   ide_console_port_gen:eval("cd(\"" ++ Path ++ "\")." ++ io_lib:nl(), false).

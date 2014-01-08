@@ -17,9 +17,9 @@
 
 %% gen_server
 -behaviour(gen_server).
--export([init/1, 
+-export([init/1,
          handle_call/3,
-         handle_cast/2, 
+         handle_cast/2,
          handle_info/2,
          code_change/3,
          terminate/2]).
@@ -45,6 +45,8 @@
          import/1
          ]).
 
+-export_type([project_id/0]).
+
 %% Records
 -record(project, {root :: path(),
                   build_config,
@@ -66,12 +68,12 @@
 %% =====================================================================
 
 %% =====================================================================
-%% @doc 
+%% @doc
 
 start(Config)->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, Config, []).
-	    
-			
+
+
 %% =====================================================================
 %% @doc Add a new project as specified through the dialog.
 %% This function will attempt to create the standard erlang directory
@@ -81,14 +83,14 @@ new_project(Parent) ->
 	Dialog = ide_new_proj_dlg_wx:start(Parent),
 	ide_new_proj_dlg_wx:set_focus(Dialog),
 	case ide_new_proj_dlg_wx:showModal(Dialog) of
-		?wxID_CANCEL -> 
+		?wxID_CANCEL ->
       ok;
 		?wxID_OK ->
       try
     		Path = ide_io:create_directory_structure(ide_new_proj_dlg_wx:get_path(Dialog)),
         add_project(Path)
       catch
-        throw:E -> 
+        throw:E ->
     			ide_lib_dlg_wx:msg_error(Parent, E)
       end,
 			ide_new_proj_dlg_wx:close(Dialog)
@@ -103,7 +105,7 @@ add_project(Path) ->
   gen_server:call(?MODULE, {new_project, Path}),
   ok.
 
-	
+
 %% =====================================================================
 %% @doc Open an existing project using a dialog.
 
@@ -116,7 +118,7 @@ open_project_dialog(Frame) ->
       open_project(ide_open_proj_dlg_wx:get_path(Dialog)),
       ide_open_proj_dlg_wx:close(Dialog)
   end.
-  
+
 
 %% =====================================================================
 %% @doc Open an existing project.
@@ -126,14 +128,14 @@ open_project_dialog(Frame) ->
 open_project(Path) ->
   Id = gen_server:call(?MODULE, {new_project, Path}),
   Id.
-  
+
 
 %% =====================================================================
 %% @doc
 
 get_project(Path) ->
   wx_object:call(?MODULE, {get_project, Path}).
-  
+
 
 %% =====================================================================
 %% @doc
@@ -141,7 +143,7 @@ get_project(Path) ->
 close_active_project() ->
   case ide_doc_man_wx:close_project(get_active_project()) of
     cancelled -> ok;
-    ok -> 
+    ok ->
       wx_object:call(?MODULE, close_project)
   end.
 
@@ -149,7 +151,7 @@ close_active_project() ->
 %% =====================================================================
 %% @doc Close an open project.
 %% This will close any files belonging to the project, and remove the
-%% tree from the project tree. 
+%% tree from the project tree.
 
 % close_project(ProjectId) ->
 %   %% Check open files, save/close
@@ -162,7 +164,7 @@ close_active_project() ->
 open_file(Path, Contents, ProjectId) ->
 	ide_doc_man_wx:new_document_from_existing(Path, Contents, [{project_id, ProjectId}]),
 	gen_server:call(?MODULE, {add_open_project, ProjectId, Path}),
-	ok. 
+	ok.
 
 
 %% =====================================================================
@@ -172,15 +174,15 @@ open_file(Path, Contents, ProjectId) ->
 
 get_active_project() ->
 	gen_server:call(?MODULE, active_project).
-	
-	
+
+
 %% =====================================================================
 %% @doc Set the currently active project.
 
 set_active_project(ProjectId) ->
-	gen_server:cast(?MODULE, {active_project, ProjectId}).	
-	
-	
+	gen_server:cast(?MODULE, {active_project, ProjectId}).
+
+
 %% =====================================================================
 %% @doc Get all currently open projects
 
@@ -188,7 +190,7 @@ set_active_project(ProjectId) ->
 
 get_open_projects() ->
 	gen_server:call(?MODULE, open_projects).
-	
+
 
 %% =====================================================================
 %% @doc
@@ -197,28 +199,28 @@ get_open_projects() ->
 
 get_root(ProjectId) ->
 	gen_server:call(?MODULE, {get_root, ProjectId}).
-  
+
 get_name(ProjectId) ->
   filename:basename(get_root(ProjectId)).
-  
-  
+
+
 %% =====================================================================
-%% @doc 
+%% @doc
 
 get_build_config(ProjectId) ->
   gen_server:call(?MODULE, {get_build_config, ProjectId}).
-       
+
 
 %% =====================================================================
-%% @doc 
+%% @doc
 
 is_known_project(Path) ->
   Projects = ide_sys_pref_gen:get_preference(projects),
   is_subpath(Path, Projects).
-  
-  
+
+
 %% =====================================================================
-%% @doc 
+%% @doc
 
 set_project_configuration(Parent) ->
   Dialog = ide_proj_conf_dlg_wx:start(Parent),
@@ -229,11 +231,11 @@ set_project_configuration(Parent) ->
       Config = ide_proj_conf_dlg_wx:get_build_config(Dialog),
       ide_proj_conf_dlg_wx:close(Dialog),
       wx_object:call(?MODULE, {set_project_configuration, Config})
-  end.  
-  
+  end.
+
 
 %% =====================================================================
-%% @doc 
+%% @doc
 
 import(Parent) ->
   Dialog = ide_import_proj_dlg_wx:start(Parent),
@@ -254,14 +256,14 @@ init(Args) ->
 	WxEnv = proplists:get_value(wx_env, Args),
 	wx:set_env(WxEnv),
 	{ok, #state{frame=Frame, projects=[]}}.
-	
+
 handle_info(Msg, State) ->
   io:format("Got Info (project manager) ~p~n",[Msg]),
   {noreply,State}.
-    
+
 handle_call({new_project, Path}, _From, State=#state{projects=Projects}) ->
   case is_already_open(Projects, Path) of
-    {true, Id} -> 
+    {true, Id} ->
       {reply, Id, State};
     false ->
     	Id = generate_id(),
@@ -316,8 +318,8 @@ handle_call(close_project, _From, State=#state{frame=Frame, active_project=Activ
   ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, false),
   {reply, ok, State#state{active_project=undefined, projects=ProjectsList}};
 
-handle_call({set_project_configuration, Config}, _From, 
-            State=#state{active_project=ActiveProject, projects=Projects}) -> 
+handle_call({set_project_configuration, Config}, _From,
+            State=#state{active_project=ActiveProject, projects=Projects}) ->
   #project{root=Root}=Project = proplists:get_value(ActiveProject, Projects),
   Result = case file:write_file(filename:join([Root, ".build_config"]), io_lib:fwrite("~p.\n",[Config])) of
     ok ->
@@ -328,7 +330,7 @@ handle_call({set_project_configuration, Config}, _From,
   Tmp = proplists:delete(ActiveProject, Projects),
   UpdatedProjects = [{ActiveProject, Project#project{build_config=Config}} | Tmp],
  {reply, Result, State#state{projects=UpdatedProjects}}.
-  
+
 handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Projects}) ->
   case ProjectId of
     undefined ->
@@ -339,21 +341,21 @@ handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Proj
       update_ui(Frame, proplists:get_value(ProjectId, Projects))
   end,
   {noreply,State#state{active_project=ProjectId}}.
-    
+
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, _State) ->
   ok.
-     
-		
+
+
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
 
 generate_id() ->
 	now().
-	
+
 update_ui(Frame, undefined) ->
   ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project"),
   ide:set_title([]),
@@ -370,10 +372,10 @@ path_to_project_id([{ProjId, #project{root=Path}} | _T], Path) ->
   ProjId;
 path_to_project_id([_|T], Path) ->
   path_to_project_id(T, Path).
-  
+
 
 %% =====================================================================
-%% @doc 
+%% @doc
 
 is_subpath(_Path, []) ->
   false;
@@ -391,12 +393,12 @@ is_subpath(Path, [ProjectPath|ProjectPaths]) ->
 
 is_already_open(Projects, Path) ->
   case path_to_project_id(Projects, Path) of
-    undefined -> 
+    undefined ->
       false;
     ProjId ->
       {true, ProjId}
-  end. 
-  
+  end.
+
 
 %% =====================================================================
 %% @doc
