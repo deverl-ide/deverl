@@ -602,7 +602,7 @@ handle_event(E,O) ->
 
 	
 code_change(_, _, State) ->
-  {stop, not_yet_implemented, State}.
+  {ok, State}.
 
 terminate(_Reason, State=#state{parent_panel=Panel}) ->
   wxPanel:destroy(Panel).

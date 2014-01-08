@@ -29,8 +29,8 @@
                 util_tabbed, %% tabbed_book
                 left_pane,                                     %% The test pane
                 workspace_manager,                             %% Tabbed UI manager for editors
-                splitter_sidebar :: wxSpliiterWindow:wxSplitterWindow(), %% The vertical splitter
-                splitter_utilities :: wxSpliiterWindow:wxSplitterWindow(), %% The horizontal splitter
+                splitter_sidebar :: wxSplitterWindow:wxSplitterWindow(), %% The vertical splitter
+                splitter_utilities :: wxSplitterWindow:wxSplitterWindow(), %% The horizontal splitter
                 splitter_sidebar_pos :: integer(),
                 splitter_utilities_pos :: integer(),
                 splitter_log_pos :: integer(),
@@ -67,8 +67,6 @@ start() ->
 
 start(Args) ->
 	wx_object:start({local, ?MODULE}, ?MODULE, Args, [{debug, [log]}]).
-	%% Trap the error {error,{already_started,Pid()}} to prevent the app from
-	%% being opened twice.
 
 
 %% =====================================================================
