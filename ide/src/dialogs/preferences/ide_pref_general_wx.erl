@@ -1,4 +1,4 @@
--module(pref_general).
+-module(ide_pref_general_wx).
 
 -include_lib("wx/include/wx.hrl").
 
