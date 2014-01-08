@@ -27,7 +27,7 @@
 %% API
 -export([start/1,
 				 new_project/1,
-         new_project/2,
+         add_project/1,
 				 open_project_dialog/1,
          open_project/1,
          get_project/1,
@@ -86,7 +86,7 @@ new_project(Parent) ->
 		?wxID_OK ->
       try
     		Path = ide_io:create_directory_structure(ide_new_proj_dlg_wx:get_path(Dialog)),
-        new_project(Parent, Path)
+        add_project(Path)
       catch
         throw:E -> 
     			ide_lib_dlg_wx:msg_error(Parent, E)
@@ -98,9 +98,9 @@ new_project(Parent) ->
 %% =====================================================================
 %% @doc Add the project located at Path. No directories will be created.
 
-new_project(Parent, Path) ->
+add_project(Path) ->
   ide_sys_pref_gen:set_preference(projects, [Path | ide_sys_pref_gen:get_preference(projects)]),
-  Id = gen_server:call(?MODULE, {new_project, Path}),
+  gen_server:call(?MODULE, {new_project, Path}),
   ok.
 
 	
@@ -317,7 +317,7 @@ handle_call(close_project, _From, State=#state{frame=Frame, active_project=Activ
   {reply, ok, State#state{active_project=undefined, projects=ProjectsList}};
 
 handle_call({set_project_configuration, Config}, _From, 
-            State=#state{frame=Frame, active_project=ActiveProject, projects=Projects}) -> 
+            State=#state{active_project=ActiveProject, projects=Projects}) -> 
   #project{root=Root}=Project = proplists:get_value(ActiveProject, Projects),
   Result = case file:write_file(filename:join([Root, ".build_config"]), io_lib:fwrite("~p.\n",[Config])) of
     ok ->
@@ -340,15 +340,10 @@ handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Proj
   end,
   {noreply,State#state{active_project=ProjectId}}.
     
-%% Event catchall for testing
-handle_event(Ev = #wx{}, State) ->
-  io:format("Project manager event catchall: ~p\n", [Ev]),
-  {noreply, State}.
-    
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
-terminate(_Reason, State) ->
+terminate(_Reason, _State) ->
   ok.
      
 		
@@ -369,9 +364,9 @@ update_ui(Frame, #project{root=Root}) ->
 	ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjectName ++ ")"),
 	ok.
 
-path_to_project_id([], Path) ->
+path_to_project_id([], _Path) ->
   undefined;
-path_to_project_id([{ProjId, #project{root=Path}} | T], Path) ->
+path_to_project_id([{ProjId, #project{root=Path}} | _T], Path) ->
   ProjId;
 path_to_project_id([_|T], Path) ->
   path_to_project_id(T, Path).
@@ -403,10 +398,13 @@ is_already_open(Projects, Path) ->
   end. 
   
 
+%% =====================================================================
+%% @doc
+
 load_build_config(Path) ->
   Fh = filename:join([Path, ".build_config"]),
   case file:consult(Fh) of
-    {error, {Line, Mod, Term}} -> %% The file is badly formatted
+    {error, {_Line, _Mod, _Term}} -> %% The file is badly formatted
       io:format("BUILD CONFIG BADLY FORMATTED~n"),
       undefined;
     {error, enoent} -> %% Does not exist

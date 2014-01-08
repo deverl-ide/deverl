@@ -168,8 +168,8 @@ get_error_message(Error, Path) ->
 %% =====================================================================
 %% @doc
 
-copy_file(Source, Dest) ->
-	case file:copy(Source, Dest) of
-		{ok, _BytesCopied} -> ok;
-		{error, Reason} -> throw("Copy failed: " ++ atom_to_list(Reason))
-	end.
+% copy_file(Source, Dest) ->
+%   case file:copy(Source, Dest) of
+%     {ok, _BytesCopied} -> ok;
+%     {error, Reason} -> throw("Copy failed: " ++ atom_to_list(Reason))
+%   end.

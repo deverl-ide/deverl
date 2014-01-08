@@ -63,10 +63,10 @@ init(Config) ->
 	wxSizer:add(Sz, List, [{flag, ?wxEXPAND bor ?wxALL}, {border, 2}, {proportion, 1}]),
 	wxListCtrl:insertColumn(List, 0, "Heading", []),
 
-	{W,H} = wxListCtrl:getSize(List),
+	{W,_H} = wxListCtrl:getSize(List),
 	wxListCtrl:setColumnWidth(List, 0, W),
 
-	%% Insert
+	%% Insert tests
 	% Insert =
 	% fun({Name, Ln}) ->
 	% 	Index = wxListCtrl:insertItem(List, 0, Name),
@@ -83,8 +83,7 @@ init(Config) ->
 	% ],
 	% lists:foreach(Insert, L),
 
-	%% Background
-
+	%% Background tests
 	%   Fun =
 	% fun(Item) ->
 	% 	case Item rem 2 of

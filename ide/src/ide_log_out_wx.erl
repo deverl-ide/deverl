@@ -148,7 +148,6 @@ handle_cast({error, Msg, Options}, State=#state{log=Log}) ->
     undefined -> ok;
     Hotspot ->
       L = string:str(Msg, Hotspot),
-      Sub = string:substr(Msg, L, length(Hotspot)),
       ?stc:startStyling(Log, Start + L + 9, 31), % (+9) allows for width of timestamp
       ?stc:setStyling(Log, length(Hotspot), ?STYLE_HOTSPOT)
   end,
@@ -156,7 +155,7 @@ handle_cast({error, Msg, Options}, State=#state{log=Log}) ->
 handle_cast({Msg, Options}, State=#state{log=Log}) ->
   case proplists:get_value(hotspot, Options) of
     undefined -> ok;
-    Hotspot -> ok
+    _Hotspot -> ok
   end,
   append(Log, Msg),
   {noreply, State}.
@@ -170,7 +169,7 @@ handle_event(#wx{event=#wxStyledText{type=stc_hotspot_click, position=Pos}},
   Style = ?stc:getStyleAt(Log, Pos),
   Max = ?stc:getLength(Log),
   %% Get the leftmost position where the style starts
-  Leftmost = fun(F, 0) -> 0;
+  Leftmost = fun(_F, 0) -> 0;
     (F, P) ->
       case ?stc:getStyleAt(Log, P) of
         Style -> 
@@ -180,7 +179,7 @@ handle_event(#wx{event=#wxStyledText{type=stc_hotspot_click, position=Pos}},
       end
   end,
   %% and the rightmost
-  Rightmost = fun(F, Limit) when Limit =:= Max -> Max;
+  Rightmost = fun(_F, Limit) when Limit =:= Max -> Max;
     (F, P) ->
       case ?stc:getStyleAt(Log, P) of
         Style -> 

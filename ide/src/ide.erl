@@ -60,13 +60,18 @@
 %% =====================================================================
 
 %% =====================================================================
-%% @doc Start the erlang IDE
+%% @doc Start the erlang IDE.
+%% @see wx:new/1
+
+
+-spec start([Option]) -> wx_object:wx_object() when
+  Option :: {debug, list() | atom()} |
+            {silent_start, boolean()}. 
 
 start() ->
   start([]).
-
-start(Args) ->
-	wx_object:start({local, ?MODULE}, ?MODULE, Args, [{debug, [log]}]).
+start(Options) ->
+	wx_object:start({local, ?MODULE}, ?MODULE, Options, [{debug, [log]}]).
 
 
 %% =====================================================================
@@ -238,7 +243,7 @@ handle_cast({output_display, Window}, State=#state{splitter_log_pos=Pos}) ->
   {noreply, State}.
   
 code_change(_, _, State) ->
-  {stop, not_yet_implemented, State}.
+  {ok, State}.
 
 terminate(_Reason, #state{frame=Frame}) ->
   wxFrame:destroy(Frame),
@@ -496,9 +501,11 @@ handle_event(Ev, State) ->
 %% @doc Create the utilities panel
 %% @private
 
--spec create_utils(Parent) -> Result when
+-spec create_utils(Parent) -> {UtilWin, TabWin, OutWin} when
 	Parent :: wxWindow:wxWindow(),
-	Result :: wxPanel:wxPanel().
+	UtilWin :: wxPanel:wxPanel(),
+  TabWin :: ide_tabbed_win_wx:ide_tabbed_win_wx(),
+  OutWin :: wxPanel:wxPanel().
 
 create_utils(ParentA) ->
   

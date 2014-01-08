@@ -224,7 +224,7 @@ handle_call({remove_standalone, Path}, _From, State=#state{tree=Tree}) ->
   insert_placeholder(Tree, get_standalone_root(Tree), ?HEADER_FILES_EMPTY),
   {reply, ok, State}.
 
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item, itemOld=Old}}, State) ->
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item}}, State) ->
   wxTreeCtrl:freeze(Tree),
   case is_selectable(Tree, Item) of
     true ->
@@ -281,19 +281,17 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Ite
 		true -> select(Tree, Item)
 	end,
 	{noreply, State};
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}},
-            State=#state{frame=Frame}) ->
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}}, State) ->
   case is_selectable(Tree, Item) of
     true -> open_file(Tree, Item);
     false -> ok
   end,
 	{noreply, State};
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_menu}},
-            State=#state{frame=Frame}) ->
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_menu}}, State) ->
   Menu = create_menu(),
   wxWindow:popupMenu(Tree, Menu),
 	{noreply, State};
-handle_event(#wx{obj=Menu, id=Id, event=#wxCommand{type=command_menu_selected}},
+handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
             State=#state{frame=Frame}) ->
   case Id of
     ?wxID_NEW ->
@@ -357,13 +355,13 @@ alternate_background_all(Tree) ->
 %% @doc Set the background colour for all visible children of Item.
 %% Includes those items that are currently scrolled out of view.
 
-alternate_background_of_children(Tree, Item) ->
+alternate_background_of_children(Tree, Item0) ->
 	lists:foldl(
-	fun(Item, Acc) ->
-		set_item_background(Tree, Item, Acc),
+	fun(Item1, Acc) ->
+		set_item_background(Tree, Item1, Acc),
 		Acc+1
 	end,
-	0, lists:reverse(get_children_recursively(Tree, Item))). 
+	0, lists:reverse(get_children_recursively(Tree, Item0))). 
 
 
 %% =====================================================================
@@ -666,15 +664,7 @@ find_standalone(Tree, Path) ->
   Root = get_standalone_root(Tree),
   {FirstItem, _} = wxTreeCtrl:getFirstChild(Tree, Root),
   get_sibling(Tree, FirstItem, Path).
-  
-% repeated function (get_sibling)
-% find_standalone(Tree, Item, Path) ->
-%   case wxTreeCtrl:getItemData(Item) of
-%     Path -> Item;
-%     _ ->
-%       find_standalone(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Path)
-%   end.
-  
+
   
 %% =====================================================================
 %% @doc If the node represents a file then open the file, otherwise
@@ -763,46 +753,46 @@ create_menu() ->
 %% =====================================================================
 %% @doc 
 
-find_root(FilePath) ->
-  find_root(FilePath, []).
+% find_root(FilePath) ->
+%   find_root(FilePath, []).
+%   
+% find_root(FilePath, Acc) ->
+%   Tree = wx_object:call(?MODULE, tree),
+%   case get_item_from_path(Tree, get_all_items(Tree), FilePath) of 
+%     no_item ->
+%       find_root(filename:dirname(FilePath), [FilePath|Acc]);
+%     Item ->
+%       wxTreeCtrl:freeze(Tree),
+%       wxTreeCtrl:toggle(Tree, Item),
+%       toggle_items(Tree, Acc)
+%   end.
   
-find_root(FilePath, Acc) ->
-  Tree = wx_object:call(?MODULE, tree),
-  case get_item_from_path(Tree, get_all_items(Tree), FilePath) of 
-    no_item ->
-      find_root(filename:dirname(FilePath), [FilePath|Acc]);
-    Item ->
-      wxTreeCtrl:freeze(Tree),
-      wxTreeCtrl:toggle(Tree, Item),
-      toggle_items(Tree, Acc)
-  end.
-  
-toggle_items(Tree, [Path]) ->
-  Item = poll_tree_item(Tree, get_all_items(Tree), Path),
-  wxTreeCtrl:selectItem(Tree, Item),
-  wxTreeCtrl:thaw(Tree);
-toggle_items(Tree, [Path|Paths]) ->
-  Item = poll_tree_item(Tree, get_all_items(Tree), Path),
-  wxTreeCtrl:toggle(Tree, Item),
-  toggle_items(Tree, Paths).
+% toggle_items(Tree, [Path]) ->
+%   Item = poll_tree_item(Tree, get_all_items(Tree), Path),
+%   wxTreeCtrl:selectItem(Tree, Item),
+%   wxTreeCtrl:thaw(Tree);
+% toggle_items(Tree, [Path|Paths]) ->
+%   Item = poll_tree_item(Tree, get_all_items(Tree), Path),
+%   wxTreeCtrl:toggle(Tree, Item),
+%   toggle_items(Tree, Paths).
 
 %% This is required because the tree is not updated immediately, and
 %% subsequent recursive calls to toggle_items which rely on the
 %% updated tree fail.
-poll_tree_item(Tree, Items, Path) ->
-  case get_item_from_path(Tree, Items, Path) of
-    no_item ->
-      poll_tree_item(Tree, get_all_items(Tree), Path);
-    Item ->
-      Item
-  end.
+% poll_tree_item(Tree, Items, Path) ->
+%   case get_item_from_path(Tree, Items, Path) of
+%     no_item ->
+%       poll_tree_item(Tree, get_all_items(Tree), Path);
+%     Item ->
+%       Item
+%   end.
   
 select(Tree, Item) ->
   case wxTreeCtrl:getItemData(Tree, Item) of
     {ProjectId, _Path} ->
       get_project_root(Tree, Item),
       ide_proj_man:set_active_project(ProjectId);
-    Path -> %% Standalone document
+    _Path -> %% Standalone document
       ide_proj_man:set_active_project(undefined)
   end.
   

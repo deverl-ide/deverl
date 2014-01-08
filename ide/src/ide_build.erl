@@ -41,7 +41,7 @@ make_project(PrintMsg) ->
       Path = ide_proj_man:get_root(ProjectId),
       ide_compiler_port:start(Path),
       receive
-        {From, ok} ->
+        {_From, ok} ->
           ide_proj_tree_wx:set_has_children(Path ++ "/ebin"),
           case PrintMsg of
             true ->
@@ -50,7 +50,7 @@ make_project(PrintMsg) ->
           end,
           change_dir(Path ++ "/ebin"),
           {ok, ProjectId, Path};
-        {From, error} ->
+        {_From, error} ->
           {error, compile}
       end;
     cancelled ->
@@ -59,7 +59,7 @@ make_project(PrintMsg) ->
 
 run_project(Parent) ->
   case make_project(false) of
-    {ok, ProjectId, ProjectPath} ->
+    {ok, ProjectId, _ProjectPath} ->
       build_project(Parent, ProjectId);
     {error, _} ->
       ok
@@ -75,7 +75,7 @@ compile_file(Path) ->
   %% for the compiler (-o). 
   ide_compiler_port:start(Path, [file]),
   receive
-    {From, ok} ->
+    {_From, ok} ->
       case ide_proj_man:is_known_project(Path) of
         {true, P0} ->
           P1 = filename:join([P0, "ebin", filename:basename(Path)]),
@@ -84,7 +84,7 @@ compile_file(Path) ->
         _ ->
           load_file(Path, [])
       end;
-    {From, error} ->
+    {_From, error} ->
       ok
   end.
   

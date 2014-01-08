@@ -103,8 +103,7 @@ handle_call(Msg, _From, State) ->
   {reply,ok,State}.
 
 handle_cast({add_page, {Page, Text, Options}}, 
-						State=#state{tabs={TabPanel, TabSz}, content={Content, ContentSz}, pages=Pages,
-												 image_list=ImageList}) ->
+						State=#state{tabs={TabPanel, TabSz}, content={Content, ContentSz}, pages=Pages}) ->
 	{Button, Label} = create_button(TabPanel, TabSz, Text, Options),
 	SzFlags = wxSizerFlags:new([{proportion, 1}]),
 	wxSizerFlags:expand(SzFlags),
@@ -148,15 +147,14 @@ handle_sync_event(#wx{obj=Btn, userData={Label, Options}, event=#wxPaint{}}, _,
 	end,
 	ok.
 
-handle_event(#wx{obj=Btn, userData={Label, Options}, event=#wxMouse{type=left_down}}, 
-						 State=#state{pages=Pages, active_btn=ActiveBtn, tabs={Tabs, _}, content={Cont,_}, 
-						 							image_list=ImageList}) ->
+handle_event(#wx{obj=Btn, event=#wxMouse{type=left_down}}, 
+						 State=#state{pages=Pages, active_btn=ActiveBtn, tabs={Tabs, _}, content={Cont,_}}) ->
 	change_selection(ActiveBtn, Btn, Pages, Tabs, Cont),
 	{noreply, State#state{active_btn=Btn}};
 handle_event(#wx{event=#wxClose{}}, State) ->
 	io:format("~p Closing window ~n",[self()]),
 	{stop, normal, State};
-handle_event(#wx{id=Id, userData=Ud, obj=Obj}=E,State) ->
+handle_event(#wx{id=Id},State) ->
   case Id of
 	  ?wxID_EXIT ->
 	    {stop, normal, State};
@@ -191,15 +189,15 @@ create_button(Parent, Sz, Label, Options) ->
 %% =====================================================================
 %% @doc Draw the tab graphic.		
 %% Default {active, false}
-draw(Btn, Label, ImageList, WxDc, Bg, Options) ->
+draw(Btn, _Label, ImageList, WxDc, Bg, Options) ->
   wxWindow:setBackgroundColour(Btn, Bg),
-  {W,H} = wxWindow:getSize(Btn),
-
-  % Following colour must match bg of tb panel
-  Blend = Bg,
-  FillD = {190,190,190}, %% Deselected button fill
-  FillA = {170,170,170}, %% Selected
-  LineD = {155,155,155}, %% Deselected buttun lines (sides)
+  {W,_H} = wxWindow:getSize(Btn),
+  
+  %% Deselected button style
+  % FillD = {190,190,190},
+  % LineD = {155,155,155},
+  %% Selected button style
+  FillA = {170,170,170},  
   LineA = {100,100,100},
 
 	%% wxDC must be created in a callback to work on windows.
@@ -219,10 +217,10 @@ draw(Btn, Label, ImageList, WxDc, Bg, Options) ->
   
   case proplists:get_value(active, Options, false) of
     false -> 
-      % Draw(FillD, LineD, Blend),
+      % Draw(FillD, LineD, Bg),
       ok;
     true ->   
-      Draw(FillA, LineA, Blend)
+      Draw(FillA, LineA, Bg)
   end,
 	
 	case proplists:get_value(imageId, Options) of
@@ -237,20 +235,7 @@ draw(Btn, Label, ImageList, WxDc, Bg, Options) ->
 	%% Nothing is drawn until wxDC is destroyed.
 	WxDc:destroy(DC),
 	ok.
-	
-	
-%% =====================================================================
-%% @doc Trigger a paint event for the tabs, if required.
-%% @private
 
-trigger_tab_paint(Tabs, ActiveBtn, Btn) ->
- 	case ActiveBtn of
- 		Btn -> ok;
- 		_ -> %% Trigger a paint event
-			wxWindow:refresh(Tabs), 
-			wxWindow:update(Tabs)
-	end.
-	
 	
 %% =====================================================================
 %% @doc Get the page associated to a button.

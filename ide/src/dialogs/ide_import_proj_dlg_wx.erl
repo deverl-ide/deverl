@@ -185,14 +185,14 @@ handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}}
              State) ->
   {stop, normal, State};
 handle_event(#wx{id=?wxID_OK, event=#wxCommand{type=command_button_clicked}}, 
-             State=#state{parent=Parent, project_path_text_ctrl=PathTc, copy_cb=Cb}) ->
+             State=#state{project_path_text_ctrl=PathTc, copy_cb=Cb}) ->
 	Path = wxTextCtrl:getValue(PathTc), 
   case wxCheckBox:isChecked(Cb) of
     true -> %% Copy all files over to project directory
       io:format("NOT IMPLEMENTED"),
       ok;
     false -> %% Leave where it is
-      ide_proj_man:new_project(Parent, Path)
+      ide_proj_man:add_project(Path)
   end,
   {stop, normal, State}.
   % {noreply, State#state{project_path=Path}}.

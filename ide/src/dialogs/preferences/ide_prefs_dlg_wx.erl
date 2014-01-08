@@ -97,7 +97,7 @@ handle_info(Msg, State) ->
   io:format("Got Info (prefs) ~p~n",[Msg]),
   {noreply,State}.
     
-handle_call(Msg, _From, State) ->
+handle_call(_Msg, _From, State) ->
   {reply,{error, nyi}, State}.
     
 handle_cast(Msg, State) ->
@@ -105,8 +105,8 @@ handle_cast(Msg, State) ->
   {noreply,State}.
     
 %% Catch menu clicks
-handle_event(Ev = #wx{id=Id, event=#wxCommand{type=command_menu_selected}, userData=Tb}, 
-             State = #state{frame=Frame, pref_panel={Panel,Sz}, pref=Pref}) ->
+handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}, userData=Tb}, 
+             State=#state{frame=Frame, pref_panel={Panel,Sz}, pref=Pref}) ->
   {_,Str,_,_,_} = proplists:lookup(Id,Tb),
   wxSizer:detach(Sz, Pref),
   wx_object:call(Pref, shutdown),
@@ -138,8 +138,7 @@ terminate(_Reason, #state{frame=Frame}) ->
 %% =====================================================================
 %% @doc Load a preference pane.
 
-load_pref(Pref, #state{frame=Frame, pref_panel={Panel,Sz}}) ->
+load_pref(Pref, #state{pref_panel={Panel,_Sz}}) ->
   ModStr = "ide_pref_" ++ string:to_lower(Pref) ++ "_wx",
   Mod = list_to_atom(ModStr),
-  ModFile = ModStr ++ ".erl",
   Mod:start([{parent, Panel}]).

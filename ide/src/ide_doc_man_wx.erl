@@ -168,7 +168,7 @@ save_active_document() ->
 
 save_active_project() ->
 	case save_project(ide_proj_man:get_active_project()) of
-    {Saved, []} ->
+    {_Saved, []} ->
       ok;
     {_Saved, _Failed} ->
       cancelled
@@ -253,13 +253,7 @@ handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
 
-handle_cast(freeze_notebook, State=#state{notebook=Nb, parent=Parent}) ->
-  wxWindow:freeze(Parent),
-	{noreply, State};
-handle_cast(thaw_notebook, State=#state{notebook=Nb, parent=Parent}) ->
-  wxWindow:thaw(Parent),
-	{noreply, State};
-handle_cast({set_sel, Direction}, State=#state{notebook=Nb, sizer=Sz}) ->
+handle_cast({set_sel, Direction}, State=#state{notebook=Nb}) ->
   Cur = wxAuiNotebook:getSelection(Nb),
   N = wxAuiNotebook:getPageCount(Nb),
   Idx = case Direction of
@@ -385,7 +379,7 @@ handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_record
 	{reply, ok, State};
   
 handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId, sizer=Sz}) ->
-  F = fun(G, [], Dr, P2d) -> {Dr, P2d};
+  F = fun(_G, [], Dr, P2d) -> {Dr, P2d};
          (G, [DocId | T], Dr, P2d) ->    
             Record = proplists:get_value(DocId, DocRecords),
             case Record#document.project_id of
@@ -411,13 +405,16 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
 %% Close event
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
-  DocId = page_id_to_doc_id(Nb, wxAuiNotebookEvent:getSelection(Event), PageToDoc),
+  DocId = page_idx_to_doc_id(Nb, wxAuiNotebookEvent:getSelection(Event), PageToDoc),
   Env = wx:get_env(),
   spawn(fun() -> wx:set_env(Env), close_documents([DocId]) end),
 	ok.
 
-handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed,
-			selection=Index}}, State=#state{notebook=Nb}) ->
+handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed, selection=Idx}},
+             State=#state{notebook=Nb, page_to_doc_id=PageToDoc, doc_records=DocRecords}) ->
+  DocId = page_idx_to_doc_id(Nb, Idx, PageToDoc),
+  #document{project_id=PrId} = get_record(DocId, DocRecords),
+  ide_proj_man:set_active_project(PrId),
   {noreply, State}.
 
 code_change(_, _, State) ->
@@ -449,7 +446,7 @@ load_editor_contents(Editor, Path) ->
 %% =====================================================================
 %% @doc
 
-show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocNames, DocIdList) ->
+show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocIdList) ->
   Dialog = ide_lib_dlg_wx:save_changes_dialog(Parent, ModifiedDocNames),
   case wxDialog:showModal(Dialog) of
 		?wxID_CANCEL -> %% Cancel close
@@ -496,7 +493,7 @@ save_and_close(DocIdList) ->
   case save_documents(DocIdList) of
     {Saved, []} ->
       close(Saved);
-    {Saved, Failed} ->
+    {Saved, _Failed} ->
       close(Saved),
       cancelled
   end.
@@ -518,7 +515,7 @@ close_documents(Documents) ->
     {[], _Parent} ->
       close(Documents);
     {ModifiedDocs, Parent} ->
-      show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs, get_doc_names(Documents), Documents)
+      show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs, Documents)
   end.
   
 
@@ -554,7 +551,7 @@ remove_document(Nb, DocId, PageId, DocRecords, PageToDocId) ->
 %% =====================================================================
 %% @doc
 
-page_id_to_doc_id(Notebook, PageId, PageToDocId) ->
+page_idx_to_doc_id(Notebook, PageId, PageToDocId) ->
   Page = wxAuiNotebook:getPage(Notebook, PageId),
   proplists:get_value(Page, PageToDocId).
 
@@ -673,7 +670,7 @@ open_document(Path) ->
 %% @doc
 
 open_from_existing_project(ProjectPath) ->
-  Result = case ide_proj_man:get_project(ProjectPath) of
+  case ide_proj_man:get_project(ProjectPath) of
     undefined ->
       ide_proj_man:open_project(ProjectPath);
     ProjectId ->

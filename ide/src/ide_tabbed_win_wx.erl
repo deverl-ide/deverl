@@ -23,6 +23,11 @@
 	add_page/3,
 	set_selection/2]).
 
+%% Types 
+-export_type([ide_tabbed_win_wx/0]).
+
+-type ide_tabbed_win_wx() :: wx:wx_object().
+
 %% Macros
 -define(SYS_BG, wxSystemSettings:getColour(?wxSYS_COLOUR_BACKGROUND)).
 
@@ -241,22 +246,15 @@ draw(Btn, Label, WxDc, Options) ->
 		hover -> draw_setup(DC, Dark1, Hover, Font);
 		_ -> draw_setup(DC, Dark1, StdBg, Font)
 	end,
-	
-	% Corner radius
-	Radius = 4.0,
 
 	MinY = case proplists:get_value(first, Options) of
 		true -> 0;
 		_ 	 -> -1
 	end,
-	%% Problem with the arcs atm, so will come back to this
+
 	Path = wxGraphicsContext:createPath(Canvas),
-	wxGraphicsPath:moveToPoint(Path, {W-1, MinY}), %% Temp
-	% wxGraphicsPath:addLineToPoint(Path, {Radius, MinY}),
-	% wxGraphicsPath:addArcToPoint(Path, 0, 0, 0, Radius, Radius),
-	wxGraphicsPath:addLineToPoint(Path, {0, MinY}), %% Temp
-	% wxGraphicsPath:addLineToPoint(Path, {0, H-Radius}),
-	% wxGraphicsPath:addArcToPoint(Path, 0, H-1, Radius, H-1, Radius),
+	wxGraphicsPath:moveToPoint(Path, {W-1, MinY}),
+	wxGraphicsPath:addLineToPoint(Path, {0, MinY}),
 	wxGraphicsPath:addLineToPoint(Path, {0, H-1}),
 	wxGraphicsPath:addLineToPoint(Path, {W-1, H-1}),
 	wxGraphicsPath:closeSubpath(Path),
@@ -307,15 +305,6 @@ trigger_tab_paint(Tabs, ActiveBtn, Btn) ->
 			wxWindow:refresh(Tabs), 
 			wxWindow:update(Tabs)
 	end.
-	
-	
-%% =====================================================================
-%% @doc Get the label associated to a button.
-%% @private
-
-get_label(Pages, Button) -> 
-	{Label, _} = proplists:get_value(Button, Pages),
-	Label.
 	
 	
 %% =====================================================================
