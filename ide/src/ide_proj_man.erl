@@ -45,6 +45,8 @@
          import/1
          ]).
 
+-export_type([project_id/0]).
+
 %% Records
 -record(project, {root :: path(),
                   build_config,
