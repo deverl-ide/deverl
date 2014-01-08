@@ -19,6 +19,7 @@
 	
 %% API			 
 -export([start/0,
+         start/1,
          set_title/1,
          display_output_window/1,
          toggle_menu_group/2]).
@@ -281,7 +282,6 @@ handle_event(#wx{event=#wxClose{}}, State) ->
     _ ->
       {stop, normal, State}
   end;
-
 
 %% =====================================================================
 %% Sash drag handlers
