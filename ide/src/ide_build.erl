@@ -3,7 +3,7 @@
 %% @copyright
 %% @title
 %% @version
-%% @doc 
+%% @doc
 %% @end
 %% =====================================================================
 
@@ -43,13 +43,13 @@ compile_file() ->
 
 make_project() ->
   make_project(true).
-  
-  
+
+
 %% =====================================================================
 %% @doc
 
 -spec make_project(boolean()) -> {ok, ide_proj_man:project_id(), string()} | {atom(), atom()}.
-  
+
 make_project(PrintMsg) ->
   case ide_doc_man_wx:save_active_project() of
     ok ->
@@ -99,7 +99,7 @@ run_project(Parent) ->
 
 compile_file(Path) ->
   %% Remember to send the output directory to load_file/1 if the flag is set
-  %% for the compiler (-o). 
+  %% for the compiler (-o).
   ide_compiler_port:start(Path, [file]),
   receive
     {_From, ok} ->
@@ -114,7 +114,7 @@ compile_file(Path) ->
     {_From, error} ->
       ok
   end.
-  
+
 
 %% =====================================================================
 %% @doc
@@ -126,7 +126,7 @@ load_file(Path, _Options) ->
   Beam = filename:join([filename:dirname(Path), Mod]),
   ide_console_port_gen:eval("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl(), false),
   ide_console_wx:append_message("Loaded module: " ++ Mod).
-  
+
 
 %% =====================================================================
 %% @doc
@@ -135,7 +135,7 @@ load_file(Path, _Options) ->
 
 build_project(Parent, ProjectId) ->
   case ide_proj_man:get_build_config(ProjectId) of
-    undefined -> 
+    undefined ->
       notify_missing_config(Parent);
     Config ->
       try
@@ -148,8 +148,8 @@ build_project(Parent, ProjectId) ->
           error("ERROR")
       end
   end.
-  
-  
+
+
 %% =====================================================================
 %% @doc
 
