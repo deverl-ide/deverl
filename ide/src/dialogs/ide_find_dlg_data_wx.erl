@@ -1,6 +1,6 @@
-%% Create the data to send the the find_replace_dialog when started.
+%% Create the data to send the the ide_find_dlg_wx when started.
 
--module(find_replace_data).
+-module(ide_find_dlg_data_wx).
 
 -include("../../include/ide.hrl").
                
@@ -18,8 +18,8 @@
 
 -export([init/0]).
 
--export_type([find_replace_data/0]).
--type find_replace_data() :: pid().
+-export_type([ide_find_dlg_data_wx/0]).
+-type ide_find_dlg_data_wx() :: pid().
 
 -record(state, {find_str :: string(),
                 replace_str :: string(),
@@ -27,7 +27,7 @@
                 search_loc
                }).
 
--spec new() -> find_replace_data().
+-spec new() -> ide_find_dlg_data_wx().
 
 new() ->
   spawn(?MODULE, init, []).
@@ -93,7 +93,7 @@ set_replace_string(This, String) ->
 %% Possible flags are IGNORE_CASE, WHOLE_WORD, START_WORD, REGEX.
 %% Combine flags by adding them.
 
--spec set_options(find_replace_data(), integer()) -> 'ok'.
+-spec set_options(ide_find_dlg_data_wx(), integer()) -> 'ok'.
 
 set_options(This, Options) ->
   This ! {set_options, Options},

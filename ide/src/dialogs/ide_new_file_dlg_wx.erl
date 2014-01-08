@@ -10,7 +10,7 @@
 %% @end
 %% =====================================================================
 
--module(new_file).
+-module(ide_new_file_dlg_wx).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -57,8 +57,8 @@
                 dialog2     :: wxPanel:wxPanel(),
                 swap_sizer  :: wxSizer:wxSizer(),
                 path        :: string(),
-                project_id  :: project_manager:project_id(),
-                projects    :: [project_manager:project_id()],
+                project_id  :: ide_proj_man:project_id(),
+                projects    :: [ide_proj_man:project_id()],
                 desc_panel  :: wxPanel:wxPanel(),
                 image_list,
                 info_messages
@@ -122,7 +122,7 @@ init({Parent, Projects, ActiveProject}) ->
     undefined ->
       "No Project";
     _ ->
-      project_manager:get_name(ActiveProject) 
+      ide_proj_man:get_name(ActiveProject) 
   end,
   SwapSizer = wxBoxSizer:new(?wxVERTICAL),
   Dialog1 = dialog1(Dialog, Projects, Project),
@@ -267,7 +267,7 @@ handle_event(#wx{id=?BROWSE_BUTTON, event=#wxCommand{type=command_button_clicked
   {ProjectName, ProjectPath} = get_project_choice(Parent),
   case ProjectName of
     "No Project" ->
-      DirectoryChoice = lib_dialog_wx:get_existing_dir(Parent),
+      DirectoryChoice = ide_lib_dlg_wx:get_existing_dir(Parent),
       case DirectoryChoice of
         cancelled ->
           ok;
@@ -491,7 +491,7 @@ get_project_choice(Parent) ->
     undefined ->
       wx_misc:getHomeDir();
     _ ->
-      project_manager:get_root(ProjectId)
+      ide_proj_man:get_root(ProjectId)
   end,
   {Name, Path}.
 
@@ -620,13 +620,13 @@ swap(Sizer, Dialog1, Dialog2) ->
 add_project_data(_, []) ->
   ok;
 add_project_data(ProjectChoice, [ProjectId|Projects]) ->
-  wxChoice:append(ProjectChoice, project_manager:get_name(ProjectId), ProjectId),
+  wxChoice:append(ProjectChoice, ide_proj_man:get_name(ProjectId), ProjectId),
   add_project_data(ProjectChoice, Projects).
   
 
 %% =====================================================================
 %% @doc Display information to the user within the 'Description' box.	
-%% NOTE This is duplicated from the new_project_wx module.
+%% NOTE This is duplicated from the ide_new_proj_dlg_wx module.
 
 insert_desc(Description, Msg) ->
 	insert_desc(Description, Msg, []).

@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(compiler_output).
+-module(ide_compiler_out_wx).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -67,11 +67,11 @@ init(Config) ->
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Panel, MainSizer),
   
-  Font = wxFont:new(sys_pref_manager:get_preference(console_font_size),
-                    sys_pref_manager:get_preference(console_font_family),
-                    sys_pref_manager:get_preference(console_font_style),
-                    sys_pref_manager:get_preference(console_font_weight)
-                    %[{face, sys_pref_manager:get_preference(console_font_facename)}]
+  Font = wxFont:new(ide_sys_pref_gen:get_preference(console_font_size),
+                    ide_sys_pref_gen:get_preference(console_font_family),
+                    ide_sys_pref_gen:get_preference(console_font_style),
+                    ide_sys_pref_gen:get_preference(console_font_weight)
+                    %[{face, ide_sys_pref_gen:get_preference(console_font_facename)}]
                     ),
 
 	Output = wxTextCtrl:new(Panel, ?WINDOW_OUTPUT, [{style, ?wxBORDER_NONE bor ?wxTE_DONTWRAP bor ?wxTE_READONLY bor ?wxTE_MULTILINE}]),

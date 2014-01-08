@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(lib_dialog_wx).
+-module(ide_lib_dlg_wx).
 
 -include_lib("wx/include/wx.hrl").
 

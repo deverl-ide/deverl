@@ -1,4 +1,4 @@
--module(editor_theme).
+-module(ide_editor_theme).
 
 -export([get_theme_names/0,
 				 load_theme/1,

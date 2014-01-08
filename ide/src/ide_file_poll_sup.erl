@@ -1,4 +1,4 @@
--module(file_poller_sup).
+-module(ide_file_poll_sup).
 
 -behaviour(supervisor).
 -export([init/1]).
@@ -10,8 +10,8 @@ start_link(Config) ->
 	supervisor:start_link(?MODULE, Config).
 	
 init(Config) ->
-	Server = {file_poller, {file_poller, start, [Config]},
-						transient, 2000, worker, [file_poller]},
+	Server = {ide_file_poll_gen, {ide_file_poll_gen, start, [Config]},
+						transient, 2000, worker, [ide_file_poll_gen]},
 	Children = [Server],
 	RestartStategy = {one_for_one, 0, 1},
 	{ok, {RestartStategy, Children}}.

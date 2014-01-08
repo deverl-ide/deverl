@@ -9,7 +9,7 @@
 %% @end
 %% =====================================================================
 
--module(project_config_wx).
+-module(ide_proj_conf_dlg_wx).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -69,9 +69,9 @@ init(Parent) ->
   wx:batch(fun() -> do_init(Parent) end).
 
 do_init(Parent) ->
-  ProjectId = project_manager:get_active_project(),
-  ProjectName = project_manager:get_name(ProjectId),
-  BuildConfig = project_manager:get_build_config(ProjectId),
+  ProjectId = ide_proj_man:get_active_project(),
+  ProjectName = ide_proj_man:get_name(ProjectId),
+  BuildConfig = ide_proj_man:get_build_config(ProjectId),
   Title = "Project Configuration - " ++ ProjectName,
     
   State = case BuildConfig of

@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(lib_widgets).
+-module(ide_lib_widgets).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").

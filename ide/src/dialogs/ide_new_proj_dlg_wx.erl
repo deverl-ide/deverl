@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(new_project_wx).
+-module(ide_new_proj_dlg_wx).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -108,7 +108,7 @@ do_init(Parent) ->
   wxSizer:add(FlexGridSz, 0, 0, []),
    
 	%% Project path
-	Path = sys_pref_manager:get_preference(project_directory),
+	Path = ide_sys_pref_gen:get_preference(project_directory),
   wxSizer:add(FlexGridSz, wxStaticText:new(Dialog, ?wxID_ANY, "Project Path:"), []),
 	ProjPath = wxTextCtrl:new(Dialog, ?ID_PROJ_PATH, [{value, Path}]),
 	wxTextCtrl:disable(ProjPath),
@@ -212,7 +212,7 @@ handle_event(#wx{id=?wxID_OK, event=#wxCommand{type=command_button_clicked}},
   {noreply, State#state{project_name=Name, project_path=Path}};
 handle_event(#wx{id=?ID_BROWSE_PROJECTS, event=#wxCommand{type=command_button_clicked}}, 
              State=#state{parent=Parent, project_path_text_ctrl=PathTc}) ->
-	case lib_dialog_wx:get_dir(Parent) of
+	case ide_lib_dlg_wx:get_dir(Parent) of
 		cancelled -> ok;
 		Path -> wxTextCtrl:setValue(PathTc, Path)
 	end,

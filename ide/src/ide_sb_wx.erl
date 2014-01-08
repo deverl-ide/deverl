@@ -9,7 +9,7 @@
 %% @end
 %% =====================================================================
 
--module(ide_status_bar).
+-module(ide_sb_wx).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -23,8 +23,7 @@
 %% Client API         
 -export([
 	start/1, 
-	set_text/2, 
-	set_text_timeout/2
+	set_text/2
 	]).
 
 %% Macros
@@ -54,27 +53,13 @@ start(Config) ->
 %% =====================================================================
 %% @doc Set the text in the specified field.
 
--spec ide_status_bar:set_text(Field, Label) -> Result when
+-spec ide_sb_wx:set_text(Field, Label) -> Result when
       Field :: {field, atom()},
       Label :: unicode:chardata(),
       Result :: atom().
       
 set_text({field, Field}, Label) ->
 	wx_object:cast(?MODULE, {settext, {Field, Label}}).
-
-
-%% =====================================================================
-%% @doc Set the text in the specified field, for the period specified
-%% in TIMEOUT, after which the field will be cleared.
-    
-set_text_timeout({field,Field}, Label) ->
-	% set_text(Sb, {field,Field}, Label),
-	% io:format("PID: ~p~n", [self()]),
-	% receive 
-	% 	after ?TIMEOUT ->
-	% 		set_text(Sb, {field,Field}, "")
-	% end.
-	ok.	
 
 
 %% =====================================================================
@@ -128,8 +113,7 @@ handle_call(shutdown, _From, State) ->
   ok,
   {reply,{error, nyi}, State}.
 
-handle_event(Event, State) ->
-	io:format("SB EVENT CA~n"),
+handle_event(_Event, State) ->
 	{noreply, State}.
   
 code_change(_, _, State) ->
@@ -166,7 +150,7 @@ add_separator(Sb, Sizer, Bitmap) ->
 %% @private
 
 add_label(Sb, Id, Sizer, Label) ->
-	L = wxStaticText:new(Sb, ?wxID_ANY, Label),
+	L = wxStaticText:new(Sb, Id, Label),
 	set_style(L),
 	wxSizer:add(Sizer, L, [{border, ?PADDING}, {flag, ?wxALL}]).
 

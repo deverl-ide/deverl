@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(doc_manager).
+-module(ide_doc_man_wx).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -38,17 +38,16 @@
 
 %% Records
 -record(document, {path :: string(),
-                   file_poller :: file_poller:file_poller(),
-                   editor :: editor:editor(),
-                   project_id :: project_manager:project_id()}).
+                   ide_file_poll_gen :: ide_file_poll_gen:ide_file_poll_gen(),
+                   editor :: ide_editor_wx:editor(),
+                   project_id :: ide_proj_man:project_id()}).
 
 %% Types
 -type document_id() :: {integer(), integer(), integer()}.
 -type document_record() :: {document_id(), #document{}}.
 
 %% Server state
--record(state, {
-                notebook :: wxAuiNotebook:wxAuiNotebook(), %% Notebook
+-record(state, {notebook :: wxAuiNotebook:wxAuiNotebook(), %% Notebook
                 page_to_doc_id :: [{wxWindow:wxWindow(), document_id()}],
                 doc_records :: [document_record()],
 								sizer,
@@ -60,6 +59,9 @@
 %% Client API
 %% =====================================================================
 
+% -spec start([Config]) -> wx_object:wx_object() when
+  
+
 start(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
@@ -68,14 +70,14 @@ start(Config) ->
 %% @doc Create a new file and insert it into the workspace.
 
 new_document(Parent) ->
-  OpenProjects = project_manager:get_open_projects(),
-  Dialog = new_file:start({Parent, OpenProjects, project_manager:get_active_project()}),
+  OpenProjects = ide_proj_man:get_open_projects(),
+  Dialog = ide_new_file_dlg_wx:start({Parent, OpenProjects, ide_proj_man:get_active_project()}),
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       ok;
     ?wxID_OK ->
-      create_document(new_file:get_path(Dialog), new_file:get_project_id(Dialog)),
-      new_file:close(Dialog)
+      create_document(ide_new_file_dlg_wx:get_path(Dialog), ide_new_file_dlg_wx:get_project_id(Dialog)),
+      ide_new_file_dlg_wx:close(Dialog)
   end.
 
 
@@ -165,8 +167,8 @@ save_active_document() ->
 %% @doc
 
 save_active_project() ->
-	case save_project(project_manager:get_active_project()) of
-    {Saved, []} ->
+	case save_project(ide_proj_man:get_active_project()) of
+    {_Saved, []} ->
       ok;
     {_Saved, _Failed} ->
       cancelled
@@ -233,25 +235,25 @@ init(Config) ->
 	wxSizer:add(Sz, Notebook, [{flag, ?wxEXPAND}, {proportion, 1}]),
 	wxSizer:hide(Sz, 0),
 
-	Ph = lib_widgets:placeholder(Panel, "No Open Documents"),
+	Ph = ide_lib_widgets:placeholder(Panel, "No Open Documents"),
 	wxSizer:add(Sz, Ph, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
 	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [callback]),
 	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed, []),
+  
+  State = #state{notebook=Notebook,
+                 page_to_doc_id=[],
+                 doc_records=[],
+                 sizer=Sz,
+                 parent=Parent},
 
-  {Panel, #state{notebook=Notebook, page_to_doc_id=[], doc_records=[], sizer=Sz, parent=Parent}}.
+  {Panel, State}.
 
 handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
 
-handle_cast(freeze_notebook, State=#state{notebook=Nb, parent=Parent}) ->
-  wxWindow:freeze(Parent),
-	{noreply, State};
-handle_cast(thaw_notebook, State=#state{notebook=Nb, parent=Parent}) ->
-  wxWindow:thaw(Parent),
-	{noreply, State};
-handle_cast({set_sel, Direction}, State=#state{notebook=Nb, sizer=Sz}) ->
+handle_cast({set_sel, Direction}, State=#state{notebook=Nb}) ->
   Cur = wxAuiNotebook:getSelection(Nb),
   N = wxAuiNotebook:getPageCount(Nb),
   Idx = case Direction of
@@ -268,8 +270,8 @@ handle_call({create_doc, Path, ProjectId}, _From,
 	case is_already_open(Path, DocRecords) of
 		false ->
 			ensure_notebook_visible(Nb, Sz),
-      Font = sys_pref_manager:get_font(editor),
-		  Editor = editor:start([{parent, Nb}, {font, Font}]),
+      Font = ide_sys_pref_gen:get_font(editor),
+		  Editor = ide_editor_wx:start([{parent, Nb}, {font, Font}]),
 		  wxAuiNotebook:addPage(Nb, Editor, filename:basename(Path), [{select, true}]),
 		  DocId = generate_id(),
 		  Document = #document{path=Path, editor=Editor, project_id=ProjectId},
@@ -278,9 +280,9 @@ handle_call({create_doc, Path, ProjectId}, _From,
 			load_editor_contents(Editor, Path),
       case ProjectId of
         undefined ->
-          ide_projects_tree:add_standalone_document(Path);
+          ide_proj_tree_wx:add_standalone_document(Path);
         _ ->
-          ide_projects_tree:set_has_children(filename:dirname(Path))
+          ide_proj_tree_wx:set_has_children(filename:dirname(Path))
       end,
 			{reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}};
 		DocId ->
@@ -311,7 +313,7 @@ handle_call({get_modified_docs, DocIdList}, _From,
   List = lists:foldl(
     fun(DocId, Acc) ->
       Record = get_record(DocId, DocRecords),
-      case editor:is_dirty(Record#document.editor) of
+      case ide_editor_wx:is_dirty(Record#document.editor) of
         true ->
           [DocId|Acc];
         _ ->
@@ -337,7 +339,7 @@ handle_call({get_path, DocId}, _From,
 handle_call({save, DocId}, _From,
 				    State=#state{parent=Parent, doc_records=DocRecords}) ->
   Record=#document{path=Path} = proplists:get_value(DocId, DocRecords),
-  Contents = editor:get_text(Record#document.editor),
+  Contents = ide_editor_wx:get_text(Record#document.editor),
   Result = try
     ide_io:save(Path, Contents),
     {ok, DocRecords}
@@ -351,7 +353,7 @@ handle_call({save_as, DocId}, _From,
 				    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
   Record = proplists:get_value(DocId, DocRecords),
 	Editor = Record#document.editor,
-	Contents = editor:get_text(Editor),
+	Contents = ide_editor_wx:get_text(Editor),
 	{NewRecs, NewPage2Ids} = case ide_io:save_as(Nb, Contents) of
 		{cancel} ->
 			{DocRecords, PageToDocId};
@@ -361,7 +363,7 @@ handle_call({save_as, DocId}, _From,
 			NewPageToDocId = proplists:delete(wxAuiNotebook:getPage(Nb, wxAuiNotebook:getSelection(Nb)), PageToDocId),
 			NewDocRecords = proplists:delete(DocId, DocRecords),
 			NewRecord = #document{path=Path, editor=Editor},
-			editor:set_savepoint(Editor),
+			ide_editor_wx:set_savepoint(Editor),
 			{[{NewId, NewRecord} | NewDocRecords], [{wxAuiNotebook:getPage(Nb, wxAuiNotebook:getSelection(Nb)), NewId} | NewPageToDocId]}
 	end,
 	{reply, ok, State#state{doc_records=NewRecs, page_to_doc_id=NewPage2Ids}};
@@ -377,12 +379,12 @@ handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_record
 	{reply, ok, State};
   
 handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId, sizer=Sz}) ->
-  F = fun(G, [], Dr, P2d) -> {Dr, P2d};
+  F = fun(_G, [], Dr, P2d) -> {Dr, P2d};
          (G, [DocId | T], Dr, P2d) ->    
             Record = proplists:get_value(DocId, DocRecords),
             case Record#document.project_id of
               undefined ->
-                ide_projects_tree:remove_standalone_document(Record#document.path);
+                ide_proj_tree_wx:remove_standalone_document(Record#document.path);
               _ ->
                 ok
             end,
@@ -400,19 +402,23 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
   end,
 	{reply, ok, State#state{doc_records=S, page_to_doc_id=D}}.
 
+%% Close event
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
-  DocId = page_id_to_doc_id(Nb, wxAuiNotebookEvent:getSelection(Event), PageToDoc),
+  DocId = page_idx_to_doc_id(Nb, wxAuiNotebookEvent:getSelection(Event), PageToDoc),
   Env = wx:get_env(),
   spawn(fun() -> wx:set_env(Env), close_documents([DocId]) end),
 	ok.
 
-handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed,
-			selection=Index}}, State=#state{notebook=Nb}) ->
+handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed, selection=Idx}},
+             State=#state{notebook=Nb, page_to_doc_id=PageToDoc, doc_records=DocRecords}) ->
+  DocId = page_idx_to_doc_id(Nb, Idx, PageToDoc),
+  #document{project_id=PrId} = get_record(DocId, DocRecords),
+  ide_proj_man:set_active_project(PrId),
   {noreply, State}.
 
 code_change(_, _, State) ->
-	{stop, ignore, State}.
+	{ok, State}.
 
 terminate(_Reason, #state{}) ->
 	ok.
@@ -427,10 +433,10 @@ terminate(_Reason, #state{}) ->
 
 load_editor_contents(Editor, Path) ->
 	try
-		editor:set_text(Editor, ide_io:read_file(Path)),
-		editor:empty_undo_buffer(Editor),
-		editor:set_savepoint(Editor)
-		%editor:link_poller(Editor, Path)
+		ide_editor_wx:set_text(Editor, ide_io:read_file(Path)),
+		ide_editor_wx:empty_undo_buffer(Editor),
+		ide_editor_wx:set_savepoint(Editor)
+		%ide_editor_wx:link_poller(Editor, Path)
 	catch
 		_Throw ->
 			io:format("LOAD EDITOR ERROR~n")
@@ -438,26 +444,10 @@ load_editor_contents(Editor, Path) ->
 
 
 %% =====================================================================
-%% @doc Should an io error occur, only those documents saved up to that
-%% point will be saved.
-
-close_documents(Documents) ->
-  % wx_object:cast(?MODULE, freeze_notebook),
-  case get_modified_docs(Documents) of
-    {[], _Parent} ->
-      close(Documents);
-    {ModifiedDocs, Parent} ->
-      show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs, get_doc_names(Documents), Documents)
-  end.
-  % wx_object:cast(?MODULE, thaw_notebook).
-
-
-
-%% =====================================================================
 %% @doc
 
-show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocNames, DocIdList) ->
-  Dialog = lib_dialog_wx:save_changes_dialog(Parent, ModifiedDocNames),
+show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocIdList) ->
+  Dialog = ide_lib_dlg_wx:save_changes_dialog(Parent, ModifiedDocNames),
   case wxDialog:showModal(Dialog) of
 		?wxID_CANCEL -> %% Cancel close
 			cancelled;
@@ -467,37 +457,7 @@ show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocNames, 
       close(lists:subtract(DocIdList, ModifiedDocIdList)),
       save_and_close(ModifiedDocIdList)
 	end.
-
-
-%% =====================================================================
-%% @doc
-
-save_and_close(DocIdList) ->
-  case save_documents(DocIdList) of
-    {Saved, []} ->
-      close(Saved);
-    {Saved, Failed} ->
-      close(Saved),
-      cancelled
-  end.
-
-
-%% =====================================================================
-%% @doc
-
-close(Docs) ->
-  wx_object:call(?MODULE, {close_docs, Docs}).
-
-
-%% =====================================================================
-%% @doc Takes a lists of document ids and filters out the unmodified
-%% documents, returning a list of modified document id's.
-
--spec get_modified_docs([document_id()]) -> [document_id()].
-
-get_modified_docs(Documents) ->
-  wx_object:call(?MODULE, {get_modified_docs, Documents}).
-
+  
 
 %% =====================================================================
 %% @doc
@@ -518,11 +478,24 @@ save_documents([DocId|DocIdList], {Saved, Failed}) ->
 	case wx_object:call(?MODULE, {save, DocId}) of
     {ok, DocRecords} ->
       Record = get_record(DocId, DocRecords),
-      editor:set_savepoint(Record#document.editor),
+      ide_editor_wx:set_savepoint(Record#document.editor),
       save_documents(DocIdList, {[DocId|Saved], Failed});
     {error, {Msg, Parent}} ->
-      lib_dialog_wx:msg_error(Parent, Msg),
+      ide_lib_dlg_wx:msg_error(Parent, Msg),
       save_documents(DocIdList, {Saved, [DocId|Failed]})
+  end.
+
+
+%% =====================================================================
+%% @doc
+
+save_and_close(DocIdList) ->
+  case save_documents(DocIdList) of
+    {Saved, []} ->
+      close(Saved);
+    {Saved, _Failed} ->
+      close(Saved),
+      cancelled
   end.
 
 
@@ -531,6 +504,37 @@ save_documents([DocId|DocIdList], {Saved, Failed}) ->
 
 save_project(ProjectId) ->
 	save_documents(get_project_documents(ProjectId)).
+  
+  
+%% =====================================================================
+%% @doc Should an io error occur, only those documents saved up to that
+%% point will be saved.
+
+close_documents(Documents) ->
+  case get_modified_docs(Documents) of
+    {[], _Parent} ->
+      close(Documents);
+    {ModifiedDocs, Parent} ->
+      show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs, Documents)
+  end.
+  
+
+%% =====================================================================
+%% @doc
+
+close(Docs) ->
+  wx_object:call(?MODULE, {close_docs, Docs}).
+
+
+%% =====================================================================
+%% @doc Takes a lists of document ids and filters out the unmodified
+%% documents, returning a list of modified document id's.
+
+-spec get_modified_docs([document_id()]) -> {[document_id()], Parent} when
+  Parent :: wx_object:wx_object().
+
+get_modified_docs(Documents) ->
+  wx_object:call(?MODULE, {get_modified_docs, Documents}).
 
 
 %% =====================================================================
@@ -547,7 +551,7 @@ remove_document(Nb, DocId, PageId, DocRecords, PageToDocId) ->
 %% =====================================================================
 %% @doc
 
-page_id_to_doc_id(Notebook, PageId, PageToDocId) ->
+page_idx_to_doc_id(Notebook, PageId, PageToDocId) ->
   Page = wxAuiNotebook:getPage(Notebook, PageId),
   proplists:get_value(Page, PageToDocId).
 
@@ -652,11 +656,11 @@ apply_to_documents(Fun, Args, Docs) ->
 %% @doc
 
 open_document(Path) ->
-  ProjectId = case project_manager:is_known_project(Path) of
+  ProjectId = case ide_proj_man:is_known_project(Path) of
     {true, ProjectPath} ->
       open_from_existing_project(ProjectPath);
     false ->
-      ide_projects_tree:add_standalone_document(Path),
+      ide_proj_tree_wx:add_standalone_document(Path),
       undefined
   end,
   wx_object:call(?MODULE, {create_doc, Path, ProjectId}).
@@ -666,9 +670,9 @@ open_document(Path) ->
 %% @doc
 
 open_from_existing_project(ProjectPath) ->
-  Result = case project_manager:get_project(ProjectPath) of
+  case ide_proj_man:get_project(ProjectPath) of
     undefined ->
-      project_manager:open_project(ProjectPath);
+      ide_proj_man:open_project(ProjectPath);
     ProjectId ->
       ProjectId
   end.

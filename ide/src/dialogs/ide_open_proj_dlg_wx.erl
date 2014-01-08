@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(open_project_wx).
+-module(ide_open_proj_dlg_wx).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -182,10 +182,10 @@ insert_projects(ListCtrl, Projects) ->
     fun(Path, Acc) ->
   		wxListCtrl:insertItem(ListCtrl, Acc, ""),
   		wxListCtrl:setItem(ListCtrl, Acc, 0, filename:basename(Path)),
-  		wxListCtrl:setItem(ListCtrl, Acc, 1, lib_widgets:datetime_to_string(
+  		wxListCtrl:setItem(ListCtrl, Acc, 1, ide_lib_widgets:datetime_to_string(
         filelib:last_modified(Path))),
   		wxListCtrl:setItem(ListCtrl, Acc, 2, Path),
-      lib_widgets:set_list_item_background(ListCtrl, Acc),
+      ide_lib_widgets:set_list_item_background(ListCtrl, Acc),
       Acc + 1
     end, 0, Projects).
 

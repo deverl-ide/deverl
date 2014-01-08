@@ -1,7 +1,7 @@
 %% =====================================================================
 %% @author
 %% @copyright
-%% @title compiler_port
+%% @title ide_compiler_port
 %% @version
 %% @doc This module connects to erlc through a port and prints the
 %% response to an output window until an exit signal is received. A
@@ -10,7 +10,7 @@
 %% @end
 %% =====================================================================
 
--module(compiler_port).
+-module(ide_compiler_port).
 
 %% API
 -export([start/1, start/2]).
@@ -77,7 +77,7 @@ compile(From, Path, Config) ->
     true ->
       %% Single file
       A0 = [filename:basename(Path)], 
-      A1 = case project_manager:is_known_project(Path) of %% beam goes to /ebin
+      A1 = case ide_proj_man:is_known_project(Path) of %% beam goes to /ebin
         {true, P} ->
           OutputDir = ["-o", lists:append([P, "/ebin"])],
           lists:append(OutputDir, A0);
@@ -97,7 +97,7 @@ compile(From, Path, Config) ->
       {Path, lists:append(DirFlags, Files)}
   end,
 
-  compiler_output:clear(),
+  ide_compiler_out_wx:clear(),
 
   open_port({spawn_executable, erlc()}, [use_stdio,
                                        exit_status,
@@ -116,13 +116,13 @@ compile(From, Path, Config) ->
 loop(From, Name) ->
   receive 
     {_Port, {data, Data}} ->
-      compiler_output:append(Data),
+      ide_compiler_out_wx:append(Data),
       loop(From, Name);
     {_Port, {exit_status, 0}} ->
-      log:message("Compiled " ++ Name ++ " successfully."),
+      ide_log_out_wx:message("Compiled " ++ Name ++ " successfully."),
       From ! {self(), ok};
     {_Port, {exit_status, _}} ->
-      log:error("ERROR: Compilation failed " ++ Name ++ ". See output.", [{hotspot, "output"}]),
+      ide_log_out_wx:error("ERROR: Compilation failed " ++ Name ++ ". See output.", [{hotspot, "output"}]),
       From ! {self(), error}
   after
     10000 ->

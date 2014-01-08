@@ -1,4 +1,12 @@
--module(func_list).
+%% =====================================================================
+%% @author
+%% @copyright
+%% @version
+%% @doc Display the symbol list from the editor.
+%% @end
+%% =====================================================================
+
+-module(ide_sl_wx).
 
 -include_lib("wx/include/wx.hrl").
 -include("../include/ide.hrl").
@@ -55,10 +63,10 @@ init(Config) ->
 	wxSizer:add(Sz, List, [{flag, ?wxEXPAND bor ?wxALL}, {border, 2}, {proportion, 1}]),
 	wxListCtrl:insertColumn(List, 0, "Heading", []),
 
-	{W,H} = wxListCtrl:getSize(List),
+	{W,_H} = wxListCtrl:getSize(List),
 	wxListCtrl:setColumnWidth(List, 0, W),
 
-	%% Insert
+	%% Insert tests
 	% Insert =
 	% fun({Name, Ln}) ->
 	% 	Index = wxListCtrl:insertItem(List, 0, Name),
@@ -75,8 +83,7 @@ init(Config) ->
 	% ],
 	% lists:foreach(Insert, L),
 
-	%% Background
-
+	%% Background tests
 	%   Fun =
 	% fun(Item) ->
 	% 	case Item rem 2 of
@@ -176,7 +183,7 @@ terminate(_Reason, #state{panel=Panel}) ->
   ok.
 
 % set(Items) ->
-% 	{ok, {_,Pid}} = doc_manager:get_active_document(),
+% 	{ok, {_,Pid}} = ide_doc_man_wx:get_active_document(),
 % 	ListCtrl = wx_object:call(?MODULE, {list, Pid}),
 % 	wxListCtrl:deleteAllItems(ListCtrl),
 % 	% insert_items(ListCtrl, Items),
@@ -184,7 +191,7 @@ terminate(_Reason, #state{panel=Panel}) ->
 % 	ok.
 	
 set(Items) ->
-	Ref = doc_manager:get_active_document_ref(),
+	Ref = ide_doc_man_wx:get_active_document_ref(),
 	ListCtrl = wx_object:call(?MODULE, {list, Ref}),
 	wxListCtrl:deleteAllItems(ListCtrl),
 	% insert_items(ListCtrl, Items),
@@ -216,7 +223,7 @@ insert_items(ListCtrl, Items) ->
 	wx:foreach(Insert, Items).
 
 send_to_editor(Str, Editor) ->
-	editor:fn_list(Editor, Str),
+	ide_editor_wx:fn_list(Editor, Str),
 	ok.
 
 find_item(ListCtrl, Str, Start) ->

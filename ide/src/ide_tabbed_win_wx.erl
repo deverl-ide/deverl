@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(tabbed_book).
+-module(ide_tabbed_win_wx).
 -include_lib("wx/include/wx.hrl").
 
 %% wx_object
@@ -22,6 +22,11 @@
 	new/1, 
 	add_page/3,
 	set_selection/2]).
+
+%% Types 
+-export_type([ide_tabbed_win_wx/0]).
+
+-type ide_tabbed_win_wx() :: wx:wx_object().
 
 %% Macros
 -define(SYS_BG, wxSystemSettings:getColour(?wxSYS_COLOUR_BACKGROUND)).
@@ -144,7 +149,7 @@ handle_sync_event(#wx{obj=TabPanel, userData=tab_panel, event=#wxPaint{}},_,_Sta
 	{W,H} = wxWindow:getSize(TabPanel),
 	DC = wxPaintDC:new(TabPanel),
 	Grad1 = wxWindow:getBackgroundColour(TabPanel),
-	Grad2 = lib_widgets:colour_shade(Grad1, 0.9),
+	Grad2 = ide_lib_widgets:colour_shade(Grad1, 0.9),
 	wxDC:gradientFillLinear(DC, {0,0,W,H}, Grad1, Grad2, [{nDirection, ?wxRIGHT}]),
 	wxPaintDC:destroy(DC),
 	ok;
@@ -231,32 +236,25 @@ draw(Btn, Label, WxDc, Options) ->
 	
 	%% Colours - could keep these in the state to save calculating on paint
 	StdBg = wxWindow:getBackgroundColour(Btn),
-	Dark1 = lib_widgets:colour_shade(StdBg, 0.7),
-	Dark2 = lib_widgets:colour_shade(StdBg, 0.4),
-	Hover = lib_widgets:colour_shade(StdBg, 0.75),
-	Font = lib_widgets:colour_shade(Dark2, 0.5), 
+	Dark1 = ide_lib_widgets:colour_shade(StdBg, 0.7),
+	Dark2 = ide_lib_widgets:colour_shade(StdBg, 0.4),
+	Hover = ide_lib_widgets:colour_shade(StdBg, 0.75),
+	Font = ide_lib_widgets:colour_shade(Dark2, 0.5), 
 	
 	Canvas = case proplists:get_value(button_state, Options) of
 		active -> draw_setup(DC, Dark2, Dark2, ?wxWHITE);
 		hover -> draw_setup(DC, Dark1, Hover, Font);
 		_ -> draw_setup(DC, Dark1, StdBg, Font)
 	end,
-	
-	% Corner radius
-	Radius = 4.0,
 
 	MinY = case proplists:get_value(first, Options) of
 		true -> 0;
 		_ 	 -> -1
 	end,
-	%% Problem with the arcs atm, so will come back to this
+
 	Path = wxGraphicsContext:createPath(Canvas),
-	wxGraphicsPath:moveToPoint(Path, {W-1, MinY}), %% Temp
-	% wxGraphicsPath:addLineToPoint(Path, {Radius, MinY}),
-	% wxGraphicsPath:addArcToPoint(Path, 0, 0, 0, Radius, Radius),
-	wxGraphicsPath:addLineToPoint(Path, {0, MinY}), %% Temp
-	% wxGraphicsPath:addLineToPoint(Path, {0, H-Radius}),
-	% wxGraphicsPath:addArcToPoint(Path, 0, H-1, Radius, H-1, Radius),
+	wxGraphicsPath:moveToPoint(Path, {W-1, MinY}),
+	wxGraphicsPath:addLineToPoint(Path, {0, MinY}),
 	wxGraphicsPath:addLineToPoint(Path, {0, H-1}),
 	wxGraphicsPath:addLineToPoint(Path, {W-1, H-1}),
 	wxGraphicsPath:closeSubpath(Path),
@@ -307,15 +305,6 @@ trigger_tab_paint(Tabs, ActiveBtn, Btn) ->
 			wxWindow:refresh(Tabs), 
 			wxWindow:update(Tabs)
 	end.
-	
-	
-%% =====================================================================
-%% @doc Get the label associated to a button.
-%% @private
-
-get_label(Pages, Button) -> 
-	{Label, _} = proplists:get_value(Button, Pages),
-	Label.
 	
 	
 %% =====================================================================

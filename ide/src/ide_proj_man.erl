@@ -10,7 +10,7 @@
 %% @end
 %% =====================================================================
 
--module(project_manager).
+-module(ide_proj_man).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -27,7 +27,7 @@
 %% API
 -export([start/1,
 				 new_project/1,
-         new_project/2,
+         add_project/1,
 				 open_project_dialog/1,
          open_project/1,
          get_project/1,
@@ -78,29 +78,29 @@ start(Config)->
 %% structure. An error dialog will be displayed should this fail.
 
 new_project(Parent) ->
-	Dialog = new_project_wx:start(Parent),
-	new_project_wx:set_focus(Dialog),
-	case new_project_wx:showModal(Dialog) of
+	Dialog = ide_new_proj_dlg_wx:start(Parent),
+	ide_new_proj_dlg_wx:set_focus(Dialog),
+	case ide_new_proj_dlg_wx:showModal(Dialog) of
 		?wxID_CANCEL -> 
       ok;
 		?wxID_OK ->
       try
-    		Path = ide_io:create_directory_structure(new_project_wx:get_path(Dialog)),
-        new_project(Parent, Path)
+    		Path = ide_io:create_directory_structure(ide_new_proj_dlg_wx:get_path(Dialog)),
+        add_project(Path)
       catch
         throw:E -> 
-    			lib_dialog_wx:msg_error(Parent, E)
+    			ide_lib_dlg_wx:msg_error(Parent, E)
       end,
-			new_project_wx:close(Dialog)
+			ide_new_proj_dlg_wx:close(Dialog)
 	end.
 
 
 %% =====================================================================
 %% @doc Add the project located at Path. No directories will be created.
 
-new_project(Parent, Path) ->
-  sys_pref_manager:set_preference(projects, [Path | sys_pref_manager:get_preference(projects)]),
-  Id = gen_server:call(?MODULE, {new_project, Path}),
+add_project(Path) ->
+  ide_sys_pref_gen:set_preference(projects, [Path | ide_sys_pref_gen:get_preference(projects)]),
+  gen_server:call(?MODULE, {new_project, Path}),
   ok.
 
 	
@@ -108,13 +108,13 @@ new_project(Parent, Path) ->
 %% @doc Open an existing project using a dialog.
 
 open_project_dialog(Frame) ->
-  Dialog = open_project_wx:start(Frame, sys_pref_manager:get_preference(projects)),
+  Dialog = ide_open_proj_dlg_wx:start(Frame, ide_sys_pref_gen:get_preference(projects)),
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       ok;
     ?wxID_OK ->
-      open_project(open_project_wx:get_path(Dialog)),
-      open_project_wx:close(Dialog)
+      open_project(ide_open_proj_dlg_wx:get_path(Dialog)),
+      ide_open_proj_dlg_wx:close(Dialog)
   end.
   
 
@@ -139,7 +139,7 @@ get_project(Path) ->
 %% @doc
 
 close_active_project() ->
-  case doc_manager:close_project(get_active_project()) of
+  case ide_doc_man_wx:close_project(get_active_project()) of
     cancelled -> ok;
     ok -> 
       wx_object:call(?MODULE, close_project)
@@ -160,7 +160,7 @@ close_active_project() ->
 %% @doc Open an project file..
 
 open_file(Path, Contents, ProjectId) ->
-	doc_manager:new_document_from_existing(Path, Contents, [{project_id, ProjectId}]),
+	ide_doc_man_wx:new_document_from_existing(Path, Contents, [{project_id, ProjectId}]),
 	gen_server:call(?MODULE, {add_open_project, ProjectId, Path}),
 	ok. 
 
@@ -213,7 +213,7 @@ get_build_config(ProjectId) ->
 %% @doc 
 
 is_known_project(Path) ->
-  Projects = sys_pref_manager:get_preference(projects),
+  Projects = ide_sys_pref_gen:get_preference(projects),
   is_subpath(Path, Projects).
   
   
@@ -221,13 +221,13 @@ is_known_project(Path) ->
 %% @doc 
 
 set_project_configuration(Parent) ->
-  Dialog = project_config_wx:start(Parent),
+  Dialog = ide_proj_conf_dlg_wx:start(Parent),
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       cancelled;
     ?wxID_OK ->
-      Config = project_config_wx:get_build_config(Dialog),
-      project_config_wx:close(Dialog),
+      Config = ide_proj_conf_dlg_wx:get_build_config(Dialog),
+      ide_proj_conf_dlg_wx:close(Dialog),
       wx_object:call(?MODULE, {set_project_configuration, Config})
   end.  
   
@@ -236,7 +236,7 @@ set_project_configuration(Parent) ->
 %% @doc 
 
 import(Parent) ->
-  Dialog = import_project_wx:start(Parent),
+  Dialog = ide_import_proj_dlg_wx:start(Parent),
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       cancelled;
@@ -266,7 +266,7 @@ handle_call({new_project, Path}, _From, State=#state{projects=Projects}) ->
     false ->
     	Id = generate_id(),
     	Record = {Id, #project{root=Path, open_files=[]}},
-      ide_projects_tree:add_project(Id, Path),
+      ide_proj_tree_wx:add_project(Id, Path),
       ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, true),
       {reply, Id, State#state{projects=[Record | Projects]}}
   end;
@@ -310,14 +310,14 @@ handle_call({get_build_config, ProjectId}, _From, State=#state{projects=Projects
 	{reply, Bc3, State#state{projects=Projects1}};
 
 handle_call(close_project, _From, State=#state{frame=Frame, active_project=ActiveProject, projects=Projects}) ->
-  ide_projects_tree:remove_project(ActiveProject),
+  ide_proj_tree_wx:remove_project(ActiveProject),
   update_ui(Frame, undefined),
   ProjectsList = proplists:delete(ActiveProject, Projects),
   ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, false),
   {reply, ok, State#state{active_project=undefined, projects=ProjectsList}};
 
 handle_call({set_project_configuration, Config}, _From, 
-            State=#state{frame=Frame, active_project=ActiveProject, projects=Projects}) -> 
+            State=#state{active_project=ActiveProject, projects=Projects}) -> 
   #project{root=Root}=Project = proplists:get_value(ActiveProject, Projects),
   Result = case file:write_file(filename:join([Root, ".build_config"]), io_lib:fwrite("~p.\n",[Config])) of
     ok ->
@@ -340,15 +340,10 @@ handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Proj
   end,
   {noreply,State#state{active_project=ProjectId}}.
     
-%% Event catchall for testing
-handle_event(Ev = #wx{}, State) ->
-  io:format("Project manager event catchall: ~p\n", [Ev]),
-  {noreply, State}.
-    
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
-terminate(_Reason, State) ->
+terminate(_Reason, _State) ->
   ok.
      
 		
@@ -369,9 +364,9 @@ update_ui(Frame, #project{root=Root}) ->
 	ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjectName ++ ")"),
 	ok.
 
-path_to_project_id([], Path) ->
+path_to_project_id([], _Path) ->
   undefined;
-path_to_project_id([{ProjId, #project{root=Path}} | T], Path) ->
+path_to_project_id([{ProjId, #project{root=Path}} | _T], Path) ->
   ProjId;
 path_to_project_id([_|T], Path) ->
   path_to_project_id(T, Path).
@@ -403,10 +398,13 @@ is_already_open(Projects, Path) ->
   end. 
   
 
+%% =====================================================================
+%% @doc
+
 load_build_config(Path) ->
   Fh = filename:join([Path, ".build_config"]),
   case file:consult(Fh) of
-    {error, {Line, Mod, Term}} -> %% The file is badly formatted
+    {error, {_Line, _Mod, _Term}} -> %% The file is badly formatted
       io:format("BUILD CONFIG BADLY FORMATTED~n"),
       undefined;
     {error, enoent} -> %% Does not exist

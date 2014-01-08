@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(file_poller).
+-module(ide_file_poll_gen).
 
 %% gen_server
 -behaviour(gen_server).

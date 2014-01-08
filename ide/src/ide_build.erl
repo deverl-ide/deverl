@@ -23,10 +23,10 @@
 %% =====================================================================
 
 compile_file() ->
-  DocId = doc_manager:get_active_document(),
-  case doc_manager:save_document(DocId) of
+  DocId = ide_doc_man_wx:get_active_document(),
+  case ide_doc_man_wx:save_document(DocId) of
     ok ->
-      Path = doc_manager:get_path(DocId),
+      Path = ide_doc_man_wx:get_path(DocId),
       compile_file(Path);
     cancelled ->
       ok
@@ -35,14 +35,14 @@ compile_file() ->
 make_project() ->
   make_project(true).
 make_project(PrintMsg) ->
-  case doc_manager:save_active_project() of
+  case ide_doc_man_wx:save_active_project() of
     ok ->
-      ProjectId = project_manager:get_active_project(),
-      Path = project_manager:get_root(ProjectId),
-      compiler_port:start(Path),
+      ProjectId = ide_proj_man:get_active_project(),
+      Path = ide_proj_man:get_root(ProjectId),
+      ide_compiler_port:start(Path),
       receive
-        {From, ok} ->
-          ide_projects_tree:set_has_children(Path ++ "/ebin"),
+        {_From, ok} ->
+          ide_proj_tree_wx:set_has_children(Path ++ "/ebin"),
           case PrintMsg of
             true ->
               ide_console_wx:append_message("Project ready: " ++ filename:basename(Path));
@@ -50,7 +50,7 @@ make_project(PrintMsg) ->
           end,
           change_dir(Path ++ "/ebin"),
           {ok, ProjectId, Path};
-        {From, error} ->
+        {_From, error} ->
           {error, compile}
       end;
     cancelled ->
@@ -59,7 +59,7 @@ make_project(PrintMsg) ->
 
 run_project(Parent) ->
   case make_project(false) of
-    {ok, ProjectId, ProjectPath} ->
+    {ok, ProjectId, _ProjectPath} ->
       build_project(Parent, ProjectId);
     {error, _} ->
       ok
@@ -73,18 +73,18 @@ run_project(Parent) ->
 compile_file(Path) ->
   %% Remember to send the output directory to load_file/1 if the flag is set
   %% for the compiler (-o). 
-  compiler_port:start(Path, [file]),
+  ide_compiler_port:start(Path, [file]),
   receive
-    {From, ok} ->
-      case project_manager:is_known_project(Path) of
+    {_From, ok} ->
+      case ide_proj_man:is_known_project(Path) of
         {true, P0} ->
           P1 = filename:join([P0, "ebin", filename:basename(Path)]),
-          ide_projects_tree:set_has_children(filename:dirname(P1)),
+          ide_proj_tree_wx:set_has_children(filename:dirname(P1)),
           load_file(P1, []);
         _ ->
           load_file(Path, [])
       end;
-    {From, error} ->
+    {_From, error} ->
       ok
   end.
   
@@ -97,7 +97,7 @@ load_file(Path, _Options) ->
   
   
 build_project(Parent, ProjectId) ->
-  case project_manager:get_build_config(ProjectId) of
+  case ide_proj_man:get_build_config(ProjectId) of
     undefined -> 
       notify_missing_config(Parent);
     Config ->
@@ -113,12 +113,12 @@ build_project(Parent, ProjectId) ->
   end.
   
 notify_missing_config(Parent) ->
-  Dialog = lib_dialog_wx:notify_missing_config(Parent),
+  Dialog = ide_lib_dlg_wx:notify_missing_config(Parent),
   case wxDialog:showModal(Dialog) of
 		?wxID_CANCEL ->
 			cancelled;
 		?wxID_OK ->
-      project_manager:set_project_configuration(Parent)
+      ide_proj_man:set_project_configuration(Parent)
 	end.
 
 parse_config([{module, M}, {function, F}]) -> {M,F};
