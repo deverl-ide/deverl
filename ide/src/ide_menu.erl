@@ -17,7 +17,7 @@
 	get_checked_menu_item/1]). 
          
 -include_lib("wx/include/wx.hrl").
--include("../include/ide.hrl").
+-include("ide.hrl").
 
 
 %% =====================================================================
@@ -255,49 +255,49 @@ init(Config) ->
 	% wxToolBar:setMargins(ToolBar, 10, 10),
   % wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
 	%% Id, StatusBar help, filename/art id, args, add seperator
-	Tools = [
-		{?wxID_NEW, "ToolTip", {custom, "../icons/document_08.png"},    
-			[{shortHelp, "Create a new document"}], false},
-		{?wxID_OPEN, "ToolTip", {custom, "../icons/document_06.png"},   
-			[{shortHelp, "Open an existing document"}], false},
-		{?wxID_SAVE, "ToolTip", {custom, "../icons/document_12.png"},   
-			[{shortHelp, "Save the current document"}], false}, 
-		{?wxID_CLOSE, "ToolTip", {custom, "../icons/document_03.png"},  
-			[{shortHelp, "Close the current document"}], false},
-		{?MENU_ID_NEW_PROJECT, "ToolTip", {custom, "../icons/folders_08.png"},    
-			[{shortHelp, "Create a new project"}], false},
-		{?MENU_ID_OPEN_PROJECT, "ToolTip", {custom, "../icons/folders_12.png"},   
-			[{shortHelp, "Open an existing project"}], false},
-		{?MENU_ID_SAVE_PROJECT, "ToolTip", {custom, "../icons/folders_06.png"},   
-			[{shortHelp, "Save the current project"}], false},			
-		{?MENU_ID_CLOSE_PROJECT, "ToolTip", {custom, "../icons/folders_03.png"},  
-			[{shortHelp, "Close the current project"}], true},
-		{?MENU_ID_COMPILE_FILE, "ToolTip", {custom, "../icons/document_10.png"},  
-			[{shortHelp, "Compile the current file"}], true},
-    {?MENU_ID_MAKE_PROJECT, "ToolTip", {custom, "../icons/folders_14.png"},  
-			[{shortHelp, "Make Project"}], false},
-		{?MENU_ID_RUN, "ToolTip", {custom, "../icons/folders_10.png"},      
-			[{shortHelp, "Run Project"}], true},
-		{?MENU_ID_HIDE_TEST, "ToolTip", {custom, "../icons/application_08.png"},       
-			[{shortHelp, "Toggle left pane visibility"}], false},
-		{?MENU_ID_HIDE_UTIL, "ToolTip", {custom, "../icons/application_10.png"},       
-			[{shortHelp, "Toggle utility pane visibility"}], false},
-		{?MENU_ID_MAX_EDITOR, "ToolTip", {custom, "../icons/application_03.png"}, 
-			[{shortHelp, "Maximise/restore the text editor"}], false},
-		{?MENU_ID_MAX_UTIL,   "ToolTip", {custom, "../icons/application_06.png"},   
-			[{shortHelp, "Maximise/restore the utilities"}], false}],
+	Tools = [  
+  		{?wxID_NEW, "ToolTip", {custom, "document_08.png"},    
+  			[{shortHelp, "Create a new document"}], false},
+  		{?wxID_OPEN, "ToolTip", {custom, "document_06.png"},   
+  			[{shortHelp, "Open an existing document"}], false},
+  		{?wxID_SAVE, "ToolTip", {custom, "document_12.png"},   
+  			[{shortHelp, "Save the current document"}], false}, 
+  		{?wxID_CLOSE, "ToolTip", {custom, "document_03.png"},  
+  			[{shortHelp, "Close the current document"}], false},
+  		{?MENU_ID_NEW_PROJECT, "ToolTip", {custom, "folders_08.png"},    
+  			[{shortHelp, "Create a new project"}], false},
+  		{?MENU_ID_OPEN_PROJECT, "ToolTip", {custom, "folders_12.png"},   
+  			[{shortHelp, "Open an existing project"}], false},
+  		{?MENU_ID_SAVE_PROJECT, "ToolTip", {custom, "folders_06.png"},   
+  			[{shortHelp, "Save the current project"}], false},			
+  		{?MENU_ID_CLOSE_PROJECT, "ToolTip", {custom, "folders_03.png"},  
+  			[{shortHelp, "Close the current project"}], true},
+  		{?MENU_ID_COMPILE_FILE, "ToolTip", {custom, "document_10.png"},  
+  			[{shortHelp, "Compile the current file"}], true},
+      {?MENU_ID_MAKE_PROJECT, "ToolTip", {custom, "folders_14.png"},  
+  			[{shortHelp, "Make Project"}], false},
+  		{?MENU_ID_RUN, "ToolTip", {custom, "folders_10.png"},      
+  			[{shortHelp, "Run Project"}], true},
+  		{?MENU_ID_HIDE_TEST, "ToolTip", {custom, "application_08.png"},       
+  			[{shortHelp, "Toggle left pane visibility"}], false},
+  		{?MENU_ID_HIDE_UTIL, "ToolTip", {custom, "application_10.png"},       
+  			[{shortHelp, "Toggle utility pane visibility"}], false},
+  		{?MENU_ID_MAX_EDITOR, "ToolTip", {custom, "application_03.png"}, 
+  			[{shortHelp, "Maximise/restore the text editor"}], false},
+  		{?MENU_ID_MAX_UTIL,   "ToolTip", {custom, "application_06.png"},   
+  			[{shortHelp, "Maximise/restore the utilities"}], false}],
 
-	AddTool = fun({Id, Tooltip, {custom, Path}, Args, true}) ->
-                  wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Path)), Args),
+	AddTool = fun({Id, Tooltip, {custom, File1}, Args, true}) ->
+                  wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(File1))), Args),
                   wxToolBar:addSeparator(ToolBar);
-               ({Id, Tooltip, {custom, Path}, Args, false}) ->
-                  wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Path)), Args);
+               ({Id, Tooltip, {custom, File1}, Args, false}) ->
+                  wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(File1))), Args);
                ({Id, Tooltip, {default, Art}, Args, true}) ->
                   wxToolBar:addTool(ToolBar, Id, Tooltip, wxArtProvider:getBitmap(Art), Args),
                   wxToolBar:addSeparator(ToolBar);
                ({Id, Tooltip, {default, Art}, Args, false}) ->
                   wxToolBar:addTool(ToolBar, Id, Tooltip, wxArtProvider:getBitmap(Art), Args)
-            end,      
+            end,  
 
 	[AddTool(Tool) || Tool <- Tools],
 
@@ -438,7 +438,6 @@ init(Config) ->
 		[{userData, IndentWidth}, {id,?MENU_ID_TAB_WIDTH_LOWEST}, {lastId, ?MENU_ID_TAB_WIDTH_HIGHEST}]),        
   
 	TabId.
-
 
 %% =====================================================================
 %% @doc Generate a radio menu given a list of labels.

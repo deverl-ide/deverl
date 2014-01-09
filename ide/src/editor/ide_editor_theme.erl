@@ -5,7 +5,7 @@
 				 hexstr_to_rgb/1]).
 				 
 -include_lib("xmerl/include/xmerl.hrl").
--include("../include/ide.hrl").
+-include("ide.hrl").
 
 
 %% =====================================================================

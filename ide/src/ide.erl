@@ -63,7 +63,7 @@
 
 %% =====================================================================
 %% @doc Start the erlang IDE.
-%% @see wx:new/1
+%% For debug Options @see wx:debug/1
 
 -spec start() -> wx_object:wx_object().
 
@@ -74,7 +74,9 @@ start() ->
   Option :: {debug, list() | atom()} |
             {silent_start, boolean()}.
 start(Options) ->
-	wx_object:start({local, ?MODULE}, ?MODULE, Options, [{debug, [log]}]).
+	WxObj = wx_object:start({local, ?MODULE}, ?MODULE, Options, [{debug, [log]}]),
+  Pid = wx_object:get_pid(WxObj),
+  {ok, Pid}.
 
 
 %% =====================================================================
@@ -627,9 +629,9 @@ create_utils(ParentA) ->
 
 create_left_window(Frame, Parent) ->
 	ImgList = wxImageList:new(16,16),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/books-stack.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/clipboard-task.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/function.png"))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("books-stack.png")))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("clipboard-task.png")))),
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("function.png")))),
 	
 	Toolbook = ide_tabbed_win_img_wx:new([{parent, Parent}]),
 	ide_tabbed_win_img_wx:assign_image_list(Toolbook, ImgList),

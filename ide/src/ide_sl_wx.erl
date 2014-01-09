@@ -9,7 +9,7 @@
 -module(ide_sl_wx).
 
 -include_lib("wx/include/wx.hrl").
--include("../include/ide.hrl").
+-include("ide.hrl").
 
 -behaviour(wx_object).
 -export([
