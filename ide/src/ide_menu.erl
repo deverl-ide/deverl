@@ -263,39 +263,6 @@ init(Config) ->
 	% wxToolBar:setMargins(ToolBar, 10, 10),
   % wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
 	%% Id, StatusBar help, filename/art id, args, add seperator
-<<<<<<< HEAD
-	Tools = [
-		{?wxID_NEW, "ToolTip", {custom, "../icons/document_08.png"},
-			[{shortHelp, "Create a new document"}], false},
-		{?wxID_OPEN, "ToolTip", {custom, "../icons/document_06.png"},
-			[{shortHelp, "Open an existing document"}], false},
-		{?wxID_SAVE, "ToolTip", {custom, "../icons/document_12.png"},
-			[{shortHelp, "Save the current document"}], false},
-		{?wxID_CLOSE, "ToolTip", {custom, "../icons/document_03.png"},
-			[{shortHelp, "Close the current document"}], false},
-		{?MENU_ID_NEW_PROJECT, "ToolTip", {custom, "../icons/folders_08.png"},
-			[{shortHelp, "Create a new project"}], false},
-		{?MENU_ID_OPEN_PROJECT, "ToolTip", {custom, "../icons/folders_12.png"},
-			[{shortHelp, "Open an existing project"}], false},
-		{?MENU_ID_SAVE_PROJECT, "ToolTip", {custom, "../icons/folders_06.png"},
-			[{shortHelp, "Save the current project"}], false},
-		{?MENU_ID_CLOSE_PROJECT, "ToolTip", {custom, "../icons/folders_03.png"},
-			[{shortHelp, "Close the current project"}], true},
-		{?MENU_ID_COMPILE_FILE, "ToolTip", {custom, "../icons/document_10.png"},
-			[{shortHelp, "Compile the current file"}], true},
-    {?MENU_ID_MAKE_PROJECT, "ToolTip", {custom, "../icons/folders_14.png"},
-			[{shortHelp, "Make Project"}], false},
-		{?MENU_ID_RUN, "ToolTip", {custom, "../icons/folders_10.png"},
-			[{shortHelp, "Run Project"}], true},
-		{?MENU_ID_HIDE_TEST, "ToolTip", {custom, "../icons/application_08.png"},
-			[{shortHelp, "Toggle left pane visibility"}], false},
-		{?MENU_ID_HIDE_UTIL, "ToolTip", {custom, "../icons/application_10.png"},
-			[{shortHelp, "Toggle utility pane visibility"}], false},
-		{?MENU_ID_MAX_EDITOR, "ToolTip", {custom, "../icons/application_03.png"},
-			[{shortHelp, "Maximise/restore the text editor"}], false},
-		{?MENU_ID_MAX_UTIL,   "ToolTip", {custom, "../icons/application_06.png"},
-			[{shortHelp, "Maximise/restore the utilities"}], false}],
-=======
 	Tools = [  
   		{?wxID_NEW, "ToolTip", {custom, "document_08.png"},    
   			[{shortHelp, "Create a new document"}], false},
@@ -327,7 +294,6 @@ init(Config) ->
   			[{shortHelp, "Maximise/restore the text editor"}], false},
   		{?MENU_ID_MAX_UTIL,   "ToolTip", {custom, "application_06.png"},   
   			[{shortHelp, "Maximise/restore the utilities"}], false}],
->>>>>>> 4b518076bbfa75164b39b8e8ef28b8ff180c88be
 
 	AddTool = fun({Id, Tooltip, {custom, File1}, Args, true}) ->
                   wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(File1))), Args),
@@ -339,11 +305,7 @@ init(Config) ->
                   wxToolBar:addSeparator(ToolBar);
                ({Id, Tooltip, {default, Art}, Args, false}) ->
                   wxToolBar:addTool(ToolBar, Id, Tooltip, wxArtProvider:getBitmap(Art), Args)
-<<<<<<< HEAD
-            end,
-=======
             end,  
->>>>>>> 4b518076bbfa75164b39b8e8ef28b8ff180c88be
 
 	[AddTool(Tool) || Tool <- Tools],
 
@@ -391,13 +353,8 @@ init(Config) ->
       [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?MENU_ID_IMPORT_PROJECT, {ide_proj_man, import, [Frame]}},
     {?wxID_EXIT, {}},
-<<<<<<< HEAD
-    {?wxID_PREFERENCES, {ide_prefs_dlg_wx, start, [[{parent,Frame}]]}},
-
-=======
     {?wxID_PREFERENCES, {ide_dlg_prefs_wx, start, [[{parent,Frame}]]}},
     
->>>>>>> 4b518076bbfa75164b39b8e8ef28b8ff180c88be
      %{?wxID_UNDO, {}},
      %{?wxID_REDO, {}},
      %{?wxID_CUT, {}},
@@ -473,7 +430,7 @@ init(Config) ->
     {?MENU_ID_HOTKEYS, {}},
     {?MENU_ID_SEARCH_DOC, {}},
     {?MENU_ID_MANUAL, {}},
-    {?wxID_ABOUT, {ide_dlg_about_wx, new, [{parent, Frame}]}}
+    {?wxID_ABOUT, {ide_dlg_about_wx, start, [{parent, [Frame]}]}}
 		]),
 
 	%% Connect event handlers

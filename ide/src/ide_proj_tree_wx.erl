@@ -147,21 +147,14 @@ init(Config) ->
                                         ?wxBORDER_NONE}]),
 	wxTreeCtrl:setIndent(Tree, 10),
 	ImgList = wxImageList:new(14,14),
-<<<<<<< HEAD
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/blue-folder-horizontal.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/blue-folder-horizontal-open.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/book.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/book-open.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/document.png"))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new("../icons/14x14/information-white.png"))),
-=======
+
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/blue-folder-horizontal.png")))), 
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/blue-folder-horizontal-open.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/book.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/book-open.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/document.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/information-white.png")))),
->>>>>>> 4b518076bbfa75164b39b8e8ef28b8ff180c88be
+  
 	wxTreeCtrl:assignImageList(Tree, ImgList),
 
   Root = wxTreeCtrl:addRoot(Tree, "Root"),

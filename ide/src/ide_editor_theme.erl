@@ -3,7 +3,7 @@
 -export([get_theme_names/0,
 				 load_theme/1,
 				 hexstr_to_rgb/1]).
-				 
+
 -include_lib("xmerl/include/xmerl.hrl").
 -include("ide.hrl").
 
@@ -72,11 +72,11 @@ load_theme(Name) ->
 %% @private
 
 parse_all(Xml) ->
-	Styles = [Attributes || #xmlElement{attributes=Attributes} <- 
+	Styles = [Attributes || #xmlElement{attributes=Attributes} <-
 		xmerl_xpath:string("//Style", Xml)],
-	[Default | Lex] = [[ {Name, Value} || #xmlAttribute{name=Name, value=Value} <- 
-		Style, Value /= [] ] || Style <- Styles],	
-	[Default, extract_style(fgColour, Lex, true), extract_style(bgColour, Lex, true), 
+	[Default | Lex] = [[ {Name, Value} || #xmlAttribute{name=Name, value=Value} <-
+		Style, Value /= [] ] || Style <- Styles],
+	[Default, extract_style(fgColour, Lex, true), extract_style(bgColour, Lex, true),
 		extract_style(fontStyle, Lex, false), extract_style(fontSize, Lex, false)].
 
 
@@ -97,31 +97,39 @@ extract_style(Type, Data, _) ->
 
 hexstr_to_rgb([_|Rgb]) ->
 	hexstr_to_rgb(Rgb, []).
-hexstr_to_rgb([], Acc) -> 
+hexstr_to_rgb([], Acc) ->
 	list_to_tuple(lists:reverse(Acc));
 hexstr_to_rgb([A,B | T], Acc) ->
 	hexstr_to_rgb(T, [list_to_integer([A,B], 16) | Acc]).
 
-	
+
 %% =====================================================================
 %% @doc Alternative SAX parser. Marvelous documentation on this.
 %% It may well be faster than the current DOM implemenation, however.
 %% @private
 
-sax_print() ->	
-	xmerl_sax_console_parser:file("../priv/themes/Text.theme", 
+sax_print() ->
+	xmerl_sax_console_parser:file("../priv/themes/Text.theme",
 	[{event_fun, fun(Event, _Location, _State) ->
 	               io:format("~p~n", [Event])
                end}]).
 
+
+%% =====================================================================
+%% @doc
+
 sax_parse() ->
-	xmerl_sax_console_parser:file("../priv/themes/Text.theme", 
+	xmerl_sax_console_parser:file("../priv/themes/Text.theme",
 		[{event_fun, fun event/3},
-     {event_state, [{default,[]},{fgColour,[]},{bgColour,[]},{style,[]},{size,[]}] 
+     {event_state, [{default,[]},{fgColour,[]},{bgColour,[]},{style,[]},{size,[]}]
 		 }]).
 
+
+%% =====================================================================
+%% @doc
+
 event(E, Loc, State) ->
-	io:format("E: ~p~n", [E]),	
-	io:format("Loc: ~p~n", [Loc]),	
+	io:format("E: ~p~n", [E]),
+	io:format("Loc: ~p~n", [Loc]),
 	io:format("State: ~p~n", [State]),
 	State.

@@ -75,13 +75,7 @@ init(Config) ->
 	Sb = wxPanel:new(Parent, []),
 	SbSizer = wxBoxSizer:new(?wxHORIZONTAL),
 	wxPanel:setSizer(Sb, SbSizer),
-<<<<<<< HEAD
-
-	Separator = wxBitmap:new(wxImage:new("../icons/separator.png")),
-=======
-  
 	Separator = wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("separator.png"))),
->>>>>>> 4b518076bbfa75164b39b8e8ef28b8ff180c88be
 
 	add_label(Sb, ?wxID_ANY, SbSizer, "Text:"),
 	Line = wxStaticText:new(Sb, ?SB_ID_LINE, "1", []),

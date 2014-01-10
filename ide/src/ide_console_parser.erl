@@ -22,6 +22,8 @@
 %% =====================================================================
 %% @doc Close the selected editor
 
+-spec start() -> {ok, pid()}.
+
 start()->
     Pid =  spawn_link(?MODULE, init, []),
     register(?MODULE, Pid),
@@ -31,6 +33,8 @@ start()->
 %% =====================================================================
 %% @doc
 
+-spec parse_input(string()) -> ok.
+
 parse_input(Message) ->
 	M = Message ++ io_lib:nl(),
 	ide_console_port_gen:eval(M).
@@ -38,6 +42,8 @@ parse_input(Message) ->
 
 %% =====================================================================
 %% @doc
+
+-spec parse_response(string()) -> {data, string()}.
 
 parse_response(Response) ->
   ?MODULE ! {data, Response}.
@@ -59,7 +65,7 @@ loop() ->
       lists:foreach(fun eval_response/1, Split),
       loop()
   end.
-  
+
 eval_response(R0) ->
   case is_prompt(R0) of
     true ->

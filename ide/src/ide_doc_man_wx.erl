@@ -273,13 +273,8 @@ init(Config) ->
 	wxSizer:add(Sz, Ph, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
 	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [callback]),
-<<<<<<< HEAD
-	wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed, []),
-
-=======
   wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed, []),
-  
->>>>>>> 4b518076bbfa75164b39b8e8ef28b8ff180c88be
+
   State = #state{notebook=Notebook,
                  page_to_doc_id=[],
                  doc_records=[],
@@ -419,7 +414,6 @@ handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_record
 
 handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId, sizer=Sz}) ->
   F = fun(_G, [], Dr, P2d) -> {Dr, P2d};
-<<<<<<< HEAD
          (G, [DocId | T], Dr, P2d) ->
             Record = proplists:get_value(DocId, DocRecords),
             case Record#document.project_id of
@@ -428,21 +422,10 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
               _ ->
                 ok
             end,
-=======
-         (G, [DocId | T], Dr, P2d) ->    
-            % Record = proplists:get_value(DocId, DocRecords),
-            % case Record#document.project_id of
-            %   undefined ->
-            %     ide_proj_tree_wx:remove_standalone_document(Record#document.path);
-            %   _ ->
-            %     ok
-            % end,
->>>>>>> 4b518076bbfa75164b39b8e8ef28b8ff180c88be
             {NewDocRecords, NewPageToDocId} = remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, P2d), Dr, P2d),
             G(G, T, NewDocRecords, NewPageToDocId)
        end,
   {S, D} = F(F, Docs, DocRecords, PageToDocId),
-<<<<<<< HEAD
   case wxAuiNotebook:getPageCount(Nb) of
     0 ->
       %% Called when the last document is closed.
@@ -452,18 +435,6 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
     _ -> ok
   end,
 	{reply, ok, State#state{doc_records=S, page_to_doc_id=D}}.
-=======
-  % case wxAuiNotebook:getPageCount(Nb) of
-  %   0 -> 
-  %     %% Called when the last document is closed.
-  %     ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, false),
-  %     show_placeholder(Sz),
-  %     ide:set_title([]);
-  %   _ -> ok
-  % end,
-  {reply, ok, State#state{doc_records=S, page_to_doc_id=D}}.
-  % {reply, ok, State}.
->>>>>>> 4b518076bbfa75164b39b8e8ef28b8ff180c88be
 
 %% Close event
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
@@ -632,7 +603,6 @@ get_modified_docs(Documents) ->
 %% @doc Remove document records from state and delete page from the
 %% notebook.
 
-<<<<<<< HEAD
 -spec remove_document(wxAuiNotebook:wxAuiNotebook(),
                       document_id(),
                       integer(),
@@ -644,15 +614,6 @@ remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageIdx, PageToDocId),
   wxAuiNotebook:deletePage(Nb, PageIdx),
-=======
-remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
-  NewDocRecords = proplists:delete(DocId, DocRecords),
-  NewPageToDocId = proplists:delete(PageIdx, PageToDocId),
-  % wxAuiNotebook:deletePage(Nb, PageIdx),
-  P = wxAuiNotebook:getPage(Nb, PageIdx),
-  wxAuiNotebook:removePage(Nb, PageIdx),
-  wxWindow:'Destroy'(P),
->>>>>>> 4b518076bbfa75164b39b8e8ef28b8ff180c88be
   {NewDocRecords, NewPageToDocId}.
 
 
