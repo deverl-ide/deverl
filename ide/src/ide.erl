@@ -22,7 +22,7 @@
          start/1,
          set_title/1,
          display_output_window/1,
-         toggle_menu_group/2,
+         toggle_menu_group/2
          ]).
 
 %% Server state

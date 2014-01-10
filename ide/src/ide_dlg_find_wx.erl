@@ -1,7 +1,7 @@
--module(ide_find_dlg_wx).
+-module(ide_dlg_find_wx).
 
 -include_lib("wx/include/wx.hrl").
--include("../../include/ide.hrl").
+-include("ide.hrl").
 
 -behaviour(wx_object).
 -export([init/1, terminate/2,  code_change/3,
@@ -104,7 +104,7 @@ get_ref(This) ->
 %% @private
 
 init_data(Parent, Data) ->
-  Dl = ide_find_dlg_data_wx:get_data(Data),
+  Dl = ide_dlg_data_find_wx:get_data(Data),
   F=fun({_,undefined}) -> ok;
        ({find_str, D}) -> 
         wxTextCtrl:setValue(get_window_as(?FIND_INPUT, Parent, wxTextCtrl), D);
@@ -157,24 +157,24 @@ handle_event(#wx{event=#wxKey{type=key_down, keyCode=27}}, State) ->
   
 handle_event(#wx{id=Cb, event=#wxCommand{type=command_checkbox_clicked, commandInt=Checked}}, 
              State=#state{data=Data}) ->
-  Options = ide_find_dlg_data_wx:get_options(Data),
+  Options = ide_dlg_data_find_wx:get_options(Data),
   NewOptions = case Checked of
     0 -> Options - Cb;
     1 -> Options + Cb
   end,
-  ide_find_dlg_data_wx:set_options(Data, NewOptions),
+  ide_dlg_data_find_wx:set_options(Data, NewOptions),
   {noreply,State};
   
 handle_event(#wx{event=#wxCommand{type=command_choice_selected, commandInt=Choice}}, 
              State=#state{data=Data}) ->
-  ide_find_dlg_data_wx:set_search_location(Data, Choice),
+  ide_dlg_data_find_wx:set_search_location(Data, Choice),
   {noreply,State};
   
 handle_event(#wx{id=Id, event=#wxCommand{type=command_text_updated, cmdString=Str}}, 
              State=#state{data=Data}) ->
   case Id of
-    ?FIND_INPUT -> ide_find_dlg_data_wx:set_find_string(Data, Str);
-    ?REPLACE_INPUT -> ide_find_dlg_data_wx:set_replace_string(Data, Str)
+    ?FIND_INPUT -> ide_dlg_data_find_wx:set_find_string(Data, Str);
+    ?REPLACE_INPUT -> ide_dlg_data_find_wx:set_replace_string(Data, Str)
   end,
   {noreply,State};
   
@@ -183,12 +183,12 @@ handle_event(E=#wx{id=Id, event=#wxCommand{type=command_button_clicked}},
   case Id of
     ?FIND_ALL ->
       {ok, {_Index,Pid}} = ide_doc_man_wx:get_active_document(),
-      ide_editor_wx:find_all(Pid, ide_find_dlg_data_wx:get_find_string(Data)),
+      ide_editor_wx:find_all(Pid, ide_dlg_data_find_wx:get_find_string(Data)),
       ok;
     ?REPLACE_ALL ->
       {ok, {_Index,Pid}} = ide_doc_man_wx:get_active_document(),
-      ide_editor_wx:replace_all(Pid, ide_find_dlg_data_wx:get_find_string(Data),
-        ide_find_dlg_data_wx:get_replace_string(Data)),
+      ide_editor_wx:replace_all(Pid, ide_dlg_data_find_wx:get_find_string(Data),
+        ide_dlg_data_find_wx:get_replace_string(Data)),
       ok;  
     ?REPLACE_FIND ->
       ok;
@@ -200,7 +200,7 @@ handle_event(E=#wx{id=Id, event=#wxCommand{type=command_button_clicked}},
   {noreply,State};
                
 handle_event(Ev, State=#state{}) ->
-  io:format("Got Event (ide_find_dlg_wx) ~p~n",[Ev]),
+  io:format("Got Event (ide_dlg_find_wx) ~p~n",[Ev]),
   {noreply,State}.
 
 

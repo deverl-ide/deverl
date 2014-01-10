@@ -71,13 +71,13 @@ start(Config) ->
 
 new_document(Parent) ->
   OpenProjects = ide_proj_man:get_open_projects(),
-  Dialog = ide_new_file_dlg_wx:start({Parent, OpenProjects, ide_proj_man:get_active_project()}),
+  Dialog = ide_dlg_new_file_wx:start({Parent, OpenProjects, ide_proj_man:get_active_project()}),
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       ok;
     ?wxID_OK ->
-      create_document(ide_new_file_dlg_wx:get_path(Dialog), ide_new_file_dlg_wx:get_project_id(Dialog)),
-      ide_new_file_dlg_wx:close(Dialog)
+      create_document(ide_dlg_new_file_wx:get_path(Dialog), ide_dlg_new_file_wx:get_project_id(Dialog)),
+      ide_dlg_new_file_wx:close(Dialog)
   end.
 
 

@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
   
--module(ide_prefs_dlg_wx).
+-module(ide_dlg_prefs_wx).
   
 -include_lib("wx/include/wx.hrl").
   

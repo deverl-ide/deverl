@@ -345,7 +345,7 @@ init(Config) ->
       [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?MENU_ID_IMPORT_PROJECT, {ide_proj_man, import, [Frame]}},
     {?wxID_EXIT, {}},
-    {?wxID_PREFERENCES, {ide_prefs_dlg_wx, start, [[{parent,Frame}]]}},
+    {?wxID_PREFERENCES, {ide_dlg_prefs_wx, start, [[{parent,Frame}]]}},
     
      %{?wxID_UNDO, {}},
      %{?wxID_REDO, {}},
@@ -422,7 +422,7 @@ init(Config) ->
     {?MENU_ID_HOTKEYS, {}},
     {?MENU_ID_SEARCH_DOC, {}},
     {?MENU_ID_MANUAL, {}},
-    {?wxID_ABOUT, {ide_about_dlg_wx, new, [{parent, Frame}]}}
+    {?wxID_ABOUT, {ide_dlg_about_wx, new, [{parent, Frame}]}}
 		]),
 				
 	%% Connect event handlers
