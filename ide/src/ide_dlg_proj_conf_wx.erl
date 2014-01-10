@@ -9,7 +9,7 @@
 %% @end
 %% =====================================================================
 
--module(ide_proj_conf_dlg_wx).
+-module(ide_dlg_proj_conf_wx).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -184,8 +184,8 @@ do_init(Parent) ->
   
 	%% Setup the image list
 	ImageList = wxImageList:new(24,24),
-	wxImageList:add(ImageList, wxBitmap:new(wxImage:new("../icons/information.png"))),
-	wxImageList:add(ImageList, wxBitmap:new(wxImage:new("../icons/prohibition.png"))),
+	wxImageList:add(ImageList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("information.png")))),
+	wxImageList:add(ImageList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("prohibition.png")))),
   
 	NewState = State#state{
 		dialog=Dialog, 

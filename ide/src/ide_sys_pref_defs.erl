@@ -11,7 +11,7 @@
 -module(ide_sys_pref_defs).
 
 -include_lib("wx/include/wx.hrl").
--include("../../include/ide.hrl").
+-include("ide.hrl").
 
 -export([get_defaults/0]).
 

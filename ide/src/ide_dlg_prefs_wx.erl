@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
   
--module(ide_prefs_dlg_wx).
+-module(ide_dlg_prefs_wx).
   
 -include_lib("wx/include/wx.hrl").
   
@@ -58,16 +58,16 @@ init(Config) ->
   ToolBar = wxFrame:createToolBar(Frame, [{style, ?wxTB_TEXT}]),
   wxToolBar:setToolBitmapSize(ToolBar, {48,48}),
   %% Id, text, bitmap path, args, add seperator
-  Tools = [{?PREF_GENERAL,  "General", "../icons/prefs/general.png",    [],  false},
-           {?PREF_EDITOR, "Editor", "../icons/prefs/editor.png",   [],  false},
-           {?PREF_CONSOLE, "Console", "../icons/prefs/console.png",   [],  false},
-           {?PREF_DEBUG, "Debugger", "../icons/prefs/debug.png",   [],  false}],
+  Tools = [{?PREF_GENERAL,  "General", "prefs/general.png",    [],  false},
+           {?PREF_EDITOR, "Editor", "prefs/editor.png",   [],  false},
+           {?PREF_CONSOLE, "Console", "prefs/console.png",   [],  false},
+           {?PREF_DEBUG, "Debugger", "prefs/debug.png",   [],  false}],
 
   AddTool = fun({Id, Tooltip, Filename, Args, true}) ->
-            wxToolBar:addRadioTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args),
+            wxToolBar:addRadioTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(Filename))), Args),
             wxToolBar:addSeparator(ToolBar);
            ({Id, Tooltip, Filename, Args, _}) ->
-            wxToolBar:addRadioTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(Filename)), Args)
+            wxToolBar:addRadioTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(Filename))), Args)
             end,       
 
   [AddTool(Tool) || Tool <- Tools],

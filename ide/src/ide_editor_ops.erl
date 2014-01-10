@@ -64,14 +64,14 @@ update_styles(Frame) ->
 %% @doc Show the find/replace dialog.
 
 find_replace(Parent) ->
-  FindData = ide_find_dlg_data_wx:new(),
-  ide_find_dlg_data_wx:set_options(FindData, ?IGNORE_CASE bor ?WHOLE_WORD bor ?START_WORD),
-  ide_find_dlg_data_wx:set_search_location(FindData, ?FIND_LOC_DOC),
-  case erlang:whereis(ide_find_dlg_wx) of
+  FindData = ide_dlg_data_find_wx:new(),
+  ide_dlg_data_find_wx:set_options(FindData, ?IGNORE_CASE bor ?WHOLE_WORD bor ?START_WORD),
+  ide_dlg_data_find_wx:set_search_location(FindData, ?FIND_LOC_DOC),
+  case erlang:whereis(ide_dlg_find_wx) of
     undefined ->
-      ide_find_dlg_wx:show(ide_find_dlg_wx:new(Parent, FindData));
+      ide_dlg_find_wx:show(ide_dlg_find_wx:new(Parent, FindData));
     Pid ->
-      wxDialog:raise(ide_find_dlg_wx:get_ref(Pid))
+      wxDialog:raise(ide_dlg_find_wx:get_ref(Pid))
   end.
 
 

@@ -82,20 +82,20 @@ start(Config)->
 -spec new_project(wxFrame:wxFrame()) -> ok.
 
 new_project(Parent) ->
-	Dialog = ide_new_proj_dlg_wx:start(Parent),
-	ide_new_proj_dlg_wx:set_focus(Dialog),
-	case ide_new_proj_dlg_wx:showModal(Dialog) of
+	Dialog = ide_dlg_new_proj_wx:start(Parent),
+	ide_dlg_new_proj_wx:set_focus(Dialog),
+	case ide_dlg_new_proj_wx:showModal(Dialog) of
 		?wxID_CANCEL ->
       ok;
 		?wxID_OK ->
       try
-    		Path = ide_io:create_directory_structure(ide_new_proj_dlg_wx:get_path(Dialog)),
+    		Path = ide_io:create_directory_structure(ide_dlg_new_proj_wx:get_path(Dialog)),
         add_project(Path)
       catch
         throw:E ->
     			ide_lib_dlg_wx:msg_error(Parent, E)
       end,
-			ide_new_proj_dlg_wx:close(Dialog)
+			ide_dlg_new_proj_wx:close(Dialog)
 	end.
 
 
@@ -116,13 +116,13 @@ add_project(Path) ->
 -spec open_project_dialog(wxFrame:wxFrame()) -> ok.
 
 open_project_dialog(Frame) ->
-  Dialog = ide_open_proj_dlg_wx:start(Frame, ide_sys_pref_gen:get_preference(projects)),
+  Dialog = ide_dlg_open_proj_wx:start(Frame, ide_sys_pref_gen:get_preference(projects)),
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       ok;
     ?wxID_OK ->
-      open_project(ide_open_proj_dlg_wx:get_path(Dialog)),
-      ide_open_proj_dlg_wx:close(Dialog)
+      open_project(ide_dlg_open_proj_wx:get_path(Dialog)),
+      ide_dlg_open_proj_wx:close(Dialog)
   end.
 
 
@@ -248,13 +248,13 @@ is_known_project(Path) ->
 -spec set_project_configuration(wxFrame:wxFrame()) -> ok | cancelled | error.
 
 set_project_configuration(Parent) ->
-  Dialog = ide_proj_conf_dlg_wx:start(Parent),
+  Dialog = ide_dlg_proj_conf_wx:start(Parent),
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       cancelled;
     ?wxID_OK ->
-      Config = ide_proj_conf_dlg_wx:get_build_config(Dialog),
-      ide_proj_conf_dlg_wx:close(Dialog),
+      Config = ide_dlg_proj_conf_wx:get_build_config(Dialog),
+      ide_dlg_proj_conf_wx:close(Dialog),
       wx_object:call(?MODULE, {set_project_configuration, Config})
   end.
 
@@ -265,7 +265,7 @@ set_project_configuration(Parent) ->
 -spec import(wxFrame:wxFrame()) -> ok | cancelled.
 
 import(Parent) ->
-  Dialog = ide_import_proj_dlg_wx:start(Parent),
+  Dialog = ide_dlg_import_proj_wx:start(Parent),
   case wxDialog:showModal(Dialog) of
     ?wxID_CANCEL ->
       cancelled;

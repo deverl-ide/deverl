@@ -1,4 +1,4 @@
--module(ide_about_dlg_wx).
+-module(ide_dlg_about_wx).
   
 -include_lib("wx/include/wx.hrl").
   

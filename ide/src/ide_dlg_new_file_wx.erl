@@ -10,7 +10,7 @@
 %% @end
 %% =====================================================================
 
--module(ide_new_file_dlg_wx).
+-module(ide_dlg_new_file_wx).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -173,8 +173,8 @@ init({Parent, Projects, ActiveProject}) ->
   
 	%% Setup the image list
 	ImageList = wxImageList:new(24,24),
-	wxImageList:add(ImageList, wxBitmap:new(wxImage:new("../icons/information.png"))),
-	wxImageList:add(ImageList, wxBitmap:new(wxImage:new("../icons/prohibition.png"))),
+	wxImageList:add(ImageList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("information.png")))),
+	wxImageList:add(ImageList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("prohibition.png")))),
 	
 	%% Information messages
 	Info = [
@@ -627,7 +627,7 @@ add_project_data(ProjectChoice, [ProjectId|Projects]) ->
 
 %% =====================================================================
 %% @doc Display information to the user within the 'Description' box.	
-%% NOTE This is duplicated from the ide_new_proj_dlg_wx module.
+%% NOTE This is duplicated from the ide_dlg_new_proj_wx module.
 
 insert_desc(Description, Msg) ->
 	insert_desc(Description, Msg, []).

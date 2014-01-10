@@ -13,6 +13,7 @@
 -include("ide.hrl").
 
 -export([
+  rc_dir/1,
 	placeholder/2,
 	placeholder/3,
 	colour_shade/2,
@@ -26,6 +27,14 @@
 %% =====================================================================
 %% Client API
 %% =====================================================================
+
+%% =====================================================================
+%% @doc Get the absolute path to the rsc (resource) directory.
+
+rc_dir(File) ->
+  Dir = filename:dirname(code:which(?MODULE)),
+  filename:join([Dir,"../rc",File]).
+  
 
 %% =====================================================================
 %% @doc Get a placeholder panel that displays some text within the parent
