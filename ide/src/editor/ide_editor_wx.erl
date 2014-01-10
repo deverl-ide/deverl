@@ -81,7 +81,6 @@
 %% Types
 -export_type([editor/0]).
 -type editor() :: wx:wx_object().
--type path()      :: string().
 -type filename()  :: string().
 -type erlangEditor() :: wxWindow:wxWindow().
 

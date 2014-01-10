@@ -15,15 +15,15 @@
 
 %% wx_object
 -behaviour(wx_object).
--export([init/1, 
-		 		 terminate/2, 
-				 code_change/3, 
-				 handle_info/2, 
-				 handle_call/3, 
-				 handle_cast/2, 
+-export([init/1,
+		 		 terminate/2,
+				 code_change/3,
+				 handle_info/2,
+				 handle_call/3,
+				 handle_cast/2,
 				 handle_event/2]).
 
-%% API     
+%% API
 -export([new/1,
          message/1,
          message/2,
@@ -39,24 +39,26 @@
 -define(STYLE_HOTSPOT, 3).
 
 %% Server state
--record(state, {win, 
+-record(state, {win,
 								log}).
 
 
 %% =====================================================================
 %% Client API
-%% =====================================================================	
+%% =====================================================================
 
 %% =====================================================================
 %% @doc
+
+-spec new(list()) -> wxWindow:wxWindow().
 
 new(Config) ->
 	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
-	
+
 
 %% =====================================================================
 %% @doc
-%% 
+%%
 
 -spec message(string()) -> ok.
 
@@ -67,7 +69,7 @@ message(Msg) ->
 %% =====================================================================
 %% @doc Append a message to the log.
 %% The hotspot will be a clickable link and must be a substring of Msg.
- 
+
 -spec message(string(), [Option]) -> ok when
   Option :: {hotspot, string()}.
 
@@ -79,11 +81,16 @@ message(Msg, Options) ->
 %% @doc
 %% @see ide_log_out_wx:message/2 for a description of options.
 
+-spec error(string()) -> no_return().
+
 error(Msg) ->
   ?MODULE:error(Msg, []).
+
+-spec error(string(), list()) -> ok.
+
 error(Msg, Options) ->
   wx_object:cast(?MODULE, {error, Msg, Options}).
-  
+
 
 %% =====================================================================
 %% Callback functions
@@ -102,12 +109,12 @@ init(Config) ->
   ?stc:setReadOnly(Log, true),
 	?stc:setLexer(Log, ?wxSTC_LEX_NULL),
   ?stc:setCaretWidth(Log, 0),
-  
+
   %% Default "normal" style
   ?stc:styleSetFont(Log, ?wxSTC_STYLE_DEFAULT, ide_sys_pref_gen:get_font(log)),
   ?stc:styleSetSize(Log, ?wxSTC_STYLE_DEFAULT, 11),
   ?stc:styleClearAll(Log),
-  
+
   %% Dummy style to add vertical spacing (increase line height)
   ?stc:styleSetSpec(Log, ?STYLE_DUMMY, "fore:#234567,size:13"),
   %% Error style
@@ -115,24 +122,24 @@ init(Config) ->
   %% Hotspot style
   ?stc:styleSetSpec(Log, ?STYLE_HOTSPOT, "fore:#0000FF,underline"),
   ?stc:styleSetHotSpot(Log, ?STYLE_HOTSPOT, true),
-  
+
   %% Markers for alternate row line colours
   ?stc:markerDefine(Log, ?MARKER_EVEN, ?wxSTC_MARK_BACKGROUND),
   ?stc:markerSetBackground(Log, ?MARKER_EVEN, ?ROW_BG_EVEN),
   ?stc:markerDefine(Log, ?MARKER_ODD, ?wxSTC_MARK_BACKGROUND),
   ?stc:markerSetBackground(Log, ?MARKER_ODD, ?ROW_BG_ODD),
-                                                	
+
 	wxSizer:add(MainSizer, Log, [{flag, ?wxEXPAND}, {proportion, 1}]),
-                                        
-	State=#state{win=Panel, 
+
+	State=#state{win=Panel,
 				       log=Log},
-               
+
   %% Note this stops the small square artifact from appearing in top left corner.
   wxSizer:layout(MainSizer),
-  
+
   %% Connect handlers
   ?stc:connect(Log, stc_hotspot_click),
-  
+
   {Panel, State}.
 
 handle_info(Msg, State) ->
@@ -163,8 +170,8 @@ handle_cast({Msg, Options}, State=#state{log=Log}) ->
 handle_call(Msg, _From, State) ->
   io:format("Got Call ~p~n",[Msg]),
   {reply,ok, State}.
-    
-handle_event(#wx{event=#wxStyledText{type=stc_hotspot_click, position=Pos}}, 
+
+handle_event(#wx{event=#wxStyledText{type=stc_hotspot_click, position=Pos}},
              State=#state{log=Log}) ->
   Style = ?stc:getStyleAt(Log, Pos),
   Max = ?stc:getLength(Log),
@@ -172,7 +179,7 @@ handle_event(#wx{event=#wxStyledText{type=stc_hotspot_click, position=Pos}},
   Leftmost = fun(_F, 0) -> 0;
     (F, P) ->
       case ?stc:getStyleAt(Log, P) of
-        Style -> 
+        Style ->
           F(F, P - 1);
         _ ->
           P + 1
@@ -182,7 +189,7 @@ handle_event(#wx{event=#wxStyledText{type=stc_hotspot_click, position=Pos}},
   Rightmost = fun(_F, Limit) when Limit =:= Max -> Max;
     (F, P) ->
       case ?stc:getStyleAt(Log, P) of
-        Style -> 
+        Style ->
           F(F, P + 1);
         _ ->
           P
@@ -193,20 +200,22 @@ handle_event(#wx{event=#wxStyledText{type=stc_hotspot_click, position=Pos}},
   Range = ?stc:getTextRange(Log, L, R),
   hotspot_action(Range),
 	{noreply, State}.
-    
+
 code_change(_, _, State) ->
-	{stop, not_yet_implemented, State}.
+	{ok, State}.
 
 terminate(_Reason, #state{win=Frame}) ->
 	wxPanel:destroy(Frame).
 
-	
+
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
-	
+
 %% =====================================================================
 %% @doc Get the current time formatted as a string HH:MM:SS.
+
+-spec get_time() -> [term()].
 
 get_time() ->
   {_, {H, M, S}} = calendar:local_time(),
@@ -217,6 +226,8 @@ get_time() ->
 
 %% =====================================================================
 %% @doc Append a line (record) to the log.
+
+-spec append(wxStyledTextCtrl:wxStyledTextCtrl(), string()) -> {ok, integer()}.
 
 append(Log, Msg) ->
   ?stc:gotoPos(Log, ?stc:getLength(Log)),
@@ -233,10 +244,12 @@ append(Log, Msg) ->
   ?stc:newLine(Log),
   ?stc:setReadOnly(Log, true),
   {ok, length(Message)}.
-  
+
 
 %% =====================================================================
 %% @doc
+
+-spec hotspot_action(wxStyledTextCtrl:charlist()) -> ok.
 
 hotspot_action(Range) ->
   case Range of

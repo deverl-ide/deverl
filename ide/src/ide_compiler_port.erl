@@ -5,7 +5,7 @@
 %% @version
 %% @doc This module connects to erlc through a port and prints the
 %% response to an output window until an exit signal is received. A
-%% acknowledgment of success or failure is then sent to the calling 
+%% acknowledgment of success or failure is then sent to the calling
 %% process.
 %% @end
 %% =====================================================================
@@ -34,12 +34,12 @@
 %% A message of the format 'ok' or 'error' will be sent the calling
 %% process on completion.
 
--spec start(path()) -> {pid(), 'ok' | 'error'}.
+-spec start(path()) -> pid().
 
 start(Cwd)->
   start(Cwd, []).
-  
--spec start(Cwd, [Config])  -> {pid(), 'ok' | 'error'}  when 
+
+-spec start(Cwd, [Config])  -> pid() when
   Cwd :: path(),
   Config :: file %% Single file, Cwd is absolute path of file
           | Flag,
@@ -48,19 +48,22 @@ start(Cwd)->
           | smp                     %% Native compilation
           | makefile                %% Create a makefile
           | all_errors}.            %% Convert warninf to errors
-  
+
 start(Cwd, Config)->
-  spawn(?MODULE, compile, [self(), Cwd, Config]). 
+  spawn(?MODULE, compile, [self(), Cwd, Config]).
 
 
 
 %% =====================================================================
 %% Internal functions
-%% =====================================================================	
+%% =====================================================================
 
 %% =====================================================================
-%% @doc 
+%% @doc
 %% @private
+%% @see start/2
+
+-spec compile(pid(), path(), list()) -> {pid(), 'ok' | 'error'}.
 
 compile(From, Path, Config) ->
   CFlags = fun({cflag, supress_warnings}, Acc) -> ["-W0"|Acc];
@@ -70,13 +73,13 @@ compile(From, Path, Config) ->
            ({cflag, all_errors}, Acc) -> ["-Werror"|Acc];
            ({cflag, BadFlag}, _) -> erlang:error({badflag, BadFlag});
            (_, Acc) -> Acc end,
-           
+
   Flags = lists:foldl(CFlags, [], Config),
 
   {Cwd, Args} = case proplists:get_value(file, Config) of
     true ->
       %% Single file
-      A0 = [filename:basename(Path)], 
+      A0 = [filename:basename(Path)],
       A1 = case ide_proj_man:is_known_project(Path) of %% beam goes to /ebin
         {true, P} ->
           OutputDir = ["-o", lists:append([P, "/ebin"])],
@@ -84,7 +87,7 @@ compile(From, Path, Config) ->
         _ -> A0
       end,
       {filename:dirname(Path), A1};
-    _ -> 
+    _ ->
       %% Directory
       IncludeDir = ["-I", lists:append([Path, "/include"])],
       OutputDir = ["-o", lists:append([Path, "/ebin"])],
@@ -106,15 +109,15 @@ compile(From, Path, Config) ->
 
   loop(From, filename:basename(Path)).
 
-  
+
 %% =====================================================================
 %% @doc Looping receive block to receive all output from the port until
 %% an exit_status is received.
 
 -spec loop(pid(), string()) -> {pid(), 'ok' | 'error'}.
-  
+
 loop(From, Name) ->
-  receive 
+  receive
     {_Port, {data, Data}} ->
       ide_compiler_out_wx:append(Data),
       loop(From, Name);
@@ -129,11 +132,13 @@ loop(From, Name) ->
       io:format("TIMEOUT~n"),
       error
   end.
-  
+
 
 %% =====================================================================
 %% @doc Get the path to erlc.
- 
+
+-spec erlc() -> path().
+
 erlc() ->
   case os:type() of
 		{win32,_} ->

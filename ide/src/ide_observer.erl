@@ -15,6 +15,8 @@
 %% under the License.
 %%
 %% %CopyrightEnd%
+
+
 -module(ide_observer).
 
 -behaviour(wx_object).

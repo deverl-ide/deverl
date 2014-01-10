@@ -29,6 +29,8 @@
 %% =====================================================================
 %% @doc Create the directory structure for a new project.
 
+-spec create_directory_structure(string()) -> string() | no_return().
+
 create_directory_structure(Path) ->
   try
     create_dir(Path),
@@ -40,10 +42,12 @@ create_directory_structure(Path) ->
   catch
     throw:E -> throw(E)
   end.
-  
-  
+
+
 %% =====================================================================
 %% @doc Create a new file on disc.
+
+-spec create_new_file(string()) -> ok | error.
 
 create_new_file(Path) ->
   case file:open(Path, [write, read]) of
@@ -58,10 +62,12 @@ create_new_file(Path) ->
 %% =====================================================================
 %% @doc Read a file from the path specified by the user.
 
--spec open_new(Parent) -> Result when
-  Parent :: wxWindow:wxWindow(),
-  Result :: {string(), string(), string()}
-          | {'cancel'}.
+-spec open_new({'wx_ref',integer(),_,_}) -> 'cancel' | wxFileDialog:charlist().
+
+%-spec open_new(Parent) -> Result when
+%  Parent :: wxWindow:wxWindow(),
+%  Result :: {string(), string(), string()}
+%          | {'cancel'}.
 
 open_new(Parent) ->
 	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_OPEN}]),
@@ -75,6 +81,8 @@ open_new(Parent) ->
 
 %% =====================================================================
 %% @doc Read the file at Path.
+
+-spec read_file(string()) -> [byte()] | no_return().
 
 read_file(Path) ->
 	try
@@ -121,12 +129,12 @@ save_as(Parent, Contents) ->
 
 save(Path, Contents) ->
 	try
-    Result =  file:open(Path, [write]),
+    %Result = file:open(Path, [write]),
 		{ok, Fd} = file:open(Path, [write]),
 		ok = file:write(Fd, Contents),
 		ok = file:close(Fd)
 	catch
-		error:{badmatch,{error,Error}} -> 
+		error:{badmatch,{error,Error}} ->
       get_error_message(Error, Path)
 	end.
 
@@ -138,17 +146,22 @@ save(Path, Contents) ->
 %% =====================================================================
 %% @doc Create directory Dir.
 
+-spec create_dir(string()) -> ok | no_return().
+
 create_dir(Dir) ->
 	case file:make_dir(Dir) of
     {error, Error} ->
       get_error_message(Error, Dir);
-    ok -> ok
+    ok ->
+      ok
 	end.
 
 
 %% =====================================================================
 %% @doc Get a more comprehensive error message.
- 
+
+-spec get_error_message(string(), string()) -> no_return().
+
 get_error_message(Error, Path) ->
   Filename = filename:basename(Path),
   case Error of

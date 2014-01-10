@@ -13,6 +13,7 @@
 -module(ide_new_file_dlg_wx).
 
 -include_lib("wx/include/wx.hrl").
+-include("ide.hrl").
 
 %% wx_object
 -behaviour(wx_object).
@@ -57,8 +58,8 @@
                 dialog2     :: wxPanel:wxPanel(),
                 swap_sizer  :: wxSizer:wxSizer(),
                 path        :: string(),
-                project_id  :: ide_proj_man:project_id(),
-                projects    :: [ide_proj_man:project_id()],
+                project_id  :: project_id(),
+                projects    :: [project_id()],
                 desc_panel  :: wxPanel:wxPanel(),
                 image_list,
                 info_messages

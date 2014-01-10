@@ -1,3 +1,8 @@
+%% Types
+
+-type path() :: string().
+-type project_id() :: {integer(), integer(), integer()}.
+
 %% Global constants
 -define(FIND_ALL, 3).
 -define(REPLACE_ALL, 5).
