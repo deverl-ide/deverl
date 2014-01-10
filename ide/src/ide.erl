@@ -22,7 +22,8 @@
          start/1,
          set_title/1,
          display_output_window/1,
-         toggle_menu_group/2]).
+         toggle_menu_group/2,
+         ]).
 
 %% Server state
 -record(state, {frame,
@@ -114,7 +115,6 @@ display_output_window(WinId) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
 %% @hidden
 init(Options) ->
 	wx:new(Options),
@@ -123,6 +123,11 @@ init(Options) ->
   
   %% Set small window variant globally
   % wxSystemOptions:setOption("window-default-variant", ?wxWINDOW_VARIANT_SMALL),
+  
+  Xrc = wxXmlResource:get(),
+  wxXmlResource:initAllHandlers(Xrc),
+  true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("dlgs.xrc")),
+  true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("derivdlg.xrc")),
 
 	Frame = wxFrame:new(wx:null(), ?wxID_ANY, ?FRAME_TITLE, [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
 	wxFrame:connect(Frame, close_window),

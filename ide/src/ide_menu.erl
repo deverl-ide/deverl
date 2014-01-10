@@ -396,8 +396,8 @@ init(Config) ->
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
     {?MENU_ID_RUN, {ide_build, run_project, [Frame]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
-    {?MENU_ID_DIALYZER, {}, []},
-    {?MENU_ID_TESTS, {}, []},
+    {?MENU_ID_DIALYZER, {ide, load_xrc, [Frame]}, []},
+    {?MENU_ID_TESTS, {dlg_ld, show_dlg, [Frame, new_proj]}, []},
     {?MENU_ID_DEBUGGER, {}, []},
     
     % {?MENU_ID_PROJECTS_WINDOW, {}, 
