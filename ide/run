@@ -8,7 +8,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" ;
 # Compile the src files
 make
 
-# Check the return code
+# Check the return code, exit couldn't compile
 rc=$?
 if [[ $rc != 0 ]] ; then
     exit $rc

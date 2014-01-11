@@ -25,7 +25,8 @@
 %% Server state			 
 -record(state, {dialog,
             	  parent,
-                path
+                path,
+                list_ctrl
             	 }).
 
 
@@ -87,7 +88,7 @@ do_init({Parent, Projects}) ->
   wxListCtrl:insertColumn(ListCtrl, 0, "Project", []),
   wxListCtrl:insertColumn(ListCtrl, 1, "Last Modified", []),
   wxListCtrl:insertColumn(ListCtrl, 2, "Path", []),
-
+  wxListCtrl:connect(ListCtrl, size, [{skip, true}]),
   wxSizer:add(VertSizer, ListCtrl, [{flag, ?wxEXPAND}, {proportion, 1}]),
   
   insert_projects(ListCtrl, Projects),
@@ -122,7 +123,8 @@ do_init({Parent, Projects}) ->
   
 	State = #state{
 		dialog=Dialog, 
-		parent=Parent
+		parent=Parent,
+    list_ctrl=ListCtrl
 	},
   
 	{Dialog, State}.
@@ -146,7 +148,15 @@ handle_event(#wx{obj=ListCtrl, event=#wxList{type=command_list_item_selected, it
 handle_event(#wx{obj=ListCtrl, event=#wxList{type=command_list_item_activated, itemIndex=Idx}}, 
              State=#state{dialog=Dialog}) ->
   wxDialog:endModal(Dialog, ?wxID_OK),
-  {noreply, State#state{path=get_path_from_list(ListCtrl, Idx)}}.  
+  {noreply, State#state{path=get_path_from_list(ListCtrl, Idx)}};
+handle_event(#wx{event=#wxSize{size={Width,_}}}, State = #state{list_ctrl=ListCtrl}) ->
+    wx:batch(fun() ->
+		     Tot = wx:foldl(fun(C,Sum) -> 
+					    Sum + wxListCtrl:getColumnWidth(ListCtrl, C)
+				    end, 0, [0,1]),
+		     wxListCtrl:setColumnWidth(ListCtrl, 2, Width-Tot)
+	     end),
+  {noreply, State}.
 	
 handle_info(Msg, State) ->
   io:format( "Got Info ~p~nMsg:~p",[State, Msg]),
