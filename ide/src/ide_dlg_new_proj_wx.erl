@@ -223,8 +223,8 @@ handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=0}},
 		undefined -> wxTextCtrl:clear(Path);
 		Str -> wxTextCtrl:setValue(Path, Str)
 	end,
-	wxWindow:enable(wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)),
-	wxWindow:enable(wxWindow:findWindow(Parent, ?ID_PROJ_PATH)),
+	wxWindow:enable(wxWindow:findWindowById(?ID_BROWSE_PROJECTS)),
+	wxWindow:enable(wxWindow:findWindowById(?ID_PROJ_PATH)),
   {noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=1}}, 
              State=#state{parent=Parent, project_path_text_ctrl=Path, default_path=DefPath,
@@ -236,8 +236,8 @@ handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=1}},
 		0 -> ok;
 		_ -> wxTextCtrl:appendText(Path, filename:nativename("/") ++ N)
 	end,
-	wxWindow:disable(wxWindow:findWindow(Parent, ?ID_BROWSE_PROJECTS)),
-	wxWindow:disable(wxWindow:findWindow(Parent, ?ID_PROJ_PATH)),
+	wxWindow:disable(wxWindow:findWindowById(?ID_BROWSE_PROJECTS)),
+	wxWindow:disable(wxWindow:findWindowById(?ID_PROJ_PATH)),
 	{noreply, State#state{project_path=Input}};
 handle_event(#wx{id=?ID_PROJ_NAME, event=#wxCommand{type=command_text_updated, cmdString=Str}}, 
              State=#state{image_list=ImageList, info_messages=Info, project_path_text_ctrl=Path, default_path=DefPath, 
