@@ -535,36 +535,6 @@ get_project_root(Tree, Root, Parent, Item) ->
 
 
 %% =====================================================================
-%% @doc Get the project item from the tree for a given project id.
-
--spec get_project_from_id(wxTreeCtrl:wxTreeCtrl(), project_id()) ->
-  wxTreeCtrl:wxTreeCtrl() | error.
-
-get_project_from_id(Tree, ProjectId) ->
-  [Project] = get_projects(Tree),
-  io:format("PROJECT: ~p~n", [Project]),
-  io:format("PROJECT ID: ~p~n", [ProjectId]),
-  get_project_from_id(Tree, ProjectId, get_projects(Tree)).
-
--spec get_project_from_id(wxTreeCtrl:wxTreeCtrl(), project_id(), [project_id()]) ->
-  wxTreeCtrl:wxTreeCtrl() | error.
-
-get_project_from_id(_Tree, _ProjectId, []) ->
-  io:format("error~n"),
-  error;
-get_project_from_id(Tree, ProjectId, [Project|Projects]) ->
-  io:format("DATA ~p~n", [wxTreeCtrl:getItemData(Tree, Project)]),
-  case wxTreeCtrl:getItemData(Tree, Project) of
-    {ProjectId, Dir} ->
-      io:format("Dir: ~p~n", [Dir]),
-      Project;
-    {_, Dir} ->
-      io:format("Dir: ~p~n", [Dir]),
-      get_project_from_id(Tree, ProjectId, Projects)
-  end.
-
-
-%% =====================================================================
 %% @doc Get a list of project root items.
 
 -spec get_projects(wxTreeCtrl:wxTreeCtrl()) -> [integer()].
