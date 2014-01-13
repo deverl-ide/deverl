@@ -68,6 +68,12 @@
 %% Client API
 %% =====================================================================
 
+%% =====================================================================
+%% @doc
+
+-spec start(Config) -> wxWindow:wxWindow() when
+  Config :: list().
+
 start(Config) ->
 	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
@@ -75,21 +81,27 @@ start(Config) ->
 %% =====================================================================
 %% @doc Add a project directory to the tree.
 
+-spec add_project(project_id(), path()) -> ok.
+
 add_project(Id, Dir) ->
 	wx_object:cast(?MODULE, {add_project, Id, Dir}).
 add_project(Id, Dir, Pos) ->
 	wx_object:cast(?MODULE, {add_project, Id, Dir, Pos}).
-  
+
 
 %% =====================================================================
-%% @doc Delete an item from the tree. 
+%% @doc Delete an item from the tree.
+
+-spec remove_project(project_id()) -> ok.
 
 remove_project(Id) ->
 	wx_object:cast(?MODULE, {remove_project, Id}).
-  
-  
+
+
 %% =====================================================================
 %% @doc
+
+-spec add_standalone_document(path()) -> ok.
 
 add_standalone_document(Path) ->
   wx_object:cast(?MODULE, {add_standalone, Path}).
@@ -97,18 +109,21 @@ add_standalone_document(Path) ->
 
 %% =====================================================================
 %% @doc
- 
+
+-spec remove_standalone_document(path()) -> ok.
+
 remove_standalone_document(Path) ->
-  % wx_object:cast(?MODULE, {remove_standalone, Path}).
   wx_object:call(?MODULE, {remove_standalone, Path}).
 
 
 %% =====================================================================
 %% @doc
 
+-spec set_has_children(path()) -> ok.
+
 set_has_children(Path) ->
   wx_object:cast(?MODULE, {set_has_children, Path}).
-  
+
 
 %% =====================================================================
 %% Callback functions
@@ -132,16 +147,18 @@ init(Config) ->
                                         ?wxBORDER_NONE}]),
 	wxTreeCtrl:setIndent(Tree, 10),
 	ImgList = wxImageList:new(14,14),
+
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/blue-folder-horizontal.png")))), 
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/blue-folder-horizontal-open.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/book.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/book-open.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/document.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/information-white.png")))),
+  
 	wxTreeCtrl:assignImageList(Tree, ImgList),
 
   Root = wxTreeCtrl:addRoot(Tree, "Root"),
-  AddRoot = 
+  AddRoot =
     fun(Id, Name, Info) ->
       Item = append_item(Tree, Root, Name, [{data, Id}]),
       Placeholder = append_item(Tree, Item, Info, [{data, placeholder}]),
@@ -167,13 +184,13 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_collapsing, []),
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
   wxTreeCtrl:connect(Tree, command_tree_item_menu, []),
-  
+
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
 
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
-	
+
 %% ALMOST IDENTICAL TO THE SUBSEQUENT add_* HANDLER
 handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
   wxPanel:freeze(Tree),
@@ -188,7 +205,7 @@ handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
   alternate_background_of_children(Tree, Root),
   wxPanel:thaw(Tree),
   {noreply,State};
-  
+
 handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) ->
   Item = get_item_from_list(Tree, ProjectId, get_projects(Tree)),
 	wxPanel:freeze(Panel),
@@ -197,7 +214,7 @@ handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) -
   insert_placeholder(Tree, get_projects_root(Tree), ?HEADER_PROJECTS_EMPTY),
 	wxPanel:thaw(Panel),
   {noreply,State};
-  
+
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
   Root = get_standalone_root(Tree),
   remove_placeholder(Tree, Root),
@@ -210,7 +227,7 @@ handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
     Item ->
       wxTreeCtrl:selectItem(Tree, Item)
   end,
-  {noreply,State}; 
+  {noreply,State};
 handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
   wxTreeCtrl:setItemHasChildren(Tree, get_item_from_path(Tree, get_all_items(Tree), Path)),
   {noreply, State}.
@@ -228,12 +245,12 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
   wxTreeCtrl:freeze(Tree),
   case is_selectable(Tree, Item) of
     true ->
-      wxTreeCtrl:deleteChildren(Tree, Item), %% MSW command_tree_item_expanding workaround removes dummy     
+      wxTreeCtrl:deleteChildren(Tree, Item), %% MSW command_tree_item_expanding workaround removes dummy
       {_, FilePath} = wxTreeCtrl:getItemData(Tree, Item),
       insert(Tree, Item, FilePath);
     false -> ok
   end,
-  wxTreeCtrl:thaw(Tree),  
+  wxTreeCtrl:thaw(Tree),
 	{noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
   case is_selectable(Tree, Item) of
@@ -297,7 +314,7 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
     ?wxID_NEW ->
       ide_doc_man_wx:new_document(Frame);
     ?MENU_ID_CLOSE_PROJECT ->
-      ok;   
+      ok;
     ?ID_NEW_FOLDER ->
       ok;
     ?ID_RENAME ->
@@ -321,9 +338,9 @@ handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changing}}, 
     false ->
       wxTreeEvent:veto(Event)
   end.
-  
+
 code_change(_, _, State) ->
-	{stop, not_yet_implemented, State}.
+	{ok, State}.
 
 terminate(_Reason, #state{panel=Panel}) ->
 	wxPanel:destroy(Panel).
@@ -336,15 +353,21 @@ terminate(_Reason, #state{panel=Panel}) ->
 %% =====================================================================
 %% @doc Get the path associated to the tree item Item.
 
+-spec get_path(wxTreeCtrl:wxTreeCtrl(), integer()) -> path().
+
 get_path(Tree, Item) ->
 	case wxTreeCtrl:getItemData(Tree, Item) of
-		{_Id, Path} -> Path;
-		Path -> Path
+		{_Id, Path} ->
+      Path;
+		Path ->
+      Path
 	end.
 
 
 %% =====================================================================
 %% @doc Alternate the background colour for each section.
+
+-spec alternate_background_all(wxTreeCtrl:wxTreeCtrl()) -> term().
 
 alternate_background_all(Tree) ->
   alternate_background_of_children(Tree, get_projects_root(Tree)),
@@ -355,17 +378,21 @@ alternate_background_all(Tree) ->
 %% @doc Set the background colour for all visible children of Item.
 %% Includes those items that are currently scrolled out of view.
 
+-spec alternate_background_of_children(wxTreeCtrl:wxTreeCtrl(), integer()) -> term().
+
 alternate_background_of_children(Tree, Item0) ->
 	lists:foldl(
 	fun(Item1, Acc) ->
 		set_item_background(Tree, Item1, Acc),
 		Acc+1
 	end,
-	0, lists:reverse(get_children_recursively(Tree, Item0))). 
+	0, lists:reverse(get_children_recursively(Tree, Item0))).
 
 
 %% =====================================================================
 %% @doc Set the background colour for a single item.
+
+-spec set_item_background(wxTreeCtrl:wxTreeCtrl(), integer(), integer()) -> ok.
 
 set_item_background(Tree, Item, Index) ->
 	case Index rem 2 of
@@ -379,13 +406,18 @@ set_item_background(Tree, Item, Index) ->
 %% =====================================================================
 %% @doc Get all children recursively.
 
+-spec get_children_recursively(wxTreeCtrl:wxTreeCTrl(), integer()) -> [integer()].
+
 get_children_recursively(Tree, Item) ->
   {FirstChild, _} = wxTreeCtrl:getFirstChild(Tree, Item),
   get_children_recursively(Tree, FirstChild, []).
 
+-spec get_children_recursively(wxTreeCtrl:wxTreeCTrl(), integer(), [integer()]) -> [integer()].
+
 get_children_recursively(Tree, Item, Acc) ->
 	case wxTreeCtrl:isTreeItemIdOk(Item) of
-		false -> Acc;
+		false ->
+      Acc;
 		true ->
 			Res = case wxTreeCtrl:itemHasChildren(Tree, Item) and wxTreeCtrl:isExpanded(Tree, Item) of
 				true ->
@@ -395,11 +427,13 @@ get_children_recursively(Tree, Item, Acc) ->
 			end,
 			get_children_recursively(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Res)
 	end.
-  
-  
+
+
 %% =====================================================================
 %% @doc Get every item in the tree which currently occupys a row.
 %% This ignores any children of a collapsed item.
+
+-spec get_all_items(wxTreeCtrl:wxTreeCtrl()) -> [integer()].
 
 get_all_items(Tree) ->
   get_children_recursively(Tree, wxTreeCtrl:getRootItem(Tree)).
@@ -408,33 +442,39 @@ get_all_items(Tree) ->
 %% =====================================================================
 %% @doc Get the tree item whose data (path) is Path.
 
+-spec get_item_from_path(wxTreeCtrl:wxTreeCtrl(), [integer()], path()) -> integer().
+
 get_item_from_path(_Tree, [], _Path) -> no_item;
 get_item_from_path(Tree, [H|T], Path) ->
 	case get_path(Tree, H) of
 		Path -> H;
 		_ -> get_item_from_path(Tree, T, Path)
 	end.
-  
-  
+
+
 %% =====================================================================
 %% @doc Get a list of files in a given root directory then build its
 %% subdirectories.
 
-insert(Tree, Parent, Dir0) ->
+-spec insert(wxTreeCtrl:wxTreeCtrl(), integer(), path()) -> ok.
+
+insert(Tree, ParentItem, Dir0) ->
   Dir1 = filename:join([Dir0, "*"]),
 	Files = filelib:wildcard(Dir1),
-	add_files(Tree, Parent, lists:reverse(Files)).
+	add_files(Tree, ParentItem, lists:reverse(Files)).
 
 
 %% =====================================================================
 %% @doc
 
+-spec add_files(wxTreeCtrl:wxTreeCtrl(), integer(), [path()]) -> ok.
+
 add_files(_, _, []) ->
   ok;
 add_files(Tree, Item, [File|Files]) ->
-  
   case hd(filename:basename(File)) of
-    $. -> ok; %% Hide hidden files
+    $. ->
+      ok; %% Hide hidden files
     _ ->
       FileName = filename:basename(File),
     	IsDir = filelib:is_dir(File),
@@ -455,19 +495,25 @@ add_files(Tree, Item, [File|Files]) ->
 %% =====================================================================
 %% @doc Get the project's root item when given any item.
 
+-spec get_project_root(wxTreeCtrl:wxTreeCtrl(), integer()) -> integer().
+
 get_project_root(Tree, Item) ->
 	get_project_root(Tree, get_projects_root(Tree),
-  wxTreeCtrl:getItemParent(Tree, Item), Item).
+    wxTreeCtrl:getItemParent(Tree, Item), Item).
+
+-spec get_project_root(wxTreeCtrl:wxTreeCtrl(), integer(), integer(), integer()) -> integer().
 
 get_project_root(_Tree, Root, Root, Item) ->
 	Item;
 get_project_root(Tree, Root, Parent, Item) ->
 	get_project_root(Tree, Root, wxTreeCtrl:getItemParent(Tree, Parent),
 			wxTreeCtrl:getItemParent(Tree, Item)).
-      
+
 
 %% =====================================================================
 %% @doc Get a list of project root items.
+
+-spec get_projects(wxTreeCtrl:wxTreeCtrl()) -> [integer()].
 
 get_projects(Tree) ->
   Root = get_projects_root(Tree),
@@ -478,6 +524,9 @@ get_projects(Tree) ->
     false ->
       []
   end.
+
+-spec get_projects(wxTreeCtrl:wxTreeCtrl(), integer(), [integer()]) -> [integer()].
+
 get_projects(Tree, Item, Acc) ->
   Next = wxTreeCtrl:getNextSibling(Tree, Item),
   case wxTreeCtrl:isTreeItemIdOk(Next) of
@@ -486,11 +535,13 @@ get_projects(Tree, Item, Acc) ->
     false ->
       Acc
   end.
-  
+
 
 %% =====================================================================
-%% @doc Get the item from the given list of project root items whose 
+%% @doc Get the item from the given list of project root items whose
 %% client data contains the project id.
+
+-spec get_item_from_list(wxTreeCtrl:wxTreeCtrl(), project_id(), [integer()]) -> integer().
 
 get_item_from_list(Tree, ProjectId, [Project|Projects]) ->
   {Id, _} = wxTreeCtrl:getItemData(Tree, Project),
@@ -504,6 +555,8 @@ get_item_from_list(Tree, ProjectId, [Project|Projects]) ->
 
 %% =====================================================================
 %% @doc Check if tree item has children. If so, set item has children.
+
+-spec check_dir_has_contents(wxTreeCtrl:wxTreeCtrl(), integer(), path()) -> ok.
 
 check_dir_has_contents(Tree, Item, FilePath) ->
   Children = filelib:wildcard(filename:join([FilePath, "*"])),
@@ -521,16 +574,26 @@ check_dir_has_contents(Tree, Item, FilePath) ->
       ok
   end.
 
-%% MSW command_tree_item_expanding workaround
+
+%% =====================================================================
+%% @doc MSW command_tree_item_expanding workaround
+
+-spec add_dummy_child(wxTreeCtrl:wxTreeCtrl(), integer()) -> integer().
+
 add_dummy_child(Tree, Item) ->
   wxTreeCtrl:appendItem(Tree, Item, "DUMMY").
-      
+
+
 %% =====================================================================
 %% @doc Print the tree for debugging purposes
+
+-spec print_tree_debug(wxTreeCtrl:wxTreeCtrl()) -> ok.
 
 print_tree_debug(Tree) ->
 	Root = wxTreeCtrl:getRootItem(Tree),
 	print_tree_debug(Tree, Root, 0).
+
+-spec print_tree_debug(wxTreeCtrl:wxTreeCtrl(), integer(), integer()) -> ok.
 
 print_tree_debug(Tree, Node, Indent) ->
 	Spac = lists:duplicate(Indent + 1, "---"),
@@ -539,17 +602,20 @@ print_tree_debug(Tree, Node, Indent) ->
 		true ->
 			{Child, _} = wxTreeCtrl:getFirstChild(Tree, Node),
 			print_tree_debug(Tree, Child, Indent + 1);
-		false -> ok
+		false ->
+      ok
 	end,
 	Sibling = wxTreeCtrl:getNextSibling(Tree, Node),
 	case wxTreeCtrl:isTreeItemIdOk(Sibling) of
-		true -> print_tree_debug(Tree, Sibling, Indent);
-		false -> ok
+		true ->
+      print_tree_debug(Tree, Sibling, Indent);
+		false ->
+      ok
 	end.
 
 
 %% =====================================================================
-%% @doc Add Item to Tree. 
+%% @doc Add Item to Tree.
 %% Calls wxTreeCtrl:appendItem/4 but applys any formatting to the item.
 
 %% header -> {header, ID}
@@ -559,9 +625,13 @@ print_tree_debug(Tree, Node, Indent) ->
 %% standalone_file -> {standalone_file, Path}
 %% placeholder
 
+-spec append_item(wxTreeCtrl:wxTreeCtrl(), integer(), string()) -> integer().
+
 append_item(Tree, Item, Filename) ->
   append_item(Tree, Item, Filename, []).
-  
+
+-spec append_item(wxTreeCtrl:wxTreeCtrl(), integer(), string(), list()) -> integer().
+
 append_item(Tree, Item, Filename, Data) ->
   Itm = wxTreeCtrl:appendItem(Tree, Item, Filename, Data),
   case os:type() of
@@ -569,7 +639,8 @@ append_item(Tree, Item, Filename, Data) ->
       Font = wxTreeCtrl:getItemFont(Tree, Itm),
       wxFont:setPointSize(Font, 12),
       wxTreeCtrl:setItemFont(Tree, Itm, Font);
-    _ -> ok
+    _ ->
+      ok
   end,
   Itm.
 
@@ -578,17 +649,21 @@ append_item(Tree, Item, Filename, Data) ->
 %% @doc Determine whether Item is the root (header) for the projects,
 %% ("Projects") branch of the tree.
 
+-spec is_projects_root(wxTreeCtrl:wxTreeCtrl(), integer()) -> true | false.
+
 is_projects_root(Tree, Item) ->
   case get_projects_root(Tree) of
     Item -> true;
     _ -> false
   end.
-  
+
 
 %% =====================================================================
 %% @doc Determine whether Item is the root (header) for the standalone
 %% files branch of the tree.
-   
+
+-spec is_standalone_root(wxTreeCtrl:wxTreeCtrl(), integer()) -> boolean().
+
 is_standalone_root(Tree, Item) ->
   case get_standalone_root(Tree) of
     Item -> true;
@@ -599,7 +674,10 @@ is_standalone_root(Tree, Item) ->
 %% =====================================================================
 %% @doc Get the root (header) item for projects.
 %% @equiv get_header(Tree, ?HEADER_PROJECTS).
- 
+
+-spec get_projects_root(wxTreeCtrl:wxTreeCtrl()) -> integer().
+
+
 get_projects_root(Tree) ->
   get_header(Tree, ?HEADER_PROJECTS).
 
@@ -608,13 +686,17 @@ get_projects_root(Tree) ->
 %% @doc Get the root (header) item for standalone files.
 %% @equiv get_header(Tree, ?HEADER_FILES).
 
+-spec get_standalone_root(wxTreeCtrl:wxTreeCtrl()) -> integer().
+
 get_standalone_root(Tree) ->
   get_header(Tree, ?HEADER_FILES).
-  
+
 
 %% =====================================================================
 %% @doc Find the header with the id Id
 %% All headers will be a first child of the (hidden) root.
+
+-spec get_header(wxTreeCtrl:wxTreeCtrl(), integer()) -> integer().
 
 get_header(Tree, HeaderId) ->
   {Item, _} = wxTreeCtrl:getFirstChild(Tree, wxTreeCtrl:getRootItem(Tree)),
@@ -625,10 +707,13 @@ get_header(Tree, HeaderId) ->
 %% @doc Locate the sibling of Item with client data Data.
 %% The item MUST exist, otherwise this function will loop indefinitely.
 
+-spec get_sibling(wxTreeCtrl:wxTreeCtrl(), integer(), integer()) -> integer().
+
 get_sibling(Tree, Item, Data) ->
   case wxTreeCtrl:getItemData(Tree, Item) of
-    Data -> Item;
-    _ -> 
+    Data ->
+      Item;
+    _ ->
       get_sibling(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Data)
   end.
 
@@ -636,6 +721,8 @@ get_sibling(Tree, Item, Data) ->
 %% =====================================================================
 %% @doc Determine whether Item should be selectable. An item is selectable
 %% if it is NOT a header or a placeholder.
+
+-spec is_selectable(wxTreeCtrl:wxTreeCtrl(), integer()) -> boolean().
 
 is_selectable(Tree, Item) ->
   Bool = is_projects_root(Tree, Item) orelse
@@ -647,7 +734,9 @@ is_selectable(Tree, Item) ->
 %% =====================================================================
 %% @doc Determine whether Item is a placeholder. A placeholder item
 %% has a specific (unique) client data.
- 
+
+-spec is_placeholder(wxTreeCtrl:wxTreeCtrl(), integer()) -> boolean().
+
 is_placeholder(Tree, Item) ->
   case wxTreeCtrl:getItemData(Tree, Item) of
     placeholder -> true;
@@ -659,21 +748,26 @@ is_placeholder(Tree, Item) ->
 %% @doc Locate the tree item that represents the standalone file with
 %% the path Path.
 %% The item must exist.
- 
+
+-spec find_standalone(wxTreeCtrl:wxTreeCtrl(), path()) -> integer().
+
 find_standalone(Tree, Path) ->
   Root = get_standalone_root(Tree),
   {FirstItem, _} = wxTreeCtrl:getFirstChild(Tree, Root),
   get_sibling(Tree, FirstItem, Path).
 
-  
+
 %% =====================================================================
 %% @doc If the node represents a file then open the file, otherwise
 %% toggle the item to display any children.
 
+-spec open_file(wxTreeCtrl:wxTreeCtrl(), integer()) -> ok | error.
+
 open_file(Tree, Item) ->
   FilePath = get_path(Tree, Item),
   case filelib:is_dir(FilePath) of
-    true -> ok;
+    true ->
+      ok;
     false ->
       case wxTreeCtrl:getItemData(Tree, Item) of
         {Id, _Path} ->
@@ -688,18 +782,23 @@ open_file(Tree, Item) ->
 %% @doc The placeholder will always be the first child of the header.
 %% Item should always be a header.
 
+-spec remove_placeholder(wxTreeCtrl:wxTreeCtrl(), integer()) -> ok.
+
 remove_placeholder(Tree, Item) ->
   {Child, _} = wxTreeCtrl:getFirstChild(Tree, Item),
   case wxTreeCtrl:getItemData(Tree, Child) of
     placeholder ->
       wxTreeCtrl:delete(Tree, Child);
-    _ -> ok
+    _ ->
+      ok
   end.
 
 
 %% =====================================================================
-%% @doc If the header item Item has 0 children, then display the 
+%% @doc If the header item Item has 0 children, then display the
 %% placeholder.
+
+-spec insert_placeholder(wxTreeCtrl:wxTreeCtrl(), integer(), string()) -> ok.
 
 insert_placeholder(Tree, Item, Msg) ->
   case wxTreeCtrl:getChildrenCount(Tree, Item) of
@@ -709,16 +808,18 @@ insert_placeholder(Tree, Item, Msg) ->
     _ ->
       ok
   end.
-  
+
 
 %% =====================================================================
 %% @doc This function sets a tree item to bold.
 %% This is required because a consequence of reducing the font size on
 %% darwin to improve the appearence is that wxTreeCtrl:setItemBold has
-%% no affect. The small window variant is too small in this instance, so 
+%% no affect. The small window variant is too small in this instance, so
 %% the font weight must be changed manually.
-%% On other platforms the standard function wxTreeCtrl:setItemBold/3 
+%% On other platforms the standard function wxTreeCtrl:setItemBold/3
 %% can be used.
+
+-spec set_item_bold(wxTreeCtrl:wxTreeCtrl(), integer()) -> ok.
 
 set_item_bold(Tree, Item) ->
   case os:type() of
@@ -729,10 +830,12 @@ set_item_bold(Tree, Item) ->
     _ ->
       wxTreeCtrl:setItemBold(Tree, Item, [{bold, true}])
   end.
-  
+
 
 %% =====================================================================
 %% @doc Create the popup menu.
+
+-spec create_menu() -> wxMenu:wxMenu().
 
 create_menu() ->
     Menu = wxMenu:new([]),
@@ -750,15 +853,12 @@ create_menu() ->
     Menu.
 
 
-%% =====================================================================
-%% @doc 
-
 % find_root(FilePath) ->
 %   find_root(FilePath, []).
-%   
+%
 % find_root(FilePath, Acc) ->
 %   Tree = wx_object:call(?MODULE, tree),
-%   case get_item_from_path(Tree, get_all_items(Tree), FilePath) of 
+%   case get_item_from_path(Tree, get_all_items(Tree), FilePath) of
 %     no_item ->
 %       find_root(filename:dirname(FilePath), [FilePath|Acc]);
 %     Item ->
@@ -766,7 +866,7 @@ create_menu() ->
 %       wxTreeCtrl:toggle(Tree, Item),
 %       toggle_items(Tree, Acc)
 %   end.
-  
+
 % toggle_items(Tree, [Path]) ->
 %   Item = poll_tree_item(Tree, get_all_items(Tree), Path),
 %   wxTreeCtrl:selectItem(Tree, Item),
@@ -786,7 +886,13 @@ create_menu() ->
 %     Item ->
 %       Item
 %   end.
-  
+
+
+%% =====================================================================
+%% @doc
+
+-spec select(wxTreeCtrl:wxTreeCtrl(), integer()) -> ok.
+
 select(Tree, Item) ->
   case wxTreeCtrl:getItemData(Tree, Item) of
     {ProjectId, _Path} ->
@@ -795,15 +901,19 @@ select(Tree, Item) ->
     _Path -> %% Standalone document
       ide_proj_man:set_active_project(undefined)
   end.
-  
 
-%% used for standalone files only
-%% return false if file with path is not in tree, or return item if it is.
+%% =====================================================================
+%% @doc Check if file with path is in tree.
+%% Used for standalone files only.
+
+-spec is_in_tree(wxTreeCtrl:wxTreeCtrl(), path(), Children) -> integer() | false when
+  Children :: [integer()] | [].
+
 is_in_tree(_Tree, _Path, []) ->
   false;
 is_in_tree(Tree, Path, [Child|Children]) ->
   case wxTreeCtrl:getItemData(Tree, Child) of
-    Path -> 
+    Path ->
       Child;
     _ ->
       is_in_tree(Tree, Path, Children)

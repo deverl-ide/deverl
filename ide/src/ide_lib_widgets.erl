@@ -40,18 +40,22 @@ rc_dir(File) ->
 %% @doc Get a placeholder panel that displays some text within the parent
 %% when the parent is otherwise empty.
 
+-spec placeholder(wxWindow:wxWindow(), string()) -> wxPanel:wxPanel().
+
 placeholder(Parent, Str) ->
 	placeholder(Parent, Str, []).
-	
+
+-spec placeholder(wxWindow:wxWindow(), string(), list()) -> wxPanel:wxPanel().
+
 placeholder(Parent, Str, Options) ->
 	%% Linux (Mint, at least!) needs an additional horizontal sizer (seems like it
 	%% ignores {style, ?wxALIGN_CENTRE}).
-	
+
 	Panel = wxPanel:new(Parent),
 	wxPanel:setBackgroundColour(Panel, ?PANEL_BG),
 	Sz = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(Panel, Sz),
-	
+
 	HSz = wxBoxSizer:new(?wxHORIZONTAL),
 	case os:type() of
 		{_, linux} ->
@@ -66,45 +70,51 @@ placeholder(Parent, Str, Options) ->
 			wxSizer:addStretchSpacer(HSz);
 			_ -> ok
 	end,
-	
+
 	Fg = case proplists:get_value(fgColour, Options) of
 		undefined -> ?PANEL_FG;
 		C -> C
 	end,
 	wxStaticText:setForegroundColour(Text, Fg),
 	%wxSizer:add(HSz, Text, [{proportion, 1}, {flag, ?wxEXPAND}]),
-	
+
 	wxSizer:addStretchSpacer(Sz),
 	wxSizer:add(Sz, HSz, [{proportion, 1}, {flag, ?wxEXPAND}]),
 	wxSizer:addStretchSpacer(Sz),
 	Panel.
-	
+
 
 %% =====================================================================
 %% @doc Get a new shade of Colour.
+
+-spec colour_shade(RGB | RGBA, float()) -> RGB | RGBA when
+  RGB  :: {integer(), integer(), integer()},
+  RGBA :: {integer(), integer(), integer(), integer()}.
+
 
 colour_shade({R,G,B}, Scalar) ->
 	{get_shade(R, Scalar), get_shade(G, Scalar), get_shade(B, Scalar)};
 colour_shade({R,G,B,A}, Scalar) ->
 	{get_shade(R, Scalar), get_shade(G, Scalar), get_shade(B, Scalar), A}.
 
-  
-  
+
+
 %% =====================================================================
 %% @doc Convert calender:datetime() to a string of the form
 %% YYYY-MM-DD HH:MM:SS
 
--spec datetime_to_string(DateTime) -> string() when
-  DateTime :: calender:datetime().
+-spec datetime_to_string(calender:datetime()) -> string().
 
 datetime_to_string({{Y, M, D}, {H, Mi, S}}) ->
   Args = [Y, M, D, H, Mi, S],
   Str = io_lib:format("~B-~2.10.0B-~2.10.0B ~2.10.0B:~2.10.0B:~2.10.0B", Args),
   lists:flatten(Str).
- 
-  
+
+
 %% =====================================================================
 %% @doc Set the background colour for a single list item.
+
+-spec set_list_item_background(wxListCtrl:wxListCtrl(), integer()) -> ok.
 
 set_list_item_background(ListCtrl, Item) ->
 	case Item rem 2 of
@@ -113,15 +123,17 @@ set_list_item_background(ListCtrl, Item) ->
 	  _ ->
 	 		wxListCtrl:setItemBackgroundColour(ListCtrl, Item, ?ROW_BG_ODD)
 	end.
-  
+
 
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
 
 %% =====================================================================
-%% @doc  
+%% @doc
 %% @private
+
+-spec get_shade(integer(), float()) -> integer().
 
 get_shade(V, Scalar) ->
 	Shade = round(V * Scalar),

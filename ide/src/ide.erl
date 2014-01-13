@@ -16,8 +16,8 @@
 -behaviour(wx_object).
 -export([init/1, terminate/2,  code_change/3,
          handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
-	
-%% API			 
+
+%% API
 -export([start/0,
          start/1,
          set_title/1,
@@ -40,7 +40,7 @@
                 splitter_output_active :: wxWindow:wxWindow(),
                 menu_ets
                 }).
-								
+
 %% Macros
 -define(DEFAULT_FRAME_WIDTH,  1100).
 -define(DEFAULT_FRAME_HEIGHT, 680).
@@ -70,7 +70,7 @@
 
 start() ->
   start([]).
-  
+
 -spec start([Option]) -> wx_object:wx_object() when
   Option :: {debug, list() | atom()} |
             {silent_start, boolean()}.
@@ -91,7 +91,7 @@ set_title(Title) ->
 
 %% =====================================================================
 %% @doc Enable/disable a menu group.
-%% Menu items can be associated to one or more menu groups (bit 
+%% Menu items can be associated to one or more menu groups (bit
 %% flags, defined in ide.hrl). The Mask is compared using bitwise AND to
 %% every menu item. If the menu item has the group bit set then it will
 %% be enabled when Toggle is true and disabled when Toggle is false.
@@ -104,14 +104,14 @@ toggle_menu_group(Mask, Toggle) ->
 
 %% =====================================================================
 %% @doc Show the window identified by WinId in the output window, hiding the
-%% window currently displayed. 
+%% window currently displayed.
 
 -spec display_output_window(integer()) -> ok.
 
 display_output_window(WinId) ->
-  wx_object:cast(?MODULE, {output_display, WinId}).		
-  
-  
+  wx_object:cast(?MODULE, {output_display, WinId}).
+
+
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
@@ -120,19 +120,19 @@ init(Options) ->
 	Wx = wx:new(Options),
 	WxEnv = wx:get_env(),
 	process_flag(trap_exit, true),
-  
+
   %% Set small window variant globally
   % wxSystemOptions:setOption("window-default-variant", ?wxWINDOW_VARIANT_SMALL),
-  
-  Xrc = wxXmlResource:get(),
-  wxXmlResource:initAllHandlers(Xrc),
-  true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("dlgs.xrc")),
-  true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("derivdlg.xrc")),
+
+  %Xrc = wxXmlResource:get(),
+  %wxXmlResource:initAllHandlers(Xrc),
+  %true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("dlgs.xrc")),
+  %true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("derivdlg.xrc")),
 
 	Frame = wxFrame:new(Wx, ?wxID_ANY, ?FRAME_TITLE, [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
 	wxFrame:connect(Frame, close_window),
 	wxFrame:setMinSize(Frame, {300,200}),
-	
+
 	%% Load modules that should be started by OTP Application and not here
   ide_sys_pref_gen:start([{wx_env, WxEnv}]),
   ProjDir = ide_sys_pref_gen:get_preference(project_directory),
@@ -146,7 +146,7 @@ init(Options) ->
 
 	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Frame, FrameSizer),
-	
+
 	SplitterStyle = case os:type() of
 		{_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
     {win32, _} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE bor ?wxBORDER_THEME;
@@ -156,7 +156,7 @@ init(Options) ->
 		{style, SplitterStyle}]),
 	SplitterSidebar = wxSplitterWindow:new(SplitterUtilities, [{id, ?SPLITTER_SIDEBAR},
 		{style, SplitterStyle}]),
-    
+
 	wxSplitterWindow:setSashGravity(SplitterUtilities, 0.5),
 	wxSplitterWindow:setSashGravity(SplitterSidebar, 0.60),
 
@@ -170,7 +170,7 @@ init(Options) ->
 
 	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),
-                                        
+
 	Workspace = create_workspace(SplitterSidebar),
 
 	%% The left window
@@ -199,9 +199,9 @@ init(Options) ->
   % AccelTab = wxAcceleratorTable:new(1,
   %   [wxAcceleratorEntry:new([{flags, ?wxACCEL_NORMAL}, {keyCode, ?WXK_SPACE}, {cmd, ?MENU_ID_FONT}])]),
   % wxFrame:setAcceleratorTable(Frame, AccelTab),
-  
+
   %% Toggle menu defaults
-  toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY bor 
+  toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY bor
                     ?MENU_GROUP_PROJECTS_EMPTY, false),
 
   {Frame, #state{
@@ -267,7 +267,7 @@ handle_cast({output_display, Window}, State=#state{splitter_output_pos=Pos}) ->
   replace_output_window(Splitter, Win, Pos),
   {noreply, State}.
 
-%% @hidden  
+%% @hidden
 code_change(_, _, State) ->
   {ok, State}.
 
@@ -320,7 +320,7 @@ handle_event(#wx{id=?SPLITTER_UTILITIES, event=#wxSplitter{type=command_splitter
 handle_event(#wx{id=?SPLIITER_LOG, event=#wxSplitter{type=command_splitter_sash_pos_changed}}, State=#state{frame=Frame}) ->
   Pos = wxSplitterWindow:getSashPosition(wx:typeCast(wxWindow:findWindow(Frame, ?SPLIITER_LOG), wxSplitterWindow)),
   {noreply, State#state{splitter_output_pos=Pos}};
-  
+
 handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State) ->
   {noreply, State};
 
@@ -332,7 +332,7 @@ handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State)
 handle_event(#wx{id=?MENU_ID_SEARCH_DOC}, State) ->
   wx_misc:launchDefaultBrowser("http://www.erlang.org/erldoc"),
   {noreply, State};
-  
+
 handle_event(#wx{id=?wxID_EXIT}, State) ->
   case ide_doc_man_wx:close_all() of
     cancelled ->
@@ -340,13 +340,13 @@ handle_event(#wx{id=?wxID_EXIT}, State) ->
     _ ->
       {stop, normal, State}
   end;
-  
+
 handle_event(#wx{id=?MENU_ID_AUTO_INDENT=Id}, State=#state{frame=Frame}) ->
   Bool = wxMenuItem:isChecked(wxMenuBar:findItem(wxFrame:getMenuBar(Frame), Id)),
   ide_sys_pref_gen:set_preference(auto_indent, Bool),
   {noreply, State};
-  
-handle_event(#wx{id=Id}, State=#state{left_pane=LeftPane}) 
+
+handle_event(#wx{id=Id}, State=#state{left_pane=LeftPane})
     when (Id >= ?MENU_ID_PROJECTS_WINDOW) and (Id =< ?MENU_ID_FUNC_WINDOW) ->
   Idx = case Id of
     ?MENU_ID_PROJECTS_WINDOW -> 1;
@@ -356,7 +356,7 @@ handle_event(#wx{id=Id}, State=#state{left_pane=LeftPane})
   ide_tabbed_win_img_wx:set_selection(LeftPane, Idx), %% Default to projects
   {noreply, State};
 
-handle_event(#wx{id=Id}, State=#state{util_tabbed=Utils}) 
+handle_event(#wx{id=Id}, State=#state{util_tabbed=Utils})
     when (Id >= ?MENU_ID_CONSOLE_WINDOW) and (Id =< ?MENU_ID_DEBUGGER_WINDOW) ->
   Idx = case Id of
     ?MENU_ID_CONSOLE_WINDOW -> 1;
@@ -365,25 +365,25 @@ handle_event(#wx{id=Id}, State=#state{util_tabbed=Utils})
   end,
   ide_tabbed_win_wx:set_selection(Utils, Idx), %% Default to projects
   {noreply, State};
-  
+
 %% Handle copy/paste
 % Currently on MSW and Linux the menu event is not caught by the in focus control even when
-% it has a registered handler for it. On OSX the event is caught as expected (and will 
+% it has a registered handler for it. On OSX the event is caught as expected (and will
 % propagate up through the hierarchy). Not sure which of
 % these behaviours is correct. Due to this we have to catch the copy/paste/cut etc. menu
 % events here, find out which control was in focus and then execute the correct function on it.
-% We have tried but failed to find an wxErlang alternative to the wxWidget 
-% wxEventHandler->proccess_event() function that would allow us to pass the event to the in-focus 
+% We have tried but failed to find an wxErlang alternative to the wxWidget
+% wxEventHandler->proccess_event() function that would allow us to pass the event to the in-focus
 % control, and so this is the workaround we have adopted.
 handle_event(#wx{id=?wxID_PASTE}, State) ->
   Fw = wxWindow:findFocus(),
   Id = wxWindow:getId(Fw),
   case Id of
-    ?WINDOW_CONSOLE -> 
+    ?WINDOW_CONSOLE ->
       ide_console_wx:paste(wx:typeCast(Fw, wxStyledTextCtrl));
     Tc when Tc =:= ?WINDOW_OUTPUT; Tc =:= ?WINDOW_FUNCTION_SEARCH ->
        wxTextCtrl:paste(wx:typeCast(Fw, wxTextCtrl));
-    _ -> 
+    _ ->
       wxStyledTextCtrl:paste(wx:typeCast(Fw, wxStyledTextCtrl))
   end,
   {noreply, State};
@@ -417,7 +417,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSC
 		false -> "Exit Fullscreen"
 	end,
 	ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, Label ++ "\tCtrl+Alt+F"),
-	{noreply, State};	
+	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_TEST},
 						 State=#state{splitter_sidebar=V, left_pane=LeftPane, workspace=Ws, splitter_sidebar_pos=VPos}) ->
    wxWindow:freeze(V),
@@ -454,7 +454,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_ED
 	(_,_,_) -> maximise %% Unsplit both, even if already unsplit
 	end,
 	case Fun(wxSplitterWindow:isSplit(H), wxSplitterWindow:isSplit(V), wxSplitterWindow:isShown(Utils)) of
-		maximise -> 
+		maximise ->
 			wxSplitterWindow:unsplit(H,[{toRemove, Utils}]),
 			wxSplitterWindow:unsplit(V,[{toRemove, LeftPane}]);
 		_ -> ok
@@ -491,9 +491,9 @@ handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=com
 		_ -> nomatch
 	end,
 	case Result of
-		{ok,{M,F,A}} -> 
+		{ok,{M,F,A}} ->
 			erlang:apply(M,F,A);
-		nomatch -> 
+		nomatch ->
 			io:format("Not yet implemented~n")
 	end,
   {noreply, State};
@@ -504,11 +504,11 @@ handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=com
 %% =====================================================================
 
 % Output windows (log, output etc.)
-handle_event(#wx{userData={Splitter, Window}, event=#wxCommand{type=command_button_clicked}}, 
+handle_event(#wx{userData={Splitter, Window}, event=#wxCommand{type=command_button_clicked}},
              State=#state{splitter_output_pos=Pos}) ->
   replace_output_window(Splitter, Window, Pos),
   {noreply, State};
-handle_event(#wx{id=?BUTTON_HIDE_OUTPUT=Id, userData=Splitter, event=#wxCommand{type=command_button_clicked}}, 
+handle_event(#wx{id=?BUTTON_HIDE_OUTPUT=Id, userData=Splitter, event=#wxCommand{type=command_button_clicked}},
              State=#state{splitter_output_active=Aw, splitter_output_pos=Pos}) ->
   Window2 = wxSplitterWindow:getWindow2(Splitter),
   Bmp = case wxSplitterWindow:isSplit(Splitter) of
@@ -522,13 +522,13 @@ handle_event(#wx{id=?BUTTON_HIDE_OUTPUT=Id, userData=Splitter, event=#wxCommand{
   Btn = wx:typeCast(wxWindow:findWindowById(Id), wxBitmapButton),
   wxBitmapButton:setBitmapLabel(Btn, Bmp),
   {noreply, State#state{splitter_output_active=Window2}};
-     
+
 %% Event catchall for testing
 handle_event(Ev, State) ->
   io:format("IDE event catchall: ~p\n", [Ev]),
   {noreply, State}.
-    
-  
+
+
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
@@ -547,17 +547,17 @@ create_utils(ParentA) ->
   Parent = wxPanel:new(ParentA),
   Sz = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(Parent, Sz),
-     
+
  	SplitterStyle = case os:type() of
  		{_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
  		_ -> ?wxSP_3DSASH
  	end,
 	Splitter = wxSplitterWindow:new(Parent, [{id, ?SPLIITER_LOG}, {style, SplitterStyle}]),
   wxSplitterWindow:setSashGravity(Splitter, 0.5),
-  
+
   %% Splitter window 1
 	TabbedWindow = ide_tabbed_win_wx:new([{parent, Splitter}]),
-	
+
 	%% Start the port that communicates with the external ERTs
 	Console = case ide_console_sup:start_link([]) of
 		{error, _E} ->
@@ -570,21 +570,21 @@ create_utils(ParentA) ->
 
   % Observer = ide_observer:start([{parent, TabbedWindow}]),
   % ide_tabbed_win_wx:add_page(TabbedWindow, Observer, "Observer"),
-  
+
   Dialyser = ide_lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
 	ide_tabbed_win_wx:add_page(TabbedWindow, Dialyser, "Dialyser"),
-	
+
   Debugger = ide_lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
 	ide_tabbed_win_wx:add_page(TabbedWindow, Debugger, "Debugger"),
-	
+
 	ide_tabbed_win_wx:set_selection(TabbedWindow, 1),
-  
+
   %% Splitter window 2
-  
+
   CreateWindow = fun(P, WindowModule, Id) ->
     W = wxPanel:new(P, [{winid, Id}]),
     WSz = wxBoxSizer:new(?wxHORIZONTAL),
-    wxSizer:add(WSz, WindowModule:new([{parent, W}]), [{flag, ?wxEXPAND}, {proportion, 1}]),  
+    wxSizer:add(WSz, WindowModule:new([{parent, W}]), [{flag, ?wxEXPAND}, {proportion, 1}]),
     wxPanel:setSizer(W, WSz),
     wxPanel:hide(W),
     W
@@ -592,7 +592,7 @@ create_utils(ParentA) ->
 
   Log = CreateWindow(Splitter, ide_log_out_wx, ?WINDOW_LOG),
   CompilerOutput = CreateWindow(Splitter, ide_compiler_out_wx, ?WINDOW_OUTPUT),
-  
+
   wxSplitterWindow:splitVertically(Splitter, TabbedWindow, Log, [{sashPosition, ?SPLITTER_LOG_SASH_POS_DEFAULT}]),
   wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
@@ -600,30 +600,30 @@ create_utils(ParentA) ->
   ToolBar = wxPanel:new(Parent),
   ToolBarSz = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(ToolBar, ToolBarSz),
-  
+
   % ButtonFlags = [{style, ?wxBORDER_SIMPLE}],
   ButtonFlags = [{style, ?wxBORDER_NONE}],
   % ButtonFlags = [],
   Button1 = wxBitmapButton:new(ToolBar, ?BUTTON_LOG, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
   Button2 = wxBitmapButton:new(ToolBar, ?BUTTON_COMPILER_OUTPUT, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
   Button3 = wxBitmapButton:new(ToolBar, ?BUTTON_HIDE_OUTPUT, wxArtProvider:getBitmap("wxART_GO_BACK", [{size, {16,16}}]), ButtonFlags),
-  
+
   %% Connect button handlers
   wxPanel:connect(Button1, command_button_clicked, [{userData, {Splitter, Log}}]),
   wxPanel:connect(Button2, command_button_clicked, [{userData, {Splitter, CompilerOutput}}]),
   wxPanel:connect(Button3, command_button_clicked, [{userData, Splitter}]),
-  
+
   SzFlags = [{border, 3}, {flag, ?wxALL}],
   wxSizer:add(ToolBarSz, Button1, SzFlags),
   wxSizer:add(ToolBarSz, Button2, SzFlags),
-  
+
   wxSizer:addStretchSpacer(ToolBarSz),
   wxSizer:add(ToolBarSz, Button3, SzFlags),
-    
+
   wxSizer:add(Sz, ToolBar, [{flag, ?wxEXPAND}, {proportion, 0}]),
-  
+
   ide_log_out_wx:message("Application started."),
-  
+
 	{Parent, TabbedWindow, Log}.
 
 
@@ -637,19 +637,19 @@ create_left_window(Frame, Parent) ->
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("books-stack.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("clipboard-task.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("function.png")))),
-	
+
 	Toolbook = ide_tabbed_win_img_wx:new([{parent, Parent}]),
 	ide_tabbed_win_img_wx:assign_image_list(Toolbook, ImgList),
 
 	ProjectTrees = ide_proj_tree_wx:start([{parent, Toolbook}, {frame, Frame}]),
 	ide_tabbed_win_img_wx:add_page(Toolbook, ProjectTrees, "Browser", [{imageId, 0}]),
-	
+
   TestPanel = ide_lib_widgets:placeholder(Toolbook, "No Tests"),
 	ide_tabbed_win_img_wx:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
-	
+
 	FunctionsPanel = ide_sl_wx:start([{parent, Toolbook}]),
 	ide_tabbed_win_img_wx:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
-	
+
 	ide_tabbed_win_img_wx:set_selection(Toolbook, 1), %% Default to projects
 	Toolbook.
 
@@ -665,7 +665,7 @@ create_workspace(Parent) ->
 
 %% =====================================================================
 %% @doc Enable/disable a menu item.
-%% For the menu item identified by Id, Groups is compared to Mask using bitwise AND. 
+%% For the menu item identified by Id, Groups is compared to Mask using bitwise AND.
 %% If the item has the group bit set then it will be enabled when
 %% Enabled is set to true, and disabled when false.
 %% @see toggle_menu_group
@@ -690,7 +690,7 @@ toggle_menu_item(MenuBar, ToolBar, Mask, Id, Groups, Enable) ->
 
 %% =====================================================================
 %% @doc Change the currently shown window in the output window.
-  
+
 -spec replace_output_window(wxWindow:wxWindow(), wxWindow:wxWindow(), integer()) -> ok | boolean().
 
 replace_output_window(Splitter, Window, Pos) ->

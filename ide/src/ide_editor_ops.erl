@@ -80,6 +80,9 @@ find_replace(Parent) ->
 %% Functions for all open documents
 %% =====================================================================
 
+%% =====================================================================
+%% @doc
+
 set_theme(ThemeMenu) ->
   {ok, Ckd} = ide_menu:get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
 	Font = wxFont:new(ide_sys_pref_gen:get_preference(editor_font_size),
@@ -90,15 +93,27 @@ set_theme(ThemeMenu) ->
 		Font]),
   ide_sys_pref_gen:set_preference(theme, wxMenuItem:getLabel(Ckd)).
 
+
+%% =====================================================================
+%% @doc
+
 set_line_wrap(Menu) ->
   Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LINE_WRAP)),
 	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_line_wrap/2, [Bool]),
   ide_sys_pref_gen:set_preference(line_wrap, Bool).
 
+
+%% =====================================================================
+%% @doc
+
 set_line_margin_visible(Menu) ->
   Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_LN_TOGGLE)),
 	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_line_margin_visible/2, [Bool]),
   ide_sys_pref_gen:set_preference(show_line_no, Bool).
+
+
+%% =====================================================================
+%% @doc
 
 set_indent_tabs(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
   Cmd = case Id of
@@ -107,6 +122,10 @@ set_indent_tabs(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
   end,
 	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_use_tabs/2, [Cmd]),
   ide_sys_pref_gen:set_preference(use_tabs, Cmd).
+
+
+%% =====================================================================
+%% @doc
 
 set_indent_guides(Menu) ->
   Bool = wxMenuItem:isChecked(wxMenu:findItem(Menu, ?MENU_ID_INDENT_GUIDES)),
@@ -118,6 +137,9 @@ set_indent_guides(Menu) ->
 %% Functions for single documents
 %% =====================================================================
 
+%% =====================================================================
+%% @doc
+
 transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 	Cmd = case Id of
 		?MENU_ID_UC_SEL -> uppercase;
@@ -125,17 +147,26 @@ transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 	end,
 	ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:transform_selection/2, [{transform, Cmd}]).
 
+
+%% =====================================================================
+%% @doc
+
 quick_find() ->
   ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:quick_find/1, []).
-indent_right() -> 
+
+
+%% =====================================================================
+%% @doc
+
+indent_right() ->
   ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:indent_right/1, []).
-indent_left() -> 
+indent_left() ->
   ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:indent_left/1, []).
-comment() -> 
+comment() ->
   ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:comment/1, []).
-zoom_in() -> 
+zoom_in() ->
   ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:zoom_in/1, []).
-zoom_out() -> 
+zoom_out() ->
   ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:zoom_out/1, []).
 
 

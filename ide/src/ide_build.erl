@@ -9,6 +9,7 @@
 
 -module(ide_build).
 -include_lib("wx/include/wx.hrl").
+-include("ide.hrl").
 
 %% API
 -export([compile_file/0,
@@ -39,7 +40,7 @@ compile_file() ->
 %% =====================================================================
 %% @doc
 
--spec make_project() -> {ok, ide_proj_man:project_id(), string()} | {atom(), atom()}.
+-spec make_project() -> {ok, project_id(), string()} | {atom(), atom()}.
 
 make_project() ->
   make_project(true).
@@ -48,7 +49,7 @@ make_project() ->
 %% =====================================================================
 %% @doc
 
--spec make_project(boolean()) -> {ok, ide_proj_man:project_id(), string()} | {atom(), atom()}.
+-spec make_project(boolean()) -> {ok, project_id(), string()} | {atom(), atom()}.
 
 make_project(PrintMsg) ->
   case ide_doc_man_wx:save_active_project() of
@@ -131,7 +132,7 @@ load_file(Path, _Options) ->
 %% =====================================================================
 %% @doc
 
--spec build_project(wxFrame:wxFrame(), ide_proj_man:project_id()) -> ok | cancelled | error | no_return().
+-spec build_project(wxFrame:wxFrame(), project_id()) -> ok | cancelled | error | no_return().
 
 build_project(Parent, ProjectId) ->
   case ide_proj_man:get_build_config(ProjectId) of

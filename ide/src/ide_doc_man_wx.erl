@@ -40,7 +40,7 @@
 -record(document, {path :: string(),
                    ide_file_poll_gen :: ide_file_poll_gen:ide_file_poll_gen(),
                    editor :: ide_editor_wx:editor(),
-                   project_id :: ide_proj_man:project_id()}).
+                   project_id :: project_id()}).
 
 %% Types
 -type document_id() :: {integer(), integer(), integer()}.
@@ -59,8 +59,8 @@
 %% Client API
 %% =====================================================================
 
-% -spec start([Config]) -> wx_object:wx_object() when
-  
+-spec start([Config]) -> wx_object:wx_object() when
+  Config :: [{parent, wxWindow:wxWindow()}].
 
 start(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
@@ -68,6 +68,8 @@ start(Config) ->
 
 %% =====================================================================
 %% @doc Create a new file and insert it into the workspace.
+
+-spec new_document(wxFrame:wxFrame()) -> ok.
 
 new_document(Parent) ->
   OpenProjects = ide_proj_man:get_open_projects(),
@@ -84,6 +86,8 @@ new_document(Parent) ->
 %% =====================================================================
 %% @doc Insert a documents into the workspace.
 
+-spec create_document(string(), project_id()) -> ok | error.
+
 create_document(Path, ProjectId) ->
   case ide_io:create_new_file(Path) of
     error ->
@@ -97,6 +101,8 @@ create_document(Path, ProjectId) ->
 %% =====================================================================
 %% @doc
 
+-spec open_document_dialog(wxFrame:wxFrame()) -> ok.
+
 open_document_dialog(Frame) ->
   case ide_io:open_new(Frame) of
 		cancel ->
@@ -109,12 +115,16 @@ open_document_dialog(Frame) ->
 %% =====================================================================
 %% @doc
 
+-spec close_all() -> ok | cancelled.
+
 close_all() ->
   close_documents(get_open_documents()).
 
 
 %% =====================================================================
 %% @doc
+
+-spec close_active_document() -> ok | cancelled.
 
 close_active_document() ->
   close_documents([get_active_document()]).
@@ -123,6 +133,8 @@ close_active_document() ->
 %% =====================================================================
 %% @doc
 
+-spec close_project(project_id()) -> ok | cancelled.
+
 close_project(ProjectId) ->
   close_documents(get_project_documents(ProjectId)).
 
@@ -130,12 +142,18 @@ close_project(ProjectId) ->
 %% =====================================================================
 %% @doc
 
+-spec save_as() -> ok.
+
 save_as() ->
 	save_as(get_active_document()).
 
 
 %% =====================================================================
 %% @doc
+
+-spec save_all() -> {Saved, Failed} when
+  Saved :: [document_id()],
+  Failed :: [document_id()].
 
 save_all() ->
 	save_documents(get_open_documents()).
@@ -158,6 +176,10 @@ save_document(DocId) ->
 %% =====================================================================
 %% @doc
 
+-spec save_active_document() -> {Saved, Failed} when
+  Saved :: [document_id()],
+  Failed :: [document_id()].
+
 save_active_document() ->
 	%% Saving unmodified documents unnecessarily atm
 	save_documents([get_active_document()]).
@@ -165,6 +187,8 @@ save_active_document() ->
 
 %% =====================================================================
 %% @doc
+
+-spec save_active_project() -> ok | cancelled.
 
 save_active_project() ->
 	case save_project(ide_proj_man:get_active_project()) of
@@ -178,12 +202,16 @@ save_active_project() ->
 %% =====================================================================
 %% @doc Apply the function Fun to all open documents.
 
+-spec apply_to_all_documents(function(), list()) -> ok.
+
 apply_to_all_documents(Fun, Args) ->
 	apply_to_documents(Fun, Args, get_open_documents()).
 
 
 %% =====================================================================
 %% @doc
+
+-spec apply_to_active_document(function(), list()) -> ok.
 
 apply_to_active_document(Fun, Args) ->
 	apply_to_documents(Fun, Args, [get_active_document()]).
@@ -192,6 +220,8 @@ apply_to_active_document(Fun, Args) ->
 %% =====================================================================
 %% @doc
 
+-spec get_active_document() -> document_id().
+
 get_active_document() ->
   wx_object:call(?MODULE, get_active_doc).
 
@@ -199,12 +229,16 @@ get_active_document() ->
 %% =====================================================================
 %% @doc
 
+-spec get_path(document_id()) -> string().
+
 get_path(DocId) ->
   wx_object:call(?MODULE, {get_path, DocId}).
 
 
 %% =====================================================================
 %% @doc
+
+-spec set_selection(atom()) -> ok.
 
 set_selection(Direction) ->
   wx_object:cast(?MODULE, {set_sel, Direction}).
@@ -240,7 +274,7 @@ init(Config) ->
 
 	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [callback]),
   wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed, []),
-  
+
   State = #state{notebook=Notebook,
                  page_to_doc_id=[],
                  doc_records=[],
@@ -257,7 +291,7 @@ handle_cast({set_sel, Direction}, State=#state{notebook=Nb}) ->
   Cur = wxAuiNotebook:getSelection(Nb),
   N = wxAuiNotebook:getPageCount(Nb),
   Idx = case Direction of
-    left -> 
+    left ->
       (Cur - 1) rem N;
     right ->
       (Cur + 1) rem N
@@ -377,7 +411,7 @@ handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_record
 		end, DocIds),
 	lists:foreach(Fun2, List),
 	{reply, ok, State};
-  
+
 handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId, sizer=Sz}) ->
   F = fun(_G, [], Dr, P2d) -> {Dr, P2d};
          (G, [DocId | T], Dr, P2d) ->    
@@ -400,8 +434,7 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
       ide:set_title([]);
     _ -> ok
   end,
-  {reply, ok, State#state{doc_records=S, page_to_doc_id=D}}.
-  % {reply, ok, State}.
+	{reply, ok, State#state{doc_records=S, page_to_doc_id=D}}.
 
 %% Close event
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
@@ -433,6 +466,8 @@ terminate(_Reason, #state{}) ->
 %% =====================================================================
 %% @doc
 
+-spec load_editor_contents(ide_editor_wx:editor(), string()) -> ok | error.
+
 load_editor_contents(Editor, Path) ->
 	try
 		ide_editor_wx:set_text(Editor, ide_io:read_file(Path)),
@@ -441,12 +476,16 @@ load_editor_contents(Editor, Path) ->
 		%ide_editor_wx:link_poller(Editor, Path)
 	catch
 		_Throw ->
-			io:format("LOAD EDITOR ERROR~n")
+			io:format("LOAD EDITOR ERROR~n"),
+      error
 	end.
 
 
 %% =====================================================================
 %% @doc
+
+-spec show_save_changes_dialog(wxWindow:wxWindow(), [string()], [document_id()], [document_id()]) ->
+  cancelled | ok.
 
 show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocIdList) ->
   Dialog = ide_lib_dlg_wx:save_changes_dialog(Parent, ModifiedDocNames),
@@ -459,10 +498,12 @@ show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocIdList)
       close(lists:subtract(DocIdList, ModifiedDocIdList)),
       save_and_close(ModifiedDocIdList)
 	end.
-  
+
 
 %% =====================================================================
 %% @doc
+
+-spec save_as(document_id()) -> ok.
 
 save_as(DocId) ->
 	wx_object:call(?MODULE, {save_as, DocId}).
@@ -471,8 +512,17 @@ save_as(DocId) ->
 %% =====================================================================
 %% @doc
 
+-spec save_documents([document_id()]) -> {Saved, Failed} when
+  Saved :: [document_id()],
+  Failed :: [document_id()].
+
 save_documents(DocIdList) ->
   save_documents(DocIdList, {[], []}).
+
+
+-spec save_documents([document_id()], {Saved, Failed}) -> {Saved, Failed} when
+  Saved :: [document_id()],
+  Failed :: [document_id()].
 
 save_documents([], Acc) ->
   Acc;
@@ -491,6 +541,8 @@ save_documents([DocId|DocIdList], {Saved, Failed}) ->
 %% =====================================================================
 %% @doc
 
+-spec save_and_close([document_id()]) -> ok | cancelled.
+
 save_and_close(DocIdList) ->
   case save_documents(DocIdList) of
     {Saved, []} ->
@@ -504,13 +556,19 @@ save_and_close(DocIdList) ->
 %% =====================================================================
 %% @doc
 
+-spec save_project(project_id()) -> {Saved, Failed} when
+  Saved :: [document_id()],
+  Failed :: [document_id()].
+
 save_project(ProjectId) ->
 	save_documents(get_project_documents(ProjectId)).
-  
-  
+
+
 %% =====================================================================
 %% @doc Should an io error occur, only those documents saved up to that
 %% point will be saved.
+
+-spec close_documents([document_id()]) -> ok | cancelled.
 
 close_documents(Documents) ->
   case get_modified_docs(Documents) of
@@ -519,10 +577,12 @@ close_documents(Documents) ->
     {ModifiedDocs, Parent} ->
       show_save_changes_dialog(Parent, get_doc_names(ModifiedDocs), ModifiedDocs, Documents)
   end.
-  
+
 
 %% =====================================================================
 %% @doc
+
+-spec close([document_id()]) -> ok.
 
 close(Docs) ->
   wx_object:call(?MODULE, {close_docs, Docs}).
@@ -543,26 +603,40 @@ get_modified_docs(Documents) ->
 %% @doc Remove document records from state and delete page from the
 %% notebook.
 
+-spec remove_document(wxAuiNotebook:wxAuiNotebook(),
+                      document_id(),
+                      integer(),
+                      [document_record()],
+                      [{wxWindow:wxWindow(), document_id()}]) ->
+  {[document_record()], [{wxWindow:wxWindow(), document_id()}]}.
+
 remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageIdx, PageToDocId),
-  % wxAuiNotebook:deletePage(Nb, PageIdx),
-  P = wxAuiNotebook:getPage(Nb, PageIdx),
-  wxAuiNotebook:removePage(Nb, PageIdx),
-  wxWindow:'Destroy'(P),
+  wxAuiNotebook:deletePage(Nb, PageIdx),
   {NewDocRecords, NewPageToDocId}.
 
 
 %% =====================================================================
 %% @doc
 
-page_idx_to_doc_id(Notebook, PageId, PageToDocId) ->
-  Page = wxAuiNotebook:getPage(Notebook, PageId),
+-spec page_idx_to_doc_id(wxAuiNotebook:wxAuiNotebook(),
+                         integer(),
+                         [{wxWindow:wxWindow(), document_id()}]) ->
+  document_id().
+
+page_idx_to_doc_id(Notebook, PageIdx, PageToDocId) ->
+  Page = wxAuiNotebook:getPage(Notebook, PageIdx),
   proplists:get_value(Page, PageToDocId).
 
 
 %% =====================================================================
 %% @doc
+
+-spec doc_id_to_page_id(wxAuiNotebook:wxAuiNotebook(),
+                        document_id(),
+                        [{wxWindow:wxWindow(), document_id()}]) ->
+  integer().
 
 doc_id_to_page_id(_Nb, _DocId, []) ->
   error("No Corresponding Page ID~n");
@@ -575,12 +649,16 @@ doc_id_to_page_id(Notebook, DocId, [_|Rest]) ->
 %% =====================================================================
 %% @doc
 
+-spec get_open_documents() -> [document_id()].
+
 get_open_documents() ->
   wx_object:call(?MODULE, get_open_docs).
 
 
 %% =====================================================================
 %% @doc
+
+-spec get_project_documents(project_id()) -> [document_id()].
 
 get_project_documents(ProjectId) ->
   wx_object:call(?MODULE, {get_project_docs, ProjectId}).
@@ -589,12 +667,16 @@ get_project_documents(ProjectId) ->
 %% =====================================================================
 %% @doc
 
+-spec get_doc_names([document_id()]) -> [string()].
+
 get_doc_names(DocIdList) ->
   wx_object:call(?MODULE, {get_doc_names, DocIdList}).
 
 
 %% =====================================================================
 %% @doc
+
+-spec get_record(document_id(), [document_record()]) -> document_record().
 
 get_record(DocId, DocRecords) ->
   proplists:get_value(DocId, DocRecords).
@@ -603,6 +685,8 @@ get_record(DocId, DocRecords) ->
 %% =====================================================================
 %% @doc Generate a unique document id.
 
+-spec generate_id() -> erlang:timestamp().
+
 generate_id() ->
 	now().
 
@@ -610,23 +694,29 @@ generate_id() ->
 %% =====================================================================
 %% @doc Display the notebook, hiding and other siblings.
 
+-spec show_notebook(wxSizer:wxSizer()) -> ok.
+
 show_notebook(Sz) ->
-wxSizer:hide(Sz, 1),
-wxSizer:show(Sz, 0),
-wxSizer:layout(Sz).
+  wxSizer:hide(Sz, 1),
+  wxSizer:show(Sz, 0),
+  wxSizer:layout(Sz).
 
 
 %% =====================================================================
 %% @doc Display the placeholder, hiding any other siblings.
 
+-spec show_placeholder(wxSizer:wxSizer()) -> ok.
+
 show_placeholder(Sz) ->
-wxSizer:hide(Sz, 0),
-wxSizer:show(Sz, 1),
-wxSizer:layout(Sz).
+  wxSizer:hide(Sz, 0),
+  wxSizer:show(Sz, 1),
+  wxSizer:layout(Sz).
 
 
 %% =====================================================================
 %% @doc Ensure the notebook is visible (placeholder hidden).
+
+-spec ensure_notebook_visible(wxAuiNotebook:wxAuiNotebook(), wxSizer:wxSizer()) -> ok | boolean().
 
 ensure_notebook_visible(Notebook, Sz) ->
 	case wxWindow:isShown(Notebook) of
@@ -634,13 +724,16 @@ ensure_notebook_visible(Notebook, Sz) ->
       %% enable menu items
       ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, true),
 			show_notebook(Sz);
-		true -> ok
+		true ->
+      ok
 	end.
 
 
 %% =====================================================================
 %% @doc Check whether a file is already open.
 %% @private
+
+-spec is_already_open(string(), [{document_id(), string()}]) -> document_id() | false.
 
 is_already_open(_, []) ->
 	false;
@@ -653,12 +746,16 @@ is_already_open(Path, [_ | T]) ->
 %% =====================================================================
 %% @doc
 
+-spec apply_to_documents(function(), list(), [document_id()]) -> ok.
+
 apply_to_documents(Fun, Args, Docs) ->
 	wx_object:call(?MODULE, {apply_to_docs, {Fun, Args, Docs}}).
 
 
 %% =====================================================================
 %% @doc
+
+-spec open_document(string()) -> ok.
 
 open_document(Path) ->
   ProjectId = case ide_proj_man:is_known_project(Path) of
@@ -673,6 +770,8 @@ open_document(Path) ->
 
 %% =====================================================================
 %% @doc
+
+-spec open_from_existing_project(string()) -> project_id().
 
 open_from_existing_project(ProjectPath) ->
   case ide_proj_man:get_project(ProjectPath) of

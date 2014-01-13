@@ -33,7 +33,7 @@
          get_project/1,
          close_active_project/0,
          % close_project/1,
-				 open_file/3,
+				 %open_file/3,
 				 get_open_projects/0,
 				 get_active_project/0,
 				 set_active_project/1,
@@ -53,8 +53,6 @@
 									open_files :: [{path(), term()}]}).
 
 %% Types
--type project_id() :: {integer(), integer(), integer()}.
--type path() :: string().
 -type project_record() :: {project_id, #project{}}.
 
 %% Server state
@@ -70,6 +68,8 @@
 %% =====================================================================
 %% @doc
 
+-spec start(list()) -> {ok, pid()} | ignore | {error, {already_started, pid()} | term()}.
+
 start(Config)->
 	gen_server:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
@@ -78,6 +78,8 @@ start(Config)->
 %% @doc Add a new project as specified through the dialog.
 %% This function will attempt to create the standard erlang directory
 %% structure. An error dialog will be displayed should this fail.
+
+-spec new_project(wxFrame:wxFrame()) -> ok.
 
 new_project(Parent) ->
 	Dialog = ide_dlg_new_proj_wx:start(Parent),
@@ -100,6 +102,8 @@ new_project(Parent) ->
 %% =====================================================================
 %% @doc Add the project located at Path. No directories will be created.
 
+-spec add_project(path()) -> ok.
+
 add_project(Path) ->
   ide_sys_pref_gen:set_preference(projects, [Path | ide_sys_pref_gen:get_preference(projects)]),
   gen_server:call(?MODULE, {new_project, Path}),
@@ -108,6 +112,8 @@ add_project(Path) ->
 
 %% =====================================================================
 %% @doc Open an existing project using a dialog.
+
+-spec open_project_dialog(wxFrame:wxFrame()) -> ok.
 
 open_project_dialog(Frame) ->
   Dialog = ide_dlg_open_proj_wx:start(Frame, ide_sys_pref_gen:get_preference(projects)),
@@ -133,6 +139,8 @@ open_project(Path) ->
 %% =====================================================================
 %% @doc
 
+-spec get_project(path()) -> project_id().
+
 get_project(Path) ->
   wx_object:call(?MODULE, {get_project, Path}).
 
@@ -140,9 +148,12 @@ get_project(Path) ->
 %% =====================================================================
 %% @doc
 
+-spec close_active_project() -> ok.
+
 close_active_project() ->
   case ide_doc_man_wx:close_project(get_active_project()) of
-    cancelled -> ok;
+    cancelled ->
+      ok;
     ok ->
       wx_object:call(?MODULE, close_project)
   end.
@@ -160,11 +171,13 @@ close_active_project() ->
 
 %% =====================================================================
 %% @doc Open an project file..
-
-open_file(Path, Contents, ProjectId) ->
-	ide_doc_man_wx:new_document_from_existing(Path, Contents, [{project_id, ProjectId}]),
-	gen_server:call(?MODULE, {add_open_project, ProjectId, Path}),
-	ok.
+%
+%-spec open_file(path(), Contents, project_id()) -> ok.
+%
+%open_file(Path, Contents, ProjectId) ->
+%	ide_doc_man_wx:new_document_from_existing(Path, Contents, [{project_id, ProjectId}]),
+%	gen_server:call(?MODULE, {add_open_project, ProjectId, Path}),
+%	ok.
 
 
 %% =====================================================================
@@ -172,12 +185,16 @@ open_file(Path, Contents, ProjectId) ->
 %% This is either the project to which the active document belongs, or
 %% the last clicked item in the project tree if this is more recent.
 
+-spec get_active_project() -> project_id().
+
 get_active_project() ->
 	gen_server:call(?MODULE, active_project).
 
 
 %% =====================================================================
 %% @doc Set the currently active project.
+
+-spec set_active_project(project_id()) -> ok.
 
 set_active_project(ProjectId) ->
 	gen_server:cast(?MODULE, {active_project, ProjectId}).
@@ -207,12 +224,18 @@ get_name(ProjectId) ->
 %% =====================================================================
 %% @doc
 
+-spec get_build_config(project_id()) -> BuildConfig when
+  BuildConfig :: undefined | [tuple()].
+
+
 get_build_config(ProjectId) ->
   gen_server:call(?MODULE, {get_build_config, ProjectId}).
 
 
 %% =====================================================================
 %% @doc
+
+-spec is_known_project(path()) -> {true, path()} | false.
 
 is_known_project(Path) ->
   Projects = ide_sys_pref_gen:get_preference(projects),
@@ -221,6 +244,8 @@ is_known_project(Path) ->
 
 %% =====================================================================
 %% @doc
+
+-spec set_project_configuration(wxFrame:wxFrame()) -> ok | cancelled | error.
 
 set_project_configuration(Parent) ->
   Dialog = ide_dlg_proj_conf_wx:start(Parent),
@@ -236,6 +261,8 @@ set_project_configuration(Parent) ->
 
 %% =====================================================================
 %% @doc
+
+-spec import(wxFrame:wxFrame()) -> ok | cancelled.
 
 import(Parent) ->
   Dialog = ide_dlg_import_proj_wx:start(Parent),
@@ -343,7 +370,7 @@ handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Proj
   {noreply,State#state{active_project=ProjectId}}.
 
 code_change(_, _, State) ->
-  {stop, not_yet_implemented, State}.
+  {ok, State}.
 
 terminate(_Reason, _State) ->
   ok.
@@ -353,8 +380,20 @@ terminate(_Reason, _State) ->
 %% Internal functions
 %% =====================================================================
 
+%% =====================================================================
+%% @doc
+
+-spec generate_id() -> erlang:timestamp().
+
 generate_id() ->
 	now().
+
+
+%% =====================================================================
+%% @doc
+
+-spec update_ui(wxFrame:wxFrame(), ProjectRoot) -> ok when
+  ProjectRoot :: path() | undefined.
 
 update_ui(Frame, undefined) ->
   ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project"),
@@ -366,6 +405,12 @@ update_ui(Frame, #project{root=Root}) ->
 	ide_menu:update_label(wxFrame:getMenuBar(Frame), ?MENU_ID_CLOSE_PROJECT, "Close Project (" ++ ProjectName ++ ")"),
 	ok.
 
+
+%% =====================================================================
+%% @doc
+
+-spec path_to_project_id([project_record()], path()) -> project_id() | undefined.
+
 path_to_project_id([], _Path) ->
   undefined;
 path_to_project_id([{ProjId, #project{root=Path}} | _T], Path) ->
@@ -376,6 +421,8 @@ path_to_project_id([_|T], Path) ->
 
 %% =====================================================================
 %% @doc
+
+-spec is_subpath(path(), [path()]) -> {true, path()} | false.
 
 is_subpath(_Path, []) ->
   false;
@@ -391,6 +438,8 @@ is_subpath(Path, [ProjectPath|ProjectPaths]) ->
 %% =====================================================================
 %% @doc Determine whether the project with path Path is already open.
 
+-spec is_already_open([project_id()], path()) -> {true, project_id()} | false.
+
 is_already_open(Projects, Path) ->
   case path_to_project_id(Projects, Path) of
     undefined ->
@@ -402,6 +451,9 @@ is_already_open(Projects, Path) ->
 
 %% =====================================================================
 %% @doc
+
+-spec load_build_config(path()) -> BuildConfig when
+  BuildConfig :: undefined | [tuple()].
 
 load_build_config(Path) ->
   Fh = filename:join([Path, ".build_config"]),

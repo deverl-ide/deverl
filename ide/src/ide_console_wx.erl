@@ -71,12 +71,17 @@
 %% =====================================================================
 %% @doc
 
+-spec new(Config) -> wxWindow:wxWindow() when
+  Config :: list().
+
 new(Config) ->
 	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
 
 %% =====================================================================
 %% @doc
+
+-spec append_command(string()) -> ok.
 
 append_command(Response) ->
   wx_object:cast(?MODULE, {append, Response}).
@@ -86,15 +91,21 @@ append_command(Response) ->
 %% =====================================================================
 %% @doc
 
+-spec append_message(string()) -> ok.
+
 append_message(Msg) ->
   append_message(Msg, true).
-  
+
+-spec append_message(string(), boolean()) -> ok.
+
 append_message(Msg, Bool) ->
   wx_object:cast(?MODULE, {append_msg, Msg, Bool}).
 
-  
+
 %% =====================================================================
 %% @doc Update the shell's theme
+
+-spec set_theme(wxColour:wxColour(), wxColour:wxColour(), wxColour:wxColour(), wxColour:wxColour()) -> ok.
 
 set_theme(Fg, Bg, MrkrBg, ErrFg) ->
   wx_object:cast(?MODULE, {set_theme, Fg, Bg, MrkrBg, ErrFg}).
@@ -103,6 +114,8 @@ set_theme(Fg, Bg, MrkrBg, ErrFg) ->
 %% =====================================================================
 %% @doc
 
+-spec set_font(wxFont:wxFont()) -> ok.
+
 set_font(Font) ->
   wx_object:cast(?MODULE, {set_font, Font}).
 
@@ -110,12 +123,16 @@ set_font(Font) ->
 %% =====================================================================
 %% @doc
 
+-spec clear() -> ok.
+
 clear() ->
   wx_object:cast(?MODULE, clear).
 
 
 %% =====================================================================
 %% @doc
+
+-spec paste(wxStyledTextCtrl:wxStyledTextCtrl()) -> ok.
 
 paste(This) ->
   Split = re:split(get_clipboard_text(), "\\R", [{newline, any}, {return, list}, trim]),
@@ -307,7 +324,7 @@ handle_event(#wx{id=?wxID_PASTE, event=#wxCommand{type=command_menu_selected}},
   {noreply, State}.
 
 code_change(_, _, State) ->
-	{stop, not_yet_implemented, State}.
+	{ok, State}.
 
 terminate(_Reason, #state{win=Frame}) ->
 	wxPanel:destroy(Frame).
@@ -332,7 +349,7 @@ handle_sync_event(#wx{event=#wxKey{keyCode=Key, altDown=true}}, EvtObj, #state{b
     %% Discard
     _ -> ok
   end;
-  
+
 handle_sync_event(#wx{event=#wxKey{}}, _EvtObj, #state{busy=true}) ->
   ok;
 handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
@@ -388,10 +405,14 @@ handle_sync_event(#wx{obj=Console, event=#wxKey{type=key_down}}, Event, _State) 
 %% Internal functions
 %% =====================================================================
 
+-spec eval(wxStyledTextCtrl:wxStyledTextCtrl(), string(), [string()]) ->  ok | {[string()], integer()}.
+
 eval(Console, Cmd, Hst) ->
   {Prompt,Input} = split_line_at_prompt(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   eval(Console, {Prompt, Input}, Cmd, Hst).
+
+-spec eval(wxStyledTextCtrl:wxStyledTextCtrl(), {string(), string()}, string(), [string()]) -> ok | {[string()], integer()}.
 
 eval(Console, {Prompt, Input}, _Cmd, _Hst) when length(Input) =:= 0 ->
   prompt(Console, Prompt, Input++"\n"); %% for error's line no
@@ -414,13 +435,14 @@ eval(Console, {Prompt, Input}, Cmd0, Hst) ->
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
-prompt(Console, Cmd, "$..", _Prompt, _) -> 
+-spec prompt(wxStyledTextCtrl:wxStyledTextCtrl(), string(), string(), string(), integer()) -> ok.
+
+prompt(Console, Cmd, "$..", _Prompt, _) ->
     wx_object:cast(?MODULE, {call_parser, Cmd, false}),
     ?stc:newLine(Console);
 prompt(Console, Cmd, "$$.", _Prompt, _) ->
     wx_object:cast(?MODULE, {call_parser, Cmd, false}),
     ?stc:newLine(Console);
-
 prompt(Console, Cmd, Input, Prompt, $$) -> % $. (Ascii shortcut)
   case length(Cmd++Input) of
     2 ->
@@ -448,6 +470,8 @@ prompt(Console, Cmd, _Input, Prompt, _) ->
       prompt(Console, Prompt, "\n")
   end.
 
+-spec prompt(wxStyledTextCtrl:wxStyledTextCtrl(), string(), string()) -> ok.
+
 prompt(Console, Prompt, Str) ->
   wx_object:cast(?MODULE, {append_input, Str}),
   prompt_2_console(Console, Prompt).
@@ -455,12 +479,16 @@ prompt(Console, Prompt, Str) ->
 %% =====================================================================
 %% @doc Write a newline plus the prompt to the console.
 
+-spec prompt_2_console(wxStyledTextCtrl:wxStyledTextCtrl(), string()) -> ok.
+
 prompt_2_console(Console, Prompt) ->
   prompt_2_console(Console, Prompt, true).
 
 
 %% =====================================================================
 %% @doc Write an optional newline plus the prompt to the console.
+
+-spec prompt_2_console(wxStyledTextCtrl:wxStyledTextCtrl(), string(), boolean()) -> ok.
 
 prompt_2_console(Console, Prompt, Newline) ->
   case Newline of
@@ -478,8 +506,12 @@ prompt_2_console(Console, Prompt, Newline) ->
 %% @doc Return true if the number of characters is even. If the character
 %% is escaped, it does not count.
 
+-spec count_chars(integer(), string()) -> boolean().
+
 count_chars(Char, String) ->
   count_chars(Char, String, 0, false).
+
+-spec count_chars(integer(), string(), integer(), boolean()) -> boolean().
 
 count_chars(_Char, [], Acc, _) ->
   case Acc rem 2 of
@@ -507,6 +539,8 @@ count_chars(Char, [H|T], Acc, Escape) ->
 %% =====================================================================
 %% @doc Separate the prompt and command on the most recent line.
 
+-spec split_line_at_prompt(wxStyledTextCtrl:wxStyledTextCtrl()) -> {list(), list()}.
+
 split_line_at_prompt(Console) ->
   lists:split(length(?PROMPT), %%get_cur_prompt_length(Console),
     ?stc:getLine(Console, ?stc:getLineCount(Console) - 1)).
@@ -515,6 +549,8 @@ split_line_at_prompt(Console) ->
 %% =====================================================================
 %% @doc Get the length of the current prompt.
 
+-spec get_cur_prompt_length(wxStyledTextCtrl:wxStyledTextCtrl()) -> integer().
+
 get_cur_prompt_length(Console) ->
   get_prompt_length(?stc:getLine(Console, ?stc:getLineCount(Console) - 1)).
 
@@ -522,8 +558,12 @@ get_cur_prompt_length(Console) ->
 %% =====================================================================
 %% @doc Get the length of the prompt.
 
+-spec get_prompt_length(string()) -> non_neg_integer().
+
 get_prompt_length(Line) ->
 	get_prompt_length(Line, 1).
+
+-spec get_prompt_length(string(), integer()) -> integer().
 
 get_prompt_length([], _) -> 0;
 get_prompt_length([Char|String], Count) ->
@@ -539,12 +579,16 @@ get_prompt_length([Char|String], Count) ->
 %% @doc
 %% @private
 
+-spec get_line_start_pos(wxStyledTextCtrl:wxStyledTextCtrl(), integer()) -> integer().
+
 get_line_start_pos(Console, Pos) ->
   ?stc:positionFromLine(Console, ?stc:lineFromPosition(Console, Pos)).
 
 
 %% =====================================================================
 %% @doc Append new command to end of command history iff last element not same as new element.
+
+-spec add_cmd(string(), [string()]) -> {[string()], integer()}.
 
 add_cmd(Cmd, Hst) when length(Hst) =:= 0 ->
   add_cmd(insert, Cmd, Hst);
@@ -563,6 +607,9 @@ add_cmd(insert, Cmd, Hst) ->
 %% @doc Cycle through command history by one entry.
 %% param Direction: -1 for prev cmd, +1 for next cmd.
 
+-spec cycle_cmd_text(wxStyledTextCtrl:wxStyledTextCtrl(), Direction, [string()], integer()) -> ok when
+  Direction :: -1 | 1.
+
 cycle_cmd_text(Console, Direction, Hst, Idx) ->
   update_cmd_index(Idx + Direction),
 	Cmd = get_cmd(Hst, Idx + Direction),
@@ -573,15 +620,19 @@ cycle_cmd_text(Console, Direction, Hst, Idx) ->
 %% @doc Replace the current command with the updated command Cmd.
 %% The replacement will always take place on the most recent line.
 
+-spec replace_cmd_text(wxStyledTextCtrl:wxStyledTextCtrl(), string()) -> ok.
+
 replace_cmd_text(Console, Cmd) ->
   ?stc:setSelection(Console, get_cur_prompt_length(Console) +
-      get_line_start_pos(Console, ?stc:getLength(Console)),
-    ?stc:getLength(Console)),
+    get_line_start_pos(Console, ?stc:getLength(Console)),
+      ?stc:getLength(Console)),
   ?stc:replaceSelection(Console, Cmd).
 
 
 % %% =====================================================================
 % %% @doc
+
+-spec update_cmd_index(integer()) -> ok.
 
 update_cmd_index(NewIndex) ->
   wx_object:call(?MODULE, {update_cmd_index, NewIndex}).
@@ -590,12 +641,16 @@ update_cmd_index(NewIndex) ->
 %% =====================================================================
 %% @doc Retrieve command from history based on indexed position.
 
+-spec get_cmd([string()], integer()) -> string().
+
 get_cmd(Hst, Idx) ->
   lists:nth(Idx+1, Hst).
 
 
 %% =====================================================================
 %% @doc Check cursor is in valid position, and execute appropriate function.
+
+-spec check_cursor(wxStyledTextCtrl:wxStyledTextCtrl(), function(), function(), integer()) -> ok.
 
 check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
   Limit = get_line_start_pos(Console, ?stc:getLength(Console)) +
@@ -612,6 +667,8 @@ check_cursor(Console, SuccessFun, FailFun, PromptOffset) ->
 %% =====================================================================
 %% @doc Build the popup "right click" menu.
 
+-spec create_menu() -> wxMenu:wxMenu().
+
 create_menu() ->
   Menu = wxMenu:new([]),
   wxMenu:append(Menu, ?wxID_COPY, "Copy\tCtrl+C", []),
@@ -626,6 +683,8 @@ create_menu() ->
 %% =====================================================================
 %% @doc
 
+-spec get_clipboard_text() -> string().
+
 get_clipboard_text() ->
   Cb = wxClipboard:new(),
   wxClipboard:open(Cb),
@@ -638,6 +697,8 @@ get_clipboard_text() ->
 
 %% =====================================================================
 %% @doc
+
+-spec wait() -> ok.
 
 wait() ->
   case wx_object:call(?MODULE, busy) of
