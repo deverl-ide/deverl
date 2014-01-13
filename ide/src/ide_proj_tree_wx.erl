@@ -30,6 +30,7 @@
         start/1,
         add_project/2,
 				add_project/3,
+        add_project_document/2,
         add_standalone_document/1,
 				remove_project/1,
         remove_standalone_document/1,
@@ -101,6 +102,15 @@ remove_project(Id) ->
 %% =====================================================================
 %% @doc
 
+-spec add_project_document(project_id(), path()) -> ok.
+
+add_project_document(ProjectId, Path) ->
+  wx_object:cast(?MODULE, {add_project_document, ProjectId, Path}).
+
+
+%% =====================================================================
+%% @doc
+
 -spec add_standalone_document(path()) -> ok.
 
 add_standalone_document(Path) ->
@@ -148,13 +158,13 @@ init(Config) ->
 	wxTreeCtrl:setIndent(Tree, 10),
 	ImgList = wxImageList:new(14,14),
 
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/blue-folder-horizontal.png")))), 
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/blue-folder-horizontal.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/blue-folder-horizontal-open.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/book.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/book-open.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/document.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/information-white.png")))),
-  
+
 	wxTreeCtrl:assignImageList(Tree, ImgList),
 
   Root = wxTreeCtrl:addRoot(Tree, "Root"),
@@ -215,6 +225,19 @@ handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) -
 	wxPanel:thaw(Panel),
   {noreply,State};
 
+handle_cast({add_project_document, ProjectId, Path}, State=#state{tree=Tree}) ->
+  Root = get_item_from_path(Tree, get_all_items(Tree), filename:dirname(Path)),
+  case is_in_tree(Tree, Path, get_children_recursively(Tree, Root)) of
+    false ->
+      Item = append_item(Tree, Root, filename:basename(Path), [{data, Path}]),
+      wxTreeCtrl:setItemImage(Tree, Item, ?ICON_DOCUMENT),
+      wxTreeCtrl:selectItem(Tree, Item),
+      alternate_background_of_children(Tree, Root);
+    Item ->
+      wxTreeCtrl:selectItem(Tree, Item)
+  end,
+  {noreply,State};
+
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
   Root = get_standalone_root(Tree),
   remove_placeholder(Tree, Root),
@@ -228,6 +251,7 @@ handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
       wxTreeCtrl:selectItem(Tree, Item)
   end,
   {noreply,State};
+
 handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
   wxTreeCtrl:setItemHasChildren(Tree, get_item_from_path(Tree, get_all_items(Tree), Path)),
   {noreply, State}.
@@ -677,7 +701,6 @@ is_standalone_root(Tree, Item) ->
 
 -spec get_projects_root(wxTreeCtrl:wxTreeCtrl()) -> integer().
 
-
 get_projects_root(Tree) ->
   get_header(Tree, ?HEADER_PROJECTS).
 
@@ -853,41 +876,6 @@ create_menu() ->
     Menu.
 
 
-% find_root(FilePath) ->
-%   find_root(FilePath, []).
-%
-% find_root(FilePath, Acc) ->
-%   Tree = wx_object:call(?MODULE, tree),
-%   case get_item_from_path(Tree, get_all_items(Tree), FilePath) of
-%     no_item ->
-%       find_root(filename:dirname(FilePath), [FilePath|Acc]);
-%     Item ->
-%       wxTreeCtrl:freeze(Tree),
-%       wxTreeCtrl:toggle(Tree, Item),
-%       toggle_items(Tree, Acc)
-%   end.
-
-% toggle_items(Tree, [Path]) ->
-%   Item = poll_tree_item(Tree, get_all_items(Tree), Path),
-%   wxTreeCtrl:selectItem(Tree, Item),
-%   wxTreeCtrl:thaw(Tree);
-% toggle_items(Tree, [Path|Paths]) ->
-%   Item = poll_tree_item(Tree, get_all_items(Tree), Path),
-%   wxTreeCtrl:toggle(Tree, Item),
-%   toggle_items(Tree, Paths).
-
-%% This is required because the tree is not updated immediately, and
-%% subsequent recursive calls to toggle_items which rely on the
-%% updated tree fail.
-% poll_tree_item(Tree, Items, Path) ->
-%   case get_item_from_path(Tree, Items, Path) of
-%     no_item ->
-%       poll_tree_item(Tree, get_all_items(Tree), Path);
-%     Item ->
-%       Item
-%   end.
-
-
 %% =====================================================================
 %% @doc
 
@@ -904,7 +892,7 @@ select(Tree, Item) ->
 
 %% =====================================================================
 %% @doc Check if file with path is in tree.
-%% Used for standalone files only.
+%% Works for both standalone and project files.
 
 -spec is_in_tree(wxTreeCtrl:wxTreeCtrl(), path(), Children) -> integer() | false when
   Children :: [integer()] | [].
@@ -913,8 +901,11 @@ is_in_tree(_Tree, _Path, []) ->
   false;
 is_in_tree(Tree, Path, [Child|Children]) ->
   case wxTreeCtrl:getItemData(Tree, Child) of
+    {_Id, Path} ->
+      Child;
     Path ->
       Child;
     _ ->
       is_in_tree(Tree, Path, Children)
   end.
+

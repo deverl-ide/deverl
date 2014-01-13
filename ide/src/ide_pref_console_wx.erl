@@ -3,7 +3,7 @@
 %% @copyright
 %% @title
 %% @version
-%% @doc 
+%% @doc
 %% @end
 %% =====================================================================
 
@@ -13,14 +13,14 @@
 
 %% wx_object
 -behaviour(wx_object).
--export([init/1, 
-         terminate/2, 
+-export([init/1,
+         terminate/2,
          code_change/3,
 	       handle_info/2,
          handle_call/3,
          handle_cast/2,
          handle_event/2]).
-         
+
 %% API
 -export([start/1]).
 
@@ -36,6 +36,9 @@
 %% Client API
 %% =====================================================================
 
+%% =====================================================================
+%% @doc
+
 start(Config) ->
   wx_object:start_link(?MODULE, Config, []).
 
@@ -50,41 +53,41 @@ init(Config) ->
 do_init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Panel = wxPanel:new(Parent),
-  
+
   Sz = wxBoxSizer:new(?wxHORIZONTAL), %% For left and right margins
   wxWindow:setSizer(Panel, Sz),
   wxSizer:addSpacer(Sz, 20),
-  
+
   MainSz = wxBoxSizer:new(?wxVERTICAL),
   wxSizer:addSpacer(MainSz, 20),
- 
+
   %% Font
   add_bold_label(Panel, MainSz, "Font"),
-  
+
   Font = ide_sys_pref_gen:get_font(console),
-  
+
   FontSz = wxBoxSizer:new(?wxHORIZONTAL),
   FontStr = wxStaticText:new(Panel, ?wxID_ANY, get_font_string(Font)),
   wxSizer:add(FontSz, FontStr, [{flag, ?wxALIGN_CENTRE_VERTICAL bor ?wxRIGHT}, {border, 50}]),
   Browse = wxButton:new(Panel, ?wxID_ANY, [{label, "Browse..."}]),
   wxSizer:add(FontSz, Browse, [{flag, ?wxALIGN_CENTRE_VERTICAL}]),
-  
+
   wxSizer:add(MainSz, FontSz, [{proportion, 0}]),
   wxSizer:addSpacer(MainSz, 20),
-  
+
   %% Theme
   add_bold_label(Panel, MainSz, "Theme"),
-  
+
   %% Console themes {Name, FgColour, BgColour, MarkerBg, ErrorFg}
   Themes = [{"Light", ?wxBLACK, ?wxWHITE, {230,230,230}, ?wxRED},
             {"Dark", ?wxWHITE, ?wxBLACK, {30,30,30}, {146, 91, 123}},
             {"Matrix", {0,204,0}, ?wxBLACK, {30,30,30}, {146, 91, 123}}],
-  
+
   ThemeSz = wxBoxSizer:new(?wxHORIZONTAL),
-  
+
   SavedTheme = ide_sys_pref_gen:get_preference(console_theme),
-  
-  ThemeEx = 
+
+  ThemeEx =
     fun({Name, Fg, Bg, _MrkrBf, _ErrFg}=Theme) ->
       Profile = wxWindow:new(Panel, ?wxID_ANY, [{style, ?wxBORDER_SIMPLE}, {size, {65,40}}]),
       T = wxStaticText:new(Profile, ?wxID_ANY, "1> 1+1.\n3\n2>"),
@@ -94,7 +97,7 @@ do_init(Config) ->
       Radio = wxRadioButton:new(Panel, ?wxID_ANY, Name, []),
       wxSizer:add(ThemeSz, Profile, [{proportion, 1}, {flag, ?wxEXPAND bor ?wxRIGHT}, {border, 5}]),
       wxSizer:add(ThemeSz, Radio, [{flag, ?wxALIGN_CENTRE}]),
-      wxSizer:addSpacer(ThemeSz, 10),    
+      wxSizer:addSpacer(ThemeSz, 10),
       wxRadioButton:connect(Radio, command_radiobutton_selected, [{userData,Theme}]),
       case SavedTheme of
         Theme ->
@@ -105,27 +108,27 @@ do_init(Config) ->
     end,
 
   [ ThemeEx(Theme) || Theme <- Themes ],
-  
+
   wxSizer:add(MainSz, ThemeSz, []),
   wxSizer:addSpacer(MainSz, 20),
-  
+
   wxSizer:add(Sz, MainSz, []),
   wxSizer:addSpacer(Sz, 20),
-  
+
   wxButton:connect(Browse, command_button_clicked, []),
-  
+
   State=#state{parent=Panel,
                themes=Themes,
                font=Font,
                font_string=FontStr},
-    
+
   {Panel, State}.
 
 handle_event(#wx{event=#wxCommand{type=command_radiobutton_selected}, userData={_Name,Fg,Bg,MrkrBg,ErrFg}=Theme}, State) ->
   ide_console_wx:set_theme(Fg, Bg, MrkrBg, ErrFg),
   ide_sys_pref_gen:set_preference(console_theme, Theme),
   {noreply, State};
-handle_event(#wx{event=#wxCommand{type=command_button_clicked}}, 
+handle_event(#wx{event=#wxCommand{type=command_button_clicked}},
              State=#state{parent=Parent, font=Font, font_string=FontStr}) ->
   Fd = wxFontData:new(),
   wxFontData:setInitialFont(Fd, Font),
@@ -167,7 +170,15 @@ code_change(_, _, State) ->
 
 terminate(_Reason, _) ->
   ok.
-  
+
+
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
+
+%% =====================================================================
+%% @doc
+
 add_bold_label(Parent, Sz, Name) ->
   Label = wxStaticText:new(Parent, ?wxID_ANY, Name),
   Font = wxStaticText:getFont(Label),
@@ -175,6 +186,10 @@ add_bold_label(Parent, Sz, Name) ->
   wxStaticText:setFont(Label, Font),
   wxSizer:add(Sz, Label, []),
   wxSizer:addSpacer(Sz, 10).
-  
+
+
+%% =====================================================================
+%% @doc
+
 get_font_string(Font) ->
   io_lib:format("~s ~p pt.", [wxFont:getFaceName(Font), wxFont:getPointSize(Font)]).

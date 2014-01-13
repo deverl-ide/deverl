@@ -1,5 +1,5 @@
 {application, ide,
-	[{description, "An simple IDE for learning erlang"},
+	[{description, "A simple IDE for learning erlang"},
 	 {vsn, "0.1.0"},
 	 {modules, [ide,
               ide_app,
