@@ -922,7 +922,7 @@ select(Tree, Item) ->
 
 %% =====================================================================
 %% @doc Check if file with path is in tree.
-%% Used for standalone files only.
+%% Works for both standalone and project files.
 
 -spec is_in_tree(wxTreeCtrl:wxTreeCtrl(), path(), Children) -> integer() | false when
   Children :: [integer()] | [].
@@ -931,8 +931,11 @@ is_in_tree(_Tree, _Path, []) ->
   false;
 is_in_tree(Tree, Path, [Child|Children]) ->
   case wxTreeCtrl:getItemData(Tree, Child) of
+    {_Id, Path} ->
+      Child;
     Path ->
       Child;
     _ ->
       is_in_tree(Tree, Path, Children)
   end.
+
