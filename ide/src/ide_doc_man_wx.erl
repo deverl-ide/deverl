@@ -316,7 +316,8 @@ handle_call({create_doc, Path, ProjectId}, _From,
         undefined ->
           ide_proj_tree_wx:add_standalone_document(Path);
         _ ->
-          ide_proj_tree_wx:set_has_children(filename:dirname(Path))
+          %ide_proj_tree_wx:set_has_children(filename:dirname(Path))
+          ide_proj_tree_wx:add_project_document(ProjectId, Path)
       end,
 			{reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}};
 		DocId ->
@@ -414,7 +415,7 @@ handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_record
 
 handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId, sizer=Sz}) ->
   F = fun(_G, [], Dr, P2d) -> {Dr, P2d};
-         (G, [DocId | T], Dr, P2d) ->    
+         (G, [DocId | T], Dr, P2d) ->
             Record = proplists:get_value(DocId, DocRecords),
             case Record#document.project_id of
               undefined ->
@@ -427,7 +428,7 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
        end,
   {S, D} = F(F, Docs, DocRecords, PageToDocId),
   case wxAuiNotebook:getPageCount(Nb) of
-    0 -> 
+    0 ->
       %% Called when the last document is closed.
       ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, false),
       show_placeholder(Sz),

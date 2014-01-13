@@ -10,8 +10,21 @@
             	  config
             	 }).
 
+
+%% =====================================================================
+%% Client API
+%% =====================================================================
+
+%% =====================================================================
+%% @doc
+
 start(Config) ->
   wx_object:start_link(?MODULE, Config, []).
+
+
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
 
 init(Config) ->
   wx:batch(fun() -> do_init(Config) end).
@@ -19,27 +32,25 @@ init(Config) ->
 do_init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Panel = wxWindow:new(Parent, ?wxID_ANY),
-     
+
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxWindow:setSizer(Panel, LRSizer),
   wxSizer:addSpacer(LRSizer, 20),
-  
+
   VertSizer = wxBoxSizer:new(?wxVERTICAL),
   wxSizer:addSpacer(VertSizer, 20),
   wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Nothing here yet.")),
-  
-  wxSizer:addSpacer(VertSizer, 20),   
-  
+
+  wxSizer:addSpacer(VertSizer, 20),
+
   wxSizer:add(LRSizer, VertSizer),
   wxSizer:addSpacer(LRSizer, 20),
-                      
+
 	wxSizer:layout(LRSizer),
-  
+
   {Panel, #state{parent=Panel}}.
-  
-    
-%% =====================================================================
-%% @doc OTP behaviour callbacks
+
+
 handle_event(Ev = #wx{}, State = #state{}) ->
   io:format("Got Event ~p~n",[Ev]),
   {noreply,State}.

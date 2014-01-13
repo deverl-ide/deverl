@@ -30,6 +30,7 @@
         start/1,
         add_project/2,
 				add_project/3,
+        add_project_document/2,
         add_standalone_document/1,
 				remove_project/1,
         remove_standalone_document/1,
@@ -101,6 +102,15 @@ remove_project(Id) ->
 %% =====================================================================
 %% @doc
 
+-spec add_project_document(project_id(), path()) -> ok.
+
+add_project_document(ProjectId, Path) ->
+  wx_object:cast(?MODULE, {add_project_document, ProjectId, Path}).
+
+
+%% =====================================================================
+%% @doc
+
 -spec add_standalone_document(path()) -> ok.
 
 add_standalone_document(Path) ->
@@ -148,13 +158,13 @@ init(Config) ->
 	wxTreeCtrl:setIndent(Tree, 10),
 	ImgList = wxImageList:new(14,14),
 
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/blue-folder-horizontal.png")))), 
+	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/blue-folder-horizontal.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/blue-folder-horizontal-open.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/book.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/book-open.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/document.png")))),
 	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("14x14/information-white.png")))),
-  
+
 	wxTreeCtrl:assignImageList(Tree, ImgList),
 
   Root = wxTreeCtrl:addRoot(Tree, "Root"),
@@ -215,6 +225,19 @@ handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) -
 	wxPanel:thaw(Panel),
   {noreply,State};
 
+handle_cast({add_project_document, ProjectId, Path}, State=#state{tree=Tree}) ->
+  Root = get_item_from_path(Tree, get_all_items(Tree), filename:dirname(Path)),
+  case is_in_tree(Tree, Path, get_children_recursively(Tree, Root)) of
+    false ->
+      Item = append_item(Tree, Root, filename:basename(Path), [{data, Path}]),
+      wxTreeCtrl:setItemImage(Tree, Item, ?ICON_DOCUMENT),
+      wxTreeCtrl:selectItem(Tree, Item),
+      alternate_background_of_children(Tree, Root);
+    Item ->
+      wxTreeCtrl:selectItem(Tree, Item)
+  end,
+  {noreply,State};
+
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
   Root = get_standalone_root(Tree),
   remove_placeholder(Tree, Root),
@@ -228,6 +251,7 @@ handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
       wxTreeCtrl:selectItem(Tree, Item)
   end,
   {noreply,State};
+
 handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
   wxTreeCtrl:setItemHasChildren(Tree, get_item_from_path(Tree, get_all_items(Tree), Path)),
   {noreply, State}.
@@ -511,6 +535,36 @@ get_project_root(Tree, Root, Parent, Item) ->
 
 
 %% =====================================================================
+%% @doc Get the project item from the tree for a given project id.
+
+-spec get_project_from_id(wxTreeCtrl:wxTreeCtrl(), project_id()) ->
+  wxTreeCtrl:wxTreeCtrl() | error.
+
+get_project_from_id(Tree, ProjectId) ->
+  [Project] = get_projects(Tree),
+  io:format("PROJECT: ~p~n", [Project]),
+  io:format("PROJECT ID: ~p~n", [ProjectId]),
+  get_project_from_id(Tree, ProjectId, get_projects(Tree)).
+
+-spec get_project_from_id(wxTreeCtrl:wxTreeCtrl(), project_id(), [project_id()]) ->
+  wxTreeCtrl:wxTreeCtrl() | error.
+
+get_project_from_id(_Tree, _ProjectId, []) ->
+  io:format("error~n"),
+  error;
+get_project_from_id(Tree, ProjectId, [Project|Projects]) ->
+  io:format("DATA ~p~n", [wxTreeCtrl:getItemData(Tree, Project)]),
+  case wxTreeCtrl:getItemData(Tree, Project) of
+    {ProjectId, Dir} ->
+      io:format("Dir: ~p~n", [Dir]),
+      Project;
+    {_, Dir} ->
+      io:format("Dir: ~p~n", [Dir]),
+      get_project_from_id(Tree, ProjectId, Projects)
+  end.
+
+
+%% =====================================================================
 %% @doc Get a list of project root items.
 
 -spec get_projects(wxTreeCtrl:wxTreeCtrl()) -> [integer()].
@@ -676,7 +730,6 @@ is_standalone_root(Tree, Item) ->
 %% @equiv get_header(Tree, ?HEADER_PROJECTS).
 
 -spec get_projects_root(wxTreeCtrl:wxTreeCtrl()) -> integer().
-
 
 get_projects_root(Tree) ->
   get_header(Tree, ?HEADER_PROJECTS).
@@ -851,41 +904,6 @@ create_menu() ->
     wxMenu:append(Menu, ?ID_GENERATE_MAKEFILE, "Generate Makefile", []),
     wxMenu:connect(Menu, command_menu_selected),
     Menu.
-
-
-% find_root(FilePath) ->
-%   find_root(FilePath, []).
-%
-% find_root(FilePath, Acc) ->
-%   Tree = wx_object:call(?MODULE, tree),
-%   case get_item_from_path(Tree, get_all_items(Tree), FilePath) of
-%     no_item ->
-%       find_root(filename:dirname(FilePath), [FilePath|Acc]);
-%     Item ->
-%       wxTreeCtrl:freeze(Tree),
-%       wxTreeCtrl:toggle(Tree, Item),
-%       toggle_items(Tree, Acc)
-%   end.
-
-% toggle_items(Tree, [Path]) ->
-%   Item = poll_tree_item(Tree, get_all_items(Tree), Path),
-%   wxTreeCtrl:selectItem(Tree, Item),
-%   wxTreeCtrl:thaw(Tree);
-% toggle_items(Tree, [Path|Paths]) ->
-%   Item = poll_tree_item(Tree, get_all_items(Tree), Path),
-%   wxTreeCtrl:toggle(Tree, Item),
-%   toggle_items(Tree, Paths).
-
-%% This is required because the tree is not updated immediately, and
-%% subsequent recursive calls to toggle_items which rely on the
-%% updated tree fail.
-% poll_tree_item(Tree, Items, Path) ->
-%   case get_item_from_path(Tree, Items, Path) of
-%     no_item ->
-%       poll_tree_item(Tree, get_all_items(Tree), Path);
-%     Item ->
-%       Item
-%   end.
 
 
 %% =====================================================================
