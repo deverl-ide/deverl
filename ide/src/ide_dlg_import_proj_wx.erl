@@ -17,13 +17,18 @@
 	       handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 				 
 %% API
--export([start/1, set_focus/1, close/1]).
+-export([
+  start/1,
+  get_path/1,
+  set_focus/1,
+  destroy/1
+  ]).
 	
 %% Server state			 
 -record(state, {dialog,
                 parent,
-								project_path_text_ctrl,
-								project_path,
+								path_tc,
+								path_input,
 								copy_cb,
 								desc_panel
             	 }).
@@ -43,11 +48,14 @@
 
 start(Parent) ->
   wx_object:start({local, ?MODULE}, ?MODULE, Parent, []).
+  
+get_path(This) ->
+  wx_object:call(This, path).
 
 set_focus(This) ->
 	wx_object:cast(This, setfocus).
 	
-close(This) ->
+destroy(This) ->
 	wx_object:call(This, shutdown).
 	
 	
@@ -138,9 +146,9 @@ do_init(Parent) ->
 	
 	wxSizer:layout(LRSizer),
 		
-  wxDialog:connect(Dialog, close_window),
-	wxDialog:connect(Dialog, command_button_clicked, [{skip, true}]), 
-  % wxDialog:connect(Dialog, command_checkbox_clicked, []),
+  %% Uses default handlers for ?wxID_CANCEL and close_window
+  wxDialog:connect(Dialog, command_button_clicked, [{id, ?ID_BROWSE_PROJECTS}]), 
+	wxDialog:connect(Dialog, command_button_clicked, [{id, ?wxID_OK}]), 
   wxDialog:connect(Dialog, command_text_updated, [{skip, false}]),
 		
 	%% Setup the image list
@@ -151,7 +159,7 @@ do_init(Parent) ->
 	State = #state{
 		dialog=Dialog, 
     parent=Parent,
-    project_path_text_ctrl=ProjPath,
+    path_tc=ProjPath,
     copy_cb=CopyCb,
 		desc_panel=Desc
 	},
@@ -169,9 +177,10 @@ handle_event(#wx{event=#wxCommand{type=command_text_updated, cmdString=Str}}, St
     _ ->
       wxWindow:enable(wxWindow:findWindowById(?wxID_OK))
   end,
-  {noreply, State};
+  {noreply, State#state{path_input=Str}};
+  
 handle_event(#wx{id=?ID_BROWSE_PROJECTS, event=#wxCommand{type=command_button_clicked}}, 
-             State=#state{parent=Parent, project_path_text_ctrl=PathTc}) ->
+             State=#state{parent=Parent, path_tc=PathTc}) ->
 	case ide_lib_dlg_wx:get_dir(Parent) of
 		cancelled -> ok;
 		Path -> 
@@ -179,32 +188,29 @@ handle_event(#wx{id=?ID_BROWSE_PROJECTS, event=#wxCommand{type=command_button_cl
       wxTextCtrl:setInsertionPointEnd(PathTc)
 	end,
 	{noreply, State};
-handle_event(#wx{event=#wxClose{}}, State) ->
-  {stop, normal, State};
-handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}}, 
-             State) ->
-  {stop, normal, State};
+
 handle_event(#wx{id=?wxID_OK, event=#wxCommand{type=command_button_clicked}}, 
-             State=#state{project_path_text_ctrl=PathTc, copy_cb=Cb}) ->
+             State=#state{dialog=Dlg, path_tc=PathTc, copy_cb=Cb}) ->
 	Path = wxTextCtrl:getValue(PathTc), 
   case wxCheckBox:isChecked(Cb) of
     true -> %% Copy all files over to project directory
-      io:format("NOT IMPLEMENTED"),
-      ok;
+      wxDialog:endModal(Dlg, 20);
     false -> %% Leave where it is
-      ide_proj_man:add_project(Path)
+      wxDialog:endModal(Dlg, 30)
   end,
-  {stop, normal, State}.
-  % {noreply, State#state{project_path=Path}}.
+  {noreply, State}.
+
 
 handle_info(Msg, State) ->
   io:format( "Got Info ~p~nMsg:~p",[State, Msg]),
   {noreply,State}.
 
+handle_call(path, _From, State) ->
+  {reply, State#state.path_input, State};
 handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State}.
 
-handle_cast(setfocus, State=#state{project_path_text_ctrl=Tc}) ->
+handle_cast(setfocus, State=#state{path_tc=Tc}) ->
   wxWindow:setFocus(Tc),
   {noreply,State}.
 
@@ -212,8 +218,8 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 
 terminate(_Reason, #state{dialog=Dialog}) ->
-	wxDialog:endModal(Dialog, ?wxID_CANCEL),
-	wxDialog:destroy(Dialog).
+	wxDialog:destroy(Dialog),
+  ok.
 	
 
 %% =====================================================================

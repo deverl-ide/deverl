@@ -154,21 +154,15 @@ init(Options) ->
 		{style, SplitterStyle}]),
 	SplitterSidebar = wxSplitterWindow:new(SplitterUtilities, [{id, ?SPLITTER_SIDEBAR},
 		{style, SplitterStyle}]),
-
 	wxSplitterWindow:setSashGravity(SplitterUtilities, 0.5),
 	wxSplitterWindow:setSashGravity(SplitterSidebar, 0.60),
-
 	wxSizer:add(FrameSizer, SplitterUtilities, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
-	%% Status bar %%
+	%% Status bar
 	StatusBar = ide_sb_wx:start([{parent, Frame}]),
-
-	%% Menubar %%
+	%% Menubar
   MenuGroups = ide_menu:create([{parent, Frame}]),
-
-	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
-                                        {proportion, 0}]),
-
+	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},{proportion, 0}]),
 	Workspace = create_workspace(SplitterSidebar),
 
 	%% The left window
@@ -675,12 +669,13 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UT
 handle_event(#wx{id=Id, userData=ThemeMenu, event=#wxCommand{type=command_menu_selected}},
              State) when (Id >= ?MENU_ID_THEME_LOWEST) and (Id =< ?MENU_ID_THEME_HIGHEST) ->
   {ok, Ckd} = ide_menu:get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
-	Font = wxFont:new(ide_sys_pref_gen:get_preference(editor_font_size),
-										ide_sys_pref_gen:get_preference(editor_font_family),
-										ide_sys_pref_gen:get_preference(editor_font_style),
-										ide_sys_pref_gen:get_preference(editor_font_weight), []),
+  %% Font changes when theme changes (current fontface not used)
+  % Font = wxFont:new(ide_sys_pref_gen:get_preference(editor_font_size),
+  %                   ide_sys_pref_gen:get_preference(editor_font_family),
+  %                   ide_sys_pref_gen:get_preference(editor_font_style),
+  %                   ide_sys_pref_gen:get_preference(editor_font_weight), []),
 	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_theme/3, [wxMenuItem:getLabel(Ckd),
-		Font]),
+		ide_sys_pref_gen:get_font(editor)]),
   ide_sys_pref_gen:set_preference(theme, wxMenuItem:getLabel(Ckd)),
 	{noreply, State};
 

@@ -459,18 +459,14 @@ init(Config) ->
 
 	%% Attach events
   ?stc:connect(Editor, stc_marginclick, []),
-  % ?stc:connect(Editor, stc_modified, []),
   ?stc:connect(Editor, left_down, [{skip, true}]),
   ?stc:connect(Editor, left_up, [{skip, true}]),
   ?stc:connect(Editor, motion, [{skip, true}]),
-  % ?stc:connect(Editor, stc_charadded, [{skip, false}]),
   ?stc:connect(Editor, stc_charadded, [callback]),
   ?stc:connect(Editor, char, [{skip, true}]),
-	?stc:connect(Editor, key_down, [callback, {userData, self()}]),
 	?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
 	?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
 	?stc:connect(Editor, set_focus, [{skip, true}]),
-	?stc:connect(Editor, kill_focus, [{skip, true}]),
 
 	%% Restrict the stc_chamge/stc_modified events to insert/delete text
 	?stc:setModEventMask(Editor, ?wxSTC_MOD_DELETETEXT bor ?wxSTC_MOD_INSERTTEXT),
@@ -492,7 +488,6 @@ handle_info(Msg, State) ->
   {noreply,State}.
 
 handle_call(shutdown, _From, State=#state{parent_panel=Panel}) ->
-  wxPanel:destroy(Panel),
   {stop, normal, ok, State};
 handle_call(is_dirty, _From, State=#state{dirty=Mod}) ->
   {reply,Mod,State};
@@ -623,10 +618,9 @@ handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State) ->
 %% Search events
 %% =====================================================================
 
-handle_event(#wx{id=?ID_SEARCH, event=#wxFocus{}}, State=#state{main_sz=Sz}) ->
-  wxSizer:hide(Sz, 1),
-  wxSizer:layout(Sz),
+handle_event(#wx{id=?ID_SEARCH, event=#wxFocus{}}, State) ->
   {noreply, State#state{find=undefined}};
+  
 handle_event(#wx{id=?ID_SEARCH, event=#wxCommand{type=command_text_enter,cmdString=Str}}, 
              State=#state{stc=Editor, find=Find, search=#search{next=Next0, match_case=Case0}})
                when Find =/= undefined ->
@@ -648,11 +642,13 @@ handle_event(#wx{id=?ID_SEARCH, event=#wxCommand{type=command_text_enter,cmdStri
     false ->
       {noreply, State#state{find=Find#find{found=false}}}
   end;
+  
 handle_event(#wx{id=?ID_SEARCH, event=#wxCommand{cmdString=""}}, 
 	           State=#state{stc=Editor}) ->
     Pos = ?stc:getCurrentPos(Editor),
     ?stc:gotoPos(Editor, Pos),
     {noreply, State#state{find=undefined}};
+    
 handle_event(#wx{id=?ID_SEARCH, event=#wxCommand{cmdString=Str}}, 
              State=#state{stc=Editor, search=#search{next=Next, match_case=Case0}, find=Find}) ->
   Dir = wxRadioButton:getValue(Next),
@@ -674,6 +670,11 @@ handle_event(#wx{id=?ID_SEARCH, event=#wxCommand{cmdString=Str}},
       {noreply, State#state{find=Find1#find{found=false}}}
   end;
 
+handle_event(#wx{id=?WINDOW_EDITOR, event=#wxFocus{type=set_focus}}, State=#state{main_sz=Sz}) ->
+  wxSizer:hide(Sz, 1),
+  wxSizer:layout(Sz),
+  {noreply, State};
+  
 handle_event(_E,State) ->
   io:format("Unhandled event in editor.~n"),
   {noreply, State}.
