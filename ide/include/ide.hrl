@@ -81,6 +81,7 @@
 -define(MENU_ID_IMPORT_PROJECT,    6052).
 -define(MENU_ID_EXPORT_EDOC,       6053).
 -define(MENU_ID_RUN_OBSERVER,      6055).
+-define(MENU_ID_QUICK_FIND,        6056).
 -define(MENU_ID_HIGHEST,					 6999).
 
 %% Sub-menus

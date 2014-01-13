@@ -131,7 +131,8 @@ init(Config) ->
   wxMenu:append(Edit, ?wxID_SEPARATOR, []),
   wxMenu:append(Edit, ?wxID_SELECTALL, "Select All\tCtrl+A"),
   wxMenu:appendSeparator(Edit),
-  wxMenu:append(Edit, ?wxID_FIND, "Find\tCtrl+F"),
+  wxMenu:append(Edit, ?MENU_ID_QUICK_FIND, "Quick Find\tCtrl+F"),
+  wxMenu:append(Edit, ?wxID_FIND, "Find\tCtrl+Shift+F"),
   
   Font = wxMenu:new([]), %% Sub-menu
   wxMenu:append(Font, ?MENU_ID_FONT, "Choose Font"),
@@ -353,7 +354,9 @@ init(Config) ->
      %{?wxID_COPY, {}},
      %{?wxID_PASTE, {}},
      %{?wxID_DELETE, {}},
-
+    
+    {?MENU_ID_QUICK_FIND, {ide_editor_ops,quick_find,[]},
+      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
     {?wxID_FIND, {ide_editor_ops,find_replace,[Frame]},
       [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
     

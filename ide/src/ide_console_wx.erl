@@ -119,16 +119,16 @@ clear() ->
 
 paste(This) ->
   Split = re:split(get_clipboard_text(), "\\R", [{newline, any}, {return, list}, trim]),
-  Fn = fun(Gn, []) ->
+  Fn = fun(_Fn1, []) ->
             ok;
-          (Gn, [E]) ->
+          (_Fn1, [E]) ->
             wait(),
             ?stc:gotoPos(This, ?stc:getLength(This)),
             ?stc:addText(This, E);
-          (Gn, [H|T]) ->
+          (Fn1, [H|T]) ->
             wait(),
             wx_object:call(?MODULE, {paste, H}),
-            Gn(Gn, T)
+            Fn1(Fn1, T)
   end,
   Fn(Fn, Split),
   ok.
@@ -204,7 +204,7 @@ handle_info(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
 
-handle_cast({set_theme, Fg, Bg, MrkrBg, ErrFg}, State=#state{textctrl=Console}) ->
+handle_cast({set_theme, Fg, Bg, MrkrBg, _ErrFg}, State=#state{textctrl=Console}) ->
   SetColour = fun(StyleId) ->
     ?stc:styleSetBackground(Console, StyleId, Bg),
     ?stc:styleSetForeground(Console, StyleId, Fg)
@@ -293,7 +293,7 @@ handle_event(#wx{id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_select
   prompt_2_console(Console, ?PROMPT),
 	{noreply, State#state{busy=false, input=[]}};
 handle_event(#wx{id=?ID_CLEAR_CONSOLE, event=#wxCommand{type=command_menu_selected}},
-            State=#state{textctrl=Console}) ->
+            State) ->
   clear(),
   {noreply, State};
 handle_event(#wx{id=?wxID_COPY, event=#wxCommand{type=command_menu_selected}},
@@ -333,11 +333,11 @@ handle_sync_event(#wx{event=#wxKey{keyCode=Key, altDown=true}}, EvtObj, #state{b
     _ -> ok
   end;
   
-handle_sync_event(#wx{event=#wxKey{}}, EvtObj, #state{busy=true}) ->
+handle_sync_event(#wx{event=#wxKey{}}, _EvtObj, #state{busy=true}) ->
   ok;
 handle_sync_event(#wx{event=#wxKey{keyCode=?WXK_CONTROL}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
-handle_sync_event(#wx{event=#wxKey{keyCode=Key, controlDown=true}}, EvtObj, #state{}) ->
+handle_sync_event(#wx{event=#wxKey{controlDown=true}}, EvtObj, #state{}) ->
   wxEvent:skip(EvtObj);
 handle_sync_event(#wx{event=#wxKey{type=key_down, keyCode=13}}, _EvtObj, #state{}) ->
   wx_object:cast(?MODULE, eval),
@@ -395,7 +395,7 @@ eval(Console, Cmd, Hst) ->
 
 eval(Console, {Prompt, Input}, _Cmd, _Hst) when length(Input) =:= 0 ->
   prompt(Console, Prompt, Input++"\n"); %% for error's line no
-eval(Console, {Prompt, [$.]=Input}, [], _Hst) -> %% single .
+eval(Console, {_Prompt, [$.]=Input}, [], _Hst) -> %% single .
   ?stc:newLine(Console),
   wx_object:cast(?MODULE, {call_parser, Input, true});
 eval(Console, {Prompt, Input}, Cmd0, Hst) ->
@@ -414,10 +414,10 @@ eval(Console, {Prompt, Input}, Cmd0, Hst) ->
 %% @doc Determine whether we need to manually prompt_2_console().
 %% @private
 
-prompt(Console, Cmd, "$..", Prompt, _) -> 
+prompt(Console, Cmd, "$..", _Prompt, _) -> 
     wx_object:cast(?MODULE, {call_parser, Cmd, false}),
     ?stc:newLine(Console);
-prompt(Console, Cmd, "$$.", Prompt, _) ->
+prompt(Console, Cmd, "$$.", _Prompt, _) ->
     wx_object:cast(?MODULE, {call_parser, Cmd, false}),
     ?stc:newLine(Console);
 
@@ -439,7 +439,7 @@ prompt(Console, Cmd, Input, Prompt, $.) -> %% Multiple trailing dots
       prompt(Console, Prompt, "\n")
   end,
   ok;
-prompt(Console, Cmd, Input, Prompt, _) ->
+prompt(Console, Cmd, _Input, Prompt, _) ->
   case count_chars($", Cmd) andalso count_chars($', Cmd) of
     true ->
       ?stc:newLine(Console),

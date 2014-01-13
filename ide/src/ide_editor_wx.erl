@@ -35,6 +35,7 @@
   find_all/2,
   replace_all/3,
 	set_text/2,
+  quick_find/1,
 	set_theme/3,
 	set_font/2,
 	set_tab_width/2,
@@ -63,6 +64,8 @@
 -define(RIGHT_MARGIN_WIDTH, 6).
 -define(MARGIN_LN_PT_OFFSET, 0). %% The size (pts) to reduce margin text by
 
+-define(ID_SEARCH, 10).
+
 %% For wx-2.9 usage
 -ifndef(wxSTC_ERLANG_COMMENT_FUNCTION).
 -define(wxSTC_ERLANG_COMMENT_FUNCTION, 14).
@@ -81,20 +84,28 @@
 %% Types
 -export_type([editor/0]).
 -type editor() :: wx:wx_object().
--type path()      :: string().
--type filename()  :: string().
 -type erlangEditor() :: wxWindow:wxWindow().
 
 %% Server state
--record(state, {parent_panel    :: erlangEditor(), 
+-record(state, {parent_panel    :: erlangEditor(),
+                main_sz,
                 stc          :: ?stc:?stc(),
 								dirty :: boolean(),
 								ide_sl_wx,
 								test_list,
-								indent
+								indent,
+                search,
+                find 
                }).
-
-
+-record(search, {tc :: wxTextCtrl:wxTextCtrl(),
+                 next,
+                 prev,
+                 match_case
+                }).
+-record(find, {found,
+               last_pos,
+               length}).
+                 
 %% =====================================================================
 %% Client API
 %% =====================================================================
@@ -180,6 +191,14 @@ set_text(This, Text) ->
 	Editor = wx_object:call(This, stc),
 	?stc:setText(Editor, Text),	
 	update_line_margin(Editor).
+  
+
+%% =====================================================================
+%% @doc Display the intergrated search bar.
+
+quick_find(This) ->
+  wx_object:cast(This, show_search).
+  
 
 %% =====================================================================
 %% Styling
@@ -271,7 +290,7 @@ comment(EditorPid) ->
 	Editor = wx_object:call(EditorPid, stc),
 	case ?stc:getSelection(Editor) of
 		{N,N} -> single_line_comment(Editor);
-		{N,M} ->
+		{N,_} ->
 			Sel = count_selected_lines(Editor),
 			{Result,Length} = case count_commented_lines_re(Editor) of
 				Sel -> 
@@ -291,7 +310,7 @@ comment(EditorPid) ->
 %% @doc Move the caret to the line Line and Column Col.
 
  go_to_position(This, Pos) ->
-	Editor = wx_object:cast(This, {goto_pos, Pos}).
+	wx_object:cast(This, {goto_pos, Pos}).
 
 
 %% =====================================================================
@@ -349,7 +368,7 @@ transform_selection(EditorPid, {transform, Type}) ->
 %% =====================================================================
 %% @doc
 	
-fn_list(EditorPid, Str) ->
+fn_list(EditorPid, _Str) ->
 	get_focus(wx_object:call(EditorPid, stc)),
 	ok.
 	
@@ -375,14 +394,17 @@ empty_undo_buffer(This) ->
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Font = proplists:get_value(font, Config),
-  File = proplists:get_value(file, Config, false),
 
   Panel = wxPanel:new(Parent),
 
   Sizer = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(Panel, Sizer),
   Editor = ?stc:new(Panel, [{id, ?WINDOW_EDITOR}]), 
-  wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND}, {proportion, 1}]),              
+  wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND}, {proportion, 1}]),
+  
+  {Search, SearchRec} = quickfind_bar(Panel),
+  wxSizer:add(Sizer, Search, [{flag, ?wxEXPAND}, {proportion, 0}]),
+  wxSizer:hide(Sizer, 1),
 
 	%% Immutable editor styles
   ?stc:setLexer(Editor, ?wxSTC_LEX_ERLANG), %% This lexer needs a lot of work, e.g. better folding support, proper display of ctrl chars etc.
@@ -460,7 +482,10 @@ init(Config) ->
 	% ?stc:cmdKeyClearAll(Editor),
 	?stc:cmdKeyAssign(Editor, 79, ?wxSTC_SCMOD_CTRL, ?wxSTC_CMD_SELECTALL),
 
-  {Panel, #state{parent_panel=Panel, stc=Editor}}.
+  {Panel, #state{parent_panel=Panel, 
+                 stc=Editor,
+                 search=SearchRec,
+                 main_sz=Sizer}}.
 
 handle_info(Msg, State) ->
   io:format("Got Info(Editor) ~p~n",[Msg]),
@@ -469,20 +494,15 @@ handle_info(Msg, State) ->
 handle_call(shutdown, _From, State=#state{parent_panel=Panel}) ->
   wxPanel:destroy(Panel),
   {stop, normal, ok, State};
-
 handle_call(is_dirty, _From, State=#state{dirty=Mod}) ->
   {reply,Mod,State};
-
 handle_call(text_content, _From, State=#state{stc=Editor}) ->
   Text = ?stc:getText(Editor),
   {reply,Text,State};
-
 handle_call(stc, _From, State) ->
   {reply,State#state.stc,State};
-
 handle_call(parent_panel, _From, State) ->
   {reply,State#state.parent_panel,State};
-
 handle_call(Msg, _From, State) ->
   io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
   {reply,State,State}.
@@ -490,7 +510,6 @@ handle_call(Msg, _From, State) ->
 handle_cast({link_poller, Path}, State) ->
 	ide_file_poll_sup:start_link([{editor_pid, self()}, {path, Path}]),
   {noreply,State};
-	
 handle_cast({goto_pos, {Line, Col}}, State=#state{stc=Stc}) ->
 	?stc:gotoLine(Stc, Line - 1),
 	NewPos = ?stc:getCurrentPos(Stc),
@@ -502,18 +521,22 @@ handle_cast({goto_pos, {Line, Col}}, State=#state{stc=Stc}) ->
 	?stc:gotoPos(Stc, ColPos),
 	flash_current_line(Stc, {255,0,0}, 500, 1),
   {noreply,State};
-
 handle_cast(ref, State=#state{stc=Editor}) ->
 	update_sb_line(Editor),
 	update_line_margin(Editor),
 	parse_functions(Editor),	
+  {noreply,State};
+handle_cast(show_search, State=#state{main_sz=Sz, search=#search{tc=Tc}}) ->
+  wxSizer:show(Sz, 1),
+  wxTextCtrl:setFocus(Tc),
+  wxSizer:layout(Sz),
   {noreply,State}.
-	
+  	
 %% =====================================================================
 %% Sync events
 %% =====================================================================
 
-handle_sync_event(#wx{event=#wxKey{}, userData=This}, Event, State=#state{stc=Editor}) ->
+handle_sync_event(#wx{event=#wxKey{}, userData=This}, Event, #state{stc=Editor}) ->
 	wxEvent:skip(Event),
 	wx_object:cast(This, ref), %% Serviced when caret has moved
 	?stc:setCaretWidth(Editor, 1),
@@ -534,15 +557,15 @@ handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
 		?stc:gotoPos(Editor, ?stc:getLineEndPosition(Editor, Line)),
 		wxEvent:skip(Event);
 		
-handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
-									State=#state{stc=Editor}) ->
+handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded}}, Event,
+									_State) ->
 		wxEvent:skip(Event).	
 
 %% =====================================================================
 %% Mouse events
 %% =====================================================================
 
-handle_event(_A=#wx{event=#wxMouse{type=left_down}}, 
+handle_event(#wx{event=#wxMouse{type=left_down}}, 
              State = #state{stc=Editor}) ->
 	?stc:setCaretWidth(Editor, 1),
 	case ?stc:getSelectedText(Editor) of
@@ -551,14 +574,14 @@ handle_event(_A=#wx{event=#wxMouse{type=left_down}},
 	end,
 	{noreply, State};
 
-handle_event(_A=#wx{event=#wxMouse{type=motion, leftDown=true}}, 
+handle_event(#wx{event=#wxMouse{type=motion, leftDown=true}}, 
              State = #state{stc=Editor}) ->
 	?stc:setCaretWidth(Editor, 0), % Hide the caret during selection
 	%% Update status bar selection info
 	update_sb_selection(Editor),
 	{noreply, State};
 
-handle_event(_A=#wx{event=#wxMouse{type=left_up}}, 
+handle_event(#wx{event=#wxMouse{type=left_up}}, 
              State = #state{stc=Editor}) ->
 	%% Update status bar selection info
 	case ?stc:getSelectedText(Editor) of
@@ -568,8 +591,7 @@ handle_event(_A=#wx{event=#wxMouse{type=left_up}},
 	{noreply, State};
 
 %% For testing:
-handle_event(_A=#wx{event=#wxMouse{}}, 
-             State = #state{stc=Editor}) ->
+handle_event(#wx{event=#wxMouse{}}, State) ->
 	{noreply, State};
 
 %% =====================================================================
@@ -597,17 +619,71 @@ handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State) ->
 handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State) ->
   {noreply, State#state{dirty=true}};
 
-handle_event(E,O) ->
-  {noreply, O}.
+%% =====================================================================
+%% Search events
+%% =====================================================================
 
-	
+handle_event(#wx{id=?ID_SEARCH, event=#wxFocus{}}, State=#state{main_sz=Sz}) ->
+  wxSizer:hide(Sz, 1),
+  wxSizer:layout(Sz),
+  {noreply, State#state{find=undefined}};
+handle_event(#wx{id=?ID_SEARCH, event=#wxCommand{type=command_text_enter,cmdString=Str}}, 
+             State=#state{stc=Editor, find=Find, search=#search{next=Next0, match_case=Case0}})
+               when Find =/= undefined ->
+  Dir  = wxRadioButton:getValue(Next0) xor wx_misc:getKeyState(?WXK_SHIFT),
+  Case = wxCheckBox:getValue(Case0),
+  Pos = if Find#find.found, Dir ->  %% Cycle next
+	           ?stc:getAnchor(Editor);
+           Find#find.found ->  %% Cycle prev
+	           ?stc:getCurrentPos(Editor);
+    	     Dir -> %% Not found, start at top             
+        		 0;
+    	     true -> %% Not found, start at bottom
+      		   ?stc:getLength(Editor)
+  end,
+  ?stc:gotoPos(Editor, Pos),
+  case quick_find(Editor, Str, Case, Dir) of
+    true ->
+      {noreply, State#state{find=Find#find{found=true}}};
+    false ->
+      {noreply, State#state{find=Find#find{found=false}}}
+  end;
+handle_event(#wx{id=?ID_SEARCH, event=#wxCommand{cmdString=""}}, 
+	           State=#state{stc=Editor}) ->
+    Pos = ?stc:getCurrentPos(Editor),
+    ?stc:gotoPos(Editor, Pos),
+    {noreply, State#state{find=undefined}};
+handle_event(#wx{id=?ID_SEARCH, event=#wxCommand{cmdString=Str}}, 
+             State=#state{stc=Editor, search=#search{next=Next, match_case=Case0}, find=Find}) ->
+  Dir = wxRadioButton:getValue(Next),
+  Case = wxCheckBox:getValue(Case0),
+  Find1 = case Find of
+    undefined ->
+      Pos = ?stc:getCurrentPos(Editor),
+      #find{last_pos=Pos, length=length(Str)};
+    #find{length=Old} when Old < length(Str) ->
+      Find#find{length=length(Str)};
+    _ ->
+      ?stc:gotoPos(Editor, Find#find.last_pos),
+      Find#find{length=length(Str)}
+  end,
+  case quick_find(Editor, Str, Case, Dir) of
+    true ->
+      {noreply, State#state{find=Find1#find{found=true}}};
+    false ->
+      {noreply, State#state{find=Find1#find{found=false}}}
+  end;
+
+handle_event(_E,State) ->
+  io:format("Unhandled event in editor.~n"),
+  {noreply, State}.
+    
 code_change(_, _, State) ->
   {ok, State}.
 
-terminate(_Reason, State=#state{parent_panel=Panel}) ->
+terminate(_Reason, #state{parent_panel=Panel}) ->
   wxPanel:destroy(Panel).
-
-
+  
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
@@ -621,9 +697,34 @@ keywords() ->
 	"bor", "bsl", "bsr", "bxor", "case", "catch", "cond", "div", 
 	"end", "fun", "if", "let", "not", "of", "or", "orelse", 
 	"receive", "rem", "try", "when", "xor"],
-	L = lists:flatten([KW ++ " " || KW <- KWS]).
+	lists:flatten([KW ++ " " || KW <- KWS]).
 
 
+%% =====================================================================
+%% @doc 
+
+quickfind_bar(Parent) ->
+  SzFlags = wxSizerFlags:border(wxSizerFlags:align(wxSizerFlags:new(), 
+    ?wxALIGN_CENTER_VERTICAL), ?wxTOP bor ?wxBOTTOM bor ?wxLEFT, 4),
+  HSz = wxBoxSizer:new(?wxHORIZONTAL),
+  wxSizer:add(HSz, wxStaticText:new(Parent, ?wxID_ANY, "Find:"), SzFlags),
+  Tc1 = wxTextCtrl:new(Parent, ?ID_SEARCH, [{style, ?wxTE_PROCESS_ENTER}]), 
+  wxSizer:add(HSz, Tc1, wxSizerFlags:proportion(SzFlags, 1)),
+  Rb0 = wxRadioButton:new(Parent, ?wxID_ANY, "Next"),
+  wxRadioButton:setValue(Rb0, true),
+  wxSizer:add(HSz,Rb0,wxSizerFlags:proportion(SzFlags, 0)),
+  Rb1 = wxRadioButton:new(Parent, ?wxID_ANY, "Previous"),
+  wxSizer:add(HSz,Rb1,SzFlags),
+  Cb = wxCheckBox:new(Parent, ?wxID_ANY, "Match Case"),
+  wxSizer:add(HSz,Cb,SzFlags),
+  wxSizer:addSpacer(HSz, 10),
+  wxTextCtrl:connect(Tc1, command_text_updated),
+  wxTextCtrl:connect(Tc1, command_text_enter),
+  wxTextCtrl:connect(Tc1, kill_focus),
+  wxWindow:connect(Parent, command_button_clicked),
+  {HSz, #search{tc=Tc1,next=Rb0,prev=Rb1,match_case=Cb}}.
+   
+   
 %% =====================================================================
 %% @doc 
 %% @private	
@@ -823,7 +924,7 @@ apply_lexer_styles(Editor, Styles, Fg) ->
 %% @private
 
 set_font_style(Editor, Id, Style) ->
-	Res = case string:to_lower(Style) of
+	case string:to_lower(Style) of
 		"italic" -> ?stc:styleSetItalic(Editor, Id, true);
 		"bold" -> ?stc:styleSetBold(Editor, Id, true);
 		"underlined" -> ?stc:styleSetUnderline(Editor, Id, true);
@@ -888,9 +989,9 @@ indent_line(Editor, Cmd) ->
 %% @doc
 %% @private
 
-lines(Editor, {Start, End}) ->
-	lists:seq(?stc:lineFromPosition(Editor, Start), 
-		?stc:lineFromPosition(Editor, End)).
+% lines(Editor, {Start, End}) ->
+%   lists:seq(?stc:lineFromPosition(Editor, Start), 
+%     ?stc:lineFromPosition(Editor, End)).
 
 
 %% =====================================================================
@@ -980,7 +1081,6 @@ single_line_comment(Editor) ->
 %% @private
 
 correct_caret(Editor, Pos) ->
-	{X,Y} = position_to_x_y(Editor, Pos),
 	case position_to_x_y(Editor, Pos) of
 		{_,0} -> %% Move the caret back one position
 			?stc:setCurrentPos(Editor, ?stc:getCurrentPos(Editor) - 1);		
@@ -995,7 +1095,7 @@ correct_caret(Editor, Pos) ->
 parse_functions(Editor) ->
 	Input = ?stc:getText(Editor),
 	Regex = "^\\s*((?:[a-z]+[a-zA-Z\\d_@]*))(?:\\(.*\\))",
-	Result = case re:run(Input, Regex, [unicode, global, multiline, {capture, all_but_first, list}]) of
+	_Result = case re:run(Input, Regex, [unicode, global, multiline, {capture, all_but_first, list}]) of
 		nomatch -> false, [];
 		{_,Captured} -> Captured
 	end,
@@ -1010,7 +1110,7 @@ parse_functions(Editor) ->
 %% OSX wx294 erlang16b01
 %% @private
 
-flash_current_line(Editor, _, _, 0) -> ok;
+flash_current_line(_Editor, _, _, 0) -> ok;
 flash_current_line(Editor, Colour, Interval, N) ->
 	?stc:setCaretLineBackground(Editor, Colour),
 	?stc:setCaretLineVisible(Editor, true),
@@ -1028,6 +1128,25 @@ flash_current_line(Editor, Colour, Interval, N) ->
 get_focus(This) ->
 	?stc:setFocus(This).
 
+
+%% =====================================================================
+%% @doc
+
+quick_find(Editor, Str, Case, Next) ->
+  ?stc:searchAnchor(Editor),
+  Flag = if Case -> ?wxSTC_FIND_MATCHCASE;
+            true -> 0
+  end,
+  Res = if Next -> ?stc:searchNext(Editor, Flag, Str);
+           true -> ?stc:searchPrev(Editor, Flag, Str)
+	end,
+  case Res >= 0 of
+    true -> 
+      ?stc:scrollToLine(Editor,?stc:lineFromPosition(Editor,Res) - 3),
+      true;
+    false -> false
+  end.
+  
 
 %% =====================================================================
 %% @doc
@@ -1063,8 +1182,8 @@ replace_all(Editor, Str, RepStr, Start, End) ->
 %% ===================================================================== 
 %% @doc Replace all occurrences of Str within the range Start -> End. 
 
-replace(EditorPid, Str, Start, End) ->
-  Editor = wx_object:call(EditorPid, stc),
-  ?stc:setTargetStart(Editor, Start),
-  ?stc:setTargetEnd(Editor, End),
-  ?stc:replaceTarget(Editor, Str).
+% replace(EditorPid, Str, Start, End) ->
+%   Editor = wx_object:call(EditorPid, stc),
+%   ?stc:setTargetStart(Editor, Start),
+%   ?stc:setTargetEnd(Editor, End),
+%   ?stc:replaceTarget(Editor, Str).

@@ -85,7 +85,7 @@ do_init(Config) ->
   SavedTheme = ide_sys_pref_gen:get_preference(console_theme),
   
   ThemeEx = 
-    fun({Name, Fg, Bg, MrkrBf, ErrFg}=Theme) ->
+    fun({Name, Fg, Bg, _MrkrBf, _ErrFg}=Theme) ->
       Profile = wxWindow:new(Panel, ?wxID_ANY, [{style, ?wxBORDER_SIMPLE}, {size, {65,40}}]),
       T = wxStaticText:new(Profile, ?wxID_ANY, "1> 1+1.\n3\n2>"),
       wxWindow:setFont(T, wxFont:new(8, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL)),
@@ -121,11 +121,11 @@ do_init(Config) ->
     
   {Panel, State}.
 
-handle_event(#wx{id=Id, event=#wxCommand{type=command_radiobutton_selected}, userData={_Name,Fg,Bg,MrkrBg,ErrFg}=Theme}, State) ->
+handle_event(#wx{event=#wxCommand{type=command_radiobutton_selected}, userData={_Name,Fg,Bg,MrkrBg,ErrFg}=Theme}, State) ->
   ide_console_wx:set_theme(Fg, Bg, MrkrBg, ErrFg),
   ide_sys_pref_gen:set_preference(console_theme, Theme),
   {noreply, State};
-handle_event(#wx{obj=Browse, event=#wxCommand{type=command_button_clicked}}, 
+handle_event(#wx{event=#wxCommand{type=command_button_clicked}}, 
              State=#state{parent=Parent, font=Font, font_string=FontStr}) ->
   Fd = wxFontData:new(),
   wxFontData:setInitialFont(Fd, Font),

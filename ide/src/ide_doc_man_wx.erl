@@ -381,42 +381,42 @@ handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_record
 handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId, sizer=Sz}) ->
   F = fun(_G, [], Dr, P2d) -> {Dr, P2d};
          (G, [DocId | T], Dr, P2d) ->    
-            % Record = proplists:get_value(DocId, DocRecords),
-            % case Record#document.project_id of
-            %   undefined ->
-            %     ide_proj_tree_wx:remove_standalone_document(Record#document.path);
-            %   _ ->
-            %     ok
-            % end,
+            Record = proplists:get_value(DocId, DocRecords),
+            case Record#document.project_id of
+              undefined ->
+                ide_proj_tree_wx:remove_standalone_document(Record#document.path);
+              _ ->
+                ok
+            end,
             {NewDocRecords, NewPageToDocId} = remove_document(Nb, DocId, doc_id_to_page_id(Nb, DocId, P2d), Dr, P2d),
             G(G, T, NewDocRecords, NewPageToDocId)
        end,
   {S, D} = F(F, Docs, DocRecords, PageToDocId),
-  % case wxAuiNotebook:getPageCount(Nb) of
-  %   0 -> 
-  %     %% Called when the last document is closed.
-  %     ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, false),
-  %     show_placeholder(Sz),
-  %     ide:set_title([]);
-  %   _ -> ok
-  % end,
+  case wxAuiNotebook:getPageCount(Nb) of
+    0 -> 
+      %% Called when the last document is closed.
+      ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, false),
+      show_placeholder(Sz),
+      ide:set_title([]);
+    _ -> ok
+  end,
   {reply, ok, State#state{doc_records=S, page_to_doc_id=D}}.
   % {reply, ok, State}.
 
 %% Close event
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
-  % wxNotifyEvent:veto(Event),
-  % DocId = page_idx_to_doc_id(Nb, wxAuiNotebookEvent:getSelection(Event), PageToDoc),
-  % Env = wx:get_env(),
-  % spawn(fun() -> wx:set_env(Env), close_documents([DocId]) end),
+  wxNotifyEvent:veto(Event),
+  DocId = page_idx_to_doc_id(Nb, wxAuiNotebookEvent:getSelection(Event), PageToDoc),
+  Env = wx:get_env(),
+  spawn(fun() -> wx:set_env(Env), close_documents([DocId]) end),
   wxEvent:skip(Event),
 	ok.
 
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed, selection=Idx}},
              State=#state{notebook=Nb, page_to_doc_id=PageToDoc, doc_records=DocRecords}) ->
-  % DocId = page_idx_to_doc_id(Nb, Idx, PageToDoc),
-  % #document{project_id=PrId} = get_record(DocId, DocRecords),
-  % ide_proj_man:set_active_project(PrId),
+  DocId = page_idx_to_doc_id(Nb, Idx, PageToDoc),
+  #document{project_id=PrId} = get_record(DocId, DocRecords),
+  ide_proj_man:set_active_project(PrId),
   {noreply, State}.
 
 code_change(_, _, State) ->

@@ -62,7 +62,7 @@ close_port() ->
 %% Callback functions
 %% =====================================================================
    
-init(Args) ->
+init(_Args) ->
 	{Path, Options} = case os:type() of
 		{win32,_} ->
 			{"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erl", [use_stdio]};
@@ -102,7 +102,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 terminate({port_terminated, _Reason}, _State) ->
   ok;
-terminate(_Reason, #state{port=Port}) ->
+terminate(_Reason, _State) ->
   % port_close(Port),
 	ok.
 		

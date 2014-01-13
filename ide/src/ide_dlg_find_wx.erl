@@ -178,7 +178,7 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_text_updated, cmdString=St
   end,
   {noreply,State};
   
-handle_event(E=#wx{id=Id, event=#wxCommand{type=command_button_clicked}}, 
+handle_event(#wx{id=Id, event=#wxCommand{type=command_button_clicked}}, 
              State=#state{data=Data}) ->
   case Id of
     ?FIND_ALL ->

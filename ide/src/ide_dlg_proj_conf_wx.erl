@@ -77,7 +77,7 @@ do_init(Parent) ->
   State = case BuildConfig of
     undefined ->
       #state{module=[], function=[], args=[]};
-    Config ->
+    _Config ->
       #state{module=io_lib:format("~s", [proplists:get_value(module, BuildConfig, [])]),
              function=io_lib:format("~s", [proplists:get_value(function, BuildConfig, [])]),
              args=io_lib:format("~s", [proplists:get_value(args, BuildConfig, [])])}

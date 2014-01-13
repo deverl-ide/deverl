@@ -23,6 +23,7 @@
 	set_indent_tabs/1,
 	set_indent_guides/1,
   transform_selection/1,
+  quick_find/0,
 	indent_right/0,
 	indent_left/0,
 	comment/0,
@@ -124,6 +125,8 @@ transform_selection(#wx{id=Id, event=#wxCommand{type=command_menu_selected}}) ->
 	end,
 	ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:transform_selection/2, [{transform, Cmd}]).
 
+quick_find() ->
+  ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:quick_find/1, []).
 indent_right() -> 
   ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:indent_right/1, []).
 indent_left() -> 
@@ -141,7 +144,7 @@ zoom_out() ->
 
 go_to_line(Parent) ->
 	Callback =
-	fun(#wx{obj=Dialog, id=?wxID_OK, userData=Input},O) -> %% OK clicked
+	fun(#wx{id=?wxID_OK, userData=Input},O) -> %% OK clicked
 		wxEvent:skip(O),
 	  {Line, Column} = case string:tokens(wxTextCtrl:getValue(Input), ":") of
 			[] ->  {0, 0};
@@ -162,4 +165,3 @@ go_to_line(Parent) ->
 	{Ln, Col} = ide_editor_wx:get_current_pos(ide_doc_man_wx:get_active_document_ref()),
 	ide_lib_dlg_wx:text_input_dialog(Parent, "Go to Line", "Enter line:", "Go",
 		[{callback, Callback}, {init_text, integer_to_list(Ln)++":"++integer_to_list(Col)}]).
-  

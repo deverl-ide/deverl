@@ -107,21 +107,20 @@ hexstr_to_rgb([A,B | T], Acc) ->
 %% @doc Alternative SAX parser. Marvelous documentation on this.
 %% It may well be faster than the current DOM implemenation, however.
 %% @private
-
-sax_print() ->	
-	xmerl_sax_console_parser:file("../priv/themes/Text.theme", 
-	[{event_fun, fun(Event, _Location, _State) ->
-	               io:format("~p~n", [Event])
-               end}]).
-
-sax_parse() ->
-	xmerl_sax_console_parser:file("../priv/themes/Text.theme", 
-		[{event_fun, fun event/3},
-     {event_state, [{default,[]},{fgColour,[]},{bgColour,[]},{style,[]},{size,[]}] 
-		 }]).
-
-event(E, Loc, State) ->
-	io:format("E: ~p~n", [E]),	
-	io:format("Loc: ~p~n", [Loc]),	
-	io:format("State: ~p~n", [State]),
-	State.
+% sax_print() ->  
+%   xmerl_sax_console_parser:file("../priv/themes/Text.theme", 
+%   [{event_fun, fun(Event, _Location, _State) ->
+%                  io:format("~p~n", [Event])
+%                end}]).
+% 
+% sax_parse() ->
+%   xmerl_sax_console_parser:file("../priv/themes/Text.theme", 
+%     [{event_fun, fun event/3},
+%      {event_state, [{default,[]},{fgColour,[]},{bgColour,[]},{style,[]},{size,[]}] 
+%      }]).
+% 
+% event(E, Loc, State) ->
+%   io:format("E: ~p~n", [E]),  
+%   io:format("Loc: ~p~n", [Loc]),  
+%   io:format("State: ~p~n", [State]),
+%   State.

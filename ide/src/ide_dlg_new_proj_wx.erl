@@ -218,7 +218,7 @@ handle_event(#wx{id=?ID_BROWSE_PROJECTS, event=#wxCommand{type=command_button_cl
 	end,
 	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=0}}, 
-             State=#state{parent=Parent, project_path_text_ctrl=Path, project_path=Input}) ->
+             State=#state{project_path_text_ctrl=Path, project_path=Input}) ->
 	case Input of %% Generates command_text_updated event for ?ID_PROJ_PATH
 		undefined -> wxTextCtrl:clear(Path);
 		Str -> wxTextCtrl:setValue(Path, Str)
@@ -227,7 +227,7 @@ handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=0}},
 	wxWindow:enable(wxWindow:findWindowById(?ID_PROJ_PATH)),
   {noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_checkbox_clicked, commandInt=1}}, 
-             State=#state{parent=Parent, project_path_text_ctrl=Path, default_path=DefPath,
+             State=#state{project_path_text_ctrl=Path, default_path=DefPath,
 						 							project_name_text_ctrl=Name}) ->
 	Input = wxTextCtrl:getValue(Path),
 	wxTextCtrl:setValue(Path, DefPath), %% Generates command_text_updated event for ?ID_PROJ_PATH
@@ -332,7 +332,7 @@ get_message(Messages, Id) ->
 display_message(Desc, Display) ->
 	display_message(Desc, "Create a new project.", [], Display).
 display_message(Desc, Msg, Display) ->
-	display_message(Desc, Msg, [], Display).
+  display_message(Desc, Msg, [], Display).
 display_message(_, _, _, false) -> ok;
 display_message(Desc, Msg, Options, true) -> 
 	insert_desc(Desc, Msg, Options).
