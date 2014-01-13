@@ -38,7 +38,7 @@
                 splitter_utilities_pos :: integer(),
                 splitter_output_pos :: integer(),
                 splitter_output_active :: wxWindow:wxWindow(),
-                menu_ets
+                menu_groups :: {integer(), [integer()]}
                 }).
 
 %% Macros
@@ -91,16 +91,14 @@ set_title(Title) ->
 
 %% =====================================================================
 %% @doc Enable/disable a menu group.
-%% Menu items can be associated to one or more menu groups (bit
-%% flags, defined in ide.hrl). The Mask is compared using bitwise AND to
-%% every menu item. If the menu item has the group bit set then it will
-%% be enabled when Toggle is true and disabled when Toggle is false.
+%% Menu items can be associated to one or more menu groups (in ide_menu).
+%% Takes a list of menu group ids (defined in ide.hrl), and enables
+%% disables all menu items belonging to that group(s).
 
--spec toggle_menu_group(integer(), boolean()) -> ok.
+-spec toggle_menu_group([integer()], boolean()) -> ok.
 
-toggle_menu_group(Mask, Toggle) ->
-	wx_object:cast(?MODULE, {toggle_menu_group, Mask, Toggle}).
-
+toggle_menu_group(Groups, Toggle) ->
+  wx_object:cast(?MODULE, {toggle_menu_group, Groups, Toggle}).
 
 %% =====================================================================
 %% @doc Show the window identified by WinId in the output window, hiding the
@@ -166,7 +164,7 @@ init(Options) ->
 	StatusBar = ide_sb_wx:start([{parent, Frame}]),
 
 	%% Menubar %%
-  MenuEts = ide_menu:create([{parent, Frame}]),
+  MenuGroups = ide_menu:create([{parent, Frame}]),
 
 	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},
                                         {proportion, 0}]),
@@ -201,8 +199,8 @@ init(Options) ->
   % wxFrame:setAcceleratorTable(Frame, AccelTab),
 
   %% Toggle menu defaults
-  toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY bor
-                    ?MENU_GROUP_PROJECTS_EMPTY, false),
+  toggle_menu_group([?MENU_GROUP_NOTEBOOK_EMPTY,
+                     ?MENU_GROUP_PROJECTS_EMPTY], false),
 
   {Frame, #state{
 						frame=Frame,
@@ -216,7 +214,7 @@ init(Options) ->
             splitter_utilities=SplitterUtilities,
             splitter_output_active=ActiveLogWindow,
 						workspace=Workspace,
-            menu_ets=MenuEts
+            menu_groups=MenuGroups
             }}.
 
 %% Deal with trapped exit signals
@@ -236,20 +234,17 @@ handle_call(frame, _From, State) ->
 	{reply, State#state.frame, State}.
 
 %% @hidden
-handle_cast({toggle_menu_group, Mask, Toggle}, State=#state{frame=Frame, menu_ets=MenuEts}) ->
-  MenuBar = wxFrame:getMenuBar(Frame),
-  ets:foldl(
-  fun({_Id,_Options}, DontCare) ->
-    DontCare;
-  ({Id,_,Options}, DontCare) ->
-    case proplists:get_value(group, Options) of
-      undefined -> ok;
-      Groups ->
-        toggle_menu_item(MenuBar, wxFrame:getToolBar(Frame), Mask, Id, Groups, Toggle)
-    end,
-    DontCare
-  end, notused, MenuEts),
-	{noreply, State};
+handle_cast({toggle_menu_group, Groups, Toggle}, State) ->
+  Mb = wxFrame:getMenuBar(State#state.frame),
+  Tb = wxFrame:getToolBar(State#state.frame),
+  wx:foreach(fun(Group) ->
+    MenuIds = proplists:get_value(Group, State#state.menu_groups),
+    lists:map(fun(MenuId) -> 
+      toggle_menu_item(Mb, Tb, MenuId, Toggle) 
+    end, MenuIds)
+  end, Groups),
+  {noreply, State};
+  
 handle_cast({title, Title}, State=#state{frame=Frame}) ->
 	Str = case Title of
 		[] -> ?FRAME_TITLE;
@@ -257,6 +252,7 @@ handle_cast({title, Title}, State=#state{frame=Frame}) ->
 	end,
 	wxFrame:setTitle(Frame, Str),
   {noreply, State};
+  
 handle_cast({output_display, Window}, State=#state{splitter_output_pos=Pos}) ->
   Id = case Window of
     output -> ?WINDOW_OUTPUT;
@@ -324,11 +320,214 @@ handle_event(#wx{id=?SPLIITER_LOG, event=#wxSplitter{type=command_splitter_sash_
 handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State) ->
   {noreply, State};
 
-
 %% =====================================================================
 %% Menu handlers
 %%
 %% =====================================================================
+
+handle_event(#wx{id=?wxID_NEW}, State) ->
+  ide_doc_man_wx:new_document(State#state.frame),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_NEW_PROJECT}, State) ->
+  ide_proj_man:new_project(State#state.frame),
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_OPEN_PROJECT}, State) ->
+  ide_proj_man:open_project_dialog(State#state.frame),
+  {noreply, State};
+  
+handle_event(#wx{id=?wxID_OPEN}, State) ->
+  ide_doc_man_wx:open_document_dialog(State#state.frame),
+  {noreply, State};
+
+handle_event(#wx{id=?wxID_SAVE}, State) ->
+  ide_doc_man_wx:save_active_document(),
+  {noreply, State};
+
+handle_event(#wx{id=?wxID_SAVEAS}, State) ->
+  ide_doc_man_wx:save_as(),
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_SAVE_ALL}, State) ->
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_SAVE_PROJECT}, State) ->
+  ide_doc_man_wx:save_active_project(),
+  {noreply, State};
+  
+handle_event(#wx{id=?wxID_PRINT}, State) ->
+  {noreply, State};
+  
+handle_event(#wx{id=?wxID_CLOSE}, State) ->
+  ide_doc_man_wx:close_active_document(),
+  {noreply, State};
+  
+handle_event(#wx{id=?wxID_CLOSE_ALL}, State) ->
+  ide_doc_man_wx:close_all(),
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_CLOSE_PROJECT}, State) ->
+  ide_proj_man:close_active_project(),
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_IMPORT_FILE}, State) ->
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_IMPORT_PROJECT}, State) ->
+  ide_proj_man:import(State#state.frame),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_PROJECT_CONFIG}, State) ->
+  ide_proj_man:set_project_configuration(State#state.frame),
+  {noreply, State};
+
+handle_event(#wx{id=?wxID_PREFERENCES}, State) ->
+  ide_dlg_prefs_wx:start(State#state.frame),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_QUICK_FIND}, State) ->
+  ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:quick_find/1, []),
+  {noreply, State};
+  
+handle_event(#wx{id=?wxID_FIND}, State) ->
+  FindData = ide_dlg_data_find_wx:new(),
+  ide_dlg_data_find_wx:set_options(FindData, ?IGNORE_CASE bor ?WHOLE_WORD bor ?START_WORD),
+  ide_dlg_data_find_wx:set_search_location(FindData, ?FIND_LOC_DOC),
+  case erlang:whereis(ide_dlg_find_wx) of
+    undefined ->
+      ide_dlg_find_wx:show(ide_dlg_find_wx:new(State#state.frame, FindData));
+    Pid ->
+      wxDialog:raise(ide_dlg_find_wx:get_ref(Pid))
+  end,
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_FONT}, State) ->
+  %% Display the system font picker
+  FD = wxFontData:new(),
+  Dialog = wxFontDialog:new(State#state.frame, FD),
+  case wxDialog:showModal(Dialog) of
+    ?wxID_OK ->
+      %% Get the user selected font, and update the editors
+      Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
+      
+      %% WHAT!!!! needs a helper function
+      ide_sys_pref_gen:set_preference(editor_font_size, wxFont:getPointSize(Font)),
+      ide_sys_pref_gen:set_preference(editor_font_family, wxFont:getFamily(Font)),
+      ide_sys_pref_gen:set_preference(editor_font_style, wxFont:getStyle(Font)),
+      ide_sys_pref_gen:set_preference(editor_font_weight, wxFont:getWeight(Font)),
+      ide_sys_pref_gen:set_preference(editor_font_facenmae, wxFont:getFaceName(Font)),
+      ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_font/2, [Font]),
+      ok;
+    ?wxID_CANCEL ->
+				ok
+	end,
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_FONT_BIGGER}, State) ->
+  ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:zoom_in/1, []),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_FONT_SMALLER}, State) ->
+  ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:zoom_out/1, []),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_LINE_WRAP}, State) ->
+  Bool = wxMenuItem:isChecked(wxMenuBar:findItem(wxFrame:getMenuBar(State#state.frame), ?MENU_ID_LINE_WRAP)),
+	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_line_wrap/2, [Bool]),
+  ide_sys_pref_gen:set_preference(line_wrap, Bool),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_LN_TOGGLE}, State) ->
+  Bool = wxMenuItem:isChecked(wxMenuBar:findItem(wxFrame:getMenuBar(State#state.frame), ?MENU_ID_LN_TOGGLE)),
+	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_line_margin_visible/2, [Bool]),
+  ide_sys_pref_gen:set_preference(show_line_no, Bool),
+  {noreply, State};
+
+handle_event(#wx{id=Id}, State) when Id =:= ?MENU_ID_INDENT_SPACES orelse Id =:= ?MENU_ID_INDENT_TABS ->
+  Cmd = case Id of
+    ?MENU_ID_INDENT_SPACES -> false;
+    ?MENU_ID_INDENT_TABS -> true
+  end,
+	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_use_tabs/2, [Cmd]),
+  ide_sys_pref_gen:set_preference(use_tabs, Cmd),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_INDENT_GUIDES}, State) ->
+  Bool = wxMenuItem:isChecked(wxMenuBar:findItem(wxFrame:getMenuBar(State#state.frame), ?MENU_ID_INDENT_GUIDES)),
+	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_indent_guides/2, [Bool]),
+  ide_sys_pref_gen:set_preference(indent_guides, Bool),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_INDENT_RIGHT}, State) ->
+  ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:indent_right/1, []),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_INDENT_LEFT}, State) ->
+  ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:indent_left/1, []),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_TOGGLE_COMMENT}, State) ->
+  ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:comment/1, []),
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_GOTO_LINE}, State) ->
+	Callback =
+	fun(#wx{id=?wxID_OK, userData=Input},O) -> %% OK clicked
+		wxEvent:skip(O),
+	  {Line, Column} = case string:tokens(wxTextCtrl:getValue(Input), ":") of
+			[] ->  {0, 0};
+	    [Ln | []] -> {Ln, 0};
+	    [Ln, Col | _ ] -> {Ln, Col}
+	  end,
+	  L = try
+	    list_to_integer(Line)
+	  catch _:_ -> 0
+	  end,
+	  C = try
+	    list_to_integer(Column)
+	  catch _:_ -> 0
+	  end,
+		ide_editor_wx:go_to_position(ide_doc_man_wx:get_active_document_ref(), {L,C});
+	(_,O) -> wxEvent:skip(O) %% Cancel/Close
+	end,
+	{Ln, Col} = ide_editor_wx:get_current_pos(ide_doc_man_wx:get_active_document_ref()),
+	ide_lib_dlg_wx:text_input_dialog(State#state.frame, "Go to Line", "Enter line:", "Go",
+		[{callback, Callback}, {init_text, integer_to_list(Ln)++":"++integer_to_list(Col)}]),
+  {noreply, State};
+  
+handle_event(#wx{id=Id}, State) when Id =:= ?MENU_ID_UC_SEL orelse Id =:= ?MENU_ID_LC_SEL ->
+	Cmd = case Id of
+		?MENU_ID_UC_SEL -> uppercase;
+		?MENU_ID_LC_SEL -> lowercase
+	end,
+	ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:transform_selection/2, [{transform, Cmd}]),
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_COMPILE_FILE}, State) ->
+  ide_build:compile_file(),
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_MAKE_PROJECT}, State) ->
+  ide_build:make_project(),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_RUN}, State) ->
+  ide_build:run_project(State#state.frame),
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_NEXT_TAB}, State) ->
+  ide_doc_man_wx:set_selection(right),
+  {noreply, State};
+
+handle_event(#wx{id=?MENU_ID_PREV_TAB}, State) ->
+  ide_doc_man_wx:set_selection(left),
+  {noreply, State};
+  
+handle_event(#wx{id=?wxID_ABOUT}, State) ->
+  ide_dlg_about_wx:start(State#state.frame),
+  {noreply, State};
+
 handle_event(#wx{id=?MENU_ID_SEARCH_DOC}, State) ->
   wx_misc:launchDefaultBrowser("http://www.erlang.org/erldoc"),
   {noreply, State};
@@ -374,7 +573,7 @@ handle_event(#wx{id=Id}, State=#state{util_tabbed=Utils})
 % events here, find out which control was in focus and then execute the correct function on it.
 % We have tried but failed to find an wxErlang alternative to the wxWidget
 % wxEventHandler->proccess_event() function that would allow us to pass the event to the in-focus
-% control, and so this is the workaround we have adopted.
+% control, and so this is the workaround we have adopted. wx2.8 erlangR16B02
 handle_event(#wx{id=?wxID_PASTE}, State) ->
   Fw = wxWindow:findFocus(),
   Id = wxWindow:getId(Fw),
@@ -387,6 +586,7 @@ handle_event(#wx{id=?wxID_PASTE}, State) ->
       wxStyledTextCtrl:paste(wx:typeCast(Fw, wxStyledTextCtrl))
   end,
   {noreply, State};
+  
 handle_event(#wx{id=?wxID_COPY}, State) ->
   Fw = wxWindow:findFocus(),
   Id = wxWindow:getId(Fw),
@@ -396,18 +596,7 @@ handle_event(#wx{id=?wxID_COPY}, State) ->
     _ -> wxStyledTextCtrl:copy(wx:typeCast(Fw, wxStyledTextCtrl))
   end,
   {noreply, State};
-%% First handle the sub-menus
-handle_event(#wx{userData={theme_menu,Menu}, event=#wxCommand{type=command_menu_selected}},
-             State) ->
-	ide_editor_ops:set_theme(Menu),
-	{noreply, State};
 
-handle_event(#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_selected}},
-             State) when Id >= ?MENU_ID_TAB_WIDTH_LOWEST,
-						 Id =< ?MENU_ID_TAB_WIDTH_HIGHEST  ->
-  ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_tab_width/2, [list_to_integer(wxMenu:getLabel(Menu, Id))]),
-  ide_sys_pref_gen:set_preference(tab_width, wxMenu:getLabel(Menu, Id)),
-	{noreply, State};
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSCREEN=Id},
 						 State=#state{frame=Frame}) ->
 	IsFullScreen = wxFrame:isFullScreen(Frame),
@@ -418,6 +607,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSC
 	end,
 	ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, Label ++ "\tCtrl+Alt+F"),
 	{noreply, State};
+
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_TEST},
 						 State=#state{splitter_sidebar=V, left_pane=LeftPane, workspace=Ws, splitter_sidebar_pos=VPos}) ->
    wxWindow:freeze(V),
@@ -427,6 +617,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_T
    end,
    wxWindow:thaw(V),
 	{noreply, State};
+  
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_UTIL},
 						 State=#state{splitter_utilities=H, splitter_sidebar=V, utilities=Utils, splitter_utilities_pos=HPos}) ->
 	IsShown = wxSplitterWindow:isShown(Utils),
@@ -441,6 +632,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_U
 		false -> ok
 	end,
 	{noreply, State};
+  
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_EDITOR},
 						 State=#state{splitter_utilities=H, splitter_sidebar=V, utilities=Utils, left_pane=LeftPane,
 						 							splitter_utilities_pos=HPos, splitter_sidebar_pos=VPos, workspace=Ws, frame=Frame}) ->
@@ -461,6 +653,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_ED
 	end,
   wxFrame:thaw(Frame),
 	{noreply, State};
+  
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UTIL},
 						 State=#state{frame=Frame, splitter_utilities=H, splitter_sidebar=V, utilities=Utils,
 						 							splitter_utilities_pos=HPos}) ->
@@ -477,26 +670,26 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UT
 	end,
   wxFrame:thaw(Frame),
 	{noreply, State};
-%% The menu items from the ETS table
-handle_event(E=#wx{id=Id, userData={ets_table, TabId}, event=#wxCommand{type=command_menu_selected}},
-             State) ->
-	Result = case ets:lookup(TabId, Id) of
-		[{_MenuItemID, {Mod, Func, Args}, Options}] ->
-			case proplists:get_value(send_event, Options) of
-				undefined -> {ok, {Mod,Func,Args}};
-				true -> {ok, {Mod,Func,[E]}}
-			end;
-		[{_,{Mod,Func,Args}}] ->
-			{ok, {Mod,Func,Args}};
-		_ -> nomatch
-	end,
-	case Result of
-		{ok,{M,F,A}} ->
-			erlang:apply(M,F,A);
-		nomatch ->
-			io:format("Not yet implemented~n")
-	end,
-  {noreply, State};
+  
+%% Sub-menus
+handle_event(#wx{id=Id, userData=ThemeMenu, event=#wxCommand{type=command_menu_selected}},
+             State) when (Id >= ?MENU_ID_THEME_LOWEST) and (Id =< ?MENU_ID_THEME_HIGHEST) ->
+  {ok, Ckd} = ide_menu:get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
+	Font = wxFont:new(ide_sys_pref_gen:get_preference(editor_font_size),
+										ide_sys_pref_gen:get_preference(editor_font_family),
+										ide_sys_pref_gen:get_preference(editor_font_style),
+										ide_sys_pref_gen:get_preference(editor_font_weight), []),
+	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_theme/3, [wxMenuItem:getLabel(Ckd),
+		Font]),
+  ide_sys_pref_gen:set_preference(theme, wxMenuItem:getLabel(Ckd)),
+	{noreply, State};
+
+handle_event(#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_selected}},
+             State) when Id >= ?MENU_ID_TAB_WIDTH_LOWEST,
+						 Id =< ?MENU_ID_TAB_WIDTH_HIGHEST  ->
+  ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_tab_width/2, [list_to_integer(wxMenu:getLabel(Menu, Id))]),
+  ide_sys_pref_gen:set_preference(tab_width, wxMenu:getLabel(Menu, Id)),
+	{noreply, State};
 
 %% =====================================================================
 %% Other handlers
@@ -508,6 +701,7 @@ handle_event(#wx{userData={Splitter, Window}, event=#wxCommand{type=command_butt
              State=#state{splitter_output_pos=Pos}) ->
   replace_output_window(Splitter, Window, Pos),
   {noreply, State};
+  
 handle_event(#wx{id=?BUTTON_HIDE_OUTPUT=Id, userData=Splitter, event=#wxCommand{type=command_button_clicked}},
              State=#state{splitter_output_active=Aw, splitter_output_pos=Pos}) ->
   Window2 = wxSplitterWindow:getWindow2(Splitter),
@@ -665,27 +859,17 @@ create_workspace(Parent) ->
 
 %% =====================================================================
 %% @doc Enable/disable a menu item.
-%% For the menu item identified by Id, Groups is compared to Mask using bitwise AND.
-%% If the item has the group bit set then it will be enabled when
-%% Enabled is set to true, and disabled when false.
-%% @see toggle_menu_group
 %% @private
 
--spec toggle_menu_item(MenuBar, ToolBar, Mask, Id, Groups, Enable) -> ok when
-	MenuBar :: wxMenuBar:wxMenuBar(),
+-spec toggle_menu_item(MenuBar, ToolBar, ItemId, Enable) -> ok when
+  MenuBar :: wxMenuBar:wxMenuBar(),
   ToolBar :: wxToolBar:wxToolBar(),
-	Mask :: integer(), % Defines which groups to affect
-	Id :: integer(),	% The menu item id
-	Groups :: integer(), % The groups associated to the menu item with Id
-	Enable :: boolean().
+  ItemId :: integer(), % The menu item's id
+  Enable :: boolean().
 
-toggle_menu_item(MenuBar, ToolBar, Mask, Id, Groups, Enable) ->
-	case (Mask band Groups) of
-		0 -> ok;
-		_ ->
-			wxMenuItem:enable(wxMenuBar:findItem(MenuBar, Id), [{enable, Enable}]),
-      wxToolBar:enableTool(ToolBar, Id, Enable)
-	end.
+toggle_menu_item(MenuBar, ToolBar, ItemId, Enable) ->
+  wxMenuItem:enable(wxMenuBar:findItem(MenuBar, ItemId), [{enable, Enable}]),
+  wxToolBar:enableTool(ToolBar, ItemId, Enable).
 
 
 %% =====================================================================

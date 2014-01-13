@@ -14,7 +14,8 @@
 	create/1,
 	update_label/3,
 	toggle_item/2,
-	get_checked_menu_item/1]).
+	get_checked_menu_item/1
+  ]).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
@@ -80,15 +81,17 @@ get_checked_menu_item([H|T]) ->
 
 init(Config) ->
   Frame = proplists:get_value(parent, Config),
+  wxFrame:setMenuBar(Frame, build_menu(Frame)),
+  Tb = build_toolbar(Frame),
+  menu_groups(). %% Returned to ide
 
-	%% =====================================================================
-	%% Menubar
-	%%
-	%% =====================================================================
 
-  MenuBar     = wxMenuBar:new(),
-
-  File        = wxMenu:new([]),
+%% =====================================================================
+%% @doc Construct the menubar.
+ 
+build_menu(Frame) ->
+  MenuBar = wxMenuBar:new(),  
+  File = wxMenu:new([]),
   wxMenu:append(File, ?wxID_NEW, "New File\tCtrl+N"),
   wxMenu:append(File, ?MENU_ID_NEW_PROJECT, "New Project\tCtrl+Alt+N"),
   wxMenu:append(File, ?wxID_SEPARATOR, []),
@@ -126,7 +129,6 @@ init(Config) ->
   end,
   wxMenu:append(File, ?wxID_EXIT, "Exit\tCtrl+Q"),
   wxMenu:append(File, ?wxID_PREFERENCES, "Preferences"),
-
 
   Edit        = wxMenu:new([]),
   wxMenu:append(Edit, ?wxID_UNDO, "Undo\tCtrl+Z"),
@@ -253,13 +255,19 @@ init(Config) ->
   wxMenuBar:append(MenuBar, ToolMenu, "Tools"),
   wxMenuBar:append(MenuBar, Window, "Display"),
   wxMenuBar:append(MenuBar, Help, "Help"),
+  
+  wxFrame:connect(Frame, command_menu_selected),
+	wxFrame:connect(Frame, command_menu_selected,
+		[{userData, Theme}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),
+	wxFrame:connect(Frame, command_menu_selected,
+		[{userData, IndentWidth}, {id,?MENU_ID_TAB_WIDTH_LOWEST}, {lastId, ?MENU_ID_TAB_WIDTH_HIGHEST}]),
+  MenuBar.
 
-	wxFrame:setMenuBar(Frame, MenuBar),
 
-	%% ===================================================================
-	%% Toolbar
-	%% ===================================================================
+%% =====================================================================
+%% @doc Construct the toolbar.
 
+build_toolbar(Frame) ->
 	ToolBar = wxFrame:createToolBar(Frame, []),
 	% wxToolBar:setMargins(ToolBar, 10, 10),
   % wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
@@ -309,147 +317,28 @@ init(Config) ->
             end,  
 
 	[AddTool(Tool) || Tool <- Tools],
+	wxToolBar:realize(ToolBar).
 
-	wxToolBar:realize(ToolBar),
 
-  %% ===================================================================
-  %% ETS menu events table.
-  %% Record format: {Id, {Module, Function, [Args]}, [Options]}
-  %% When Options can be 0 or more of:
-  %%
-  %%		{send_event, true}	|
-  %%		{help_string, HelpString}	| {group, Groups}
-  %%
-  %%		HelpString :: string(), % help string for status bar
-  %%		Groups :: integer(), % any menu groups to which the menu item belongs (combine by adding)
-  %%		Use send_event to forward the event record to Function
-  %% ===================================================================
-
-  TabId = ets:new(myTable, []),
-  ets:insert(TabId, [
-		{?wxID_NEW, {ide_doc_man_wx, new_document, [Frame]}},
-		{?MENU_ID_NEW_PROJECT, {ide_proj_man, new_project, [Frame]}},
-    {?wxID_OPEN, {ide_doc_man_wx, open_document_dialog,[Frame]}},
-		{?MENU_ID_OPEN_PROJECT,{ide_proj_man, open_project_dialog, [Frame]}},
-    {?wxID_SAVE, {ide_doc_man_wx, save_active_document,[]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?wxID_SAVEAS, {ide_doc_man_wx, save_as,[]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?MENU_ID_SAVE_ALL, {},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?MENU_ID_SAVE_PROJECT, {ide_doc_man_wx, save_active_project, []},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
-    {?wxID_PRINT, {},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?wxID_CLOSE, {ide_doc_man_wx, close_active_document, []},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?wxID_CLOSE_ALL, {ide_doc_man_wx, close_all, []},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_CLOSE_PROJECT, {ide_proj_man, close_active_project, []},
-      [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
-    {?MENU_ID_IMPORT_FILE, {},
-      [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
-    {?MENU_ID_IMPORT_PROJECT, {}},
-    {?MENU_ID_PROJECT_CONFIG, {ide_proj_man, set_project_configuration, [Frame]},
-      [{group, ?MENU_GROUP_PROJECTS_EMPTY}]},
-    {?MENU_ID_IMPORT_PROJECT, {ide_proj_man, import, [Frame]}},
-    {?wxID_EXIT, {}},
-    {?wxID_PREFERENCES, {ide_dlg_prefs_wx, start, [[{parent,Frame}]]}},
-    
-     %{?wxID_UNDO, {}},
-     %{?wxID_REDO, {}},
-     %{?wxID_CUT, {}},
-     %{?wxID_COPY, {}},
-     %{?wxID_PASTE, {}},
-     %{?wxID_DELETE, {}},
-    
-    {?MENU_ID_QUICK_FIND, {ide_editor_ops,quick_find,[]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?wxID_FIND, {ide_editor_ops,find_replace,[Frame]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-
-    {?MENU_ID_FONT,          {ide_editor_ops,update_styles,[Frame]}},
-    {?MENU_ID_FONT_BIGGER,   {ide_editor_ops,zoom_in,[]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?MENU_ID_FONT_SMALLER,  {ide_editor_ops,zoom_out,[]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?MENU_ID_LINE_WRAP,     {ide_editor_ops,set_line_wrap,[View]}},
-    {?MENU_ID_LN_TOGGLE,     {ide_editor_ops,set_line_margin_visible,[View]}},
-    {?MENU_ID_INDENT_TABS,   {ide_editor_ops,set_indent_tabs,[]}, [{send_event, true}]},
-    {?MENU_ID_INDENT_SPACES, {ide_editor_ops,set_indent_tabs,[]}, [{send_event, true}]},
-    {?MENU_ID_INDENT_GUIDES, {ide_editor_ops,set_indent_guides,[View]}},
-
-		{?MENU_ID_INDENT_RIGHT, {ide_editor_ops, indent_right,[]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_INDENT_LEFT, {ide_editor_ops, indent_left,[]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_TOGGLE_COMMENT, {ide_editor_ops, comment,[]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_GOTO_LINE, {ide_editor_ops,go_to_line,[Frame]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_UC_SEL, {ide_editor_ops,transform_selection,[]},
-      [{send_event, true},
-       {group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_LC_SEL, {ide_editor_ops,transform_selection,[]},
-      [{send_event, true},
-       {group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_FOLD_ALL, {},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-		{?MENU_ID_UNFOLD_ALL, {},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-
-    {?MENU_ID_WRANGLER, {},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-
-    {?MENU_ID_COMPILE_FILE, {ide_build, compile_file,[]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-    {?MENU_ID_MAKE_PROJECT, {ide_build, make_project, []},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
-    {?MENU_ID_RUN, {ide_build, run_project, [Frame]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY bor ?MENU_GROUP_PROJECTS_EMPTY}]},
-    {?MENU_ID_DIALYZER, {ide, load_xrc, [Frame]}, []},
-    {?MENU_ID_TESTS, {dlg_ld, show_dlg, [Frame, new_proj]}, []},
-    {?MENU_ID_DEBUGGER, {}, []},
-
-    % {?MENU_ID_PROJECTS_WINDOW, {},
-    %       []},
-    % {?MENU_ID_TESTS_WINDOW, {},
-    %       []},
-    % {?MENU_ID_CONSOLE_WINDOW, {},
-    %       []},
-    %     % {?MENU_ID_OBSERVER_WINDOW, {},
-    %     %       []},
-    % {?MENU_ID_DIALYSER_WINDOW, {},
-    %       []},
-    % {?MENU_ID_DEBUGGER_WINDOW, {},
-    %       []},
-
-  	{?MENU_ID_NEXT_TAB, {ide_doc_man_wx, set_selection, [right]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-  	{?MENU_ID_PREV_TAB, {ide_doc_man_wx, set_selection, [left]},
-      [{group, ?MENU_GROUP_NOTEBOOK_EMPTY}]},
-
-    {?wxID_HELP, {}},
-    {?MENU_ID_HOTKEYS, {}},
-    {?MENU_ID_SEARCH_DOC, {}},
-    {?MENU_ID_MANUAL, {}},
-    {?wxID_ABOUT, {ide_dlg_about_wx, start, [{parent, [Frame]}]}}
-		]),
-
-	%% Connect event handlers
-	%wxFrame:connect(Frame, menu_highlight,
-		%[{userData, {ets_table,TabId}}, {id, ?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
-	wxFrame:connect(Frame, command_menu_selected,
-		[{userData,{ets_table,TabId}}, {id,?wxID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
-
-	%% Submenus
-	wxFrame:connect(Frame, command_menu_selected,
-		[{userData, {theme_menu,Theme}}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),
-	wxFrame:connect(Frame, command_menu_selected,
-		[{userData, IndentWidth}, {id,?MENU_ID_TAB_WIDTH_LOWEST}, {lastId, ?MENU_ID_TAB_WIDTH_HIGHEST}]),
-
-	TabId.
-
+%% =====================================================================
+%% @doc Used for enabling/disabling menu items with a single group id.
+  
+menu_groups() ->
+  Groups = [
+    {?MENU_GROUP_NOTEBOOK_EMPTY, [?wxID_SAVE, ?wxID_SAVEAS, ?MENU_ID_SAVE_ALL, 
+                                  ?MENU_ID_SAVE_PROJECT, ?wxID_PRINT, ?wxID_CLOSE, 
+                                  ?wxID_CLOSE_ALL, ?MENU_ID_QUICK_FIND, ?wxID_FIND,
+                                  ?MENU_ID_FONT_BIGGER, ?MENU_ID_FONT_SMALLER, ?MENU_ID_INDENT_RIGHT,
+                                  ?MENU_ID_INDENT_LEFT, ?MENU_ID_TOGGLE_COMMENT, ?MENU_ID_GOTO_LINE,
+                                  ?MENU_ID_UC_SEL, ?MENU_ID_LC_SEL, ?MENU_ID_FOLD_ALL, 
+                                  ?MENU_ID_UNFOLD_ALL, ?MENU_ID_WRANGLER, ?MENU_ID_COMPILE_FILE, 
+                                  ?MENU_ID_MAKE_PROJECT, ?MENU_ID_RUN, ?MENU_ID_NEXT_TAB, 
+                                  ?MENU_ID_PREV_TAB]},
+    {?MENU_GROUP_PROJECTS_EMPTY, [?MENU_ID_CLOSE_PROJECT, ?MENU_ID_IMPORT_FILE, ?MENU_ID_PROJECT_CONFIG,
+                                  ?MENU_ID_MAKE_PROJECT, ?MENU_ID_RUN, ?MENU_ID_SAVE_PROJECT]}
+  ].
+  
+  
 %% =====================================================================
 %% @doc Generate a radio menu given a list of labels.
 %% The menu item ids are automatically generated (within their reserved

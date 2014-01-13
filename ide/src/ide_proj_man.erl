@@ -296,7 +296,7 @@ handle_call({new_project, Path}, _From, State=#state{projects=Projects}) ->
     	Id = generate_id(),
     	Record = {Id, #project{root=Path, open_files=[]}},
       ide_proj_tree_wx:add_project(Id, Path),
-      ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, true),
+      ide:toggle_menu_group([?MENU_GROUP_PROJECTS_EMPTY], true),
       {reply, Id, State#state{projects=[Record | Projects]}}
   end;
 
@@ -342,7 +342,7 @@ handle_call(close_project, _From, State=#state{frame=Frame, active_project=Activ
   ide_proj_tree_wx:remove_project(ActiveProject),
   update_ui(Frame, undefined),
   ProjectsList = proplists:delete(ActiveProject, Projects),
-  ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, false),
+  ide:toggle_menu_group([?MENU_GROUP_PROJECTS_EMPTY], false),
   {reply, ok, State#state{active_project=undefined, projects=ProjectsList}};
 
 handle_call({set_project_configuration, Config}, _From,
@@ -361,10 +361,10 @@ handle_call({set_project_configuration, Config}, _From,
 handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Projects}) ->
   case ProjectId of
     undefined ->
-      ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, false),
+      ide:toggle_menu_group([?MENU_GROUP_PROJECTS_EMPTY], false),
       update_ui(Frame, undefined);
     _ ->
-      ide:toggle_menu_group(?MENU_GROUP_PROJECTS_EMPTY, true),
+      ide:toggle_menu_group([?MENU_GROUP_PROJECTS_EMPTY], true),
       update_ui(Frame, proplists:get_value(ProjectId, Projects))
   end,
   {noreply,State#state{active_project=ProjectId}}.

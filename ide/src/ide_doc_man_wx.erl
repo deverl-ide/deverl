@@ -429,7 +429,7 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
   case wxAuiNotebook:getPageCount(Nb) of
     0 -> 
       %% Called when the last document is closed.
-      ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, false),
+      ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_EMPTY], false),
       show_placeholder(Sz),
       ide:set_title([]);
     _ -> ok
@@ -722,7 +722,7 @@ ensure_notebook_visible(Notebook, Sz) ->
 	case wxWindow:isShown(Notebook) of
 		false ->
       %% enable menu items
-      ide:toggle_menu_group(?MENU_GROUP_NOTEBOOK_EMPTY, true),
+      ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_EMPTY], true),
 			show_notebook(Sz);
 		true ->
       ok
