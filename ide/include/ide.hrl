@@ -87,6 +87,13 @@
 -define(MENU_ID_EXPORT_EDOC,       6053).
 -define(MENU_ID_RUN_OBSERVER,      6055).
 -define(MENU_ID_QUICK_FIND,        6056).
+-define(MENU_ID_ADD_TO_PLT,        6057).
+-define(MENU_ID_PLT_INFO,          6057).
+-define(MENU_ID_DIAL_WARN,         6057).
+% -define(MENU_ID_ADD_TO_PLT,        6057).
+% -define(MENU_ID_ADD_TO_PLT,        6057).
+% -define(MENU_ID_ADD_TO_PLT,        6057).
+% -define(MENU_ID_ADD_TO_PLT,        6057).
 -define(MENU_ID_HIGHEST,					 6999).
 
 %% Sub-menus

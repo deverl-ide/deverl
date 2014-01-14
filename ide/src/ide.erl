@@ -27,12 +27,12 @@
 
 %% Server state
 -record(state, {frame,
-                workspace :: wxAuiNotebook:wxAuiNotebook(),                %% Notebook
-                utilities,                                                 %% The utilities pane
-                util_tabbed,                                               %% ide_tabbed_win_wx
-                left_pane,                                                 %% The test pane
-                workspace_manager,                                         %% Tabbed UI manager for editors
-                splitter_sidebar :: wxSplitterWindow:wxSplitterWindow(),   %% The vertical splitter
+                workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
+                utilities,                                     %% The utilities pane
+                util_tabbed, %% ide_tabbed_win_wx
+                left_pane,                                     %% The test pane
+                workspace_manager,                             %% Tabbed UI manager for editors
+                splitter_sidebar :: wxSplitterWindow:wxSplitterWindow(), %% The vertical splitter
                 splitter_utilities :: wxSplitterWindow:wxSplitterWindow(), %% The horizontal splitter
                 splitter_sidebar_pos :: integer(),
                 splitter_utilities_pos :: integer(),
@@ -74,7 +74,6 @@ start() ->
 -spec start([Option]) -> wx_object:wx_object() when
   Option :: {debug, list() | atom()} |
             {silent_start, boolean()}.
-
 start(Options) ->
 	WxObj = wx_object:start({local, ?MODULE}, ?MODULE, Options, [{debug, [log]}]),
   Pid = wx_object:get_pid(WxObj),
@@ -123,10 +122,10 @@ init(Options) ->
   %% Set small window variant globally
   % wxSystemOptions:setOption("window-default-variant", ?wxWINDOW_VARIANT_SMALL),
 
-  %Xrc = wxXmlResource:get(),
-  %wxXmlResource:initAllHandlers(Xrc),
-  %true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("dlgs.xrc")),
-  %true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("derivdlg.xrc")),
+  Xrc = wxXmlResource:get(),
+  wxXmlResource:initAllHandlers(Xrc),
+  true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("dlgs.xrc")),
+  % true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("derivdlg.xrc")),
 
 	Frame = wxFrame:new(Wx, ?wxID_ANY, ?FRAME_TITLE, [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
 	wxFrame:connect(Frame, close_window),
@@ -354,7 +353,9 @@ handle_event(#wx{id=?MENU_ID_SAVE_PROJECT}, State) ->
 handle_event(#wx{id=?wxID_PRINT}, State) ->
   
   %% TESTING
-  ide_doc_man_wx:test(),
+  % ide_doc_man_wx:test(),
+  % R = ide_dialyzer:check_plt(),
+    dlg_ld:show_dlg(State#state.frame, whatever),
   
   {noreply, State};
   
