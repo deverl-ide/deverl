@@ -295,7 +295,7 @@ build_toolbar(Frame) ->
   			[{shortHelp, "Make Project"}], false},
   		{?MENU_ID_RUN, "ToolTip", {custom, "folders_10.png"},      
   			[{shortHelp, "Run Project"}], false},
-  		{?MENU_ID_DIALYZER, "ToolTip", {custom, "kidney_16.png"},      
+  		{?MENU_ID_DIALYZER, "ToolTip", {custom, "kidney_24.png"},      
   			[{shortHelp, "Run Dialyzer"}], true},
   		{?MENU_ID_HIDE_TEST, "ToolTip", {custom, "application_08.png"},       
   			[{shortHelp, "Toggle left pane visibility"}], false},
