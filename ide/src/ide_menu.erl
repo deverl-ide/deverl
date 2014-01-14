@@ -270,7 +270,7 @@ build_menu(Frame) ->
 build_toolbar(Frame) ->
 	ToolBar = wxFrame:createToolBar(Frame, []),
 	% wxToolBar:setMargins(ToolBar, 10, 10),
-  % wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
+  wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
 	%% Id, StatusBar help, filename/art id, args, add seperator
 	Tools = [  
   		{?wxID_NEW, "ToolTip", {custom, "document_08.png"},    
