@@ -17,14 +17,18 @@
 	       handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 				 
 %% API
--export([start/2, set_focus/1, get_path/1, close/1]).
+-export([
+  start/2,
+  set_focus/1,
+  get_path/1,
+  destroy/1
+  ]).
 			
 %% inherited functions
 -export([show/1, showModal/1]).
 	
 %% Server state			 
 -record(state, {dialog,
-            	  parent,
                 path,
                 list_ctrl
             	 }).
@@ -44,7 +48,7 @@ set_focus(This) ->
 get_path(This) ->
 	wx_object:call(This, path).
 	
-close(This) ->
+destroy(This) ->
 	wx_object:call(This, shutdown).
 	
 	
@@ -68,7 +72,6 @@ do_init({Parent, Projects}) ->
 	end,
 	
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  wxPanel:setSizer(Dialog, LRSizer),
   wxSizer:addSpacer(LRSizer, 20),
 
   VertSizer = wxBoxSizer:new(?wxVERTICAL),
@@ -84,17 +87,26 @@ do_init({Parent, Projects}) ->
 	%% Project list
 	wxSizer:add(VertSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Select a project:"), []),
 	wxSizer:addSpacer(VertSizer, 5),  
+  
 	ListCtrl = wxListCtrl:new(Dialog,[{style, ?wxLC_REPORT}]),
-  wxListCtrl:insertColumn(ListCtrl, 0, "Project", []),
-  wxListCtrl:insertColumn(ListCtrl, 1, "Last Modified", []),
-  wxListCtrl:insertColumn(ListCtrl, 2, "Path", []),
-  wxListCtrl:connect(ListCtrl, size, [{skip, true}]),
-  wxSizer:add(VertSizer, ListCtrl, [{flag, ?wxEXPAND}, {proportion, 1}]),
+  
+  ListItem  = wxListItem:new(),
+  Insert = fun(Header, Col) ->
+	  wxListItem:setText(ListItem, Header),
+	  wxListCtrl:insertColumn(ListCtrl, Col, ListItem),
+	  Col + 1		  
+  end,
+  lists:foldl(Insert, 0, ["Project", "Last Modified", "Path"]),
+  wxListItem:destroy(ListItem),
   
   insert_projects(ListCtrl, Projects),
-  
   [wxListCtrl:setColumnWidth(ListCtrl, N, ?wxLIST_AUTOSIZE) || N <- lists:seq(0, wxListCtrl:getColumnCount(ListCtrl) - 1)],
+ 
+  wxListCtrl:connect(ListCtrl, size, [{skip, true}]),
+  wxListCtrl:connect(ListCtrl, command_list_item_selected),
+  wxListCtrl:connect(ListCtrl, command_list_item_activated),
   
+  wxSizer:add(VertSizer, ListCtrl, [{flag, ?wxEXPAND}, {proportion, 1}]),
   wxSizer:addSpacer(VertSizer, 40),
   wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 
               [{flag, ?wxEXPAND}]),
@@ -114,50 +126,32 @@ do_init({Parent, Projects}) ->
   wxSizer:add(LRSizer, VertSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
   wxSizer:addSpacer(LRSizer, 20),
 	
+  wxPanel:setSizer(Dialog, LRSizer),
 	wxSizer:layout(LRSizer),
-		
-  wxDialog:connect(Dialog, close_window),
-	wxDialog:connect(Dialog, command_button_clicked, [{skip, true}]), 
-  wxDialog:connect(ListCtrl, command_list_item_selected, [{skip, true}]),
-  wxDialog:connect(ListCtrl, command_list_item_activated, [{skip, true}]),
-  
+	  
 	State = #state{
 		dialog=Dialog, 
-		parent=Parent,
     list_ctrl=ListCtrl
 	},
   
 	{Dialog, State}.
-  
-    
-%% =====================================================================
-%% @doc OTP behaviour callbacks
 
-handle_event(#wx{event=#wxClose{}}, State) ->
-  {stop, normal, State};
-handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}}, 
-             State) ->
-  {stop, normal, State};
-handle_event(#wx{id=?wxID_OK, event=#wxCommand{type=command_button_clicked}}, 
-             State) ->
-  {noreply, State};
+
 handle_event(#wx{obj=ListCtrl, event=#wxList{type=command_list_item_selected, itemIndex=Idx}}, 
              State=#state{dialog=Dialog}) ->
   wxWindow:enable(wxWindow:findWindow(Dialog, ?wxID_OK)),
   {noreply, State#state{path=get_path_from_list(ListCtrl, Idx)}};
+
 handle_event(#wx{obj=ListCtrl, event=#wxList{type=command_list_item_activated, itemIndex=Idx}}, 
              State=#state{dialog=Dialog}) ->
   wxDialog:endModal(Dialog, ?wxID_OK),
   {noreply, State#state{path=get_path_from_list(ListCtrl, Idx)}};
-handle_event(#wx{event=#wxSize{size={Width,_}}}, State = #state{list_ctrl=ListCtrl}) ->
-    wx:batch(fun() ->
-		     Tot = wx:foldl(fun(C,Sum) -> 
-					    Sum + wxListCtrl:getColumnWidth(ListCtrl, C)
-				    end, 0, [0,1]),
-		     wxListCtrl:setColumnWidth(ListCtrl, 2, Width-Tot)
-	     end),
+
+handle_event(#wx{event=#wxSize{size={Width0,_}}}, State = #state{list_ctrl=ListCtrl}) ->
+  Width1 = wxListCtrl:getColumnWidth(ListCtrl, 0) + wxListCtrl:getColumnWidth(ListCtrl, 1),
+  wxListCtrl:setColumnWidth(ListCtrl, 2, Width0 + Width1),
   {noreply, State}.
-	
+
 handle_info(Msg, State) ->
   io:format( "Got Info ~p~nMsg:~p",[State, Msg]),
   {noreply,State}.
@@ -175,7 +169,6 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 
 terminate(_Reason, #state{dialog=Dialog}) ->
-	wxDialog:endModal(Dialog, ?wxID_CANCEL),
 	wxDialog:destroy(Dialog),
 	ok.
 	
@@ -209,7 +202,9 @@ get_path_from_list(ListCtrl, Idx) ->
   wxListItem:setColumn(ListItem, 2),
   wxListItem:setMask(ListItem, ?wxLIST_MASK_TEXT),
   wxListCtrl:getItem(ListCtrl, ListItem),
-  wxListItem:getText(ListItem).
+  Path = wxListItem:getText(ListItem),
+  wxListItem:destroy(ListItem),
+  Path.
   
   
 %% =====================================================================

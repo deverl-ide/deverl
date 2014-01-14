@@ -116,13 +116,14 @@ add_project(Path) ->
 -spec open_project_dialog(wxFrame:wxFrame()) -> ok.
 
 open_project_dialog(Frame) ->
-  Dialog = ide_dlg_open_proj_wx:start(Frame, ide_sys_pref_gen:get_preference(projects)),
-  case wxDialog:showModal(Dialog) of
+  Dlg = ide_dlg_open_proj_wx:start(Frame, ide_sys_pref_gen:get_preference(projects)),
+  case wxDialog:showModal(Dlg) of
     ?wxID_CANCEL ->
-      ok;
+      ide_dlg_open_proj_wx:destroy(Dlg);
     ?wxID_OK ->
-      open_project(ide_dlg_open_proj_wx:get_path(Dialog)),
-      ide_dlg_open_proj_wx:close(Dialog)
+      Path = ide_dlg_open_proj_wx:get_path(Dlg),
+      ide_dlg_open_proj_wx:destroy(Dlg),
+      open_project(Path)
   end.
 
 
@@ -265,12 +266,20 @@ set_project_configuration(Parent) ->
 -spec import(wxFrame:wxFrame()) -> ok | cancelled.
 
 import(Parent) ->
-  Dialog = ide_dlg_import_proj_wx:start(Parent),
-  case wxDialog:showModal(Dialog) of
+  Dlg = ide_dlg_import_proj_wx:start(Parent),
+  case wxDialog:showModal(Dlg) of
+    20 -> %% Copy files to proj directory
+      io:format("Copy not implemented~n"),
+      Path = ide_dlg_import_proj_wx:get_path(Dlg),
+      ide_dlg_import_proj_wx:destroy(Dlg),
+      ide_proj_man:add_project(Path);
+    30 -> %% 
+      Path = ide_dlg_import_proj_wx:get_path(Dlg),
+      ide_dlg_import_proj_wx:destroy(Dlg),
+      ide_proj_man:add_project(Path);
     ?wxID_CANCEL ->
-      cancelled;
-    ?wxID_OK ->
-      ok
+      ide_dlg_import_proj_wx:destroy(Dlg),
+      cancelled
   end.
 
 %% =====================================================================
