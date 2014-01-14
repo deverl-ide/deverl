@@ -1,0 +1,2265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<resource version="2.3.0.1" xmlns="http://www.wxwidgets.org/wxxrc">
+    <object class="wxDialog" name="ID_BASICCONTROLS" subclass="BasicControls">
+        <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX</style>
+        <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
+        <size>400,300</size>
+        <title>BasicControls</title>
+        <centered>1</centered>
+        <object class="wxBoxSizer">
+            <orient>wxVERTICAL</orient>
+            <object class="sizeritem">
+                <flag>wxGROW|wxALL</flag>
+                <border>5</border>
+                <option>1</option>
+                <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                        <flag>wxALIGN_LEFT|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxStaticText" name="wxID_STATIC">
+                            <label>This dialog shows most of the basic controls available to you.</label>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALL</flag>
+                        <border>5</border>
+                        <option>1</option>
+                        <object class="wxNotebook" name="ID_BASICCONTROLS_NOTEBOOK">
+                            <style>wxBK_DEFAULT|wxBK_TOP</style>
+                            <object class="notebookpage">
+                                <label>Buttons and lists</label>
+                                <object class="wxPanel" name="ID_BASICCONTROLS_PANEL">
+                                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>Buttons</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxBoxSizer">
+                                                <orient>wxHORIZONTAL</orient>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxButton" name="ID_BASICCONTROLS_BUTTON">
+                                                        <label>Push Button</label>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxBitmapButton" name="ID_BASICCONTROLS_BITMAPBUTTON">
+                                                        <style>wxBU_AUTODRAW</style>
+                                                        <bitmap>find.xpm</bitmap>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxToggleButton" name="ID_BASICCONTROLS_TOGGLEBUTTON">
+                                                        <label>Toggle Button</label>
+                                                        <checked>0</checked>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>Check controls</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxBoxSizer">
+                                                <orient>wxHORIZONTAL</orient>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxCheckBox" name="ID_BASICCONTROLS_CHECKBOX">
+                                                        <label>Checkbox</label>
+                                                        <checked>0</checked>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxRadioButton" name="ID_BASICCONTROLS_RADIOBUTTON">
+                                                        <label>Radiobutton</label>
+                                                        <value>0</value>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxRadioBox" name="ID_BASICCONTROLS_RADIOBOX">
+                                                        <style>wxRA_SPECIFY_ROWS</style>
+                                                        <label>Radiobox</label>
+                                                        <dimension>1</dimension>
+                                                        <selection>0</selection>
+                                                        <content>
+                                                            <item>&amp;One</item>
+                                                            <item>&amp;Two</item>
+                                                        </content>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>Lists</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxBoxSizer">
+                                                <orient>wxHORIZONTAL</orient>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxBoxSizer">
+                                                        <orient>wxVERTICAL</orient>
+                                                        <object class="sizeritem">
+                                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                                            <border>5</border>
+                                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                                <label>wxListBox:</label>
+                                                            </object>
+                                                        </object>
+                                                        <object class="sizeritem">
+                                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                                            <border>5</border>
+                                                            <object class="wxListBox" name="ID_BASICCONTROLS_LISTBOX">
+                                                                <size>100,100</size>
+                                                                <style>wxLB_SINGLE</style>
+                                                                <content>
+                                                                    <item>One</item>
+                                                                    <item>Two</item>
+                                                                    <item>Three</item>
+                                                                </content>
+                                                            </object>
+                                                        </object>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxBoxSizer">
+                                                        <orient>wxVERTICAL</orient>
+                                                        <object class="sizeritem">
+                                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                                            <border>5</border>
+                                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                                <label>wxCheckListBox:</label>
+                                                            </object>
+                                                        </object>
+                                                        <object class="sizeritem">
+                                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                                            <border>5</border>
+                                                            <object class="wxCheckListBox" name="ID_BASICCONTROLS_CHECKLISTBOX">
+                                                                <size>100,100</size>
+                                                                <style>wxLB_SINGLE</style>
+                                                                <content>
+                                                                    <item>One</item>
+                                                                    <item>Two</item>
+                                                                    <item>Three</item>
+                                                                </content>
+                                                            </object>
+                                                        </object>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_TOP|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxBoxSizer">
+                                                        <orient>wxVERTICAL</orient>
+                                                        <object class="sizeritem">
+                                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                                            <border>5</border>
+                                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                                <label>wxChoice:</label>
+                                                            </object>
+                                                        </object>
+                                                        <object class="sizeritem">
+                                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                                            <border>5</border>
+                                                            <object class="wxChoice" name="ID_BASICCONTROLS_CHOICE">
+                                                                <size>130,-1</size>
+                                                                <content>
+                                                                    <item>One</item>
+                                                                    <item>Two</item>
+                                                                    <item>Three</item>
+                                                                </content>
+                                                                <selection>0</selection>
+                                                            </object>
+                                                        </object>
+                                                        <object class="sizeritem">
+                                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                                            <border>5</border>
+                                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                                <label>wxComboBox:</label>
+                                                            </object>
+                                                        </object>
+                                                        <object class="sizeritem">
+                                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                                            <border>5</border>
+                                                            <object class="wxComboBox" name="ID_BASICCONTROLS_COMBOBOX">
+                                                                <size>130,-1</size>
+                                                                <style>wxCB_DROPDOWN</style>
+                                                                <content>
+                                                                    <item>One</item>
+                                                                    <item>Two</item>
+                                                                    <item>Three</item>
+                                                                </content>
+                                                                <selection>0</selection>
+                                                            </object>
+                                                        </object>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="notebookpage">
+                                <label>Static</label>
+                                <object class="wxPanel" name="ID_BASICCONTROLS_PANEL1">
+                                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxStaticText</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>This is static text
+with a newline</label>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxStaticLine</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticLine" name="wxID_STATIC">
+                                                <style>wxLI_HORIZONTAL</style>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxStaticBoxSizer</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticBoxSizer" name="wxID_ANY">
+                                                <orient>wxVERTICAL</orient>
+                                                <label>wxStaticBoxSizer</label>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxStaticText" name="wxID_STATIC">
+                                                        <label>Static text in a static box sizer</label>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxStaticBitmap</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticBitmap" name="wxID_STATIC">
+                                                <size>32,32</size>
+                                                <bitmap>tipicon.xpm</bitmap>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxGauge</label>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxGauge" name="ID_BASICCONTROLS_GAUGE">
+                                                <size>150,20</size>
+                                                <style>wxGA_HORIZONTAL</style>
+                                                <value>20</value>
+                                                <range>100</range>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxStatusBar</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStatusBar" name="ID_BASICCONTROLS_STATUSBAR">
+                                                <size>200,15</size>
+                                                <style>wxST_SIZEGRIP|wxNO_BORDER</style>
+                                                <fields>2</fields>
+                                                <widths></widths>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="notebookpage">
+                                <label>Entry</label>
+                                <object class="wxPanel" name="ID_BASICCONTROLS_PANEL2">
+                                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxTextCtrl: single-line</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_BASICCONTROLS_TEXTCTRL">
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxTextCtrl: multiline</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_BASICCONTROLS_TEXTCTRL1">
+                                                <size>120,60</size>
+                                                <style>wxTE_MULTILINE</style>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxSpinCtrl and wxSpinButton</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxBoxSizer">
+                                                <orient>wxHORIZONTAL</orient>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxSpinCtrl" name="ID_BASICCONTROLS_SPINCTRL">
+                                                        <style>wxSP_ARROW_KEYS</style>
+                                                        <value>0</value>
+                                                        <min>0</min>
+                                                        <max>100</max>
+                                                    </object>
+                                                </object>
+                                                <object class="spacer">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <option>1</option>
+                                                    <size>20,5</size>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxSpinButton" name="ID_BASICCONTROLS_SPINBUTTON">
+                                                        <style>wxSP_VERTICAL</style>
+                                                        <value>0</value>
+                                                        <min>0</min>
+                                                        <max>100</max>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="notebookpage">
+                                <label>Scrolling</label>
+                                <object class="wxPanel" name="ID_BASICCONTROLS_PANEL3">
+                                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxSlider</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxSlider" name="ID_BASICCONTROLS_SLIDER">
+                                                <style>wxSL_HORIZONTAL</style>
+                                                <value>0</value>
+                                                <min>0</min>
+                                                <max>100</max>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxScrollBar</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxScrollBar" name="ID_BASICCONTROLS_SCROLLBAR">
+                                                <style>wxSB_HORIZONTAL</style>
+                                                <value>0</value>
+                                                <range>100</range>
+                                                <thumbsize>1</thumbsize>
+                                                <pagesize>1</pagesize>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <font>
+                                                    <sysfont>wxSYS_DEFAULT_GUI_FONT</sysfont>
+                                                    <size>-1</size>
+                                                    <weight>bold</weight>
+                                                </font>
+                                                <label>wxSpinButton</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxSpinButton" name="ID_BASICCONTROLS_SPINBUTTON1">
+                                                <style>wxSP_VERTICAL</style>
+                                                <value>0</value>
+                                                <min>0</min>
+                                                <max>100</max>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                    <object platform="win|unix" class="sizeritem">
+                        <flag>wxGROW</flag>
+                        <border>5</border>
+                        <object platform="win|unix" class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <option>1</option>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_OK">
+                                    <label>&amp;OK</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_CANCEL">
+                                    <label>&amp;Cancel</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_HELP">
+                                    <label>&amp;Help</label>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+    </object>
+    <object class="wxDialog" name="ID_COMPLEXDIALOG" subclass="ComplexDialog">
+        <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX</style>
+        <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
+        <size>400,300</size>
+        <title>ComplexDialog</title>
+        <centered>1</centered>
+        <object class="wxBoxSizer">
+            <orient>wxVERTICAL</orient>
+            <object class="sizeritem">
+                <flag>wxGROW|wxALL</flag>
+                <border>5</border>
+                <option>1</option>
+                <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                        <flag>wxALIGN_LEFT|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxStaticText" name="wxID_STATIC">
+                            <label>This dialog demonstrates some sizer issues.
+
+The notebook is set to expand (and also stretch vertically), otherwise
+it would stay a fixed minimal size when resizing the dialog.</label>
+                        </object>
+                    </object>
+                    <object class="spacer">
+                        <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                        <border>5</border>
+                        <size>5,5</size>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALL</flag>
+                        <border>5</border>
+                        <option>1</option>
+                        <object class="wxNotebook" name="ID_COMPLEXDIALOG_NOTEBOOK">
+                            <style>wxBK_DEFAULT|wxBK_TOP</style>
+                            <object class="notebookpage">
+                                <label>Stretching</label>
+                                <object class="wxPanel" name="ID_COMPLEXDIALOG_PANEL">
+                                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Below we have a horizontal sizer with a text control and button.
+The horizontal sizer has no borders, and the text control
+has its stretch factor set to one (with the double-headed arrow)
+to make it expand to fill the horizontal sizer.</label>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>&amp;Filename:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW</flag>
+                                            <border>5</border>
+                                            <object class="wxBoxSizer">
+                                                <orient>wxHORIZONTAL</orient>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <option>1</option>
+                                                    <object class="wxTextCtrl" name="ID_COMPLEXDIALOG_TEXTCTRL">
+                                                        <size>200,-1</size>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxButton" name="ID_COMPLEXDIALOG_BUTTON">
+                                                        <label>Browse...</label>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <option>1</option>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Notice how the space above this text expands as you stretch
+the dialog vertically. This is because there is a spacer with its
+stretch factor set to 1.</label>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="notebookpage">
+                                <label>wxFlexGridSizer</label>
+                                <object class="wxPanel" name="ID_COMPLEXDIALOG_MYSEPARATEPANEL" subclass="MySeparatePanel">
+                                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Below we're using a 2x3 wxFlexGridSizer, with right-aligned labels.
+We've centred the sizer so it doesn't grow to fit the resized dialog.
+Try making it expand horizontally. It'll seem to right-align - that's
+because we've specified that the first column (only) can grow.</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxFlexGridSizer">
+                                                <cols>2</cols>
+                                                <rows>3</rows>
+                                                <vgap>0</vgap>
+                                                <hgap>0</hgap>
+                                                <growablecols>0</growablecols>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxStaticText" name="wxID_STATIC">
+                                                        <label>Count:</label>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxComboBox" name="ID_COMPLEXDIALOG_COMBOBOX">
+                                                        <style>wxCB_DROPDOWN</style>
+                                                        <content>
+                                                            <item>One</item>
+                                                            <item>Two</item>
+                                                            <item>Three</item>
+                                                        </content>
+                                                        <selection>0</selection>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxStaticText" name="wxID_STATIC">
+                                                        <label>Selection:</label>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxComboBox" name="ID_COMPLEXDIALOG_COMBOBOX1">
+                                                        <style>wxCB_DROPDOWN</style>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxStaticText" name="wxID_STATIC">
+                                                        <label>Another:</label>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxComboBox" name="ID_COMPLEXDIALOG_COMBOBOX2">
+                                                        <style>wxCB_DROPDOWN</style>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>The code for this panel is generated in separate .h and .cpp files, 
+because the "Separate files" property is checked, and a class name
+has been specified.</label>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="notebookpage">
+                                <label>wxStaticBoxSizer</label>
+                                <object class="wxPanel" name="ID_COMPLEXDIALOG_PANEL1">
+                                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALL</flag>
+                                            <border>5</border>
+                                            <option>1</option>
+                                            <object class="wxStaticBoxSizer" name="wxID_ANY">
+                                                <orient>wxVERTICAL</orient>
+                                                <label>A static box sizer</label>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <object class="wxStaticText" name="wxID_STATIC">
+                                                        <label>A wxStaticBoxSizer consists of a sizer that manages a wxStaticBox
+and controls inside the box. Note that contained controls are
+created as siblings of the wxStaticBox, not children, even though
+they appear as children in the sizer hierarchy.</label>
+                                                    </object>
+                                                </object>
+                                                <object class="spacer">
+                                                    <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                                    <border>5</border>
+                                                    <size>5,5</size>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                                    <border>5</border>
+                                                    <object class="wxStaticText" name="wxID_STATIC">
+                                                        <label>Here's a wxCheckListBox:</label>
+                                                    </object>
+                                                </object>
+                                                <object class="sizeritem">
+                                                    <flag>wxGROW|wxALL</flag>
+                                                    <border>5</border>
+                                                    <option>1</option>
+                                                    <object class="wxCheckListBox" name="ID_COMPLEXDIALOG_CHECKLISTBOX">
+                                                        <style>wxLB_SINGLE</style>
+                                                        <content>
+                                                            <item>One</item>
+                                                            <item>Two</item>
+                                                            <item>Three</item>
+                                                            <item>Four</item>
+                                                        </content>
+                                                    </object>
+                                                </object>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxALIGN_LEFT|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxStaticText" name="wxID_STATIC">
+                            <label>Toggle the platform selection (first drop-down in the toolbar) between
+____WXMSW____ and ____WXMAC____ to see the difference in buttons below
+this text. This is controlled by the Platform property.</label>
+                        </object>
+                    </object>
+                    <object class="spacer">
+                        <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                        <border>5</border>
+                        <size>5,5</size>
+                    </object>
+                    <object platform="win|unix" class="sizeritem">
+                        <flag>wxGROW</flag>
+                        <border>5</border>
+                        <object platform="win|unix" class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <option>1</option>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_OK">
+                                    <label>&amp;OK</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_CANCEL">
+                                    <label>&amp;Cancel</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_HELP">
+                                    <label>&amp;Help</label>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                    <object platform="mac" class="sizeritem">
+                        <flag>wxGROW</flag>
+                        <border>5</border>
+                        <object platform="mac" class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_HELP">
+                                    <label>&amp;Help</label>
+                                </object>
+                            </object>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <option>1</option>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_CANCEL">
+                                    <label>&amp;Cancel</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_OK">
+                                    <label>&amp;OK</label>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+    </object>
+    <object class="wxDialog" name="ID_ADVANCEDCONTROLS" subclass="AdvancedControls">
+        <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX</style>
+        <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
+        <size>460,400</size>
+        <title>AdvancedControls</title>
+        <centered>1</centered>
+        <object class="wxBoxSizer">
+            <orient>wxVERTICAL</orient>
+            <object class="sizeritem">
+                <flag>wxGROW|wxALL</flag>
+                <border>5</border>
+                <option>1</option>
+                <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALL</flag>
+                        <border>5</border>
+                        <option>1</option>
+                        <object class="wxNotebook" name="ID_ADVANCEDCONTROLS_NOTEBOOK">
+                            <style>wxBK_DEFAULT|wxBK_TOP</style>
+                            <object class="notebookpage">
+                                <label>wxHtmlWindow</label>
+                                <object class="wxPanel" name="ID_ADVANCEDCONTROLS_PANEL">
+                                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALL</flag>
+                                            <border>5</border>
+                                            <option>1</option>
+                                            <object class="wxHtmlWindow" name="ID_ADVANCEDCONTROLS_HTMLWINDOW">
+                                                <size>10,10</size>
+                                                <style>wxHW_SCROLLBAR_AUTO|wxNO_BORDER|wxHSCROLL|wxVSCROLL</style>
+                                                <htmlcode>&lt;H3&gt;wxHtmlWindow is fun&lt;/H3&gt;
+
+You can put all kinds of &lt;i&gt;styles&lt;/i&gt; and &lt;font color="red"&gt;colours&lt;/font&gt; in an HTML control. It's great for About boxes, reports or giving extra impact to your dialogs.&lt;P&gt;
+
+&lt;table border=1 width="100%"&gt;
+&lt;tr&gt;
+&lt;td align=center&gt;
+Plus:
+&lt;/td&gt;
+&lt;td align=center&gt;
+You can do tables, too.
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+&lt;p&gt;
+
+If you use an wxHtmlWindow in an About box, you can use code like this to fit the window to its content:&lt;p&gt;
+
+&lt;font size=-1&gt;
+&lt;code&gt;
+wxHtmlContainerCell* cell =&lt;br&gt;
+&amp;nbsp;&amp;nbsp;html-&gt;GetInternalRepresentation();&lt;p&gt;
+html-&gt;SetSize(cell-&gt;GetWidth(), cell-&gt;GetHeight());
+&lt;/code&gt;
+&lt;/font&gt;</htmlcode>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="notebookpage">
+                                <label>wxDirCtrl</label>
+                                <object class="wxPanel" name="ID_ADVANCEDCONTROLS_PANEL1">
+                                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>A directory control:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALL</flag>
+                                            <border>5</border>
+                                            <option>1</option>
+                                            <object class="wxGenericDirCtrl" name="ID_ADVANCEDCONTROLS_GENERICDIRCTRL">
+                                                <size>10,10</size>
+                                                <filter>All files (*.*)|*.*</filter>
+                                                <defaultfilter>0</defaultfilter>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="notebookpage">
+                                <label>wxTreeCtrl</label>
+                                <object class="wxPanel" name="ID_ADVANCEDCONTROLS_PANEL2">
+                                    <size>10,10</size>
+                                    <style>wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>A tree control:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALL</flag>
+                                            <border>5</border>
+                                            <option>1</option>
+                                            <object class="wxTreeCtrl" name="ID_ADVANCEDCONTROLS_TREECTRL">
+                                                <style>wxTR_HAS_BUTTONS |wxTR_LINES_AT_ROOT|wxTR_SINGLE</style>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="notebookpage">
+                                <label>wxGrid</label>
+                                <object class="wxPanel" name="ID_ADVANCEDCONTROLS_PANEL3">
+                                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>A 20x20 grid:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALL</flag>
+                                            <border>5</border>
+                                            <option>1</option>
+                                            <object class="wxGrid" name="ID_ADVANCEDCONTROLS_GRID">
+                                                <size>10,10</size>
+                                                <style>wxSUNKEN_BORDER|wxHSCROLL|wxVSCROLL</style>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                            <object class="notebookpage">
+                                <label>Dates</label>
+                                <object class="wxPanel" name="ID_ADVANCEDCONTROLS_PANEL4">
+                                    <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                    <object class="wxBoxSizer">
+                                        <orient>wxVERTICAL</orient>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxLEFT|wxRIGHT|wxTOP</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>A wxCalendarCtrl:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxCalendarCtrl" name="ID_ADVANCEDCONTROLS_CALENDARCTRL">
+                                                <style>wxCAL_SUNDAY_FIRST|wxSUNKEN_BORDER</style>
+                                            </object>
+                                        </object>
+                                        <object class="spacer">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <size>5,5</size>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>And a wxDatePickerCtrl:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxDatePickerCtrl" name="ID_ADVANCEDCONTROLS_DATEPICKERCTRL">
+                                                <style>wxDP_DEFAULT</style>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                    <object platform="win|unix" class="sizeritem">
+                        <flag>wxGROW</flag>
+                        <border>5</border>
+                        <object platform="win|unix" class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <option>1</option>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_OK">
+                                    <label>&amp;OK</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_CANCEL">
+                                    <label>&amp;Cancel</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_HELP">
+                                    <label>&amp;Help</label>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+    </object>
+    <object class="wxDialog" name="ID_SCROLLINGDIALOG" subclass="ScrollingDialog">
+        <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX</style>
+        <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
+        <size>400,300</size>
+        <title>ScrollingDialog</title>
+        <centered>1</centered>
+        <object class="wxBoxSizer">
+            <orient>wxVERTICAL</orient>
+            <object class="sizeritem">
+                <flag>wxGROW|wxALL</flag>
+                <border>5</border>
+                <option>1</option>
+                <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                        <flag>wxALIGN_LEFT|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxStaticText" name="wxID_STATIC">
+                            <label>This dialog shows a wxScrolledWindow containing controls.</label>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALL</flag>
+                        <border>5</border>
+                        <option>1</option>
+                        <object class="wxScrolledWindow" name="ID_SCROLLINGDIALOG_SCROLLEDWINDOW">
+                            <size>300,240</size>
+                            <style>wxSUNKEN_BORDER|wxHSCROLL|wxVSCROLL</style>
+                            <scrollrate>1,1</scrollrate>
+                            <unitsx>0</unitsx>
+                            <unitsy>0</unitsy>
+                            <object class="wxBoxSizer">
+                                <orient>wxVERTICAL</orient>
+                                <object class="sizeritem">
+                                    <flag>wxGROW|wxALL</flag>
+                                    <border>5</border>
+                                    <option>1</option>
+                                    <object class="wxFlexGridSizer">
+                                        <cols>2</cols>
+                                        <rows>0</rows>
+                                        <vgap>0</vgap>
+                                        <hgap>0</hgap>
+                                        <growablecols>1</growablecols>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Value 1:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_SCROLLINGDIALOG_TEXTCTRL">
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Value 2:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_SCROLLINGDIALOG_TEXTCTRL1">
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Value 3:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_SCROLLINGDIALOG_TEXTCTRL2">
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Value 4:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_SCROLLINGDIALOG_TEXTCTRL3">
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Value 5:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_SCROLLINGDIALOG_TEXTCTRL4">
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Value 6:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_SCROLLINGDIALOG_TEXTCTRL5">
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Value 7:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_SCROLLINGDIALOG_TEXTCTRL6">
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Value 9:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_SCROLLINGDIALOG_TEXTCTRL7">
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Value 10:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_SCROLLINGDIALOG_TEXTCTRL8">
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxALIGN_RIGHT|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxStaticText" name="wxID_STATIC">
+                                                <label>Value 11:</label>
+                                            </object>
+                                        </object>
+                                        <object class="sizeritem">
+                                            <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                            <border>5</border>
+                                            <object class="wxTextCtrl" name="ID_SCROLLINGDIALOG_TEXTCTRL9">
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                    <object platform="win|unix" class="sizeritem">
+                        <flag>wxGROW</flag>
+                        <border>5</border>
+                        <object platform="win|unix" class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <option>1</option>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_OK">
+                                    <label>&amp;OK</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_CANCEL">
+                                    <label>&amp;Cancel</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_HELP">
+                                    <label>&amp;Help</label>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+    </object>
+    <object class="wxWizard" name="ID_WIZARDDIALOG" subclass="WizardDialog">
+        <style>wxDEFAULT_DIALOG_STYLE|wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX</style>
+        <exstyle>wxWS_EX_BLOCK_EVENTS|wxWIZARD_EX_HELPBUTTON</exstyle>
+        <title>WizardDialog</title>
+        <bitmap>wizard.png</bitmap>
+        <object class="wxWizardPageSimple" name="ID_WIZARD_DIALOG_FIRSTPAGE" subclass="FirstPage">
+            <style>wxTAB_TRAVERSAL</style>
+            <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                    <flag>wxALIGN_LEFT|wxALL</flag>
+                    <border>5</border>
+                    <object class="wxStaticText" name="wxID_STATIC">
+                        <label>Hello, and welcome to this wizard.</label>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                    <border>5</border>
+                    <size>5,5</size>
+                </object>
+                <object class="sizeritem">
+                    <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                    <border>5</border>
+                    <object class="wxStaticText" name="wxID_STATIC">
+                        <label>Your name:</label>
+                    </object>
+                </object>
+                <object class="sizeritem">
+                    <flag>wxGROW|wxALL</flag>
+                    <border>5</border>
+                    <object class="wxTextCtrl" name="ID_WIZARD_DIALOG_TEXTCTRL">
+                    </object>
+                </object>
+                <object class="spacer">
+                    <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                    <border>5</border>
+                    <size>5,5</size>
+                </object>
+                <object class="sizeritem">
+                    <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                    <border>5</border>
+                    <object class="wxStaticText" name="wxID_STATIC">
+                        <label>Your organisation:</label>
+                    </object>
+                </object>
+                <object class="sizeritem">
+                    <flag>wxGROW|wxALL</flag>
+                    <border>5</border>
+                    <object class="wxTextCtrl" name="ID_WIZARD_DIALOG_TEXTCTRL1">
+                    </object>
+                </object>
+                <object class="spacer">
+                    <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                    <border>5</border>
+                    <option>1</option>
+                    <size>5,5</size>
+                </object>
+                <object class="sizeritem">
+                    <flag>wxALIGN_LEFT|wxALL</flag>
+                    <border>5</border>
+                    <object class="wxStaticText" name="wxID_STATIC">
+                        <label>Now click on Next to go to the next page of this wizard.</label>
+                    </object>
+                </object>
+            </object>
+        </object>
+        <object class="wxWizardPageSimple" name="ID_WIZARD_DIALOG_SECONDPAGE" subclass="SecondPage">
+            <style>wxTAB_TRAVERSAL</style>
+            <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                    <flag>wxALIGN_LEFT|wxALL</flag>
+                    <border>5</border>
+                    <object class="wxStaticText" name="wxID_STATIC">
+                        <label>This page demonstrates a few further controls.</label>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                    <border>5</border>
+                    <size>5,5</size>
+                </object>
+                <object class="sizeritem">
+                    <flag>wxALIGN_LEFT|wxALL</flag>
+                    <border>5</border>
+                    <object class="wxCheckBox" name="ID_WIZARD_DIALOG_CHECKBOX">
+                        <label>Option 1</label>
+                        <checked>0</checked>
+                    </object>
+                </object>
+                <object class="sizeritem">
+                    <flag>wxALIGN_LEFT|wxALL</flag>
+                    <border>5</border>
+                    <object class="wxCheckBox" name="ID_WIZARD_DIALOG_CHECKBOX1">
+                        <label>Option 2</label>
+                        <checked>0</checked>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                    <border>5</border>
+                    <size>5,5</size>
+                </object>
+                <object class="sizeritem">
+                    <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                    <border>5</border>
+                    <object class="wxStaticText" name="wxID_STATIC">
+                        <label>Choose from several things:</label>
+                    </object>
+                </object>
+                <object class="sizeritem">
+                    <flag>wxGROW|wxALL</flag>
+                    <border>5</border>
+                    <object class="wxComboBox" name="ID_WIZARD_DIALOG_COMBOBOX">
+                        <style>wxCB_DROPDOWN</style>
+                        <content>
+                            <item>One thing</item>
+                            <item>Two things</item>
+                            <item>Three things</item>
+                        </content>
+                        <selection>0</selection>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                    <border>5</border>
+                    <size>5,5</size>
+                </object>
+                <object class="sizeritem">
+                    <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                    <border>5</border>
+                    <object class="wxStaticText" name="wxID_STATIC">
+                        <label>Check the properties you want to have applied:</label>
+                    </object>
+                </object>
+                <object class="sizeritem">
+                    <flag>wxGROW|wxALL</flag>
+                    <border>5</border>
+                    <object class="wxCheckListBox" name="ID_WIZARD_DIALOG_CHECKLISTBOX">
+                        <size>-1,80</size>
+                        <style>wxLB_SINGLE</style>
+                        <content>
+                            <item>Property 1</item>
+                            <item>Property 2</item>
+                            <item>Property 3</item>
+                        </content>
+                    </object>
+                </object>
+                <object class="spacer">
+                    <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                    <border>5</border>
+                    <size>5,5</size>
+                </object>
+            </object>
+        </object>
+        <object class="wxWizardPageSimple" name="ID_WIZARD_DIALOG_THIRDPAGE" subclass="ThirdPage">
+            <style>wxTAB_TRAVERSAL</style>
+            <object class="wxBoxSizer">
+                <orient>wxVERTICAL</orient>
+                <object class="sizeritem">
+                    <flag>wxGROW|wxALL</flag>
+                    <border>5</border>
+                    <option>1</option>
+                    <object class="wxHtmlWindow" name="ID_WIZARD_DIALOG_HTMLWINDOW">
+                        <size>200,150</size>
+                        <style>wxHW_SCROLLBAR_AUTO|wxSUNKEN_BORDER|wxHSCROLL|wxVSCROLL</style>
+                        <htmlcode>&lt;font size=-1&gt;
+&lt;H3&gt;Congratulations!&lt;/H3&gt;
+
+You came to the end of the wizard. Your options are summarised below.&lt;p&gt;
+
+&lt;table width="100%"&gt;
+&lt;tr&gt;
+&lt;td&gt;
+&lt;b&gt;Name&lt;/b&gt;
+&lt;/td&gt;
+&lt;td&gt;
+Joe Bloggs
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;
+&lt;b&gt;Option 1&lt;/b&gt;
+&lt;/td&gt;
+&lt;td&gt;
+Yes
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;
+&lt;b&gt;Option 2&lt;/b&gt;
+&lt;/td&gt;
+&lt;td&gt;
+No
+&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/table&gt;
+
+&lt;p&gt;
+
+Please press Finish to apply your choices.&lt;p&gt;
+
+&lt;/font&gt;</htmlcode>
+                    </object>
+                </object>
+            </object>
+        </object>
+    </object>
+    <object class="wxPropertySheetDialog" name="ID_SETTINGSDIALOG" subclass="SettingsDialog">
+        <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX</style>
+        <exstyle>wxWS_EX_BLOCK_EVENTS|wxDIALOG_EX_CONTEXTHELP</exstyle>
+        <size>400,300</size>
+        <title>SettingsDialog</title>
+        <centered>1</centered>
+        <buttons>wxOK|wxCANCEL|wxHELP</buttons>
+        <object class="propertysheetpage">
+            <label>General</label>
+            <object class="wxPanel" name="ID_SETTINGS_DIALOG_PANEL">
+                <style>wxTAB_TRAVERSAL</style>
+                <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALL</flag>
+                        <border>5</border>
+                        <option>1</option>
+                        <object class="wxBoxSizer">
+                            <orient>wxVERTICAL</orient>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxStaticText" name="wxID_STATIC">
+                                    <label>These are general settings.</label>
+                                </object>
+                            </object>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                <border>5</border>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxCheckBox" name="ID_SETTINGS_DIALOG_CHECKBOX">
+                                    <label>Option 1</label>
+                                    <checked>0</checked>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxCheckBox" name="ID_SETTINGS_DIALOG_CHECKBOX1">
+                                    <label>Option 2</label>
+                                    <checked>0</checked>
+                                </object>
+                            </object>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                <border>5</border>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                <border>5</border>
+                                <object class="wxStaticText" name="wxID_STATIC">
+                                    <label>Log filename:</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxGROW</flag>
+                                <border>5</border>
+                                <object class="wxBoxSizer">
+                                    <orient>wxHORIZONTAL</orient>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                        <border>5</border>
+                                        <option>1</option>
+                                        <object class="wxTextCtrl" name="ID_SETTINGS_DIALOG_TEXTCTRL">
+                                            <size>180,-1</size>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxButton" name="ID_SETTINGS_DIALOG_BUTTON">
+                                            <label>Browse...</label>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+        <object class="propertysheetpage">
+            <label>Advanced</label>
+            <object class="wxPanel" name="ID_SETTINGS_DIALOG_PANEL1">
+                <style>wxTAB_TRAVERSAL</style>
+                <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALL</flag>
+                        <border>5</border>
+                        <option>1</option>
+                        <object class="wxBoxSizer">
+                            <orient>wxVERTICAL</orient>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxStaticText" name="wxID_STATIC">
+                                    <label>These are advanced settings.</label>
+                                </object>
+                            </object>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                <border>5</border>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxCheckBox" name="ID_SETTINGS_DIALOG_CHECKBOX2">
+                                    <label>Check me at your peril</label>
+                                    <checked>0</checked>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxCheckBox" name="ID_SETTINGS_DIALOG_CHECKBOX3">
+                                    <label>Might blow everything up</label>
+                                    <checked>0</checked>
+                                </object>
+                            </object>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                <border>5</border>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxStaticText" name="wxID_STATIC">
+                                    <label>Could be dodgy:</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxGROW|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxBoxSizer">
+                                    <orient>wxHORIZONTAL</orient>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxRadioButton" name="ID_SETTINGS_DIALOG_RADIOBUTTON">
+                                            <label>Freeze</label>
+                                            <value>1</value>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxRadioButton" name="ID_SETTINGS_DIALOG_RADIOBUTTON1">
+                                            <label>Overheat</label>
+                                            <value>0</value>
+                                        </object>
+                                    </object>
+                                    <object class="sizeritem">
+                                        <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                        <border>5</border>
+                                        <object class="wxRadioButton" name="ID_SETTINGS_DIALOG_RADIOBUTTON2">
+                                            <label>Catch fire</label>
+                                            <value>0</value>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+        <object class="propertysheetpage">
+            <label>Redundant</label>
+            <object class="wxPanel" name="ID_SETTINGS_DIALOG_PANEL2">
+                <style>wxTAB_TRAVERSAL</style>
+                <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALL</flag>
+                        <border>5</border>
+                        <option>1</option>
+                        <object class="wxBoxSizer">
+                            <orient>wxVERTICAL</orient>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxStaticText" name="wxID_STATIC">
+                                    <label>These are pointless settings.</label>
+                                </object>
+                            </object>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                <border>5</border>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxCheckBox" name="ID_SETTINGS_DIALOG_CHECKBOX4">
+                                    <label>Does nothing</label>
+                                    <checked>0</checked>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxCheckBox" name="ID_SETTINGS_DIALOG_CHECKBOX5">
+                                    <label>No-one remembers what this one does</label>
+                                    <checked>0</checked>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxCheckBox" name="ID_SETTINGS_DIALOG_CHECKBOX6">
+                                    <label>Was useful once, then things changed</label>
+                                    <checked>0</checked>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxCheckBox" name="ID_SETTINGS_DIALOG_CHECKBOX7">
+                                    <label>Nope, no idea</label>
+                                    <checked>0</checked>
+                                </object>
+                            </object>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                <border>5</border>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                <border>5</border>
+                                <object class="wxStaticText" name="wxID_STATIC">
+                                    <label>We put the rest of them here:</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxGROW|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxCheckListBox" name="ID_SETTINGS_DIALOG_CHECKLISTBOX">
+                                    <size>-1,100</size>
+                                    <style>wxLB_SINGLE</style>
+                                    <content>
+                                        <item>Forgettable setting</item>
+                                        <item>Colours something mauve</item>
+                                        <item>Rings a bell in head office</item>
+                                        <item>Tickles the boss</item>
+                                    </content>
+                                </object>
+                            </object>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                <border>5</border>
+                                <size>5,5</size>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+    </object>
+    <object class="wxDialog" name="ID_SPLITTERDIALOG" subclass="SplitterDialog">
+        <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX</style>
+        <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
+        <size>450,400</size>
+        <title>SplitterDialog</title>
+        <centered>1</centered>
+        <object class="wxBoxSizer">
+            <orient>wxVERTICAL</orient>
+            <object class="sizeritem">
+                <flag>wxGROW|wxALL</flag>
+                <border>5</border>
+                <option>1</option>
+                <object class="wxBoxSizer">
+                    <orient>wxVERTICAL</orient>
+                    <object class="sizeritem">
+                        <flag>wxALIGN_LEFT|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxStaticText" name="wxID_STATIC">
+                            <label>This is a wxSplitterWindow containing a wxListBox and a wxPanel.</label>
+                        </object>
+                    </object>
+                    <object class="spacer">
+                        <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                        <border>5</border>
+                        <size>5,5</size>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALL</flag>
+                        <border>5</border>
+                        <option>1</option>
+                        <object class="wxSplitterWindow" name="ID_SPLITTERDIALOG_SPLITTERWINDOW">
+                            <size>100,100</size>
+                            <style>wxSP_3DBORDER|wxSP_3DSASH|wxNO_BORDER</style>
+                            <orientation>vertical</orientation>
+                            <sashpos>150</sashpos>
+                            <minsize>0</minsize>
+                            <object class="wxListBox" name="ID_SPLITTERDIALOG_LISTBOX">
+                                <style>wxLB_SINGLE</style>
+                                <content>
+                                    <item>One</item>
+                                    <item>Two</item>
+                                    <item>Three</item>
+                                    <item>Four</item>
+                                </content>
+                                <selection>1</selection>
+                            </object>
+                            <object class="wxPanel" name="ID_SPLITTERDIALOG_PANEL">
+                                <style>wxNO_BORDER|wxTAB_TRAVERSAL</style>
+                                <object class="wxBoxSizer">
+                                    <orient>wxVERTICAL</orient>
+                                    <object class="sizeritem">
+                                        <flag>wxGROW|wxALL</flag>
+                                        <border>5</border>
+                                        <option>1</option>
+                                        <object class="wxBoxSizer">
+                                            <orient>wxVERTICAL</orient>
+                                            <object class="sizeritem">
+                                                <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                                <border>5</border>
+                                                <object class="wxStaticText" name="wxID_STATIC">
+                                                    <label>&amp;Name:</label>
+                                                </object>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <flag>wxGROW|wxALL</flag>
+                                                <border>5</border>
+                                                <object class="wxTextCtrl" name="ID_SPLITTERDIALOG_TEXTCTRL">
+                                                </object>
+                                            </object>
+                                            <object class="spacer">
+                                                <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                                                <border>5</border>
+                                                <size>5,5</size>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <flag>wxALIGN_LEFT|wxLEFT|wxRIGHT|wxTOP</flag>
+                                                <border>5</border>
+                                                <object class="wxStaticText" name="wxID_STATIC">
+                                                    <label>N&amp;otes:</label>
+                                                </object>
+                                            </object>
+                                            <object class="sizeritem">
+                                                <flag>wxGROW|wxALL</flag>
+                                                <border>5</border>
+                                                <option>1</option>
+                                                <object class="wxTextCtrl" name="ID_SPLITTERDIALOG_TEXTCTRL1">
+                                                    <style>wxTE_MULTILINE</style>
+                                                </object>
+                                            </object>
+                                        </object>
+                                    </object>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                    <object platform="win|unix" class="sizeritem">
+                        <flag>wxGROW</flag>
+                        <border>5</border>
+                        <object platform="win|unix" class="wxBoxSizer">
+                            <orient>wxHORIZONTAL</orient>
+                            <object class="spacer">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <option>1</option>
+                                <size>5,5</size>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_OK">
+                                    <label>&amp;OK</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_CANCEL">
+                                    <label>&amp;Cancel</label>
+                                </object>
+                            </object>
+                            <object class="sizeritem">
+                                <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                                <border>5</border>
+                                <object class="wxButton" name="wxID_HELP">
+                                    <label>&amp;Help</label>
+                                </object>
+                            </object>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+    </object>
+    <object class="wxDialog" name="ID_TOPDIALOG" subclass="TopDialog">
+        <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxCLOSE_BOX</style>
+        <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
+        <size>400,300</size>
+        <title>TopDialog</title>
+        <centered>1</centered>
+        <icon>wxwin32x32.xpm</icon>
+        <object class="wxBoxSizer">
+            <orient>wxVERTICAL</orient>
+            <object class="sizeritem">
+                <flag>wxGROW|wxALL</flag>
+                <border>5</border>
+                <option>1</option>
+                <object class="wxHtmlWindow" name="ID_TOPDIALOG_HTMLWINDOW">
+                    <size>200,130</size>
+                    <style>wxHW_SCROLLBAR_AUTO|wxSUNKEN_BORDER|wxHSCROLL|wxVSCROLL</style>
+                    <htmlcode>&lt;b&gt;Welcome to the DialogBlocks "Elements" sample&lt;/b&gt;&lt;p&gt;
+
+Click on  button to show a dialog. The code to show the dialogs has been generated by DialogBlocks, using actions associated with the button click event handler.
+
+&lt;/font&gt;</htmlcode>
+                </object>
+            </object>
+            <object class="sizeritem">
+                <flag>wxALIGN_CENTER_HORIZONTAL</flag>
+                <border>5</border>
+                <object class="wxFlexGridSizer">
+                    <cols>4</cols>
+                    <rows>2</rows>
+                    <vgap>0</vgap>
+                    <hgap>0</hgap>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="ID_TOPDIALOG_BUTTON">
+                            <label>Basic Controls</label>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="ID_TOPDIALOG_BUTTON1">
+                            <label>Complex Dialog</label>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="ID_TOPDIALOG_BUTTON2">
+                            <label>Advanced Controls</label>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="ID_TOPDIALOG_BUTTON3">
+                            <label>Scrolling Dialog</label>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="ID_TOPDIALOG_BUTTON4">
+                            <label>Wizard Dialog</label>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxALIGN_CENTER_HORIZONTAL|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="ID_TOPDIALOG_BUTTON5">
+                            <label>Settings Dialog</label>
+                        </object>
+                    </object>
+                    <object class="sizeritem">
+                        <flag>wxGROW|wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="ID_TOPDIALOG_BUTTON6">
+                            <label>Splitter Dialog</label>
+                        </object>
+                    </object>
+                </object>
+            </object>
+            <object class="spacer">
+                <flag>wxALIGN_CENTER_HORIZONTAL|wxALL</flag>
+                <border>5</border>
+                <size>5,5</size>
+            </object>
+            <object platform="win|unix" class="sizeritem">
+                <flag>wxALIGN_CENTER_HORIZONTAL</flag>
+                <border>5</border>
+                <object platform="win|unix" class="wxBoxSizer">
+                    <orient>wxHORIZONTAL</orient>
+                    <object class="sizeritem">
+                        <flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+                        <border>5</border>
+                        <object class="wxButton" name="wxID_CANCEL">
+                            <label>&amp;Close</label>
+                            <default>1</default>
+                        </object>
+                    </object>
+                </object>
+            </object>
+        </object>
+    </object>
+    <object class="wxFrame" name="ID_FRAME" subclass="MyFrame">
+        <style>wxCAPTION|wxRESIZE_BORDER|wxSYSTEM_MENU|wxMINIMIZE_BOX|wxMAXIMIZE_BOX|wxCLOSE_BOX</style>
+        <size>450,350</size>
+        <title>Simple frame</title>
+        <centered>1</centered>
+        <icon>wxwin32x32.xpm</icon>
+        <object class="wxMenuBar" name="ID_FRAME_MENUBAR">
+            <object class="wxMenu">
+                <label>&amp;File</label>
+                <object class="wxMenuItem" name="wxID_OPEN">
+                    <label>&amp;Open...\tCtrl+O</label>
+                    <help>Opens a file</help>
+                    <bitmap>open.xpm</bitmap>
+                </object>
+                <object class="wxMenuItem" name="wxID_SAVE">
+                    <label>&amp;Save</label>
+                    <help>Saves a file to disk</help>
+                </object>
+                <object class="separator">
+                </object>
+                <object class="wxMenuItem" name="wxID_EXIT">
+                    <label>&amp;Exit</label>
+                    <help>Exits the application</help>
+                </object>
+            </object>
+            <object class="wxMenu">
+                <label>&amp;Edit</label>
+                <object class="wxMenuItem" name="wxID_COPY">
+                    <label>&amp;Copy</label>
+                    <help>Copies data to the clipboard</help>
+                </object>
+                <object class="wxMenuItem" name="wxID_CUT">
+                    <label>&amp;Cut</label>
+                    <help>Copies to the clipboard and deletes</help>
+                </object>
+                <object class="wxMenuItem" name="wxID_PASTE">
+                    <label>&amp;Paste</label>
+                    <help>Pastes from the clipboard</help>
+                </object>
+            </object>
+            <object class="wxMenu">
+                <label>&amp;Help</label>
+                <object class="wxMenuItem" name="wxID_ABOUT">
+                    <label>&amp;About...</label>
+                    <help>About this application</help>
+                </object>
+            </object>
+        </object>
+        <object class="wxToolBar" name="ID_FRAME_TOOLBAR">
+            <style>wxTB_FLAT|wxTB_HORIZONTAL</style>
+            <object class="tool" name="wxID_OPEN">
+                <bitmap>open.xpm</bitmap>
+            </object>
+            <object class="tool" name="wxID_SAVE">
+                <bitmap>save.xpm</bitmap>
+            </object>
+            <object class="separator">
+            </object>
+            <object class="tool" name="wxID_UNDO">
+                <bitmap>undo.xpm</bitmap>
+            </object>
+            <object class="tool" name="wxID_REDO">
+                <bitmap>redo.xpm</bitmap>
+            </object>
+            <object class="separator">
+            </object>
+            <object class="tool" name="wxID_COPY">
+                <bitmap>copy.xpm</bitmap>
+            </object>
+            <object class="tool" name="wxID_CUT">
+                <bitmap>cut.xpm</bitmap>
+            </object>
+            <object class="tool" name="wxID_PASTE">
+                <bitmap>paste.xpm</bitmap>
+            </object>
+        </object>
+        <object class="wxStatusBar" name="ID_FRAME_STATUSBAR">
+            <style>wxST_SIZEGRIP|wxNO_BORDER</style>
+            <fields>2</fields>
+            <widths>200,-1</widths>
+        </object>
+        <object class="wxSplitterWindow" name="ID_FRAME_SPLITTERWINDOW">
+            <size>100,100</size>
+            <style>wxSP_3DBORDER|wxSP_3DSASH|wxSP_NO_XP_THEME|wxNO_BORDER</style>
+            <orientation>vertical</orientation>
+            <sashpos>100</sashpos>
+            <minsize>0</minsize>
+            <object class="wxListBox" name="ID_FRAME_LISTBOX">
+                <style>wxLB_SINGLE|wxNO_BORDER</style>
+                <content>
+                    <item>Rembrandt</item>
+                    <item>Botticelli</item>
+                    <item>Rubens</item>
+                    <item>Degas</item>
+                    <item>Constable</item>
+                    <item>da Vinci</item>
+                    <item>Raphael</item>
+                    <item>Giotto</item>
+                    <item>Michelangelo</item>
+                </content>
+            </object>
+            <object class="wxHtmlWindow" name="ID_FRAME_HTMLWINDOW">
+                <size>200,150</size>
+                <style>wxHW_SCROLLBAR_AUTO|wxNO_BORDER|wxHSCROLL|wxVSCROLL</style>
+                <htmlcode>&lt;h3&gt;wxFrame Demo&lt;/h3&gt;
+
+This demonstrates a wxFrame containing a wxListBox, which itself contains a wxListBox and a wxHtmlWindow. There's also a wxMenuBar,wxToolBar and wxStatusBar.</htmlcode>
+            </object>
+        </object>
+    </object>
+</resource>
