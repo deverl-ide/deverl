@@ -454,15 +454,15 @@ init(Config) ->
 	?stc:setWrapMode(Editor, ide_sys_pref_gen:get_preference(line_wrap)),
 
 	%% Attach events
-  % ?stc:connect(Editor, stc_marginclick, []),
-  % ?stc:connect(Editor, left_down, [{skip, true}]),
-  % ?stc:connect(Editor, left_up, [{skip, true}]),
-  % ?stc:connect(Editor, motion, [{skip, true}]),
-  % ?stc:connect(Editor, stc_charadded, [callback]),
-  % ?stc:connect(Editor, char, [{skip, true}]),
-  % ?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
-  % ?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
-  % ?stc:connect(Editor, set_focus, [{skip, true}]),
+  ?stc:connect(Editor, stc_marginclick, []),
+  ?stc:connect(Editor, left_down, [{skip, true}]),
+  ?stc:connect(Editor, left_up, [{skip, true}]),
+  ?stc:connect(Editor, motion, [{skip, true}]),
+  ?stc:connect(Editor, stc_charadded, [callback]),
+  ?stc:connect(Editor, char, [{skip, true}]),
+  ?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
+  ?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
+  ?stc:connect(Editor, set_focus, [{skip, true}]),
 
 	%% Restrict the stc_chamge/stc_modified events to insert/delete text
 	?stc:setModEventMask(Editor, ?wxSTC_MOD_DELETETEXT bor ?wxSTC_MOD_INSERTTEXT),

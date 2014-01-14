@@ -436,7 +436,7 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
     _ -> ok
   end,
   {reply, ok, State#state{doc_records=S, page_to_doc_id=D}}.
-  
+
 %% Close event
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
@@ -612,22 +612,22 @@ get_modified_docs(Documents) ->
   {[document_record()], [{wxWindow:wxWindow(), document_id()}]}.
 
 remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
-  
+
   %% Grab the stc, so we can make sure it's deleted
-  Rec = get_record(DocId, DocRecords),
-  Ed = Rec#document.editor,
-  io:format("EDITOR1: ~p~n", [Ed]),
-  Stc = ide_editor_wx:get_stc(Ed),
-  
+  %Rec = get_record(DocId, DocRecords),
+  %Ed = Rec#document.editor,
+  %io:format("EDITOR1: ~p~n", [Ed]),
+  %Stc = ide_editor_wx:get_stc(Ed),
+
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageIdx, PageToDocId),
   wxAuiNotebook:deletePage(Nb, PageIdx),
-  
+
   %% Wait and see if we segfault when we attempt to read the text
-  receive after 4000 -> ok end,
-  Text = wxStyledTextCtrl:getText(Stc),
-  io:format("Text: ~n~p", [Text]),
-  
+  %receive after 4000 -> ok end,
+  %Text = wxStyledTextCtrl:getText(Stc),
+  %io:format("Text: ~n~p", [Text]),
+
   {NewDocRecords, NewPageToDocId}.
 
 
