@@ -294,7 +294,9 @@ build_toolbar(Frame) ->
       {?MENU_ID_MAKE_PROJECT, "ToolTip", {custom, "folders_14.png"},  
   			[{shortHelp, "Make Project"}], false},
   		{?MENU_ID_RUN, "ToolTip", {custom, "folders_10.png"},      
-  			[{shortHelp, "Run Project"}], true},
+  			[{shortHelp, "Run Project"}], false},
+  		{?MENU_ID_DIALYZER, "ToolTip", {custom, "kidney_16.png"},      
+  			[{shortHelp, "Run Dialyzer"}], true},
   		{?MENU_ID_HIDE_TEST, "ToolTip", {custom, "application_08.png"},       
   			[{shortHelp, "Toggle left pane visibility"}], false},
   		{?MENU_ID_HIDE_UTIL, "ToolTip", {custom, "application_10.png"},       
@@ -326,7 +328,7 @@ build_toolbar(Frame) ->
 menu_groups() ->
   Groups = [
     {?MENU_GROUP_NOTEBOOK_EMPTY, [?wxID_SAVE, ?wxID_SAVEAS, ?MENU_ID_SAVE_ALL, 
-                                  ?MENU_ID_SAVE_PROJECT,  ?wxID_CLOSE, 
+                                  ?MENU_ID_SAVE_PROJECT, ?wxID_PRINT, ?wxID_CLOSE, 
                                   ?wxID_CLOSE_ALL, ?MENU_ID_QUICK_FIND, ?wxID_FIND,
                                   ?MENU_ID_FONT_BIGGER, ?MENU_ID_FONT_SMALLER, ?MENU_ID_INDENT_RIGHT,
                                   ?MENU_ID_INDENT_LEFT, ?MENU_ID_TOGGLE_COMMENT, ?MENU_ID_GOTO_LINE,
