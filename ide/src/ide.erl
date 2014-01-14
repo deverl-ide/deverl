@@ -27,12 +27,12 @@
 
 %% Server state
 -record(state, {frame,
-                workspace :: wxAuiNotebook:wxAuiNotebook(),    %% Notebook
-                utilities,                                     %% The utilities pane
-                util_tabbed, %% ide_tabbed_win_wx
-                left_pane,                                     %% The test pane
-                workspace_manager,                             %% Tabbed UI manager for editors
-                splitter_sidebar :: wxSplitterWindow:wxSplitterWindow(), %% The vertical splitter
+                workspace :: wxAuiNotebook:wxAuiNotebook(),                %% Notebook
+                utilities,                                                 %% The utilities pane
+                util_tabbed,                                               %% ide_tabbed_win_wx
+                left_pane,                                                 %% The test pane
+                workspace_manager,                                         %% Tabbed UI manager for editors
+                splitter_sidebar :: wxSplitterWindow:wxSplitterWindow(),   %% The vertical splitter
                 splitter_utilities :: wxSplitterWindow:wxSplitterWindow(), %% The horizontal splitter
                 splitter_sidebar_pos :: integer(),
                 splitter_utilities_pos :: integer(),
@@ -74,6 +74,7 @@ start() ->
 -spec start([Option]) -> wx_object:wx_object() when
   Option :: {debug, list() | atom()} |
             {silent_start, boolean()}.
+
 start(Options) ->
 	WxObj = wx_object:start({local, ?MODULE}, ?MODULE, Options, [{debug, [log]}]),
   Pid = wx_object:get_pid(WxObj),

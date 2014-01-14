@@ -450,7 +450,7 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
     _ -> ok
   end,
   {reply, ok, State#state{doc_records=S, page_to_doc_id=D}}.
-  
+
 %% Close event
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
@@ -626,7 +626,7 @@ get_modified_docs(Documents) ->
   {[document_record()], [{wxWindow:wxWindow(), document_id()}]}.
 
 remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
-  
+
   %% Grab the stc, so we can make sure it's deleted
   Rec = get_record(DocId, DocRecords),
   Ed = Rec#document.editor,
@@ -646,7 +646,8 @@ remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
   % Text = wxStyledTextCtrl:getText(Stc),
   % io:format("Text: ~n~p", [Text]),
   
-  
+  % wxAuiNotebook:deletePage(Nb, PageIdx),
+
   {NewDocRecords, NewPageToDocId}.
   % {DocRecords, PageToDocId}.
 

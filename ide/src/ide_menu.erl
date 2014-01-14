@@ -82,7 +82,7 @@ get_checked_menu_item([H|T]) ->
 init(Config) ->
   Frame = proplists:get_value(parent, Config),
   wxFrame:setMenuBar(Frame, build_menu(Frame)),
-  Tb = build_toolbar(Frame),
+  _Tb = build_toolbar(Frame),
   menu_groups(). %% Returned to ide
 
 
