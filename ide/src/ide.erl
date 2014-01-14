@@ -351,6 +351,10 @@ handle_event(#wx{id=?MENU_ID_SAVE_PROJECT}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?wxID_PRINT}, State) ->
+  
+  %% TESTING
+  ide_doc_man_wx:test(),
+  
   {noreply, State};
   
 handle_event(#wx{id=?wxID_CLOSE}, State) ->

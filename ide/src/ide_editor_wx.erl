@@ -57,8 +57,8 @@
 	link_poller/2,
 	empty_undo_buffer/1,
   
-  get_stc/1
-  
+  get_stc/1,
+  destroy/1
 	]).
 
 %% Macros	
@@ -114,6 +114,8 @@
 %% =====================================================================
 get_stc(This) ->
   wx_object:call(This, stc).
+destroy(This) ->
+  wx_object:call(This, shutdown).
 %% =====================================================================
 %% @doc Start a new editor process
 
@@ -454,15 +456,15 @@ init(Config) ->
 	?stc:setWrapMode(Editor, ide_sys_pref_gen:get_preference(line_wrap)),
 
 	%% Attach events
-  % ?stc:connect(Editor, stc_marginclick, []),
-  % ?stc:connect(Editor, left_down, [{skip, true}]),
-  % ?stc:connect(Editor, left_up, [{skip, true}]),
-  % ?stc:connect(Editor, motion, [{skip, true}]),
-  % ?stc:connect(Editor, stc_charadded, [callback]),
-  % ?stc:connect(Editor, char, [{skip, true}]),
-  % ?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
-  % ?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
-  % ?stc:connect(Editor, set_focus, [{skip, true}]),
+  ?stc:connect(Editor, stc_marginclick, []),
+  ?stc:connect(Editor, left_down, [{skip, true}]),
+  ?stc:connect(Editor, left_up, [{skip, true}]),
+  ?stc:connect(Editor, motion, [{skip, true}]),
+  ?stc:connect(Editor, stc_charadded, [callback]),
+  ?stc:connect(Editor, char, [{skip, true}]),
+  ?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
+  ?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
+  ?stc:connect(Editor, set_focus, [{skip, true}]),
 
 	%% Restrict the stc_chamge/stc_modified events to insert/delete text
 	?stc:setModEventMask(Editor, ?wxSTC_MOD_DELETETEXT bor ?wxSTC_MOD_INSERTTEXT),
@@ -489,9 +491,9 @@ handle_info(Msg, State) ->
   io:format("Got Info(Editor) ~p~n",[Msg]),
   {noreply,State}.
 
-% handle_call(shutdown, _From, State) ->
-%   io:format("SHUTDOWWWN~n"),
-%   {stop, normal, ok, State};
+handle_call(shutdown, _From, State) ->
+  io:format("SHUTDOWWWN~n"),
+  {stop, normal, ok, State};
 handle_call(is_dirty, _From, State=#state{dirty=Mod}) ->
   {reply,Mod,State};
 handle_call(text_content, _From, State=#state{stc=Editor}) ->

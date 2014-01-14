@@ -34,7 +34,9 @@
 				 apply_to_active_document/2,
          get_active_document/0,
          get_path/1,
-         set_selection/1]).
+         set_selection/1,
+         
+         test/0]).
 
 %% Records
 -record(document, {path :: string(),
@@ -53,6 +55,12 @@
 								sizer,
 								parent
                 }).
+
+%% TESTING
+test() ->
+  wx_object:call(?MODULE, teststc).
+
+
 
 
 %% =====================================================================
@@ -298,6 +306,12 @@ handle_cast({set_sel, Direction}, State=#state{notebook=Nb}) ->
   end,
   wxAuiNotebook:setSelection(Nb, Idx),
   {noreply, State}.
+  
+handle_call(teststc, _From, State) -> 
+  Stc = get(stc),
+  Text = wxStyledTextCtrl:getText(Stc),
+  io:format("TEXT: ~p~n", [Text]),
+  {noreply, State};
 
 handle_call({create_doc, Path, ProjectId}, _From,
 						State=#state{notebook=Nb, sizer=Sz, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
@@ -616,19 +630,25 @@ remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
   %% Grab the stc, so we can make sure it's deleted
   Rec = get_record(DocId, DocRecords),
   Ed = Rec#document.editor,
-  io:format("EDITOR1: ~p~n", [Ed]),
+  % io:format("EDITOR1: ~p~n", [Ed]),
   Stc = ide_editor_wx:get_stc(Ed),
+  put(stc, Stc),
+  
+  ide_editor_wx:destroy(Ed),
+  wxAuiNotebook:removePage(Nb, PageIdx),
   
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageIdx, PageToDocId),
-  wxAuiNotebook:deletePage(Nb, PageIdx),
+  % wxAuiNotebook:deletePage(Nb, PageIdx),
   
   %% Wait and see if we segfault when we attempt to read the text
-  receive after 4000 -> ok end,
-  Text = wxStyledTextCtrl:getText(Stc),
-  io:format("Text: ~n~p", [Text]),
+  % receive after 4000 -> ok end,
+  % Text = wxStyledTextCtrl:getText(Stc),
+  % io:format("Text: ~n~p", [Text]),
+  
   
   {NewDocRecords, NewPageToDocId}.
+  % {DocRecords, PageToDocId}.
 
 
 %% =====================================================================

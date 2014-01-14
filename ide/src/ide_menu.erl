@@ -326,7 +326,7 @@ build_toolbar(Frame) ->
 menu_groups() ->
   Groups = [
     {?MENU_GROUP_NOTEBOOK_EMPTY, [?wxID_SAVE, ?wxID_SAVEAS, ?MENU_ID_SAVE_ALL, 
-                                  ?MENU_ID_SAVE_PROJECT, ?wxID_PRINT, ?wxID_CLOSE, 
+                                  ?MENU_ID_SAVE_PROJECT,  ?wxID_CLOSE, 
                                   ?wxID_CLOSE_ALL, ?MENU_ID_QUICK_FIND, ?wxID_FIND,
                                   ?MENU_ID_FONT_BIGGER, ?MENU_ID_FONT_SMALLER, ?MENU_ID_INDENT_RIGHT,
                                   ?MENU_ID_INDENT_LEFT, ?MENU_ID_TOGGLE_COMMENT, ?MENU_ID_GOTO_LINE,
