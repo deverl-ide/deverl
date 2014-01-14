@@ -55,7 +55,10 @@
 	transform_selection/2,
 	fn_list/2,
 	link_poller/2,
-	empty_undo_buffer/1
+	empty_undo_buffer/1,
+  
+  get_stc/1
+  
 	]).
 
 %% Macros	
@@ -109,7 +112,8 @@
 %% =====================================================================
 %% Client API
 %% =====================================================================
-
+get_stc(This) ->
+  wx_object:call(This, stc).
 %% =====================================================================
 %% @doc Start a new editor process
 
@@ -394,24 +398,16 @@ empty_undo_buffer(This) ->
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Font = proplists:get_value(font, Config),
-
   Panel = wxPanel:new(Parent),
-
-  Sizer = wxBoxSizer:new(?wxVERTICAL),
-  wxPanel:setSizer(Panel, Sizer),
   Editor = ?stc:new(Panel, [{id, ?WINDOW_EDITOR}]), 
-  wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND}, {proportion, 1}]),
-  
   {Search, SearchRec} = quickfind_bar(Panel),
-  wxSizer:add(Sizer, Search, [{flag, ?wxEXPAND}, {proportion, 0}]),
-  wxSizer:hide(Sizer, 1),
 
 	%% Immutable editor styles
   ?stc:setLexer(Editor, ?wxSTC_LEX_ERLANG), %% This lexer needs a lot of work, e.g. better folding support, proper display of ctrl chars etc.
 	?stc:setKeyWords(Editor, 0, keywords()),
-	  ?stc:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
+  ?stc:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
 	?stc:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text         							
-	  ?stc:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),   	
+  ?stc:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),   	
 	?stc:setMarginWidth(Editor, 1, 10),
 	?stc:setMarginType(Editor, 1, ?wxSTC_MARGIN_SYMBOL),
 	?stc:setMarginMask(Editor, 1, (bnot ?wxSTC_MASK_FOLDERS) - 4),
@@ -458,15 +454,15 @@ init(Config) ->
 	?stc:setWrapMode(Editor, ide_sys_pref_gen:get_preference(line_wrap)),
 
 	%% Attach events
-  ?stc:connect(Editor, stc_marginclick, []),
-  ?stc:connect(Editor, left_down, [{skip, true}]),
-  ?stc:connect(Editor, left_up, [{skip, true}]),
-  ?stc:connect(Editor, motion, [{skip, true}]),
-  ?stc:connect(Editor, stc_charadded, [callback]),
-  ?stc:connect(Editor, char, [{skip, true}]),
-	?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
-	?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
-	?stc:connect(Editor, set_focus, [{skip, true}]),
+  % ?stc:connect(Editor, stc_marginclick, []),
+  % ?stc:connect(Editor, left_down, [{skip, true}]),
+  % ?stc:connect(Editor, left_up, [{skip, true}]),
+  % ?stc:connect(Editor, motion, [{skip, true}]),
+  % ?stc:connect(Editor, stc_charadded, [callback]),
+  % ?stc:connect(Editor, char, [{skip, true}]),
+  % ?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
+  % ?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
+  % ?stc:connect(Editor, set_focus, [{skip, true}]),
 
 	%% Restrict the stc_chamge/stc_modified events to insert/delete text
 	?stc:setModEventMask(Editor, ?wxSTC_MOD_DELETETEXT bor ?wxSTC_MOD_INSERTTEXT),
@@ -477,6 +473,12 @@ init(Config) ->
 	%% Keyboard mapping
 	% ?stc:cmdKeyClearAll(Editor),
 	?stc:cmdKeyAssign(Editor, 79, ?wxSTC_SCMOD_CTRL, ?wxSTC_CMD_SELECTALL),
+  
+  Sizer = wxBoxSizer:new(?wxVERTICAL),
+  wxSizer:add(Sizer, Editor, [{flag, ?wxEXPAND}, {proportion, 1}]),
+  wxSizer:add(Sizer, Search, [{flag, ?wxEXPAND}, {proportion, 0}]),
+  wxSizer:hide(Sizer, 1),
+  wxPanel:setSizer(Panel, Sizer),
 
   {Panel, #state{parent_panel=Panel, 
                  stc=Editor,
@@ -487,8 +489,9 @@ handle_info(Msg, State) ->
   io:format("Got Info(Editor) ~p~n",[Msg]),
   {noreply,State}.
 
-handle_call(shutdown, _From, State=#state{parent_panel=Panel}) ->
-  {stop, normal, ok, State};
+% handle_call(shutdown, _From, State) ->
+%   io:format("SHUTDOWWWN~n"),
+%   {stop, normal, ok, State};
 handle_call(is_dirty, _From, State=#state{dirty=Mod}) ->
   {reply,Mod,State};
 handle_call(text_content, _From, State=#state{stc=Editor}) ->
@@ -682,8 +685,11 @@ handle_event(_E,State) ->
 code_change(_, _, State) ->
   {ok, State}.
 
-terminate(_Reason, #state{parent_panel=Panel}) ->
-  wxPanel:destroy(Panel).
+terminate(_Reason, #state{stc=Ed, parent_panel=Panel}) ->
+  io:format("DESTROYING EDITOR~n"),
+  % ?stc:destroy(Ed),
+  % wxPanel:destroy(Panel),
+  ok.
   
 %% =====================================================================
 %% Internal functions
