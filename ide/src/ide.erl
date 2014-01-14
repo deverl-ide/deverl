@@ -125,7 +125,6 @@ init(Options) ->
   Xrc = wxXmlResource:get(),
   wxXmlResource:initAllHandlers(Xrc),
   true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("dlgs.xrc")),
-  % true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("derivdlg.xrc")),
 
 	Frame = wxFrame:new(Wx, ?wxID_ANY, ?FRAME_TITLE, [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
 	wxFrame:connect(Frame, close_window),
