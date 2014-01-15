@@ -1,0 +1,7 @@
+%% encoding: UTF-8
+{application,ide}.
+{packages,[]}.
+{modules,[ide,ide_app,ide_console_sup,ide_dlg_about_wx,ide_dlg_data_find_wx,
+          ide_dlg_find_wx,ide_editor_theme,ide_file_poll_sup,ide_observer,
+          ide_pref_debugger_wx,ide_pref_editor_wx,ide_pref_general_wx,
+          ide_sup]}.
