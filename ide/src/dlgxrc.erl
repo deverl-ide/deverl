@@ -31,6 +31,10 @@
 %% Macros							 
 -define(ID_BROWSE, 200).
 
+%% TESTING segfaults
+test_get_dlg(This) ->
+  wx_object:call(This, dlg).
+
 %% =====================================================================
 %% Client API
 %% =====================================================================
@@ -50,33 +54,35 @@ destroy(This) -> %% was stop/1
 %% =====================================================================
 
 init(Config) ->
-  wx:batch(fun() -> do_init(Config) end).
+  % wx:batch(fun() -> do_init(Config) end),
+  do_init(Config).
 
 do_init(Config) ->
   Parent = Config,
   
   Xrc = wxXmlResource:get(),
-  Dlg = wxDialog:new(),
-  dlg_ld:win_var(Dlg),
+  % Dlg = wxDialog:new(),
+  % dlg_ld:win_var(Dlg),
 
   %% Load XRC (Assumes all XRC handlers init previously)
-  true = wxXmlResource:loadDialog(Xrc, Dlg, Parent, "new_project"),
+  Dlg = wxXmlResource:loadDialog(Xrc, Parent, "new_project"),
   
   Path = ide_sys_pref_gen:get_preference(project_directory),
   PathTc = wxXmlResource:xrcctrl(Dlg, "path_tc", wxTextCtrl),
   NameTc = wxXmlResource:xrcctrl(Dlg, "name_tc", wxTextCtrl),
+  io:format("NAMETC: ~p~n", [NameTc]),
     
   Dir  = wxTextCtrl:new(Dlg, ?wxID_ANY, []),
-  wxTextCtrl:connect(Dir, command_text_updated, [{userData,path_tc},{skip,false}]),
+  wxTextCtrl:connect(Dir, command_text_updated),
   
-  wxTextCtrl:setValue(PathTc, Path), %% Callbacks work, but still get seg fault, see terminate/2
+  wxTextCtrl:setValue(PathTc, Path), %% Callbacks still get seg fault, see terminate/2
   Fn = fun(_E,_O) ->
     io:format("RAAA!")
   end,
-  wxTextCtrl:connect(NameTc, command_text_updated, [{userData,path_tc},{callback,Fn}]),
-  % wxTextCtrl:connect(NameTc, command_text_updated),
-  % wxDialog:connect(PathTc, command_text_updated, [{userData,path_tc},{skip,false}]),
-  % wxDialog:connect(NameTc, command_text_updated, [{userData,name_tc},{skip,false}]),
+  % wxTextCtrl:connect(NameTc, command_text_updated, [{callback,Fn}]),
+  % wxTextCtrl:connect(NameTc, command_text_updated), % segfault
+  % wxTextCtrl:connect(NameTc, command_text_enter), % segfault
+  wxTextCtrl:connect(NameTc, set_focus), % segfault
 
   %% checkbox callback
   OnMyCheckBox = fun(_EvRec, _Event) ->
@@ -98,7 +104,7 @@ do_init(Config) ->
     end
   end,
   wxDialog:connect(Dlg, command_button_clicked, 
-        [{id,wxXmlResource:getXRCID("browse_btn")}, {callback, Browse}]),
+        [{id,wxXmlResource:getXRCID("browse_btn")}]),
         
   State=#state{frame=Parent,
                dlg=Dlg,
@@ -107,27 +113,41 @@ do_init(Config) ->
                },
 
   {Dlg, State}.
-  
-handle_event(#wx{id=?wxID_OK, event=#wxCommand{}}, 
-             State=#state{dlg=Dlg, name_tc=Tc0, path_tc=Tc1}) ->
-   N = wxTextCtrl:getValue(Tc0), 
-  P = wxTextCtrl:getValue(Tc1), 
-  wxDialog:endModal(Dlg, ?wxID_OK),
-  {noreply, State#state{name_input=N, path_input=P}};
-handle_event(#wx{event=#wxCommand{}, userData=name_tc}, State) ->
-  io:format( "Evt name_tc~n"),
+
+handle_event(#wx{event=#wxCommand{type=command_button_clicked}}, State) ->
+  io:format("command_button_clicked~n"),
   {noreply, State};
-handle_event(#wx{event=#wxCommand{type=command_text_updated, cmdString=_Str}, userData=path_tc}, 
-% handle_event(#wx{event=#wxCommand{}, userData=path_tc}, 
-             State=#state{dlg=_Dlg, name_tc=_Tc0, path_tc=_Tc1}) ->
-  io:format( "Evt path_tc~n"),
-  {noreply, State}.
+handle_event(#wx{event=#wxCommand{type=command_text_updated, cmdString=Wanted}}, State) ->
+  io:format("command_text_updated~n"),
+  {noreply, State};
+handle_event(#wx{event=#wxFocus{}}, State) ->
+ io:format("set_focus~n"),
+ {noreply, State}.
+    
+% handle_event(#wx{id=?wxID_OK, event=#wxCommand{}}, 
+%              State=#state{dlg=Dlg, name_tc=Tc0, path_tc=Tc1}) ->
+%    N = wxTextCtrl:getValue(Tc0), 
+%   P = wxTextCtrl:getValue(Tc1), 
+%   wxDialog:endModal(Dlg, ?wxID_OK),
+%   {noreply, State#state{name_input=N, path_input=P}};
+% handle_event(#wx{event=#wxCommand{}, userData=name_tc}, State) ->
+%   io:format( "Evt name_tc~n"),
+%   {noreply, State};
+% handle_event(#wx{event=#wxCommand{type=command_text_updated, cmdString=_Str}, userData=path_tc}, 
+% % handle_event(#wx{event=#wxCommand{}, userData=path_tc}, 
+%              State=#state{dlg=_Dlg, name_tc=_Tc0, path_tc=_Tc1}) ->
+%   io:format( "Evt path_tc~n"),
+%   {noreply, State}.
   
 handle_info(_Msg, State) ->
   {noreply,State}.
 
+%% TEST
+handle_call(dlg, _From, State) ->
+  {reply, State#state.dlg, State};
+   
 handle_call(shutdown, _From, State) ->
-   {stop, normal, ok, State}.
+  {stop, normal, ok, State}.
 
 handle_cast(_Msg, State) ->
   {noreply,State}.
@@ -136,9 +156,15 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 
 terminate(_Reason, State) ->
+<<<<<<< HEAD
   
   %% NOTE!!!! On OSX the call to destory cause a seg fault when using
   %% XRC. This means we can't safely destroy the object (memory leak).
+=======
+  %% NOTE!!!! On OSX the call to destroy cause a seg fault when using
+  %% XRC. (when an event is connected to an xrc textctrl object.
+  %% This means we can't safely destroy the object (memory leak).
+>>>>>>> 5f3d82132cd30464ac2f0b074a81e5dff92477c0
   %% This is  a bummer. It only occurs in this instance when the 
   %% command_text_updated event handler is attached. So its possible
   %% an event is received after it being destroyed. Tried to debug
