@@ -689,8 +689,10 @@ code_change(_, _, State) ->
 
 terminate(_Reason, #state{stc=Ed, parent_panel=Panel}) ->
   io:format("DESTROYING EDITOR~n"),
-  % ?stc:destroy(Ed),
-  % wxPanel:destroy(Panel),
+
+  receive after 5000 -> ok end, %% Prevent segfault on OSX
+  wxPanel:destroy(Panel),
+  
   ok.
   
 %% =====================================================================

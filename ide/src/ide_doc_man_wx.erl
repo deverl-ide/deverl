@@ -634,12 +634,14 @@ remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
   Stc = ide_editor_wx:get_stc(Ed),
   put(stc, Stc),
   
-  ide_editor_wx:destroy(Ed),
-  wxAuiNotebook:removePage(Nb, PageIdx),
+  % receive after 5000 -> ok end,
+  
+  % wxAuiNotebook:removePage(Nb, PageIdx), %% These 2 lines === to deletePage/2
+  % ide_editor_wx:destroy(Ed),
   
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageIdx, PageToDocId),
-  % wxAuiNotebook:deletePage(Nb, PageIdx),
+  wxAuiNotebook:deletePage(Nb, PageIdx),
   
   %% Wait and see if we segfault when we attempt to read the text
   % receive after 4000 -> ok end,

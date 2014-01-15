@@ -82,21 +82,22 @@ start(Config)->
 -spec new_project(wxFrame:wxFrame()) -> ok.
 
 new_project(Parent) ->
-	Dialog = ide_dlg_new_proj_wx:start(Parent),
-	ide_dlg_new_proj_wx:set_focus(Dialog),
-	case ide_dlg_new_proj_wx:showModal(Dialog) of
-		?wxID_CANCEL ->
-      ok;
-		?wxID_OK ->
+  Dlg = ide_dlg_new_proj_wx:new(Parent),
+  case wxDialog:showModal(Dlg) of
+    ?wxID_OK ->
+      Path =  ide_dlg_new_proj_wx:get_path(Dlg),
       try
-    		Path = ide_io:create_directory_structure(ide_dlg_new_proj_wx:get_path(Dialog)),
+        Path = ide_io:create_directory_structure(ide_dlg_new_proj_wx:get_path(Dlg)),
         add_project(Path)
       catch
         throw:E ->
-    			ide_lib_dlg_wx:msg_error(Parent, E)
-      end,
-			ide_dlg_new_proj_wx:close(Dialog)
-	end.
+          ide_lib_dlg_wx:msg_error(Parent, E)
+      end;
+    ?wxID_CANCEL ->
+      ok
+  end,
+  ide_dlg_new_proj_wx:destroy(Dlg),
+  ok.
 
 
 %% =====================================================================
