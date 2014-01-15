@@ -135,7 +135,7 @@ handle_cast(_Msg, State) ->
 code_change(_, _, State) ->
   {stop, ignore, State}.
 
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
   
   %% NOTE!!!! On OSX the call to destory cause a seg fault when using
   %% XRC. This means we can't safely destroy the object (memory leak).
