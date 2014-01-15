@@ -350,12 +350,6 @@ handle_event(#wx{id=?MENU_ID_SAVE_PROJECT}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?wxID_PRINT}, State) ->
-  
-  %% TESTING
-  % ide_doc_man_wx:test(),
-  % R = ide_dialyzer:check_plt(),
-    dlg_ld:show_dlg(State#state.frame, whatever),
-  
   {noreply, State};
   
 handle_event(#wx{id=?wxID_CLOSE}, State) ->
@@ -514,6 +508,23 @@ handle_event(#wx{id=?MENU_ID_MAKE_PROJECT}, State) ->
 handle_event(#wx{id=?MENU_ID_RUN}, State) ->
   ide_build:run_project(State#state.frame),
   {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_DIALYZER}, State) ->
+  %% TESTING DESTROY FOR OBJECTs
+  % ide_doc_man_wx:test(),
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_ADD_TO_PLT}, State) ->
+  %% TESTING destroy for dialogs
+  dlg_ld:show_dlg(State#state.frame, whatever),
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_PLT_INFO}, State) ->
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_DIAL_WARN}, State) ->
+  {noreply, State};
+  
   
 handle_event(#wx{id=?MENU_ID_NEXT_TAB}, State) ->
   ide_doc_man_wx:set_selection(right),

@@ -219,20 +219,20 @@ build_menu(Frame) ->
   wxMenu:append(RunMenu, ?MENU_ID_RUN, "Run Project"),
   
   Dialyser = wxMenu:new([]),
-  wxMenu:append(Dialyser, ?wxID_ANY, "Run Dialyzer\tF3"),
-  wxMenu:append(Dialyser, ?wxID_ANY, "Add to PLT"),
-  wxMenu:append(Dialyser, ?wxID_ANY, "PLT Info"),
-  wxMenu:append(Dialyser, ?wxID_ANY, "Warning Options"),
+  wxMenu:append(Dialyser, ?MENU_ID_DIALYZER, "Run Dialyzer\tF3"),
+  wxMenu:append(Dialyser, ?MENU_ID_ADD_TO_PLT, "Add to PLT"),
+  wxMenu:append(Dialyser, ?MENU_ID_PLT_INFO, "PLT Info"),
+  wxMenu:append(Dialyser, ?MENU_ID_DIAL_WARN, "Warning Options"),
   
   Wrangler    = wxMenu:new([]),
   wxMenu:append(Wrangler, ?MENU_ID_WRANGLER, "WRANGLER"),
 
   ToolMenu    = wxMenu:new([]),
-  wxMenu:append(ToolMenu, ?MENU_ID_TESTS, "Run Tests\tF4"),
-  wxMenu:append(ToolMenu, ?MENU_ID_DEBUGGER, "Run Debugger\tF5"),
-  wxMenu:append(ToolMenu, ?wxID_SEPARATOR, []),
   wxMenu:append(ToolMenu, ?wxID_ANY, "Dialyzer", Dialyser),
   wxMenu:append(ToolMenu, ?wxID_ANY, "Wrangler", Wrangler),
+  wxMenu:append(ToolMenu, ?wxID_SEPARATOR, []),
+  wxMenu:append(ToolMenu, ?MENU_ID_TESTS, "Run Tests\tF4"),
+  wxMenu:append(ToolMenu, ?MENU_ID_DEBUGGER, "Run Debugger\tF5"),
 
 	Window      = wxMenu:new([]),
 	wxMenu:append(Window, ?MENU_ID_PROJECTS_WINDOW, "Browser\tCtrl+1"),

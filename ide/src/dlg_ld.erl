@@ -19,67 +19,18 @@
 %   dlgxrc:start(Frame, Env),
 %   ok.
   
-  
 show_dlg(Frame, _Name) ->
   Dlg = dlgxrc:new(Frame),
   case wxDialog:showModal(Dlg) of
     ?wxID_OK ->
       io:format("OK~n");
     ?wxID_CANCEL ->
-      io:format("CANCEL~n")
+      D = dlgxrc:test_get_dlg(Dlg),
+      io:format("CANCEL: ~p~n", [D])
   end,
   dlgxrc:destroy(Dlg),
   ok.
   
-  
-% show_dlg(Frame, Name) ->
-%   %% build name
-%   Env = wx:get_env(),
-%   Pid = dlgxrc:start(Frame, Env),
-%   Pid ! {self(), get},
-%   receive
-%     {Dlg, Id} ->
-%       case wxDialog:showModal(Dlg) of
-%         ?wxID_OK ->
-%           io:format("OK~n");
-%         ?wxID_CANCEL ->
-%           io:format("CANCEL~n")
-%       end,
-%       Id
-%   end,
-%   % wxDialog:destroy(Dlg),
-%   
-%     
-%   Pid ! stop,
-%   
-%   % receive after 100 -> ok end,
-%   
-%   kill_wait(Pid),
-%   
-%   case is_process_alive(Pid) of
-%     true -> 
-%       io:format("not_dead~n");
-%     _ -> 
-%       io:format("dead~n")
-%   end,
-%   
-%   % W = wxWindow:findWindowById(Id),
-%   % io:format("W: ~p~n", [W]),
-%   
-%   wxWindow:'Destroy'(Dlg),
-%   
-%   Q = wxWindow:findWindowById(Id),
-%   % io:format("W: ~p~n", [Q]),
-%   
-%   % receive after 100 -> ok end,
-%   % 
-%   % wxDialog:destroy(Dlg),
-%   
-%   %% This still shows
-%   % wxDialog:showModal(Dlg),
-%   ok.
-
-
 win_var(Dlg) ->
   %% Smaller dialogs etc look better on OSX
   case os:type() of
