@@ -156,15 +156,11 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 
 terminate(_Reason, State) ->
-<<<<<<< HEAD
-  
-  %% NOTE!!!! On OSX the call to destory cause a seg fault when using
-  %% XRC. This means we can't safely destroy the object (memory leak).
-=======
+
   %% NOTE!!!! On OSX the call to destroy cause a seg fault when using
   %% XRC. (when an event is connected to an xrc textctrl object.
   %% This means we can't safely destroy the object (memory leak).
->>>>>>> 5f3d82132cd30464ac2f0b074a81e5dff92477c0
+  
   %% This is  a bummer. It only occurs in this instance when the 
   %% command_text_updated event handler is attached. So its possible
   %% an event is received after it being destroyed. Tried to debug

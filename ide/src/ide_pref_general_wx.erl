@@ -15,6 +15,12 @@
 %% Client API
 %% =====================================================================
 
+%% =====================================================================
+%% @doc
+
+-spec start(Config) -> wxWindow:wxWindow() when
+  Config :: list().
+
 start(Config) ->
   wx_object:start_link(?MODULE, Config, []).
 
@@ -68,7 +74,7 @@ handle_cast(Msg, State) ->
   {noreply,State}.
 
 code_change(_, _, State) ->
-  {stop, ignore, State}.
+  {ok, State}.
 
 terminate(_Reason, _) ->
   ok.

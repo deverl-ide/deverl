@@ -3,7 +3,7 @@
 %% @copyright
 %% @title
 %% @version
-%% @doc 
+%% @doc
 %% @end
 %% =====================================================================
 
@@ -15,10 +15,10 @@
 -behaviour(wx_object).
 -export([
 	 init/1, terminate/2,  code_change/3,
-	 handle_info/2, handle_call/3, handle_cast/2, 
+	 handle_info/2, handle_call/3, handle_cast/2,
 	 handle_event/2, handle_sync_event/3]).
-	
-%% API 
+
+%% API
 -export([
 	new/1,
 	add_page/4,
@@ -27,7 +27,7 @@
 ]).
 
 %% Server state
--record(state, {tabs, 
+-record(state, {tabs,
 								content,
 								image_list,
 								active_btn,
@@ -39,12 +39,15 @@
 %% Client API
 %% =====================================================================
 
+%% =====================================================================
+%% @doc
+
 new(Config) ->
-	wx_object:start_link(?MODULE, Config, []).  
-	
+	wx_object:start_link(?MODULE, Config, []).
+
 
 %% =====================================================================
-%% @doc Add a page.	
+%% @doc Add a page.
 
 add_page(This, Page, Text, Options) ->
 	wx_object:cast(This, {add_page, {Page, Text, Options}}).
@@ -55,10 +58,10 @@ add_page(This, Page, Text, Options) ->
 
 assign_image_list(This, ImgList) ->
 	wx_object:cast(This, {image_list, ImgList}).
-	
+
 
 %% =====================================================================
-%% @doc Set the selected page.		
+%% @doc Set the selected page.
 
 set_selection(This, Index) ->
 	wx_object:cast(This, {set_selection, Index}).
@@ -70,27 +73,27 @@ set_selection(This, Index) ->
 
 init(Options) ->
 	Parent = proplists:get_value(parent, Options),
-	
+
 	MainPanel = wxPanel:new(Parent, []),
 	MainSz = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(MainPanel, MainSz),
-		
+
 	Tabs = wxPanel:new(MainPanel),
   wxWindow:setBackgroundColour(Tabs, ide_lib_widgets:colour_shade(wxSystemSettings:getColour(?wxSYS_COLOUR_WINDOW), 0.8)),
 	Sz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxPanel:setSizer(Tabs, Sz),
 	wxSizer:add(MainSz, Tabs, [{proportion, 0}, {flag, ?wxEXPAND}]),
-	
+
 	Content = wxPanel:new(MainPanel),
 	ContentSz = wxBoxSizer:new(?wxVERTICAL),
 	wxPanel:setSizer(Content, ContentSz),
 	wxSizer:add(MainSz, Content, [{proportion, 1}, {flag, ?wxEXPAND}]),
-	
+
 	State=#state{tabs={Tabs, Sz},
 							 content={Content, ContentSz},
 							 pages=[]
 	},
-    
+
   {MainPanel, State}.
 
 
@@ -102,7 +105,7 @@ handle_call(Msg, _From, State) ->
   io:format("Got Call ~p~n",[Msg]),
   {reply,ok,State}.
 
-handle_cast({add_page, {Page, Text, Options}}, 
+handle_cast({add_page, {Page, Text, Options}},
 						State=#state{tabs={TabPanel, TabSz}, content={Content, ContentSz}, pages=Pages}) ->
 	{Button, Label} = create_button(TabPanel, TabSz, Text, Options),
 	SzFlags = wxSizerFlags:new([{proportion, 1}]),
@@ -115,7 +118,7 @@ handle_cast({add_page, {Page, Text, Options}},
 	Tip = wxToolTip:new(Label),
 	wxWindow:setToolTip(Button, Tip),
   {noreply,State#state{pages=UpdatedPages}};
-handle_cast({set_selection, Index}, 
+handle_cast({set_selection, Index},
 						State=#state{tabs={Tabs, _}, active_btn=ActiveBtn, pages=Pages, content={Cont, _}}) ->
 	NewActiveBtn = try
 		{Button, _} = lists:nth(Index, lists:reverse(Pages)),
@@ -147,7 +150,7 @@ handle_sync_event(#wx{obj=Btn, userData={Label, Options}, event=#wxPaint{}}, _,
 	end,
 	ok.
 
-handle_event(#wx{obj=Btn, event=#wxMouse{type=left_down}}, 
+handle_event(#wx{obj=Btn, event=#wxMouse{type=left_down}},
 						 State=#state{pages=Pages, active_btn=ActiveBtn, tabs={Tabs, _}, content={Cont,_}}) ->
 	change_selection(ActiveBtn, Btn, Pages, Tabs, Cont),
 	{noreply, State#state{active_btn=Btn}};
@@ -171,11 +174,11 @@ terminate(_Reason, _State) ->
 
 %% =====================================================================
 %% Internal functions
-%% =====================================================================		
+%% =====================================================================
 
 %% =====================================================================
 %% @doc Create button.
-	
+
 create_button(Parent, Sz, Label, Options) ->
 	SzFlags = wxSizerFlags:new([{proportion, 0}]),
 	wxSizerFlags:right(SzFlags),
@@ -184,20 +187,20 @@ create_button(Parent, Sz, Label, Options) ->
   wxPanel:connect(Btn, paint, [callback, {userData, {Label, Options}}]),
 	wxPanel:connect(Btn, left_down, [{skip, true}, {userData, {Label, Options}}]),
 	{Btn, Label}.
-	
-	
+
+
 %% =====================================================================
-%% @doc Draw the tab graphic.		
+%% @doc Draw the tab graphic.
 %% Default {active, false}
 draw(Btn, _Label, ImageList, WxDc, Bg, Options) ->
   wxWindow:setBackgroundColour(Btn, Bg),
   {W,_H} = wxWindow:getSize(Btn),
-  
+
   %% Deselected button style
   % FillD = {190,190,190},
   % LineD = {155,155,155},
   %% Selected button style
-  FillA = {170,170,170},  
+  FillA = {170,170,170},
   LineA = {100,100,100},
 
 	%% wxDC must be created in a callback to work on windows.
@@ -209,43 +212,43 @@ draw(Btn, _Label, ImageList, WxDc, Bg, Options) ->
     wxDC:gradientFillLinear(DC, {2,17,W-5,11}, C1, Blend, [{nDirection, ?wxDOWN}]),
 
     wxDC:gradientFillLinear(DC, {2,4,1,13}, Blend, C2, [{nDirection, ?wxDOWN}]),
-    wxDC:gradientFillLinear(DC, {2,17,1,14}, C2, Blend, [{nDirection, ?wxDOWN}]),    
+    wxDC:gradientFillLinear(DC, {2,17,1,14}, C2, Blend, [{nDirection, ?wxDOWN}]),
 
     wxDC:gradientFillLinear(DC, {W-3,4,1,13}, Blend, C2, [{nDirection, ?wxDOWN}]),
     wxDC:gradientFillLinear(DC, {W-3,17,1,14}, C2, Blend, [{nDirection, ?wxDOWN}])
   end,
-  
+
   case proplists:get_value(active, Options, false) of
-    false -> 
+    false ->
       % Draw(FillD, LineD, Bg),
       ok;
-    true ->   
+    true ->
       Draw(FillA, LineA, Bg)
   end,
-	
+
 	case proplists:get_value(imageId, Options) of
-		undefined -> 
+		undefined ->
 			ok;
-		Id -> 
+		Id ->
 			Bitmap = wxImageList:getBitmap(ImageList, Id),
 			wxDC:drawBitmap(DC, Bitmap, {9,9}, [{useMask, true}]),
 			ok
 	end,
-	
+
 	%% Nothing is drawn until wxDC is destroyed.
 	WxDc:destroy(DC),
 	ok.
 
-	
+
 %% =====================================================================
 %% @doc Get the page associated to a button.
 %% @private
 
-get_page(Pages, Button) -> 
+get_page(Pages, Button) ->
 	{Page, _} = proplists:get_value(Button, Pages),
 	Page.
-	
-	
+
+
 %% =====================================================================
 %% @doc Change the selected page.
 %% Swaps contents, triggers a paint event.

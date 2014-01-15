@@ -39,6 +39,9 @@
 %% =====================================================================
 %% @doc
 
+-spec start(Config) -> wxWindow:wxWindow() when
+  Config :: list().
+
 start(Config) ->
   wx_object:start_link(?MODULE, Config, []).
 
@@ -166,7 +169,7 @@ handle_cast(Msg, State) ->
   {noreply,State}.
 
 code_change(_, _, State) ->
-  {stop, ignore, State}.
+  {ok, State}.
 
 terminate(_Reason, _) ->
   ok.
@@ -179,6 +182,8 @@ terminate(_Reason, _) ->
 %% =====================================================================
 %% @doc
 
+-spec add_bold_label(wxWindow:wxWindow(), wxSizer:wxSizer(), string()) -> wxSizerItem:wxSizerItem().
+
 add_bold_label(Parent, Sz, Name) ->
   Label = wxStaticText:new(Parent, ?wxID_ANY, Name),
   Font = wxStaticText:getFont(Label),
@@ -190,6 +195,8 @@ add_bold_label(Parent, Sz, Name) ->
 
 %% =====================================================================
 %% @doc
+
+-spec get_font_string(wxFont:wxFont()) -> io_lib:chars().
 
 get_font_string(Font) ->
   io_lib:format("~s ~p pt.", [wxFont:getFaceName(Font), wxFont:getPointSize(Font)]).

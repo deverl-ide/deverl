@@ -4,7 +4,7 @@
 %% @title ide_compiler_port
 %% @version
 %% @doc This module connects to erlc through a port and prints the
-%% response to an output window until an exit signal is received. A
+%% response to an output window until an exit signal is received. An
 %% acknowledgment of success or failure is then sent to the calling
 %% process.
 %% @end

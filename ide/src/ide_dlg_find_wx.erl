@@ -22,12 +22,36 @@
 %% Client API
 %% =====================================================================
 
+-spec new(wxFrame:wxFrame()) -> wxWindow:wxWindow().
+
 new(Parent) ->
   new(Parent, []).
+
+-spec new(wxFrame:wxFrame(), list()) -> wxWindow:wxWindow().
 
 new(Parent, Data) ->
   wx_object:start({local, ?MODULE}, ?MODULE, {Parent, Data}, []).
 
+
+%% =====================================================================
+%% @doc Get the reference to a living dialog.
+
+-spec get_ref(wxDialog:wxDialog()) -> wxDialog:wxDialog().
+
+get_ref(This) ->
+  wx_object:call(This, ref).
+  
+  
+%% =====================================================================
+%% @doc Display the dialog
+
+-spec show(wxDialog:wxDialog()) -> ok.
+
+show(This) ->
+	wxDialog:show(This),
+	%% Set focus to the correct input
+	wxWindow:setFocusFromKbd(wx_object:call(This, to_focus)).
+  
 
 %% =====================================================================
 %% Callback functions
@@ -102,12 +126,7 @@ do_init(Config) ->
   % wxPanel:connect(Panel, command_button_clicked, [{callback, fun(E,O) -> io:format("E: ~p~nO:~p~n", [E,O]),wxEvent:skip(O) end}]),  
   
   {Dialog, #state{frame=Dialog, data=Data, to_focus=ToFocus}}.
- 
-%% =====================================================================
-%% @doc Get the reference to a living dialog.
 
-get_ref(This) ->
-  wx_object:call(This, ref).
 
 %% =====================================================================
 %% @doc Initialise the dialog
@@ -130,31 +149,6 @@ init_data(Parent, Data) ->
         wxChoice:setSelection(get_window_as(?FIND_LOC, Parent, wxChoice), D)
   end,
   [ F(X) || X <- Dl ].
-  
- 
-%% =====================================================================
-%% @doc Get a child from a window by Id
-%% This is a useful utility function, and therefore might be better in a seperate
-%% library module, accessable by all.
-%% @private
-
--spec get_window_as(Id, Parent, Type) -> Result when
-  Id :: integer(),
-  Parent :: wxWindow:wxWindow(),
-  Type :: wxWindow:wxWindow(),
-  Result :: wxWindow:wxWindow(). %% :: Type
- 
-get_window_as(Id, Parent, Type) ->
-   wx:typeCast(wxWindow:findWindowById(Id, [{parent, Parent}]), Type).
-  
-
-%% =====================================================================
-%% @doc Display the dialog
-
-show(This) ->
-	wxDialog:show(This),
-	%% Set focus to the correct input
-	wxWindow:setFocusFromKbd(wx_object:call(This, to_focus)).
 
  
 %% =====================================================================
@@ -237,8 +231,28 @@ handle_cast(Msg, State) ->
   {noreply,State}.
 
 code_change(_, _, State) ->
-  {stop, ignore, State}.
+  {ok, State}.
 
 terminate(_Reason, #state{frame=Dialog}) ->
   erlang:unregister(?MODULE),
   wxDialog:destroy(Dialog).
+
+
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
+
+%% =====================================================================
+%% @doc Get a child from a window by Id
+%% This is a useful utility function, and therefore might be better in a seperate
+%% library module, accessable by all.
+%% @private
+
+-spec get_window_as(Id, Parent, Type) -> Result when
+  Id :: integer(),
+  Parent :: wxWindow:wxWindow(),
+  Type :: wxWindow:wxWindow(),
+  Result :: wxWindow:wxWindow(). %% :: Type
+ 
+get_window_as(Id, Parent, Type) ->
+   wx:typeCast(wxWindow:findWindowById(Id, [{parent, Parent}]), Type).
