@@ -117,7 +117,7 @@ add_project(Path) ->
 -spec open_project_dialog(wxFrame:wxFrame()) -> ok.
 
 open_project_dialog(Frame) ->
-  Dlg = ide_dlg_open_proj_wx:start(Frame, ide_sys_pref_gen:get_preference(projects)),
+  Dlg = ide_dlg_open_proj_wx:new(Frame, ide_sys_pref_gen:get_preference(projects)),
   case wxDialog:showModal(Dlg) of
     ?wxID_CANCEL ->
       ide_dlg_open_proj_wx:destroy(Dlg);

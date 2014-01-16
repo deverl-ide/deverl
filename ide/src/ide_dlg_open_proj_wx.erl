@@ -3,7 +3,7 @@
 %% @copyright
 %% @title
 %% @version
-%% @doc The open project dialog.
+%% @doc The open project dlg.
 %% @end
 %% =====================================================================
 
@@ -18,17 +18,14 @@
 				 
 %% API
 -export([
-  start/2,
+  new/2,
   set_focus/1,
   get_path/1,
   destroy/1
   ]).
-			
-%% inherited functions
--export([show/1, showModal/1]).
 	
 %% Server state			 
--record(state, {dialog,
+-record(state, {dlg,
                 path,
                 list_ctrl
             	 }).
@@ -38,7 +35,7 @@
 %% Client API
 %% =====================================================================
 
-start(Parent, Projects) ->
+new(Parent, Projects) ->
   wx_object:start({local, ?MODULE}, ?MODULE, {Parent, Projects}, []).
 
 set_focus(This) ->
@@ -55,40 +52,14 @@ destroy(This) ->
 %% Callback functions
 %% =====================================================================
 
-init(Config) ->
-  wx:batch(fun() -> do_init(Config) end).
+init({Parent, Projects}) ->    
+  Xrc = wxXmlResource:get(),
+  Dlg = wxDialog:new(),
+  ide_lib_dlg_wx:win_var(Dlg),
+  wxXmlResource:loadDialog(Xrc, Dlg, Parent, "open_project"),
 
-do_init({Parent, Projects}) ->
-	Dialog = wxDialog:new(Parent, ?wxID_ANY, "Open Project", 
-		[{size,{640,460}}, {style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}]),
-	wxDialog:centre(Dialog),
-	
-	%% Conditional compilation OSX
-	case os:type() of
-		{_, darwin} ->
-			wxPanel:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL);
-		 _ -> ok
-	end,
-	
-  LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  wxSizer:addSpacer(LRSizer, 20),
-
-  VertSizer = wxBoxSizer:new(?wxVERTICAL),
-  
-	%% Header
-  wxSizer:addSpacer(VertSizer, 40),
-	wxSizer:add(VertSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Open Project"), []),
-	wxSizer:addSpacer(VertSizer, 5),
-  wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 
-              [{flag, ?wxEXPAND}]),
-  wxSizer:addSpacer(VertSizer, 20),
-	
-	%% Project list
-	wxSizer:add(VertSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Select a project:"), []),
-	wxSizer:addSpacer(VertSizer, 5),  
-  
-	ListCtrl = wxListCtrl:new(Dialog,[{style, ?wxLC_REPORT}]),
-  
+	ListCtrl = wxXmlResource:xrcctrl(Dlg, "listctrl", wxListCtrl),
+    
   ListItem  = wxListItem:new(),
   Insert = fun(Header, Col) ->
 	  wxListItem:setText(ListItem, Header),
@@ -104,45 +75,22 @@ do_init({Parent, Projects}) ->
   wxListCtrl:connect(ListCtrl, size, [{skip, true}]),
   wxListCtrl:connect(ListCtrl, command_list_item_selected),
   wxListCtrl:connect(ListCtrl, command_list_item_activated),
-  
-  wxSizer:add(VertSizer, ListCtrl, [{flag, ?wxEXPAND}, {proportion, 1}]),
-  wxSizer:addSpacer(VertSizer, 40),
-  wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 
-              [{flag, ?wxEXPAND}]),
-	wxSizer:addSpacer(VertSizer, 20),
-  
-  %% Buttons
-  ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
-	wxSizer:addStretchSpacer(ButtonSz),
-  wxSizer:add(ButtonSz, wxButton:new(Dialog, ?wxID_CANCEL, [{label, "Cancel"}]), [{proportion, 0}]),
-	wxSizer:addSpacer(ButtonSz, 10),  
-	Open = wxButton:new(Dialog, ?wxID_OK, [{label, "Open"}]),
-  wxSizer:add(ButtonSz, Open, [{proportion, 0}]),
-	wxButton:disable(Open),
-	wxSizer:add(VertSizer, ButtonSz, [{flag, ?wxEXPAND}, {proportion, 0}]),   
-	wxSizer:addSpacer(VertSizer, 20),
-  
-  wxSizer:add(LRSizer, VertSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:addSpacer(LRSizer, 20),
-	
-  wxPanel:setSizer(Dialog, LRSizer),
-	wxSizer:layout(LRSizer),
-	  
+
 	State = #state{
-		dialog=Dialog, 
+		dlg=Dlg, 
     list_ctrl=ListCtrl
 	},
   
-	{Dialog, State}.
+	{Dlg, State}.
 
 
 handle_event(#wx{obj=ListCtrl, event=#wxList{type=command_list_item_selected, itemIndex=Idx}}, 
-             State=#state{dialog=Dialog}) ->
-  wxWindow:enable(wxWindow:findWindow(Dialog, ?wxID_OK)),
+             State=#state{dlg=Dlg}) ->
+  wxWindow:enable(wxWindow:findWindow(Dlg, ?wxID_OK)),
   {noreply, State#state{path=get_path_from_list(ListCtrl, Idx)}};
 
 handle_event(#wx{obj=ListCtrl, event=#wxList{type=command_list_item_activated, itemIndex=Idx}}, 
-             State=#state{dialog=Dialog}) ->
+             State=#state{dlg=Dialog}) ->
   wxDialog:endModal(Dialog, ?wxID_OK),
   {noreply, State#state{path=get_path_from_list(ListCtrl, Idx)}};
 
@@ -151,15 +99,13 @@ handle_event(#wx{event=#wxSize{size={Width0,_}}}, State = #state{list_ctrl=ListC
   wxListCtrl:setColumnWidth(ListCtrl, 2, Width0 + Width1),
   {noreply, State}.
 
-handle_info(Msg, State) ->
-  io:format( "Got Info ~p~nMsg:~p",[State, Msg]),
+handle_info(_Msg, State) ->
   {noreply,State}.
 
-handle_call(path, _From, State=#state{path=Path}) ->
-  {reply, Path, State};
+handle_call(path, _From, State) ->
+  {reply, State#state.path, State};
 handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State}.
-
 
 handle_cast(_, State) ->
   {noreply,State}.
@@ -167,8 +113,8 @@ handle_cast(_, State) ->
 code_change(_, _, State) ->
   {stop, ignore, State}.
 
-terminate(_Reason, #state{dialog=Dialog}) ->
-	wxDialog:destroy(Dialog),
+terminate(_Reason, _State) ->
+  % wxDialog:destroy(State#state.dlg),  %% segfault OSX wx3.0 erlR16B03 (see xrc sample directory)
 	ok.
 	
 
@@ -177,7 +123,7 @@ terminate(_Reason, #state{dialog=Dialog}) ->
 %% =====================================================================
 
 %% =====================================================================
-%% @doc
+%% @doc Add Projects to the listctrl.
 	
 insert_projects(ListCtrl, Projects) ->
   lists:foldl(
@@ -204,11 +150,3 @@ get_path_from_list(ListCtrl, Idx) ->
   Path = wxListItem:getText(ListItem),
   wxListItem:destroy(ListItem),
   Path.
-  
-  
-%% =====================================================================
-%% @doc
-%% @hidden
-show(This) -> wxDialog:show(This).
-%% @hidden
-showModal(This) -> wxDialog:showModal(This).
