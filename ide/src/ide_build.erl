@@ -130,6 +130,9 @@ load_files([File|Files]) ->
   Mod = filename:basename(File, ".erl"),
   Ebin = filename:join(filename:dirname(filename:dirname(File)), "ebin"),
   Beam = filename:join([Ebin, Mod]),
+  
+  ide_console_port_gen:eval("code:delete(" ++ Mod ++ ")." ++ io_lib:nl(), false),
+  ide_console_port_gen:eval("code:purge(" ++ Mod ++ ")." ++ io_lib:nl(), false),
   ide_console_port_gen:eval("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl(), false),
   load_files(Files).
 
@@ -142,6 +145,9 @@ load_files([File|Files]) ->
 load_file(Path, _Options) ->
   Mod = filename:basename(Path, ".erl"),
   Beam = filename:join([filename:dirname(Path), Mod]),
+
+  ide_console_port_gen:eval("code:delete(" ++ Mod ++ ")." ++ io_lib:nl(), false),
+  ide_console_port_gen:eval("code:purge(" ++ Mod ++ ")." ++ io_lib:nl(), false),
   ide_console_port_gen:eval("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl(), false),
   ide_console_wx:append_message("Loaded module: " ++ Mod).
 

@@ -19,15 +19,10 @@
 	msg_error/2,
 	msg_notice/2,
 	save_changes_dialog/2,
-<<<<<<< HEAD
-  notify_missing_config/1]).
-
-=======
   notify_missing_config/1,
   win_var/1
   ]).
 	
->>>>>>> d45825ecb9158931afea4cd2577b5ac8a4b09ba2
 -define(ERROR_CAPTION, "The operation could not continue.").
 -define(ID_DISCARD_CHANGES, 12345).
 
@@ -47,10 +42,6 @@ get_dir(Parent) ->
 
 get_existing_dir(Parent) ->
 	dir_dialog(Parent, [{style, ?wxDD_DIR_MUST_EXIST}]).
-<<<<<<< HEAD
-
-=======
->>>>>>> d45825ecb9158931afea4cd2577b5ac8a4b09ba2
 
 
 %% =====================================================================
