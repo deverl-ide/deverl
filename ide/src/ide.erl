@@ -515,8 +515,8 @@ handle_event(#wx{id=?MENU_ID_DIALYZER}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_ADD_TO_PLT}, State) ->
-  %% TESTING destroy for dialogs
-  dlg_ld:show_dlg(State#state.frame, whatever),
+  %% TESTING XRC DIALOGS
+  % dlg_ld:show_dlg(State#state.frame),
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_PLT_INFO}, State) ->

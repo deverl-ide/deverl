@@ -20,13 +20,12 @@
 %   ok.
   
 show_dlg(Frame, _Name) ->
-  Dlg = dlgxrc:new(Frame),
+  Dlg = new_proj_wxobject:new(Frame),
   case wxDialog:showModal(Dlg) of
     ?wxID_OK ->
       io:format("OK~n");
     ?wxID_CANCEL ->
-      D = dlgxrc:test_get_dlg(Dlg),
-      io:format("CANCEL: ~p~n", [D])
+      io:format("CANCEL~n")
   end,
   dlgxrc:destroy(Dlg),
   ok.

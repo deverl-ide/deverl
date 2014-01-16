@@ -82,21 +82,22 @@ start(Config)->
 -spec new_project(wxFrame:wxFrame()) -> ok.
 
 new_project(Parent) ->
-	Dialog = ide_dlg_new_proj_wx:start(Parent),
-	ide_dlg_new_proj_wx:set_focus(Dialog),
-	case ide_dlg_new_proj_wx:showModal(Dialog) of
-		?wxID_CANCEL ->
-      ok;
-		?wxID_OK ->
+  Dlg = ide_dlg_new_proj_wx:new(Parent),
+  case wxDialog:showModal(Dlg) of
+    ?wxID_OK ->
+      Path =  ide_dlg_new_proj_wx:get_path(Dlg),
       try
-    		Path = ide_io:create_directory_structure(ide_dlg_new_proj_wx:get_path(Dialog)),
+        Path = ide_io:create_directory_structure(ide_dlg_new_proj_wx:get_path(Dlg)),
         add_project(Path)
       catch
         throw:E ->
-    			ide_lib_dlg_wx:msg_error(Parent, E)
-      end,
-			ide_dlg_new_proj_wx:close(Dialog)
-	end.
+          ide_lib_dlg_wx:msg_error(Parent, E)
+      end;
+    ?wxID_CANCEL ->
+      ok
+  end,
+  ide_dlg_new_proj_wx:destroy(Dlg),
+  ok.
 
 
 %% =====================================================================
@@ -116,7 +117,7 @@ add_project(Path) ->
 -spec open_project_dialog(wxFrame:wxFrame()) -> ok.
 
 open_project_dialog(Frame) ->
-  Dlg = ide_dlg_open_proj_wx:start(Frame, ide_sys_pref_gen:get_preference(projects)),
+  Dlg = ide_dlg_open_proj_wx:new(Frame, ide_sys_pref_gen:get_preference(projects)),
   case wxDialog:showModal(Dlg) of
     ?wxID_CANCEL ->
       ide_dlg_open_proj_wx:destroy(Dlg);
@@ -265,6 +266,22 @@ set_project_configuration(Parent) ->
 
 -spec import(wxFrame:wxFrame()) -> ok | cancelled.
 
+% import(Parent) ->
+%   Dlg = ide_dlg_import_proj_wx:start(Parent),
+%   case wxDialog:showModal(Dlg) of
+%     20 -> %% Copy files to proj directory
+%       io:format("Copy not implemented~n"),
+%       Path = ide_dlg_import_proj_wx:get_path(Dlg),
+%       ide_dlg_import_proj_wx:destroy(Dlg),
+%       ide_proj_man:add_project(Path);
+%     30 -> %% 
+%       Path = ide_dlg_import_proj_wx:get_path(Dlg),
+%       ide_dlg_import_proj_wx:destroy(Dlg),
+%       ide_proj_man:add_project(Path);
+%     ?wxID_CANCEL ->
+%       ide_dlg_import_proj_wx:destroy(Dlg),
+%       cancelled
+%   end.
 import(Parent) ->
   Dlg = ide_dlg_import_proj_wx:start(Parent),
   case wxDialog:showModal(Dlg) of
