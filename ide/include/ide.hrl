@@ -1,5 +1,4 @@
 %% Types
-
 -type path() :: string().
 -type project_id() :: {integer(), integer(), integer()}.
 

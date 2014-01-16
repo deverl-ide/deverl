@@ -101,12 +101,10 @@ compile(From, Path, Config) ->
   end,
 
   ide_compiler_out_wx:clear(),
-
   open_port({spawn_executable, erlc()}, [use_stdio,
-                                       exit_status,
-                                       {cd, Cwd},
-                                       {args, lists:append(Flags, Args)}]),
-
+                                         exit_status,
+                                         {cd, Cwd},
+                                         {args, lists:append(Flags, Args)}]),
   loop(From, filename:basename(Path)).
 
 
