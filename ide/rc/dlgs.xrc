@@ -692,4 +692,31 @@
 			</object>
 		</object>
 	</object>
+	<object class="wxDialog" name="build_plt">
+		<style>wxDEFAULT_DIALOG_STYLE</style>
+		<title>Building PLT</title>
+		<centered>1</centered>
+		<object class="wxBoxSizer">
+			<orient>wxVERTICAL</orient>
+			<object class="sizeritem">
+				<option>0</option>
+				<flag>wxALL</flag>
+				<border>10</border>
+				<object class="wxStaticText" name="m_staticText17">
+					<label>Please wait whilst we build the PLT.</label>
+					<wrap>-1</wrap>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>0</option>
+				<flag>wxALL|wxEXPAND</flag>
+				<border>10</border>
+				<object class="wxGauge" name="gauge">
+					<style>wxGA_HORIZONTAL</style>
+					<range>100</range>
+					<value>0</value>
+				</object>
+			</object>
+		</object>
+	</object>
 </resource>

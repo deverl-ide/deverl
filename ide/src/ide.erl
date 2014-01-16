@@ -510,8 +510,7 @@ handle_event(#wx{id=?MENU_ID_RUN}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_DIALYZER}, State) ->
-  %% TESTING DESTROY FOR OBJECTs
-  % ide_doc_man_wx:test(),
+  ide_dialyzer:run(State#state.frame),
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_ADD_TO_PLT}, State) ->
