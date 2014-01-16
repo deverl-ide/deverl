@@ -266,6 +266,22 @@ set_project_configuration(Parent) ->
 
 -spec import(wxFrame:wxFrame()) -> ok | cancelled.
 
+% import(Parent) ->
+%   Dlg = ide_dlg_import_proj_wx:start(Parent),
+%   case wxDialog:showModal(Dlg) of
+%     20 -> %% Copy files to proj directory
+%       io:format("Copy not implemented~n"),
+%       Path = ide_dlg_import_proj_wx:get_path(Dlg),
+%       ide_dlg_import_proj_wx:destroy(Dlg),
+%       ide_proj_man:add_project(Path);
+%     30 -> %% 
+%       Path = ide_dlg_import_proj_wx:get_path(Dlg),
+%       ide_dlg_import_proj_wx:destroy(Dlg),
+%       ide_proj_man:add_project(Path);
+%     ?wxID_CANCEL ->
+%       ide_dlg_import_proj_wx:destroy(Dlg),
+%       cancelled
+%   end.
 import(Parent) ->
   Dlg = ide_dlg_import_proj_wx:start(Parent),
   case wxDialog:showModal(Dlg) of

@@ -38,7 +38,6 @@
 							ide_dlg_new_proj_wx,
 							ide_dlg_open_proj_wx,
 							ide_dlg_proj_conf_wx,
-							ide_editor_ops,
 							ide_editor_theme,
 							ide_editor_wx,
 							ide_sys_pref_defs,

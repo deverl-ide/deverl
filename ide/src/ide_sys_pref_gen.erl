@@ -33,12 +33,18 @@
 %% =====================================================================
 %% @doc
 
+-spec start(Config) -> {ok, pid()} | ignore | {error, Error} when
+  Config :: list(),
+  Error  :: {already_started, pid()} | term().
+
 start(Config) ->
   gen_server:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
 
 %% =====================================================================
 %% @doc
+
+-spec set_preference(term(), term()) -> ok.
 
 set_preference(Key, Value) ->
   gen_server:cast(?MODULE, {Key, Value}).
@@ -47,15 +53,19 @@ set_preference(Key, Value) ->
 %% =====================================================================
 %% @doc
 
+-spec get_preference(term()) -> term().
+
 get_preference(Key) ->
   gen_server:call(?MODULE, Key).
-  
-  
+
+
 %% =====================================================================
 %% @doc
 
+-spec get_font(console | editor | log) -> wxFont:wxFont().
+
 get_font(Window) ->
-  case Window of 
+  case Window of
     editor ->
       wxFont:new(ide_sys_pref_gen:get_preference(editor_font_size),
                  ide_sys_pref_gen:get_preference(editor_font_family),
@@ -105,7 +115,7 @@ handle_event(_, State) ->
 	{noreply, State}.
 
 code_change(_, _, State) ->
-	{stop, ignore, State}.
+	{ok, State}.
 
 terminate(_Reason, _) ->
   ok.
@@ -116,6 +126,8 @@ terminate(_Reason, _) ->
 
 %% =====================================================================
 %% @doc Load the preferences from disk and transfer to ETS table.
+
+-spec load_prefs() -> ets:ets().
 
 load_prefs() ->
   case dets:open_file(system_prefs, []) of
@@ -133,6 +145,8 @@ load_prefs() ->
 %% =====================================================================
 %% @doc
 
+-spec create_dets() -> ets:ets().
+
 create_dets() ->
   PrefsTable = ets:new(prefs, []),
   insert_default_prefs(PrefsTable),
@@ -141,6 +155,8 @@ create_dets() ->
 
 %% =====================================================================
 %% @doc Write the preferences to disk.
+
+-spec write_dets(ets:ets()) -> ets:ets().
 
 write_dets(PrefsTable) ->
   case dets:open_file(system_prefs, []) of
@@ -155,6 +171,8 @@ write_dets(PrefsTable) ->
 
 %% =====================================================================
 %% @doc
+
+-spec insert_default_prefs(ets:ets()) -> true.
 
 insert_default_prefs(PrefsTable) ->
   [ets:insert(PrefsTable, {Key, Value}) || {Key, Value} <- ide_sys_pref_defs:get_defaults()],

@@ -18,6 +18,9 @@
 %% =====================================================================
 %% @doc
 
+-spec start(Config) -> wxWindow:wxWindow() when
+  Config :: list().
+
 start(Config) ->
   wx_object:start_link(?MODULE, Config, []).
 
@@ -32,25 +35,25 @@ init(Config) ->
 do_init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Panel = wxWindow:new(Parent, ?wxID_ANY),
-     
+
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxWindow:setSizer(Panel, LRSizer),
   wxSizer:addSpacer(LRSizer, 20),
-  
+
   VertSizer = wxBoxSizer:new(?wxVERTICAL),
   wxSizer:addSpacer(VertSizer, 20),
-  wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Nothing here yet.")), 
-  
-  wxSizer:addSpacer(VertSizer, 20),   
-  
+  wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Nothing here yet.")),
+
+  wxSizer:addSpacer(VertSizer, 20),
+
   wxSizer:add(LRSizer, VertSizer),
   wxSizer:addSpacer(LRSizer, 20),
-                      
+
 	wxSizer:layout(LRSizer),
-  
+
   {Panel, #state{parent=Panel}}.
 
-    
+
 %% =====================================================================
 %% @doc OTP behaviour callbacks
 handle_event(Ev = #wx{}, State = #state{}) ->
@@ -74,7 +77,7 @@ handle_cast(Msg, State) ->
   {noreply,State}.
 
 code_change(_, _, State) ->
-  {stop, ignore, State}.
+  {ok, State}.
 
 terminate(_Reason, _) ->
   ok.

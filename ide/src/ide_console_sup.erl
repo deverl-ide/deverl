@@ -6,8 +6,24 @@
 %% API
 -export([start_link/1]).
 
+
+%% =====================================================================
+%% Client API
+%% =====================================================================
+
+%% =====================================================================
+%% @doc
+
+-spec start_link(Config) -> supervisor:startlink_ret() when
+  Config :: list().
+
 start_link(Config) ->
 	supervisor:start_link(?MODULE, Config).
+
+
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
 	
 init(Config) ->
   Parser = {ide_console_parser, {ide_console_parser, start, []},

@@ -51,7 +51,7 @@
                        "OTP Application (.erl)",
                        "OTP Gen Server (.erl)",
                        "OTP Supervisor (.erl)"]).
-											 
+
 %% Server state
 -record(state, {win,
                 dialog1     :: wxPanel:wxPanel(),
@@ -70,12 +70,30 @@
 %% Client API
 %% =====================================================================
 
+%% =====================================================================
+%% @doc
+
+-spec start(Config) -> wxWindow:wxWindow() when
+  Config :: list().
+
 start(Config) ->
   wx_object:start({local, ?MODULE}, ?MODULE, Config, []).
-  
+
+
+%% =====================================================================
+%% @doc
+
+-spec get_path(wxDialog:wxDialog()) -> path().
+
 get_path(This) ->
   wx_object:call(This, get_path).
-  
+
+
+%% =====================================================================
+%% @doc
+
+-spec get_project_id(wxDialog:wxDialog()) -> project_id() | undefined.
+
 get_project_id(This) ->
   case wx_object:call(This, get_project_id) of
     "No Project" ->
@@ -83,10 +101,16 @@ get_project_id(This) ->
     Id ->
       Id
   end.
-  
+
+
+%% =====================================================================
+%% @doc
+
+-spec close(wxDialog:wxDialog()) -> ok.
+
 close(This) ->
   wx_object:call(This, shutdown).
-  
+
 
 %% =====================================================================
 %% Callback functions
@@ -98,7 +122,7 @@ init({Parent, Projects, ActiveProject}) ->
                                                                 ?wxRESIZE_BORDER bor
                                                                 ?wxDIALOG_EX_METAL}]),
 	wxDialog:centre(Dialog),
-	
+
 	%% Conditional compilation OSX
 	case os:type() of
 		{_, darwin} ->
@@ -123,7 +147,7 @@ init({Parent, Projects, ActiveProject}) ->
     undefined ->
       "No Project";
     _ ->
-      ide_proj_man:get_name(ActiveProject) 
+      ide_proj_man:get_name(ActiveProject)
   end,
   SwapSizer = wxBoxSizer:new(?wxVERTICAL),
   Dialog1 = dialog1(Dialog, Projects, Project),
@@ -135,7 +159,7 @@ init({Parent, Projects, ActiveProject}) ->
   wxSizer:add(MainSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), [{flag, ?wxEXPAND}]),
   wxSizer:addSpacer(MainSizer, 20),
 	wxSizer:add(MainSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Description"), []),
-	wxSizer:addSpacer(MainSizer, 5),  
+	wxSizer:addSpacer(MainSizer, 5),
 	Desc = wxPanel:new(Dialog, [{size, {400, 150}}]),
 	DSz = wxBoxSizer:new(?wxHORIZONTAL),
 	wxPanel:setSizer(Desc, DSz),
@@ -153,11 +177,11 @@ init({Parent, Projects, ActiveProject}) ->
   ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxPanel:setSizer(ButtonPanel, ButtonSizer),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?BACK_BUTTON,   [{label, "Back"}]),   [{border, 2}, {flag, ?wxALL}]),
-  wxSizer:addSpacer(ButtonSizer, 10),  
+  wxSizer:addSpacer(ButtonSizer, 10),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?NEXT_BUTTON,   [{label, "Next"}]),   [{border, 2}, {flag, ?wxALL}]),
-  wxSizer:addSpacer(ButtonSizer, 10),  
+  wxSizer:addSpacer(ButtonSizer, 10),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?FINISH_BUTTON, [{label, "Finish"}]), [{border, 2}, {flag, ?wxALL}]),
-  wxSizer:addSpacer(ButtonSizer, 10),  
+  wxSizer:addSpacer(ButtonSizer, 10),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxID_CANCEL,   [{label, "Cancel"}]), [{border, 2}, {flag, ?wxALL}]),
 
   wxSizer:add(MainSizer, ButtonPanel, [{proportion, 0}, {flag, ?wxALIGN_RIGHT}]),
@@ -170,18 +194,18 @@ init({Parent, Projects, ActiveProject}) ->
 
   wxButton:disable(wxWindow:findWindow(ButtonPanel, ?BACK_BUTTON)),
   wxButton:disable(wxWindow:findWindow(ButtonPanel, ?FINISH_BUTTON)),
-  
+
 	%% Setup the image list
 	ImageList = wxImageList:new(24,24),
 	wxImageList:add(ImageList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("information.png")))),
 	wxImageList:add(ImageList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("prohibition.png")))),
-	
+
 	%% Information messages
 	Info = [
 		{name, "Please specify a file name."}
 	],
-  
-  State=#state{win=Dialog, 
+
+  State=#state{win=Dialog,
                dialog1=Dialog1,
                swap_sizer=SwapSizer,
                project_id=ActiveProject,
@@ -217,9 +241,9 @@ handle_call(get_path, _From, State) ->
   {reply, State#state.path, State};
 handle_call(get_project_id, _From, State) ->
   {reply, State#state.project_id, State}.
-  
+
 code_change(_, _, State) ->
-  {stop, not_yet_implemented, State}.
+  {ok, State}.
 
 terminate(_Reason, #state{win=Dialog}) ->
   wxDialog:endModal(Dialog, ?wxID_CANCEL),
@@ -314,6 +338,8 @@ handle_event(#wx{id=?PROJECT_CHOICE, event=#wxCommand{type=command_choice_select
 %% =====================================================================
 %% @doc Create the first page of the New File dialog.
 
+-spec dialog1(wxWindow:wxWindow(), [project_id()], string()) -> wxPanel:wxPanel().
+
 dialog1(Parent, Projects, ActiveProject) ->
   Dialog1 = wxPanel:new(Parent),
   DialogSizer1 = wxBoxSizer:new(?wxVERTICAL),
@@ -356,11 +382,13 @@ dialog1(Parent, Projects, ActiveProject) ->
 %% =====================================================================
 %% @doc Create the second page of the New File dialog.
 
+-spec dialog2(wxWindow:wxWindow()) -> wxPanel:wxPanel().
+
 dialog2(Parent) ->
   Dialog2 = wxPanel:new(Parent),
   DialogSizer2 = wxFlexGridSizer:new(3, [{vgap, 20}, {hgap, 20}]),
   wxPanel:setSizer(Dialog2, DialogSizer2),
-  
+
   wxSizer:add(DialogSizer2, wxStaticText:new(Dialog2, ?wxID_ANY, "Project Name:"), []),
   ProjectText = wxStaticText:new(Dialog2, ?PROJECT_TEXT, ""),
   ProjectFont = wxStaticText:getFont(ProjectText),
@@ -388,32 +416,34 @@ dialog2(Parent) ->
 %% =====================================================================
 %% @doc Create the browse dialog for browsing a project directory.
 
-browse_dialog(Parent, Root, ProjectId) -> 
+-spec browse_dialog(wxWindow:wxWindow(), path(), project_id()) -> integer().
+
+browse_dialog(Parent, Root, ProjectId) ->
   Dialog = wxDialog:new(Parent, ?wxID_ANY, "Choose Directory", [{size, {300,300}},
                                                                 {style, ?wxDEFAULT_DIALOG_STYLE bor
                                                                         ?wxRESIZE_BORDER bor
-                                                                        ?wxDIALOG_EX_METAL}]),                                                                      
+                                                                        ?wxDIALOG_EX_METAL}]),
 	%% Conditional compilation OSX
 	case os:type() of
 		{_, darwin} ->
 			wxPanel:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL);
 		 _ -> ok
 	end,
-  
+
   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
   wxSizer:addSpacer(LRSizer, 5),
   wxDialog:setSizer(Dialog, LRSizer),
-  
+
   MainSizer = wxBoxSizer:new(?wxVERTICAL),
   wxSizer:addSpacer(MainSizer, 5),
-  
+
   wxSizer:add(LRSizer, MainSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
 
   wxSizer:addSpacer(LRSizer, 5),
 
   Tree = create_tree(Dialog, Root, ProjectId),
   wxSizer:add(MainSizer, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  
+
   wxSizer:addSpacer(MainSizer, 10),
   ButtonPanel = wxPanel:new(Dialog),
   ButtonSizer = wxBoxSizer:new(?wxHORIZONTAL),
@@ -422,7 +452,7 @@ browse_dialog(Parent, Root, ProjectId) ->
   wxSizer:addSpacer(ButtonSizer, 10),
   wxSizer:add(ButtonSizer, wxButton:new(ButtonPanel, ?wxID_CANCEL, [{label, "Cancel"}]), [{border, 2}, {flag, ?wxALL}]),
   wxSizer:addSpacer(ButtonSizer, 10),
-  
+
   wxSizer:add(MainSizer, ButtonPanel, [{proportion, 0}, {flag, ?wxALIGN_RIGHT}]),
   wxSizer:addSpacer(MainSizer, 10),
 
@@ -436,7 +466,7 @@ browse_dialog(Parent, Root, ProjectId) ->
     set_path_text(Parent, wxTreeCtrl:getItemData(Tree, Selection) ++ "/", get_filename(Parent)),
     set_default_path(wxTreeCtrl:getItemData(Tree, Selection) ++ "/")
   end,
-  
+
   wxPanel:connect(ButtonPanel, command_button_clicked, [{callback, ButtonHandler}]),
   wxDialog:centre(Dialog),
   wxDialog:showModal(Dialog).
@@ -445,13 +475,17 @@ browse_dialog(Parent, Root, ProjectId) ->
 %% =====================================================================
 %% @doc Set the project's name in the project name field in dialog 2.
 
+-spec set_project_text(wxWindow:wxWindow(), string()) -> ok.
+
 set_project_text(Parent, ProjectName) ->
   ProjectText = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_TEXT), wxStaticText),
   wxStaticText:setLabel(ProjectText, ProjectName).
-  
+
 
 %% =====================================================================
 %% @doc Set the project's default path in the project path field in dialog 2.
+
+-spec set_default_path_text(wxWindow:wxWindow(), path()) -> string().
 
 set_default_path_text(Parent, ProjectPath) ->
   PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
@@ -464,6 +498,8 @@ set_default_path_text(Parent, ProjectPath) ->
 %% =====================================================================
 %% @doc Set the path text to a given path.
 
+-spec set_path_text(wxWindow:wxWindow(), path(), string()) -> ok.
+
 set_path_text(Parent, Path, Filename) ->
   PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
   wxTextCtrl:clear(PathTextBox),
@@ -473,16 +509,21 @@ set_path_text(Parent, Path, Filename) ->
     _ ->
       wxTextCtrl:appendText(PathTextBox, Path ++ Filename ++ get_file_extension(Parent))
   end.
-  
+
 
 %% =====================================================================
 %% @doc
+
+-spec set_default_path(path()) -> ok.
+
 set_default_path(ProjectPath) ->
   wx_object:cast(?MODULE, {set_path, ProjectPath}).
-  
+
 
 %% =====================================================================
 %% @doc Get the project choice from the projects choice box.
+
+-spec get_project_choice(wxWindow:wxWindow()) -> {string(), path()}.
 
 get_project_choice(Parent) ->
   ProjectChoice = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_CHOICE), wxChoice),
@@ -499,6 +540,8 @@ get_project_choice(Parent) ->
 
 %% =====================================================================
 %% @doc Get the default folder depending on what file type is selected.
+
+-spec get_default_folder_text(wxWindow:wxWindow()) -> string().
 
 get_default_folder_text(Parent) ->
   Project = wx:typeCast(wxWindow:findWindow(Parent, ?PROJECT_CHOICE), wxChoice),
@@ -525,6 +568,8 @@ get_default_folder_text(Parent) ->
 %% =====================================================================
 %% @doc Get the default path based on which project is selected.
 
+-spec get_default_path_text(wxWindow:wxWindow(), path()) -> path().
+
 get_default_path_text(Parent, ProjectPath) ->
   case ProjectPath of
     "No Project" ->
@@ -537,6 +582,8 @@ get_default_path_text(Parent, ProjectPath) ->
 %% =====================================================================
 %% @doc Set the project's default path in the project path field in dialog 2.
 
+-spec get_path_text(wxWindow:wxWindow()) -> string().
+
 get_path_text(Parent) ->
   PathTextBox = wx:typeCast(wxWindow:findWindow(Parent, ?PATH_BOX), wxTextCtrl),
   wxTextCtrl:getLineText(PathTextBox, 0).
@@ -545,6 +592,8 @@ get_path_text(Parent) ->
 %% =====================================================================
 %% @doc Get the specified filename from the file name TextCtrl.
 
+-spec get_filename(wxWindow:wxWindow()) -> string().
+
 get_filename(Parent) ->
   FilenameBox = wx:typeCast(wxWindow:findWindow(Parent, ?FILENAME_BOX), wxTextCtrl),
   wxTextCtrl:getLineText(FilenameBox, 0).
@@ -552,6 +601,8 @@ get_filename(Parent) ->
 
 %% =====================================================================
 %% @doc Get the file extension that should be used when creating new file.
+
+-spec get_file_extension(wxWindow:wxWindow()) -> string().
 
 get_file_extension(Parent) ->
   FileType = wx:typeCast(wxWindow:findWindow(Parent, ?FILE_TYPE_CHOICE), wxListBox),
@@ -572,6 +623,8 @@ get_file_extension(Parent) ->
 %% =====================================================================
 %% @doc Check if the dialog is in a finished state.
 
+-spec check_if_finished(wxWindow:wxWindow(), string(), wxPanel:wxPanel()) -> boolean().
+
 check_if_finished(Parent, Filename, Desc) ->
   case length(Filename) of
     0 ->
@@ -589,23 +642,30 @@ check_if_finished(Parent, Filename, Desc) ->
 %% =====================================================================
 %% @doc Validate the input Name.
 
+-spec validate_name(string(), wxPanel:wxPanel()) -> boolean().
+
 validate_name([], _) -> false;
 validate_name(Str, Desc) ->
 	case validate_name(Str) of
-		nomatch -> 
+		nomatch ->
       insert_desc(Desc, "Create a new file."),
 			true;
-		{match, [{Pos,_}]} -> 
+		{match, [{Pos,_}]} ->
 			Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
 			insert_desc(Desc, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename.", [{bitmap, Bitmap}]),
 			false
 	end.
+
+-spec validate_name(string()) -> {match, {integer, integer}} | nomatch.
+
 validate_name(Str) ->
 	re:run(Str, "[/\]").
 
 
 %% =====================================================================
 %% @doc Swap Dialog1 with Dialog2.
+
+-spec swap(wxSizer:wxSizer(), wxPanel:wxPanel(), wxPanel:wxPanel()) -> ok.
 
 swap(Sizer, Dialog1, Dialog2) ->
   wxSizer:detach(Sizer, 0),
@@ -618,19 +678,26 @@ swap(Sizer, Dialog1, Dialog2) ->
 %% =====================================================================
 %% @doc Add project labels and data to wxChoice.
 
+-spec add_project_data(wxChoice:wxChoice(), [project_id()]) -> ok.
+
 add_project_data(_, []) ->
   ok;
 add_project_data(ProjectChoice, [ProjectId|Projects]) ->
   wxChoice:append(ProjectChoice, ide_proj_man:get_name(ProjectId), ProjectId),
   add_project_data(ProjectChoice, Projects).
-  
+
 
 %% =====================================================================
-%% @doc Display information to the user within the 'Description' box.	
+%% @doc Display information to the user within the 'Description' box.
 %% NOTE This is duplicated from the ide_dlg_new_proj_wx module.
+
+-spec insert_desc(wxWindow:wxWindow(), list()) -> boolean().
 
 insert_desc(Description, Msg) ->
 	insert_desc(Description, Msg, []).
+
+-spec insert_desc(wxWindow:wxWindow(), list(), Options) -> boolean() when
+  Options :: list().
 
 insert_desc(Description, Msg, Options) ->
 	SzFlags = wxSizerFlags:new([{proportion, 0}]),
@@ -639,8 +706,9 @@ insert_desc(Description, Msg, Options) ->
   wxSizer:clear(Sz, [{delete_windows, true}]),
 	wxSizer:addSpacer(Sz, 10),
 	case proplists:get_value(bitmap, Options) of
-		undefined -> ok;
-		Bitmap -> 
+		undefined ->
+      ok;
+		Bitmap ->
 			wxSizer:add(Sz, wxStaticBitmap:new(Description, ?wxID_ANY, Bitmap), [{border, 5}, {flag, ?wxTOP bor ?wxRIGHT}])
 	end,
 	wxSizer:add(Sz, wxStaticText:new(Description, ?wxID_ANY, Msg), SzFlags),
@@ -653,6 +721,8 @@ insert_desc(Description, Msg, Options) ->
 
 %% =====================================================================
 %% @doc Create the directory tree structure for the Browse Dialog.
+
+-spec create_tree(wxWindow:wxWindow(), path(), project_id()) -> wxTreeCtrl:wxTreeCtrl().
 
 create_tree(Parent, Root, ProjectId) ->
   Tree = wxTreeCtrl:new(Parent, [{style, ?wxTR_HAS_BUTTONS bor
@@ -669,6 +739,8 @@ create_tree(Parent, Root, ProjectId) ->
 %% =====================================================================
 %% @doc Build the tree structure for a given tree item.
 
+-spec build_tree(wxTreeCtrl:wxTreeCtrl(), integer(), project_id()) -> ok.
+
 build_tree(Tree, Item, ProjectId) ->
   Root = wxTreeCtrl:getItemData(Tree, Item),
   Files = filelib:wildcard(Root ++ "/*"),
@@ -676,6 +748,8 @@ build_tree(Tree, Item, ProjectId) ->
 
 %% =====================================================================
 %% @doc Add the files to the given tree item.
+
+-spec add_files(wxTreeCtrl:wxTreeCtrl(), integer(), [path()], project_id()) -> ok.
 
 add_files(_, _, [], _) ->
 	ok;
@@ -691,4 +765,3 @@ add_files(Tree, Root, [File|Files], ProjectId) ->
 			ok
 	end,
 	add_files(Tree, Root, Files, ProjectId).
-

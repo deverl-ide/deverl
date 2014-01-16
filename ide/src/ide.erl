@@ -14,8 +14,8 @@
 
 %% wx_object
 -behaviour(wx_object).
--export([init/1, terminate/2,  code_change/3,
-         handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
+-export([init/1, terminate/2, code_change/3, handle_info/2, 
+         handle_call/3, handle_cast/2, handle_event/2]).
 
 %% API
 -export([start/0,

@@ -40,15 +40,39 @@
 -define(SEARCH_TEXT_DEFAULT, "Search symbols..").
 
 
+%% =====================================================================
+%% Client API
+%% =====================================================================
+
+%% =====================================================================
+%% @doc
+
 start(Config) ->
 	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
+
+
+%% =====================================================================
+%% @doc
+
+set(Items) ->
+	Ref = ide_doc_man_wx:get_active_document_ref(),
+	ListCtrl = wx_object:call(?MODULE, {list, Ref}),
+	wxListCtrl:deleteAllItems(ListCtrl),
+	% insert_items(ListCtrl, Items),
+	set_acc(ListCtrl, Items),
+	ok.
+
+
+%% =====================================================================
+%% Callback functions
+%% =====================================================================
 
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
 	EditorPid = proplists:get_value(editor, Config),
 	Panel = wxPanel:new(Parent),
 	Sz = wxBoxSizer:new(?wxVERTICAL),
-  
+
 	Search = wxTextCtrl:new(Panel, ?WINDOW_FUNCTION_SEARCH, [{style, ?wxTE_PROCESS_ENTER}]),
 	wxTextCtrl:setValue(Search, ?SEARCH_TEXT_DEFAULT),
   wxSizer:addSpacer(Sz, 2),
@@ -135,14 +159,14 @@ handle_event(#wx{event=#wxKey{type=key_down}},
 	end,
 	{noreply, State#state{start=StartIndex, search_str=Str}};
 
-handle_event(#wx{event=#wxCommand{type=command_text_enter, cmdString=Str}},
-	State=#state{textctrl=Search, list=ListBox, editor_pid=Ed}) ->
+handle_event(#wx{event=#wxCommand{type=command_text_enter, cmdString=_Str}},
+	State=#state{textctrl=_Search, list=_ListBox, editor_pid=_Ed}) ->
 	% send_to_editor(Str, Ed),
   % io:format("Symbol: ~p Line: ~p~n", [Str, undefined]),
 	{noreply, State};
 
-handle_event(#wx{event=#wxList{type=command_list_item_selected, itemIndex=Item}},
-	State=#state{list=ListCtrl, editor_pid=Ed}) ->
+handle_event(#wx{event=#wxList{type=command_list_item_selected, itemIndex=_Item}},
+	State=#state{list=_ListCtrl, editor_pid=_Ed}) ->
 	% send_to_editor(Str, Ed),
   % io:format("List selected: ~p~n", [Item]),
   % io:format("Symbol: ~p Line: ~p~n", [wxListCtrl:getItemText(ListCtrl, Item), wxListCtrl:getItemData(ListCtrl, Item)]),
@@ -182,21 +206,13 @@ terminate(_Reason, #state{panel=Panel}) ->
   wxPanel:destroy(Panel),
   ok.
 
-% set(Items) ->
-% 	{ok, {_,Pid}} = ide_doc_man_wx:get_active_document(),
-% 	ListCtrl = wx_object:call(?MODULE, {list, Pid}),
-% 	wxListCtrl:deleteAllItems(ListCtrl),
-% 	% insert_items(ListCtrl, Items),
-% 	set_acc(ListCtrl, Items),
-% 	ok.
-	
-set(Items) ->
-	Ref = ide_doc_man_wx:get_active_document_ref(),
-	ListCtrl = wx_object:call(?MODULE, {list, Ref}),
-	wxListCtrl:deleteAllItems(ListCtrl),
-	% insert_items(ListCtrl, Items),
-	set_acc(ListCtrl, Items),
-	ok.
+
+%% =====================================================================
+%% Internal functions
+%% =====================================================================
+
+%% =====================================================================
+%% @doc
 
 set_acc(ListCtrl, Items) ->
 	lists:foldl(
@@ -207,6 +223,10 @@ set_acc(ListCtrl, Items) ->
 	end,
 	0, Items).
 
+
+%% =====================================================================
+%% @doc
+
 set_item_background(ListCtrl, Item) ->
 	case Item rem 2 of
 	  0 ->
@@ -215,6 +235,10 @@ set_item_background(ListCtrl, Item) ->
 	 		wxListCtrl:setItemBackgroundColour(ListCtrl, Item, ?ROW_BG_ODD)
 	end.
 
+
+%% =====================================================================
+%% @doc
+
 insert_items(ListCtrl, Items) ->
 	Insert =
 	fun([Name]) ->
@@ -222,16 +246,32 @@ insert_items(ListCtrl, Items) ->
 	end,
 	wx:foreach(Insert, Items).
 
+
+%% =====================================================================
+%% @doc
+
 send_to_editor(Str, Editor) ->
 	ide_editor_wx:fn_list(Editor, Str),
 	ok.
 
+
+%% =====================================================================
+%% @doc
+
 find_item(ListCtrl, Str, Start) ->
 	wxListCtrl:findItem(ListCtrl, Start, Str, [{partial, true}]).
+
+
+%% =====================================================================
+%% @doc
 
 select_item(ListCtrl, Item) ->
 	wxListCtrl:setItemState(ListCtrl, Item, ?wxLIST_STATE_SELECTED, ?wxLIST_STATE_SELECTED),
 	wxListCtrl:ensureVisible(ListCtrl, Item).
+
+
+%% =====================================================================
+%% @doc
 
 autofill(Search, Str, FillStr) ->
 	wxTextCtrl:setValue(Search, FillStr),
