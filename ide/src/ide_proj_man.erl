@@ -32,7 +32,7 @@
          open_project/1,
          get_project/1,
          close_active_project/0,
-         % close_project/1,
+         %close_project/1,
 				 %open_file/3,
 				 get_open_projects/0,
 				 get_active_project/0,
@@ -273,7 +273,7 @@ import(Parent) ->
       Path = ide_dlg_import_proj_wx:get_path(Dlg),
       ide_dlg_import_proj_wx:destroy(Dlg),
       ide_proj_man:add_project(Path);
-    30 -> %% 
+    30 -> %%
       Path = ide_dlg_import_proj_wx:get_path(Dlg),
       ide_dlg_import_proj_wx:destroy(Dlg),
       ide_proj_man:add_project(Path);

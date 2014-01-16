@@ -49,7 +49,9 @@ make_project() ->
 %% =====================================================================
 %% @doc
 
--spec make_project(boolean()) -> {ok, project_id(), string()} | {atom(), atom()}.
+-spec make_project(boolean()) -> {ok, project_id(), string()} | Error when
+  Error :: {error, compile} |
+           {error, not_saved}.
 
 make_project(PrintMsg) ->
   case ide_doc_man_wx:save_active_project() of
@@ -65,7 +67,7 @@ make_project(PrintMsg) ->
               ide_console_wx:append_message("Project ready: " ++ filename:basename(Path));
             _ -> ok
           end,
-          change_dir(Path ++ "/ebin"),
+          load_files(filelib:wildcard(Path ++ "/src/*")),
           {ok, ProjectId, Path};
         {_From, error} ->
           {error, compile}
@@ -120,7 +122,22 @@ compile_file(Path) ->
 %% =====================================================================
 %% @doc
 
--spec load_file(string(), list()) -> ok.
+-spec load_files([path()]) -> ok.
+
+load_files([]) ->
+  ok;
+load_files([File|Files]) ->
+  Mod = filename:basename(File, ".erl"),
+  Ebin = filename:join(filename:dirname(filename:dirname(File)), "ebin"),
+  Beam = filename:join([Ebin, Mod]),
+  ide_console_port_gen:eval("code:load_abs(\"" ++ Beam ++ "\")." ++ io_lib:nl(), false),
+  load_files(Files).
+
+
+%% =====================================================================
+%% @doc
+
+-spec load_file(path(), list()) -> ok.
 
 load_file(Path, _Options) ->
   Mod = filename:basename(Path, ".erl"),
@@ -185,11 +202,3 @@ execute_function({M, F}) ->
 execute_function({M, F, Args}) ->
   ide_console_port_gen:eval("erlang:apply(" ++ M ++ "," ++ F ++ ",[" ++ Args ++ "])." ++ io_lib:nl()).
 
-
-%% =====================================================================
-%% @doc
-
--spec change_dir(string()) -> ok.
-
-change_dir(Path) ->
-  ide_console_port_gen:eval("cd(\"" ++ Path ++ "\")." ++ io_lib:nl(), false).

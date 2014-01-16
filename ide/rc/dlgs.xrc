@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <resource version="2.3.0.1" xmlns="http://www.wxwidgets.org/wxxrc">
     <object class="wxDialog" name="new_project">
-				<size>20,0</size>
+				<size>600,400</size>
         <style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER|wxCLOSE_BOX|wxTAB_TRAVERSAL</style>
         <exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
-        <title>New File</title>
+        <title>New Project</title>
         <centered>1</centered>
         <object class="wxBoxSizer">
             <orient>wxHORIZONTAL</orient>
