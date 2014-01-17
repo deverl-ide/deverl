@@ -58,10 +58,6 @@ loop(From) ->
     {_Port, {exit_status, _}} ->
       ide_log_out_wx:error("ERROR: Dialyzer failed. See output.", [{hotspot, "output"}]),
       From ! {self(), error}
-  after
-    50000 ->
-      io:format("TIMEOUT~n"),
-      error
   end.
 
 
