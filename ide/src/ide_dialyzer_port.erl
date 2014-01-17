@@ -38,7 +38,7 @@ start(Config)->
 run(From, Config) ->
   
   SetFlags = fun({file, Path}, Acc) -> [Path|Acc];
-                (build_plt, Acc) -> ["--build_plt", "--apps", "erts", "kernel", "stdlib", "mnesia"] ++ Acc;
+                (build_plt, Acc) -> ["--build_plt", "--apps", "erts", "kernel", "stdlib"] ++ Acc;
                 (BadFlag, Acc) -> erlang:error({badflag, BadFlag})
              end,
   Flags = lists:foldl(SetFlags, [], Config),
@@ -65,10 +65,6 @@ loop(From) ->
     {_Port, {exit_status, _}} ->
       ide_log_out_wx:error("Dialyzer failed. See output.", [{hotspot, "output"}]),
       From ! {self(), error}
-  after
-    50000 ->
-      io:format("TIMEOUT~n"),
-      error
   end.
 
 
