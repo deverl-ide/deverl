@@ -693,7 +693,7 @@
 		</object>
 	</object>
 	<object class="wxDialog" name="build_plt">
-		<style>wxDEFAULT_DIALOG_STYLE</style>
+		<style>wxSTAY_ON_TOP</style>
 		<title>Building PLT</title>
 		<centered>1</centered>
 		<object class="wxBoxSizer">
@@ -716,6 +716,210 @@
 					<range>100</range>
 					<value>0</value>
 				</object>
+			</object>
+		</object>
+	</object>
+	<object class="wxDialog" name="dialyzer">
+		<style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER|wxCLOSE_BOX|wxTAB_TRAVERSAL</style>
+		<exstyle>wxWS_EX_BLOCK_EVENTS</exstyle>
+		<title>Run Dialyzer</title>
+		<centered>1</centered>
+		<object class="wxBoxSizer">
+			<minsize>500,380</minsize>
+			<orient>wxHORIZONTAL</orient>
+			<object class="spacer">
+				<option>0</option>
+				<flag>wxALIGN_CENTER_VERTICAL</flag>
+				<border>0</border>
+				<size>20,0</size>
+			</object>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxEXPAND</flag>
+				<border>0</border>
+				<object class="wxBoxSizer">
+					<orient>wxVERTICAL</orient>
+					<object class="spacer">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL</flag>
+						<border>0</border>
+						<size>0,40</size>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag></flag>
+						<border>5</border>
+						<object class="wxStaticText" name="m_staticText10">
+							<label>Run Dialyzer</label>
+							<wrap>-1</wrap>
+						</object>
+					</object>
+					<object class="spacer">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL</flag>
+						<border>0</border>
+						<size>0,5</size>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxEXPAND</flag>
+						<border>0</border>
+						<object class="wxStaticLine" name="wxID_STATIC2">
+							<style>wxLI_HORIZONTAL</style>
+						</object>
+					</object>
+					<object class="spacer">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL</flag>
+						<border>0</border>
+						<size>0,20</size>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxBoxSizer">
+							<orient>wxHORIZONTAL</orient>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxALIGN_CENTER_VERTICAL</flag>
+								<border>5</border>
+								<object class="wxStaticText" name="m_staticText15">
+									<label>Choose source:</label>
+									<wrap>-1</wrap>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>1</option>
+								<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+								<border>5</border>
+								<object class="wxChoice" name="source">
+									<selection>0</selection>
+									<content />
+								</object>
+							</object>
+						</object>
+					</object>
+					<object class="spacer">
+						<option>0</option>
+						<flag>wxEXPAND</flag>
+						<border>5</border>
+						<size>0,10</size>
+					</object>
+					<object class="sizeritem">
+						<option>1</option>
+						<flag>wxEXPAND</flag>
+						<border>5</border>
+						<object class="wxBoxSizer">
+							<orient>wxHORIZONTAL</orient>
+							<object class="sizeritem">
+								<option>1</option>
+								<flag>wxEXPAND</flag>
+								<border>5</border>
+								<object class="wxListBox" name="listbox0">
+									<style>wxLB_MULTIPLE</style>
+									<content />
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag></flag>
+								<border>5</border>
+								<object class="wxBoxSizer">
+									<orient>wxVERTICAL</orient>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL</flag>
+										<border>5</border>
+										<object class="wxButton" name="move_right">
+											<enabled>0</enabled>
+											<label>&gt;</label>
+											<default>0</default>
+										</object>
+									</object>
+									<object class="sizeritem">
+										<option>0</option>
+										<flag>wxALL</flag>
+										<border>5</border>
+										<object class="wxButton" name="move_left">
+											<enabled>0</enabled>
+											<label>&lt;</label>
+											<default>0</default>
+										</object>
+									</object>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>1</option>
+								<flag>wxEXPAND</flag>
+								<border>5</border>
+								<object class="wxListBox" name="listbox1">
+									<style>wxLB_MULTIPLE</style>
+									<content />
+								</object>
+							</object>
+						</object>
+					</object>
+					<object class="spacer">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL</flag>
+						<border>0</border>
+						<size>0,40</size>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxEXPAND</flag>
+						<border>0</border>
+						<object class="wxStaticLine" name="wxID_STATIC">
+							<style>wxLI_HORIZONTAL</style>
+						</object>
+					</object>
+					<object class="spacer">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL</flag>
+						<border>0</border>
+						<size>0,20</size>
+					</object>
+					<object class="sizeritem">
+						<option>0</option>
+						<flag>wxALIGN_RIGHT</flag>
+						<border>5</border>
+						<object class="wxBoxSizer">
+							<orient>wxHORIZONTAL</orient>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag>wxRIGHT</flag>
+								<border>10</border>
+								<object class="wxButton" name="wxID_CANCEL">
+									<label>Cancel</label>
+									<default>0</default>
+								</object>
+							</object>
+							<object class="sizeritem">
+								<option>0</option>
+								<flag></flag>
+								<border>0</border>
+								<object class="wxButton" name="wxID_OK">
+									<enabled>0</enabled>
+									<label>Run</label>
+									<default>0</default>
+								</object>
+							</object>
+						</object>
+					</object>
+					<object class="spacer">
+						<option>0</option>
+						<flag>wxALIGN_CENTER_HORIZONTAL</flag>
+						<border>0</border>
+						<size>0,20</size>
+					</object>
+				</object>
+			</object>
+			<object class="spacer">
+				<option>0</option>
+				<flag>wxALIGN_CENTER_HORIZONTAL</flag>
+				<border>0</border>
+				<size>20,0</size>
 			</object>
 		</object>
 	</object>

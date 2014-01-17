@@ -100,7 +100,7 @@ compile(From, Path, Config) ->
       {Path, lists:append(DirFlags, Files)}
   end,
 
-  ide_compiler_out_wx:clear(),
+  ide_stdout_wx:clear(),
   open_port({spawn_executable, erlc()}, [use_stdio,
                                          exit_status,
                                          {cd, Cwd},
@@ -117,7 +117,7 @@ compile(From, Path, Config) ->
 loop(From, Name) ->
   receive
     {_Port, {data, Data}} ->
-      ide_compiler_out_wx:append(Data),
+      ide_stdout_wx:append(Data),
       loop(From, Name);
     {_Port, {exit_status, 0}} ->
       ide_log_out_wx:message("Compiled " ++ Name ++ " successfully."),

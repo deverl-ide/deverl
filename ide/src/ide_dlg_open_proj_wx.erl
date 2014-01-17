@@ -36,7 +36,7 @@
 %% =====================================================================
 
 new(Parent, Projects) ->
-  wx_object:start({local, ?MODULE}, ?MODULE, {Parent, Projects}, []).
+  wx_object:start(?MODULE, {Parent, Projects}, []).
 
 set_focus(This) ->
 	wx_object:cast(This, setfocus).
