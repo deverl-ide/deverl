@@ -37,10 +37,17 @@ run(Parent) ->
       init(Parent)
   end.
 
-run(Parent, Plt) ->
-  %% open projects, standalone
-  Dlg = ide_dlg_dialyzer_wx:new(Parent, [{projects, ide_proj_man:get_open_projects()},
-                                         {standalone, []}]),
+run(Parent, _Plt) ->
+
+  F = fun(Id) ->
+    {Id, ide_proj_man:get_project_src_files(Id)}
+  end,
+  W = ide_proj_man:get_open_projects(),
+  ProjsSrc = lists:map(F, ide_proj_man:get_open_projects()),
+  StdlnSrc = ide_doc_man_wx:get_standalone_src_files(),
+  
+  Dlg = ide_dlg_dialyzer_wx:new(Parent, [{projects, ProjsSrc},
+                                         {standalone, StdlnSrc}]),
   case wxDialog:showModal(Dlg) of
     ?wxID_CANCEL ->
       ide_dlg_dialyzer_wx:destroy(Dlg);

@@ -26,7 +26,9 @@
 	
 %% Server state			 
 -record(state, {dlg,
-                files %% Selected src files
+                files, %% Selected src files
+                proj_src, %% All open proj src files
+                stdln_src
             	 }).
 
 
@@ -54,8 +56,8 @@ destroy(This) ->
 %% =====================================================================
 
 init({Parent, Config}) ->   
-  Projects = proplists:get_value(projects, Config),
-  Stdln = proplists:get_value(standalone, Config),
+  ProjsSrc = proplists:get_value(projects, Config),
+  StdlnSrc = proplists:get_value(standalone, Config),
   
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
@@ -63,40 +65,39 @@ init({Parent, Config}) ->
   wxXmlResource:loadDialog(Xrc, Dlg, Parent, "dialyzer"),
 
   Choice = wxXmlResource:xrcctrl(Dlg, "source", wxChoice), 
-  Add =  fun(Id) ->
+  Add = fun({Id, _Srcs}) ->
     wxChoice:append(Choice, ide_proj_man:get_name(Id), Id)
   end,
-  lists:map(Add, Projects),
-  
-  case Stdln of
-    [] -> ok;
-    _ -> wxChoice:append(Choice, "Standalone Files")
-  end,
-  
-  case Projects of
-    [] when Stdln =:= [] -> ok;
-    _ -> wxChoice:append(Choice, "All")
-  end,
-  wxChoice:connect(Choice, command_choice_selected),
-  
+  lists:map(Add, ProjsSrc),
   
   Listbox0 = wxXmlResource:xrcctrl(Dlg, "listbox0", wxListBox),
   Listbox1 = wxXmlResource:xrcctrl(Dlg, "listbox1", wxListBox),
   Btn0 = wxXmlResource:xrcctrl(Dlg, "move_right", wxButton),
   Btn1 = wxXmlResource:xrcctrl(Dlg, "move_left", wxButton),
   
-  
-  %% TESTING
-  try
-    Fls = ide_proj_man:get_project_src_files(hd(Projects)),
-    Insert = fun(Str) ->
-      wxListBox:append(Listbox0, filename:basename(Str), Str)
-    end,
-    lists:map(Insert, Fls)
-  catch
-    _:_ -> ok
+  ActiveProj = ide_proj_man:get_active_project(),
+  case ProjsSrc of
+    [] -> 
+      ok; %% No open projects
+    _NoProj when ActiveProj =:= undefined -> %% No project currently active
+      ok;
+    _Proj -> %% Active project
+      Insert = fun(Str) ->
+          wxListBox:append(Listbox0, filename:basename(Str), Str)
+      end,
+      lists:map(Insert, proplists:get_value(ActiveProj, ProjsSrc))
   end,
   
+  case StdlnSrc of
+    [] -> ok;
+    _ -> wxChoice:append(Choice, "Standalone Files")
+  end,
+  
+  case ProjsSrc of
+    [] when StdlnSrc =:= [] -> ok;
+    _ -> wxChoice:append(Choice, "All")
+  end,
+  wxChoice:connect(Choice, command_choice_selected),
   
   wxButton:connect(Btn0, command_button_clicked, [{userData, right}]),
   wxButton:connect(Btn1, command_button_clicked, [{userData, left}]),
@@ -105,8 +106,11 @@ init({Parent, Config}) ->
   wxDialog:connect(Dlg, command_button_clicked, [{id, ?wxID_OK}]), %% overide default handler
     
 	State = #state{
-		dlg=Dlg
-	}, 
+		dlg=Dlg,
+    proj_src=ProjsSrc,
+    stdln_src=StdlnSrc
+	},
+  
 	{Dlg, State}.
 
 handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}}, State) ->
@@ -118,8 +122,24 @@ handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}},
   wxDialog:endModal(State#state.dlg, Id),
   {noreply, State#state{files=Files}};
     
-handle_event(#wx{event=#wxCommand{type=command_choice_selected}}, State) ->
-  io:format("CHOICE EVENT~n"),
+handle_event(#wx{obj=Choice, event=#wxCommand{type=command_choice_selected, cmdString=Str, commandInt=N}}, State) ->
+  Listbox0 = wxXmlResource:xrcctrl(State#state.dlg, "listbox0", wxListBox),
+  Listbox1 = wxXmlResource:xrcctrl(State#state.dlg, "listbox1", wxListBox),
+  ToAdd = case Str of
+    "Standalone Files" ->
+      State#state.stdln_src;
+    "All" ->
+      F = fun({_Id, L}, Acc) -> L ++ Acc end, 
+      lists:foldl(F, [], State#state.proj_src) ++ State#state.stdln_src;
+    _Proj ->
+      proplists:get_value(wxChoice:getClientData(Choice, N), State#state.proj_src)
+  end,
+  wxListBox:clear(Listbox0),
+  wxListBox:clear(Listbox1),
+  Insert = fun(Str1) ->
+    wxListBox:append(Listbox0, filename:basename(Str1), Str1)
+  end,
+  lists:foreach(Insert, ToAdd),
   {noreply, State};
   
 handle_event(#wx{event=#wxCommand{type=command_button_clicked}, userData=UD}, State) ->
