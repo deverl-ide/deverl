@@ -34,6 +34,8 @@ run(From, Config) ->
   open_port({spawn_executable, dialyzer()}, [use_stdio,
                                              exit_status,
                                              {args, Flags}]),
+                                             
+  ide_stdout_wx:append("========================= Dialyzer Output ========================\n"),  
   loop(From).
 
 

@@ -20,17 +20,21 @@
 				 handle_info/2,
 				 handle_call/3,
 				 handle_cast/2,
-				 handle_event/2]).
+				 handle_event/2
+         ]).
 
 %% API
 -export([new/1,
          append/1,
-         clear/0]).
+         clear/0,
+         finished/0
+         ]).
 
 %% Server state
 -record(state, {win,
 								output}).
 
+-define(OUT_WIDTH, 66).
 
 %% =====================================================================
 %% Client API
@@ -63,6 +67,15 @@ clear() ->
   wx_object:cast(?MODULE, clear).
 
 
+%% =====================================================================
+%% @doc
+
+-spec finished() -> ok.
+
+finished() ->
+  append("Finished").
+  
+  
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
