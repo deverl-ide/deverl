@@ -89,7 +89,7 @@ build_dlg(Parent) ->
   Dlg.
   
 check_plt() ->
-  FileName = "/Users/tommo/.dialyzer_plt",
+  FileName = "/home/qqq/.dialyzer_plt",
   R = case file:read_file(FileName) of
     {ok, Bin} ->
       try binary_to_term(Bin) of
