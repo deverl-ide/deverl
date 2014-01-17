@@ -795,7 +795,7 @@ create_utils(ParentA) ->
   end,
 
   Log = CreateWindow(Splitter, ide_log_out_wx, ?WINDOW_LOG),
-  CompilerOutput = CreateWindow(Splitter, ide_compiler_out_wx, ?WINDOW_OUTPUT),
+  CompilerOutput = CreateWindow(Splitter, ide_stdout_wx, ?WINDOW_OUTPUT),
 
   wxSplitterWindow:splitVertically(Splitter, TabbedWindow, Log, [{sashPosition, ?SPLITTER_LOG_SASH_POS_DEFAULT}]),
   wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),

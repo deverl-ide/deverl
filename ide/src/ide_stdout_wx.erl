@@ -7,7 +7,7 @@
 %% @end
 %% =====================================================================
 
--module(ide_compiler_out_wx).
+-module(ide_stdout_wx).
 
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").

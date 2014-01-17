@@ -14,6 +14,11 @@
 -export([
   run/1
 	]).
+  
+%% Spawned
+-export([
+  build_plt/2
+]).
 	
 -record(file_plt, {version,
                    file_md5_list,
@@ -26,25 +31,46 @@
 
 run(Parent) ->
   case check_plt() of
-    {ok, _} ->
-      ok;
+    {ok, Plt} ->
+      run(Parent, Plt);
     {error, _} ->
       init(Parent)
   end.
+
+run(Parent, Plt) ->
+  %% open projects, standalone
+  Dlg = ide_dlg_dialyzer_wx:new(Parent, [{projects, ide_proj_man:get_open_projects()},
+                                         {standalone, []}]),
+  case wxDialog:showModal(Dlg) of
+    ?wxID_CANCEL ->
+      ide_dlg_dialyzer_wx:destroy(Dlg);
+    ?wxID_OK ->
+      Files = ide_dlg_dialyzer_wx:get_files(Dlg),
+      ide_dlg_dialyzer_wx:destroy(Dlg),
+      run1(Files)
+  end.
+  
+run1(Files) ->
+  ide_dialyzer_port:run(self(), [{files, Files}]),
+  ok.
 
 init(Parent) ->
   Msg = "Before Dialyzer is ran, the PLT table must be built.\nWould you like to build it now?",
   Dlg = wxMessageDialog:new(Parent, Msg, [{style, ?wxYES_NO}]),
   case wxMessageDialog:showModal(Dlg) of
     ?wxID_YES ->
-      build_plt(Parent);
+      wxDialog:destroy(Dlg),
+      spawn_link(?MODULE, build_plt, [Parent, wx:get_env()]);
     ?wxID_NO ->
+      wxDialog:destroy(Dlg),
       cancelled
   end.
   
-build_plt(Parent) ->
+build_plt(Parent, WxEnv) ->
+  wx:set_env(WxEnv),
   Dlg = build_dlg(Parent),
   wxDialog:show(Dlg),
+  %% Disable GUI components here
   ide_dialyzer_port:run(self(), [build_plt]),
   receive
     {_From, ok} ->
@@ -52,6 +78,7 @@ build_plt(Parent) ->
     {_From, error} ->
       wxDialog:destroy(Dlg)
   end.
+  %% Re-enable here
 
 build_dlg(Parent) ->
   Xrc = wxXmlResource:get(),

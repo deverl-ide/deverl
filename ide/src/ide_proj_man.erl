@@ -42,7 +42,8 @@
          get_build_config/1,
          is_known_project/1,
          set_project_configuration/1,
-         import/1
+         import/1,
+         get_project_src_files/1
          ]).
 
 -export_type([project_id/0]).
@@ -59,6 +60,14 @@
 -record(state, {projects :: [project_record()],
 								active_project :: project_id(),
 								frame :: wxFrame:wxFrame()}).
+                
+
+
+-spec get_project_src_files(project_id()) -> [path()].
+
+get_project_src_files(ProjId) ->
+  Path = filename:join(get_root(ProjId), "src"),
+  Fns = filelib:wildcard(Path ++ "/*.erl").
 
 
 %% =====================================================================
