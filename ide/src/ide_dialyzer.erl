@@ -70,7 +70,7 @@ build_plt(Parent, WxEnv) ->
   wx:set_env(WxEnv),
   Dlg = build_dlg(Parent),
   wxDialog:show(Dlg),
-  %% Disable GUI components here
+  %% Disable GUI components here IE COMPILER
   ide_dialyzer_port:run(self(), [build_plt]),
   receive
     {_From, ok} ->

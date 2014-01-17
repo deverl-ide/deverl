@@ -134,6 +134,7 @@ handle_event(#wx{event=#wxCommand{type=command_button_clicked}, userData=UD}, St
       wxWindow:enable(wxXmlResource:xrcctrl(State#state.dlg, "wxID_OK", wxButton))
   end,
   {noreply, State};
+<<<<<<< HEAD
 
 handle_event(#wx{event=#wxFocus{type=kill_focus}, userData=0}, State) ->
   wxWindow:disable(wxXmlResource:xrcctrl(State#state.dlg, "move_right", wxButton)),
@@ -151,6 +152,9 @@ handle_event(#wx{event=#wxFocus{type=set_focus}, userData=1}, State) ->
   deselect_all(wxXmlResource:xrcctrl(State#state.dlg, "listbox0", wxListBox)),
   {noreply, State};
 
+=======
+  
+>>>>>>> 93d44e7f0687bcdffe5b97d4214f9ea8401078bd
 handle_event(#wx{event=#wxCommand{type=command_listbox_selected}, userData=0}, State) ->
   wxWindow:enable(wxXmlResource:xrcctrl(State#state.dlg, "move_right", wxButton)),
   {noreply, State};
