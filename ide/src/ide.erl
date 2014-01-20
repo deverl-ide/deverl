@@ -10,6 +10,7 @@
 -module(ide).
 
 -include_lib("wx/include/wx.hrl").
+-include_lib("eunit/include/eunit.hrl").
 -include("ide.hrl").
 
 %% wx_object
@@ -54,8 +55,16 @@
 -define(SPLITTER_LOG_SASH_POS_DEFAULT, -500).
 -define(FRAME_TITLE, "Erlang IDE").
 -define(BUTTON_HIDE_OUTPUT, 0).
--define(BUTTON_LOG, 1).
--define(BUTTON_COMPILER_OUTPUT, 2).
+-define(ID_TOGGLE_LOG, 1).
+-define(ID_TOGGLE_OUTPUT, 2).
+
+
+add(A, B) -> A + B.
+add_test() -> 20 = add(10,10).
+
+mult(A, B) -> A * B.
+mult0_test() -> 20 = mult(4,5).
+mult_test() -> 20 = mult(4,6).
 
 
 %% =====================================================================
@@ -376,7 +385,7 @@ handle_event(#wx{id=?MENU_ID_PROJECT_CONFIG}, State) ->
   {noreply, State};
 
 handle_event(#wx{id=?wxID_PREFERENCES}, State) ->
-  ide_dlg_prefs_wx:start(State#state.frame),
+  ide_dlg_prefs_wx:start([{parent, State#state.frame}]),
   {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_QUICK_FIND}, State) ->
@@ -519,6 +528,9 @@ handle_event(#wx{id=?MENU_ID_ADD_TO_PLT}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_PLT_INFO}, State) ->
+  Listener = ide_eunit_listener:start(),
+  RAA = eunit:test(ide, [{report, Listener}]),
+  io:format("RAA ~p~n", [RAA]),
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_DIAL_WARN}, State) ->
@@ -750,6 +762,7 @@ handle_event(Ev, State) ->
 create_utils(ParentA) ->
   Parent = wxPanel:new(ParentA),
   Sz = wxBoxSizer:new(?wxHORIZONTAL),
+  wxSizer:addSpacer(Sz, 10),
   wxPanel:setSizer(Parent, Sz),
 
  	SplitterStyle = case os:type() of
@@ -760,28 +773,28 @@ create_utils(ParentA) ->
   wxSplitterWindow:setSashGravity(Splitter, 0.5),
 
   %% Splitter window 1
-	TabbedWindow = ide_tabbed_win_wx:new([{parent, Splitter}]),
+  % TabbedWindow = ide_tabbed_win_wx:new([{parent, Splitter}]),
 
 	%% Start the port that communicates with the external ERTs
 	Console = case ide_console_sup:start_link([]) of
 		{error, _E} ->
-			ide_lib_widgets:placeholder(TabbedWindow, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
+			ide_lib_widgets:placeholder(Splitter, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
 			%% Disable console menu/toolbar items
 		_Port ->
-			ide_console_wx:new([{parent, TabbedWindow}])
+			ide_console_wx:new([{parent, Splitter}])
 	end,
-	ide_tabbed_win_wx:add_page(TabbedWindow, Console, "Console"),
+  % ide_tabbed_win_wx:add_page(Splitter, Console, "Console"),
 
   % Observer = ide_observer:start([{parent, TabbedWindow}]),
   % ide_tabbed_win_wx:add_page(TabbedWindow, Observer, "Observer"),
 
-  Dialyser = ide_lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
-	ide_tabbed_win_wx:add_page(TabbedWindow, Dialyser, "Dialyser"),
-
-  Debugger = ide_lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
-	ide_tabbed_win_wx:add_page(TabbedWindow, Debugger, "Debugger"),
-
-	ide_tabbed_win_wx:set_selection(TabbedWindow, 1),
+  %   Dialyser = ide_lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
+  % ide_tabbed_win_wx:add_page(TabbedWindow, Dialyser, "Dialyser"),
+  % 
+  %   Debugger = ide_lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
+  % ide_tabbed_win_wx:add_page(TabbedWindow, Debugger, "Debugger"),
+  % 
+  % ide_tabbed_win_wx:set_selection(TabbedWindow, 1),
 
   %% Splitter window 2
 
@@ -797,7 +810,7 @@ create_utils(ParentA) ->
   Log = CreateWindow(Splitter, ide_log_out_wx, ?WINDOW_LOG),
   CompilerOutput = CreateWindow(Splitter, ide_stdout_wx, ?WINDOW_OUTPUT),
 
-  wxSplitterWindow:splitVertically(Splitter, TabbedWindow, Log, [{sashPosition, ?SPLITTER_LOG_SASH_POS_DEFAULT}]),
+  wxSplitterWindow:splitVertically(Splitter, Console, Log, [{sashPosition, ?SPLITTER_LOG_SASH_POS_DEFAULT}]),
   wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
   %% Button toolbar
@@ -808,8 +821,8 @@ create_utils(ParentA) ->
   % ButtonFlags = [{style, ?wxBORDER_SIMPLE}],
   ButtonFlags = [{style, ?wxBORDER_NONE}],
   % ButtonFlags = [],
-  Button1 = wxBitmapButton:new(ToolBar, ?BUTTON_LOG, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
-  Button2 = wxBitmapButton:new(ToolBar, ?BUTTON_COMPILER_OUTPUT, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
+  Button1 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_LOG, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
+  Button2 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_OUTPUT, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
   Button3 = wxBitmapButton:new(ToolBar, ?BUTTON_HIDE_OUTPUT, wxArtProvider:getBitmap("wxART_GO_BACK", [{size, {16,16}}]), ButtonFlags),
 
   %% Connect button handlers
@@ -820,7 +833,6 @@ create_utils(ParentA) ->
   SzFlags = [{border, 3}, {flag, ?wxALL}],
   wxSizer:add(ToolBarSz, Button1, SzFlags),
   wxSizer:add(ToolBarSz, Button2, SzFlags),
-
   wxSizer:addStretchSpacer(ToolBarSz),
   wxSizer:add(ToolBarSz, Button3, SzFlags),
 
@@ -828,7 +840,7 @@ create_utils(ParentA) ->
 
   ide_log_out_wx:message("Application started."),
 
-	{Parent, TabbedWindow, Log}.
+	{Parent, ok, Log}.
 
 
 %% =====================================================================
@@ -848,8 +860,14 @@ create_left_window(Frame, Parent) ->
 	ProjectTrees = ide_proj_tree_wx:start([{parent, Toolbook}, {frame, Frame}]),
 	ide_tabbed_win_img_wx:add_page(Toolbook, ProjectTrees, "Browser", [{imageId, 0}]),
 
-  TestPanel = ide_lib_widgets:placeholder(Toolbook, "No Tests"),
+
+  TestPanel = ide_testpane:new([{parent, Toolbook}]),
+  
 	ide_tabbed_win_img_wx:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
+  
+  Data = [{test, m, module1},{test, m, module2},{test, m, module3},{test, m, module4},{test, m, module5}],
+  ide_testpane:insert(Data),
+
 
 	FunctionsPanel = ide_sl_wx:start([{parent, Toolbook}]),
 	ide_tabbed_win_img_wx:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
