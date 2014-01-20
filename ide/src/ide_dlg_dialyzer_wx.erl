@@ -55,68 +55,25 @@ destroy(This) ->
 %% Callback functions
 %% =====================================================================
 
-<<<<<<< HEAD
-init({Parent, Config}) ->
-  Projects = proplists:get_value(projects, Config),
-  Stdln = proplists:get_value(standalone, Config),
-
-=======
 init({Parent, Config}) ->   
   ProjsSrc = proplists:get_value(projects, Config),
   StdlnSrc = proplists:get_value(standalone, Config),
   
->>>>>>> a6ad0df8aa20632d2f048c37db962c64eaaddc38
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
   ide_lib_dlg_wx:win_var(Dlg),
   wxXmlResource:loadDialog(Xrc, Dlg, Parent, "dialyzer"),
 
-<<<<<<< HEAD
-  Choice = wxXmlResource:xrcctrl(Dlg, "source", wxChoice),
-  Add =  fun(Id) ->
-    wxChoice:append(Choice, ide_proj_man:get_name(Id), Id)
-  end,
-  lists:map(Add, Projects),
-
-  case Stdln of
-    [] -> ok;
-    _ -> wxChoice:append(Choice, "Standalone Files")
-  end,
-
-  case Projects of
-    [] when Stdln =:= [] -> ok;
-    _ -> wxChoice:append(Choice, "All")
-  end,
-  wxChoice:connect(Choice, command_choice_selected),
-
-=======
   Choice = wxXmlResource:xrcctrl(Dlg, "source", wxChoice), 
   Add = fun({Id, _Srcs}) ->
     wxChoice:append(Choice, ide_proj_man:get_name(Id), Id)
   end,
   lists:map(Add, ProjsSrc),
   
->>>>>>> a6ad0df8aa20632d2f048c37db962c64eaaddc38
   Listbox0 = wxXmlResource:xrcctrl(Dlg, "listbox0", wxListBox),
   Listbox1 = wxXmlResource:xrcctrl(Dlg, "listbox1", wxListBox),
   Btn0 = wxXmlResource:xrcctrl(Dlg, "move_right", wxButton),
   Btn1 = wxXmlResource:xrcctrl(Dlg, "move_left", wxButton),
-<<<<<<< HEAD
-
-  %% TESTING
-  try
-    Fls = ide_proj_man:get_project_src_files(hd(Projects)),
-    Insert = fun(Str) ->
-      wxListBox:append(Listbox0, filename:basename(Str), Str)
-    end,
-    lists:map(Insert, Fls)
-  catch
-    _:_ -> ok
-  end,
-  
-  wxChoice:setSelection(Choice, 0),
-
-=======
   
   ActiveProj = ide_proj_man:get_active_project(),
   case ProjsSrc of
@@ -142,7 +99,6 @@ init({Parent, Config}) ->
   end,
   wxChoice:connect(Choice, command_choice_selected),
   
->>>>>>> a6ad0df8aa20632d2f048c37db962c64eaaddc38
   wxButton:connect(Btn0, command_button_clicked, [{userData, right}]),
   wxButton:connect(Btn1, command_button_clicked, [{userData, left}]),
   wxListBox:connect(Listbox0, command_listbox_selected, [{userData, 0}]),
@@ -150,16 +106,11 @@ init({Parent, Config}) ->
   wxDialog:connect(Dlg, command_button_clicked, [{id, ?wxID_OK}]), %% overide default handler
 
 	State = #state{
-<<<<<<< HEAD
-		dlg=Dlg
-	},
-=======
 		dlg=Dlg,
     proj_src=ProjsSrc,
     stdln_src=StdlnSrc
 	},
   
->>>>>>> a6ad0df8aa20632d2f048c37db962c64eaaddc38
 	{Dlg, State}.
 
 
@@ -172,11 +123,6 @@ handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}},
   Files = lists:map(GetData, lists:seq(0, wxListBox:getCount(Listbox1) - 1)),
   wxDialog:endModal(State#state.dlg, Id),
   {noreply, State#state{files=Files}};
-<<<<<<< HEAD
-
-handle_event(#wx{event=#wxCommand{type=command_choice_selected}}, State) ->
-  io:format("CHOICE EVENT~n"),
-=======
     
 handle_event(#wx{obj=Choice, event=#wxCommand{type=command_choice_selected, cmdString=Str, commandInt=N}}, State) ->
   Listbox0 = wxXmlResource:xrcctrl(State#state.dlg, "listbox0", wxListBox),
@@ -196,7 +142,6 @@ handle_event(#wx{obj=Choice, event=#wxCommand{type=command_choice_selected, cmdS
     wxListBox:append(Listbox0, filename:basename(Str1), Str1)
   end,
   lists:foreach(Insert, ToAdd),
->>>>>>> a6ad0df8aa20632d2f048c37db962c64eaaddc38
   {noreply, State};
 
 handle_event(#wx{event=#wxCommand{type=command_button_clicked}, userData=UD}, State) ->
