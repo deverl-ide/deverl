@@ -265,7 +265,8 @@ build_menu(Frame) ->
   wxMenuBar:append(MenuBar, Window, "Display"),
   wxMenuBar:append(MenuBar, Help, "Help"),
   
-  wxFrame:connect(Frame, command_menu_selected),
+  wxFrame:connect(Frame, command_menu_selected), 
+  %wxFrame:connect(Frame, command_menu_selected, [{id,?wxID_CUT}, {skip, true}]), 
 	wxFrame:connect(Frame, command_menu_selected,
 		[{userData, Theme}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),
 	wxFrame:connect(Frame, command_menu_selected,
