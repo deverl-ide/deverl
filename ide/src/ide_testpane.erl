@@ -45,6 +45,8 @@ new(Config) ->
 %% @doc
 
 add_module_tests(Module) ->
+  code:delete(Module),
+  code:purge(Module),
   List = wx:typeCast(wxWindow:findWindowById(?ID_LIST), wxListCtrl),
   wxListCtrl:deleteAllItems(List),
   try 
@@ -52,8 +54,7 @@ add_module_tests(Module) ->
     insert(List, Tests)
   catch
     throw:_E -> 
-      %Dlg = wxMessageDialog:new(wx:null(), "No tests found. Write tests, then recompile module."),
-      %wxDialog:showModal(Dlg)
+      % List placeholder
       ok
   end.
   

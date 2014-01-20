@@ -255,14 +255,9 @@ handle_cast({title, Title}, State=#state{frame=Frame}) ->
 	wxFrame:setTitle(Frame, Str),
   {noreply, State};
   
-handle_cast({output_display, Window}, State=#state{splitter_output_pos=Pos}) ->
-  Id = case Window of
-    output -> ?WINDOW_OUTPUT;
-    log -> ?WINDOW_LOG
-  end,
+handle_cast({output_display, Id}, State=#state{splitter_output_pos=Pos}) ->
   Splitter = wx:typeCast(wxWindow:findWindowById(?SPLIITER_LOG), wxSplitterWindow),
-  Win = wxWindow:findWindowById(Id),
-  replace_output_window(Splitter, Win, Pos),
+  replace_output_window(Splitter, wxWindow:findWindowById(Id), Pos),
   {noreply, State}.
 
 %% @hidden
@@ -576,16 +571,15 @@ handle_event(#wx{id=Id}, State=#state{left_pane=LeftPane})
   ide_tabbed_win_img_wx:set_selection(LeftPane, Idx), %% Default to projects
   {noreply, State};
 
-handle_event(#wx{id=Id}, State=#state{util_tabbed=Utils})
-    when (Id >= ?MENU_ID_CONSOLE_WINDOW) and (Id =< ?MENU_ID_DEBUGGER_WINDOW) ->
-  Idx = case Id of
-    ?MENU_ID_CONSOLE_WINDOW -> 1;
-    ?MENU_ID_DIALYSER_WINDOW -> 2;
-    ?MENU_ID_DEBUGGER_WINDOW -> 3
+handle_event(#wx{id=Id0}, State=#state{util_tabbed=Utils})
+    when (Id0 >= ?MENU_ID_OUTPUT_WINDOW) and (Id0 =< ?MENU_ID_LOG_WINDOW) ->
+  Id1 = case Id0 of
+    ?MENU_ID_OUTPUT_WINDOW -> ?WINDOW_OUTPUT;
+    ?MENU_ID_LOG_WINDOW -> ?WINDOW_LOG
   end,
-  ide_tabbed_win_wx:set_selection(Utils, Idx), %% Default to projects
+  display_output_window(Id1),
   {noreply, State};
-
+  
 %% Handle copy/paste
 % Currently on MSW and Linux the menu event is not caught by the in focus control even when
 % it has a registered handler for it. On OSX the event is caught as expected (and will
@@ -762,7 +756,7 @@ handle_event(Ev, State) ->
 create_utils(ParentA) ->
   Parent = wxPanel:new(ParentA),
   Sz = wxBoxSizer:new(?wxHORIZONTAL),
-  wxSizer:addSpacer(Sz, 10),
+  wxSizer:addSpacer(Sz, 6),
   wxPanel:setSizer(Parent, Sz),
 
  	SplitterStyle = case os:type() of
@@ -773,8 +767,6 @@ create_utils(ParentA) ->
   wxSplitterWindow:setSashGravity(Splitter, 0.5),
 
   %% Splitter window 1
-  % TabbedWindow = ide_tabbed_win_wx:new([{parent, Splitter}]),
-
 	%% Start the port that communicates with the external ERTs
 	Console = case ide_console_sup:start_link([]) of
 		{error, _E} ->
@@ -783,21 +775,8 @@ create_utils(ParentA) ->
 		_Port ->
 			ide_console_wx:new([{parent, Splitter}])
 	end,
-  % ide_tabbed_win_wx:add_page(Splitter, Console, "Console"),
-
-  % Observer = ide_observer:start([{parent, TabbedWindow}]),
-  % ide_tabbed_win_wx:add_page(TabbedWindow, Observer, "Observer"),
-
-  %   Dialyser = ide_lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
-  % ide_tabbed_win_wx:add_page(TabbedWindow, Dialyser, "Dialyser"),
-  % 
-  %   Debugger = ide_lib_widgets:placeholder(TabbedWindow, "Not Implemented"),
-  % ide_tabbed_win_wx:add_page(TabbedWindow, Debugger, "Debugger"),
-  % 
-  % ide_tabbed_win_wx:set_selection(TabbedWindow, 1),
 
   %% Splitter window 2
-
   CreateWindow = fun(P, WindowModule, Id) ->
     W = wxPanel:new(P, [{winid, Id}]),
     WSz = wxBoxSizer:new(?wxHORIZONTAL),
@@ -818,9 +797,7 @@ create_utils(ParentA) ->
   ToolBarSz = wxBoxSizer:new(?wxVERTICAL),
   wxPanel:setSizer(ToolBar, ToolBarSz),
 
-  % ButtonFlags = [{style, ?wxBORDER_SIMPLE}],
   ButtonFlags = [{style, ?wxBORDER_NONE}],
-  % ButtonFlags = [],
   Button1 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_LOG, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
   Button2 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_OUTPUT, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
   Button3 = wxBitmapButton:new(ToolBar, ?BUTTON_HIDE_OUTPUT, wxArtProvider:getBitmap("wxART_GO_BACK", [{size, {16,16}}]), ButtonFlags),
@@ -860,13 +837,8 @@ create_left_window(Frame, Parent) ->
 	ProjectTrees = ide_proj_tree_wx:start([{parent, Toolbook}, {frame, Frame}]),
 	ide_tabbed_win_img_wx:add_page(Toolbook, ProjectTrees, "Browser", [{imageId, 0}]),
 
-
   TestPanel = ide_testpane:new([{parent, Toolbook}]),
-  
 	ide_tabbed_win_img_wx:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
-  
-  %Data = [{test, m, module1},{test, m, module2},{test, m, module3},{test, m, module4},{test, m, module5}],
-  %ide_testpane:insert(Data),
 
 	FunctionsPanel = ide_sl_wx:start([{parent, Toolbook}]),
 	ide_tabbed_win_img_wx:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),

@@ -254,7 +254,7 @@ append(Log, Msg) ->
 hotspot_action(Range) ->
   case Range of
     "output" ->
-      ide:display_output_window(output);
+      ide:display_output_window(?WINDOW_OUTPUT);
     _ ->
       ok
   end.
