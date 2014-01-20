@@ -34,24 +34,36 @@ init(Config) ->
 
 do_init(Config) ->
   Parent = proplists:get_value(parent, Config),
-  Panel = wxWindow:new(Parent, ?wxID_ANY),
+  %   Panel = wxWindow:new(Parent, ?wxID_ANY),
+  % 
+  %   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
+  %   wxWindow:setSizer(Panel, LRSizer),
+  %   wxSizer:addSpacer(LRSizer, 20),
+  % 
+  %   VertSizer = wxBoxSizer:new(?wxVERTICAL),
+  %   wxSizer:addSpacer(VertSizer, 20),
+  %   wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Nothing here yet.")),
+  % 
+  %   wxSizer:addSpacer(VertSizer, 20),
+  % 
+  %   wxSizer:add(LRSizer, VertSizer),
+  %   wxSizer:addSpacer(LRSizer, 20),
+  % 
+  % wxSizer:layout(LRSizer),
+  
+  Xrc = wxXmlResource:get(),
+  Panel0 = wxPanel:new(),
+  % ide_lib_dlg_wx:win_var(Dlg),
 
-  LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  wxWindow:setSizer(Panel, LRSizer),
-  wxSizer:addSpacer(LRSizer, 20),
-
-  VertSizer = wxBoxSizer:new(?wxVERTICAL),
-  wxSizer:addSpacer(VertSizer, 20),
-  wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Nothing here yet.")),
-
-  wxSizer:addSpacer(VertSizer, 20),
-
-  wxSizer:add(LRSizer, VertSizer),
-  wxSizer:addSpacer(LRSizer, 20),
-
-	wxSizer:layout(LRSizer),
-
-  {Panel, #state{parent=Panel}}.
+  %% Load XRC (Assumes all XRC handlers init previously)
+  wxXmlResource:loadPanel(Xrc, Panel0, Parent, "prefs"),
+  Sz = wxWindow:getSizer(Panel0),
+  
+  %% Load first pref
+  Panel1 = wxXmlResource:loadPanel(Xrc, Parent, "pref_compiler"),
+  wxSizer:add(Sz, Panel1),
+  
+  {Panel0, #state{parent=Panel0}}.
 
 
 handle_event(Ev = #wx{}, State = #state{}) ->

@@ -35,8 +35,8 @@
          get_active_document/0,
          get_path/1,
          set_selection/1,
-         
-         test/0]).
+         get_standalone_src_files/0
+         ]).
 
 %% Records
 -record(document, {path :: string(),
@@ -55,12 +55,6 @@
 								sizer,
 								parent
                 }).
-
-%% TESTING
-test() ->
-  wx_object:call(?MODULE, teststc).
-
-
 
 
 %% =====================================================================
@@ -144,7 +138,7 @@ close_active_document() ->
 -spec close_project(project_id()) -> ok | cancelled.
 
 close_project(ProjectId) ->
-  close_documents(get_project_documents(ProjectId)).
+  close_documents(get_projects_open_docs(ProjectId)).
 
 
 %% =====================================================================
@@ -253,6 +247,13 @@ set_selection(Direction) ->
 
 
 %% =====================================================================
+%% @doc Get the src files for all standalone files.
+
+get_standalone_src_files() ->
+  wx_object:call(?MODULE, stdln_src).
+
+
+%% =====================================================================
 %% Callbacks
 %% =====================================================================
 
@@ -306,12 +307,6 @@ handle_cast({set_sel, Direction}, State=#state{notebook=Nb}) ->
   end,
   wxAuiNotebook:setSelection(Nb, Idx),
   {noreply, State}.
-  
-handle_call(teststc, _From, State) -> 
-  Stc = get(stc),
-  Text = wxStyledTextCtrl:getText(Stc),
-  io:format("TEXT: ~p~n", [Text]),
-  {noreply, State};
 
 handle_call({create_doc, Path, ProjectId}, _From,
 						State=#state{notebook=Nb, sizer=Sz, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
@@ -356,6 +351,16 @@ handle_call({get_project_docs, ProjectId}, _From,
 			Acc
 		end, [], DocRecords),
   {reply, DocList, State};
+  
+handle_call(stdln_src, _From, State=#state{doc_records=DocRecords}) -> 
+  SrcFiles = lists:foldl(
+      fun
+      ({_DocId, Doc=#document{project_id=undefined}}, Acc) ->
+        [Doc#document.path | Acc];
+      (_, Acc) ->
+        Acc
+      end, [], DocRecords),
+  {reply, SrcFiles, State};
 
 handle_call({get_modified_docs, DocIdList}, _From,
 				    State=#state{parent=Parent, doc_records=DocRecords}) ->
@@ -576,7 +581,7 @@ save_and_close(DocIdList) ->
   Failed :: [document_id()].
 
 save_project(ProjectId) ->
-	save_documents(get_project_documents(ProjectId)).
+	save_documents(get_projects_open_docs(ProjectId)).
 
 
 %% =====================================================================
@@ -695,9 +700,9 @@ get_open_documents() ->
 %% =====================================================================
 %% @doc
 
--spec get_project_documents(project_id()) -> [document_id()].
+-spec get_projects_open_docs(project_id()) -> [document_id()].
 
-get_project_documents(ProjectId) ->
+get_projects_open_docs(ProjectId) ->
   wx_object:call(?MODULE, {get_project_docs, ProjectId}).
 
 
