@@ -5,12 +5,14 @@
 
 -export([
   new/1,
-  insert/1
-]).
+  add_module_tests/1
+  ]).
 
 -define(ID_LIST, 1023).
 
 
+%% =====================================================================
+%% @doc
 
 new(Config) ->
   Parent = proplists:get_value(parent, Config),
@@ -38,14 +40,34 @@ new(Config) ->
   wxPanel:setSizer(Panel, Sz),
   Panel.
   
-insert(L) ->
+  
+%% =====================================================================
+%% @doc
+
+add_module_tests(Module) ->
   List = wx:typeCast(wxWindow:findWindowById(?ID_LIST), wxListCtrl),
+  wxListCtrl:deleteAllItems(List),
+  try 
+    Tests = eunit_data:get_module_tests(Module),
+    insert(List, Tests)
+  catch
+    throw:_E -> 
+      %Dlg = wxMessageDialog:new(wx:null(), "No tests found. Write tests, then recompile module."),
+      %wxDialog:showModal(Dlg)
+      ok
+  end.
+  
+  
+%% =====================================================================
+%% @doc
+
+insert(ListCtrl, L) ->
   Fn = fun({test, _Mod, F}, Acc) ->
     Str = atom_to_list(F),
-		wxListCtrl:insertItem(List, Acc, ""),
-		wxListCtrl:setItem(List, Acc, 0, Str),
-    wxListCtrl:setItemImage(List, Acc, 1),
-    wxListCtrl:refreshItem(List, Acc),
+		wxListCtrl:insertItem(ListCtrl, Acc, ""),
+		wxListCtrl:setItem(ListCtrl, Acc, 0, Str),
+    wxListCtrl:setItemImage(ListCtrl, Acc, 1),
+    wxListCtrl:refreshItem(ListCtrl, Acc),
     Acc + 1
   end,
   lists:foldl(Fn, 0, L).

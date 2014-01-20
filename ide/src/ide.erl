@@ -865,9 +865,8 @@ create_left_window(Frame, Parent) ->
   
 	ide_tabbed_win_img_wx:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
   
-  Data = [{test, m, module1},{test, m, module2},{test, m, module3},{test, m, module4},{test, m, module5}],
-  ide_testpane:insert(Data),
-
+  %Data = [{test, m, module1},{test, m, module2},{test, m, module3},{test, m, module4},{test, m, module5}],
+  %ide_testpane:insert(Data),
 
 	FunctionsPanel = ide_sl_wx:start([{parent, Toolbook}]),
 	ide_tabbed_win_img_wx:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),

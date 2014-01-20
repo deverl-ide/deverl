@@ -323,6 +323,8 @@ handle_call({create_doc, Path, ProjectId}, _From,
 			load_editor_contents(Editor, Path),
       case ProjectId of
         undefined ->
+          io:format("DIR ADDED: ~p~n", [filename:dirname(Path)]),
+          code:add_path(filename:dirname(Path)),
           ide_proj_tree_wx:add_standalone_document(Path);
         _ ->
           %ide_proj_tree_wx:set_has_children(filename:dirname(Path))
@@ -470,6 +472,8 @@ handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed, sel
   DocId = page_idx_to_doc_id(Nb, Idx, PageToDoc),
   #document{project_id=PrId} = get_record(DocId, DocRecords),
   ide_proj_man:set_active_project(PrId),
+  Ebin = list_to_atom(filename:basename(filename:rootname(wxAuiNotebook:getPageText(Nb, Idx)))),
+  ide_testpane:add_module_tests(Ebin),
   {noreply, State}.
 
 code_change(_, _, State) ->

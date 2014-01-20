@@ -143,8 +143,7 @@ open_project_dialog(Frame) ->
 -spec open_project(path()) -> project_id().
 
 open_project(Path) ->
-  Id = gen_server:call(?MODULE, {new_project, Path}),
-  Id.
+  gen_server:call(?MODULE, {new_project, Path}).
 
 
 %% =====================================================================
@@ -332,6 +331,7 @@ handle_call({new_project, Path}, _From, State=#state{projects=Projects}) ->
     	Record = {Id, #project{root=Path, open_files=[]}},
       ide_proj_tree_wx:add_project(Id, Path),
       ide:toggle_menu_group([?MENU_GROUP_PROJECTS_EMPTY], true),
+      code:add_path(filename:join(Path, "ebin")),
       {reply, Id, State#state{projects=[Record | Projects]}}
   end;
 
