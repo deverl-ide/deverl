@@ -67,7 +67,7 @@ do_init(Config) ->
   %% Font
   add_bold_label(Panel, MainSz, "Font"),
 
-  Font = ide_sys_pref_gen:get_font(console),
+  Font = ide_sys_pref_gen:get_font(console_font),
 
   FontSz = wxBoxSizer:new(?wxHORIZONTAL),
   FontStr = wxStaticText:new(Panel, ?wxID_ANY, get_font_string(Font)),
@@ -140,12 +140,7 @@ handle_event(#wx{event=#wxCommand{type=command_button_clicked}},
     ?wxID_OK ->
       NewFont = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
       wxStaticText:setLabel(FontStr, get_font_string(NewFont)),
-      %% Crap way to set font prefs, need a function that does all this lot
-      ide_sys_pref_gen:set_preference(console_font_size, wxFont:getPointSize(NewFont)),
-      ide_sys_pref_gen:set_preference(console_font_family, wxFont:getFamily(NewFont)),
-      ide_sys_pref_gen:set_preference(console_font_style, wxFont:getStyle(NewFont)),
-      ide_sys_pref_gen:set_preference(console_font_weight, wxFont:getWeight(NewFont)),
-      ide_sys_pref_gen:set_preference(console_font_facename, wxFont:getFaceName(NewFont)),
+      ide_sys_pref_gen:set_font(console_font, NewFont),
       ide_console_wx:set_font(NewFont),
       NewFont;
     ?wxID_CANCEL ->

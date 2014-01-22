@@ -313,7 +313,7 @@ handle_call({create_doc, Path, ProjectId}, _From,
 	case is_already_open(Path, DocRecords) of
 		false ->
 			ensure_notebook_visible(Nb, Sz),
-      Font = ide_sys_pref_gen:get_font(editor),
+      Font = ide_sys_pref_gen:get_font(editor_font),
 		  Editor = ide_editor_wx:start([{parent, Nb}, {font, Font}]),
 		  wxAuiNotebook:addPage(Nb, Editor, filename:basename(Path), [{select, true}]),
 		  DocId = generate_id(),
@@ -639,28 +639,16 @@ remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
   %% Grab the stc, so we can make sure it's deleted
   Rec = get_record(DocId, DocRecords),
   Ed = Rec#document.editor,
-  % io:format("EDITOR1: ~p~n", [Ed]),
-  Stc = ide_editor_wx:get_stc(Ed),
-  put(stc, Stc),
   
-  % receive after 5000 -> ok end,
-  
-  % wxAuiNotebook:removePage(Nb, PageIdx), %% These 2 lines === to deletePage/2
-  % ide_editor_wx:destroy(Ed),
+  ide_editor_wx:destroy(Ed),
+  wxAuiNotebook:removePage(Nb, PageIdx), %% These 2 lines =/= to deletePage/2
   
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageIdx, PageToDocId),
-  wxAuiNotebook:deletePage(Nb, PageIdx),
   
-  %% Wait and see if we segfault when we attempt to read the text
-  % receive after 4000 -> ok end,
-  % Text = wxStyledTextCtrl:getText(Stc),
-  % io:format("Text: ~n~p", [Text]),
-  
-  % wxAuiNotebook:deletePage(Nb, PageIdx),
+  % wxAuiNotebook:deletePage(Nb, PageIdx), %% SEG FAULT OSX, wx3.0 see ticket #81
 
   {NewDocRecords, NewPageToDocId}.
-  % {DocRecords, PageToDocId}.
 
 
 %% =====================================================================

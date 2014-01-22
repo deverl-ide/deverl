@@ -111,7 +111,7 @@ init(Config) ->
   ?stc:setCaretWidth(Log, 0),
 
   %% Default "normal" style
-  ?stc:styleSetFont(Log, ?wxSTC_STYLE_DEFAULT, ide_sys_pref_gen:get_font(log)),
+  ?stc:styleSetFont(Log, ?wxSTC_STYLE_DEFAULT, ide_sys_pref_gen:get_font(log_font)),
   ?stc:styleSetSize(Log, ?wxSTC_STYLE_DEFAULT, 11),
   ?stc:styleClearAll(Log),
 

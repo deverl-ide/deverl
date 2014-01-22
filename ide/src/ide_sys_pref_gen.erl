@@ -9,6 +9,8 @@
 
 -module(ide_sys_pref_gen).
 
+-include("ide.hrl").
+
 %% gen_server
 -behaviour(gen_server).
 -export([init/1, handle_info/2, handle_call/3, handle_cast/2,
@@ -19,7 +21,8 @@
         start/1,
         set_preference/2,
         get_preference/1,
-        get_font/1
+        get_font/1,
+        set_font/2
         ]).
 
 %% Server state
@@ -42,7 +45,8 @@ start(Config) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Save a new user preference. To set a font preference always
+%% use set_font/2.
 
 -spec set_preference(term(), term()) -> ok.
 
@@ -51,7 +55,8 @@ set_preference(Key, Value) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Get a single preference from the saved preferences.
+%% To retrieve a font always use get_font/1.
 
 -spec get_preference(term()) -> term().
 
@@ -60,31 +65,35 @@ get_preference(Key) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Helper function to create a wxFont from the font record stored 
+%% in the prefs.
+  
+-spec get_font(console_font | editor_font | log_font) -> wxFont:wxFont().
 
--spec get_font(console | editor | log) -> wxFont:wxFont().
+get_font(Name) ->
+  FontRec = ide_sys_pref_gen:get_preference(Name),
+  wxFont:new(FontRec#font.size,
+             FontRec#font.family,
+             FontRec#font.style,
+             FontRec#font.weight,
+             [{face, FontRec#font.facename}]).
 
-get_font(Window) ->
-  case Window of
-    editor ->
-      wxFont:new(ide_sys_pref_gen:get_preference(editor_font_size),
-                 ide_sys_pref_gen:get_preference(editor_font_family),
-                 ide_sys_pref_gen:get_preference(editor_font_style),
-                 ide_sys_pref_gen:get_preference(editor_font_weight));
-    console ->
-      wxFont:new(ide_sys_pref_gen:get_preference(console_font_size),
-                 ide_sys_pref_gen:get_preference(console_font_family),
-                 ide_sys_pref_gen:get_preference(console_font_style),
-                 ide_sys_pref_gen:get_preference(console_font_weight),
-                 [{face, ide_sys_pref_gen:get_preference(console_font_facename)}]);
-    log ->
-      wxFont:new(ide_sys_pref_gen:get_preference(log_font_size),
-                 ide_sys_pref_gen:get_preference(log_font_family),
-                 ide_sys_pref_gen:get_preference(log_font_style),
-                 ide_sys_pref_gen:get_preference(log_font_weight),
-                 [{face, ide_sys_pref_gen:get_preference(log_font_facename)}])
-  end.
 
+%% =====================================================================
+%% @doc Update the saved font preference for Name.
+
+-spec set_font(Name, wxFont:wxFont()) -> ok when
+  Name :: console_font | editor_font | log_font.           
+             
+set_font(Name, Font) ->
+  FontRec = #font{size=wxFont:getPointSize(Font),
+                  family=wxFont:getFamily(Font),
+                  style=wxFont:getStyle(Font),
+                  weight=wxFont:getWeight(Font),
+                  facename=wxFont:getFaceName(Font)
+                  },
+  ide_sys_pref_gen:set_preference(Name, FontRec),
+  ok.
 
 %% =====================================================================
 %% Callback functions

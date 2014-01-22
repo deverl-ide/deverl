@@ -1,16 +1,26 @@
--module(ide_pref_debugger_wx).
+%% =====================================================================
+%% @author
+%% @copyright
+%% @title
+%% @version
+%% @doc 
+%% @end
+%% =====================================================================
+
+-module(ide_pref_advanced_wx).
 
 -include_lib("wx/include/wx.hrl").
+-include("ide.hrl").
 
 -behaviour(wx_object).
+
 -export([start/1, init/1, terminate/2,  code_change/3,
 	       handle_info/2, handle_call/3, handle_cast/2, handle_event/2]).
 
 -record(state, {parent,
             	  config
             	 }).
-
-
+                           
 %% =====================================================================
 %% Client API
 %% =====================================================================
@@ -34,35 +44,27 @@ init(Config) ->
 
 do_init(Config) ->
   Parent = proplists:get_value(parent, Config),
-  %   Panel = wxWindow:new(Parent, ?wxID_ANY),
-  % 
-  %   LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  %   wxWindow:setSizer(Panel, LRSizer),
-  %   wxSizer:addSpacer(LRSizer, 20),
-  % 
-  %   VertSizer = wxBoxSizer:new(?wxVERTICAL),
-  %   wxSizer:addSpacer(VertSizer, 20),
-  %   wxSizer:add(VertSizer, wxStaticText:new(Panel, ?wxID_ANY, "Nothing here yet.")),
-  % 
-  %   wxSizer:addSpacer(VertSizer, 20),
-  % 
-  %   wxSizer:add(LRSizer, VertSizer),
-  %   wxSizer:addSpacer(LRSizer, 20),
-  % 
-  % wxSizer:layout(LRSizer),
-  
   Xrc = wxXmlResource:get(),
   Panel0 = wxPanel:new(),
-  % ide_lib_dlg_wx:win_var(Dlg),
-
-  %% Load XRC (Assumes all XRC handlers init previously)
   wxXmlResource:loadPanel(Xrc, Panel0, Parent, "prefs"),
-  Sz = wxWindow:getSizer(Panel0),
   
-  %% Load first pref
-  Panel1 = wxXmlResource:loadPanel(Xrc, Parent, "pref_compiler"),
-  wxSizer:add(Sz, Panel1),
+  %% Dialyzer 
+  DlzrOptions = ide_sys_pref_gen:get_preference(dialyzer_options),
   
+  DlzrPlt = wxXmlResource:xrcctrl(Panel0, "dial_plt", wxStaticText),
+  DlzrPltBtn = wxXmlResource:xrcctrl(Panel0, "dial_btn_browse", wxButton),
+  DlzrIncs = wxXmlResource:xrcctrl(Panel0, "dial_include", wxListCtrl),
+  DlzrRmvDir = wxXmlResource:xrcctrl(Panel0, "dial_btn_remove_dir", wxButton),
+  DlzrAddDir = wxXmlResource:xrcctrl(Panel0, "dial_btn_add_dir", wxButton),
+  DlzrOut0 = wxXmlResource:xrcctrl(Panel0, "dial_verbose_out", wxCheckBox),
+  DlzrOut1 = wxXmlResource:xrcctrl(Panel0, "dial_stats_out", wxCheckBox),
+  DlzrOut2 = wxXmlResource:xrcctrl(Panel0, "dial_quiet_out", wxCheckBox),
+  
+  wxStaticText:setLabel(DlzrPlt, DlzrOptions#dialyzer_options.plt),
+  wxCheckBox:setValue(DlzrOut0, DlzrOptions#dialyzer_options.verbose_out),
+  wxCheckBox:setValue(DlzrOut1, DlzrOptions#dialyzer_options.stats_out),
+  wxCheckBox:setValue(DlzrOut2, DlzrOptions#dialyzer_options.quiet_out),
+
   {Panel0, #state{parent=Panel0}}.
 
 

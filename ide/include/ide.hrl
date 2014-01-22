@@ -2,6 +2,27 @@
 -type path() :: string().
 -type project_id() :: {integer(), integer(), integer()}.
 
+%% Records
+-record(font, {size,
+               facename,
+               family,
+               style,
+               weight
+               }).
+
+-record(compiler_options, {plt,
+                           include_dirs,
+                           verbose_out,
+                           stats_out,
+                           quiet_out
+                           }).
+
+-record(dialyzer_options, {plt,
+                           include_dirs,
+                           verbose_out,
+                           stats_out,
+                           quiet_out
+                           }).
 %% Global constants
 -define(FIND_ALL, 3).
 -define(REPLACE_ALL, 5).

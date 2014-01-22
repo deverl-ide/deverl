@@ -407,13 +407,7 @@ handle_event(#wx{id=?MENU_ID_FONT}, State) ->
     ?wxID_OK ->
       %% Get the user selected font, and update the editors
       Font = wxFontData:getChosenFont(wxFontDialog:getFontData(Dialog)),
-      
-      %% WHAT!!!! needs a helper function
-      ide_sys_pref_gen:set_preference(editor_font_size, wxFont:getPointSize(Font)),
-      ide_sys_pref_gen:set_preference(editor_font_family, wxFont:getFamily(Font)),
-      ide_sys_pref_gen:set_preference(editor_font_style, wxFont:getStyle(Font)),
-      ide_sys_pref_gen:set_preference(editor_font_weight, wxFont:getWeight(Font)),
-      ide_sys_pref_gen:set_preference(editor_font_facenmae, wxFont:getFaceName(Font)),
+      ide_sys_pref_gen:set_font(editor_font, Font),
       ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_font/2, [Font]),
       ok;
     ?wxID_CANCEL ->
@@ -690,13 +684,8 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UT
 handle_event(#wx{id=Id, userData=ThemeMenu, event=#wxCommand{type=command_menu_selected}},
              State) when (Id >= ?MENU_ID_THEME_LOWEST) and (Id =< ?MENU_ID_THEME_HIGHEST) ->
   {ok, Ckd} = ide_menu:get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
-  %% Font changes when theme changes (current fontface not used)
-  % Font = wxFont:new(ide_sys_pref_gen:get_preference(editor_font_size),
-  %                   ide_sys_pref_gen:get_preference(editor_font_family),
-  %                   ide_sys_pref_gen:get_preference(editor_font_style),
-  %                   ide_sys_pref_gen:get_preference(editor_font_weight), []),
 	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_theme/3, [wxMenuItem:getLabel(Ckd),
-		ide_sys_pref_gen:get_font(editor)]),
+		ide_sys_pref_gen:get_font(editor_font)]),
   ide_sys_pref_gen:set_preference(theme, wxMenuItem:getLabel(Ckd)),
 	{noreply, State};
 

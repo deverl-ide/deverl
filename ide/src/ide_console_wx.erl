@@ -172,7 +172,7 @@ init(Config) ->
   %% Saved styles
   {_Name, Fg, Bg, MrkrBg, ErrFg} = ide_sys_pref_gen:get_preference(console_theme),
   set_theme(Fg, Bg, MrkrBg, ErrFg),
-  set_font(ide_sys_pref_gen:get_font(console)),
+  set_font(ide_sys_pref_gen:get_font(console_font)),
 
   %% Other styles
   % ?stc:styleSetSpec(Console, ?STYLE_PROMPT, "fore:#FF0000,bold,underline"), % For the prompt

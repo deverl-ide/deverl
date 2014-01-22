@@ -275,7 +275,7 @@ set_line_margin_visible(EditorPid, Bool) ->
 	Editor = wx_object:call(EditorPid, stc),
 	case Bool of
 		true ->
-      set_linenumber_default(Editor, ide_sys_pref_gen:get_font(editor));
+      set_linenumber_default(Editor, ide_sys_pref_gen:get_font(editor_font));
 		false -> ?stc:setMarginWidth(Editor, 0, 0)
 	end.
 
@@ -499,7 +499,6 @@ handle_info(Msg, State) ->
   {noreply,State}.
 
 handle_call(shutdown, _From, State) ->
-  io:format("SHUTDOWWWN~n"),
   {stop, normal, ok, State};
 handle_call(is_dirty, _From, State=#state{dirty=Mod}) ->
   {reply,Mod,State};
@@ -694,10 +693,8 @@ handle_event(_E,State) ->
 code_change(_, _, State) ->
   {ok, State}.
 
-terminate(_Reason, #state{stc=Ed, parent_panel=Panel}) ->
-  io:format("DESTROYING EDITOR~n"),
-  %receive after 5000 -> ok end, %% Prevent segfault on OSX
-  wxPanel:destroy(Panel),
+terminate(_Reason, #state{stc=_Ed, parent_panel=Panel}) ->
+  % wxPanel:destroy(Panel), %% segfault on OSX
   ok.
 
 %% =====================================================================
@@ -813,10 +810,7 @@ position_to_x_y(Editor, ?stc:getCurrentPos(Editor)).
 update_line_margin(Editor) ->
 	case ide_sys_pref_gen:get_preference(show_line_no) of
 		true ->
-			Font = wxFont:new(ide_sys_pref_gen:get_preference(editor_font_size),
-												ide_sys_pref_gen:get_preference(editor_font_family),
-												ide_sys_pref_gen:get_preference(editor_font_style),
-												ide_sys_pref_gen:get_preference(editor_font_weight), []),
+      Font = ide_sys_pref_gen:get_font(editor_font),
 			set_linenumber_default(Editor, Font);
 		false ->
 			ok

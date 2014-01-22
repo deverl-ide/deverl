@@ -61,7 +61,7 @@ init(Config) ->
   Tools = [{?PREF_GENERAL,  "General", "prefs/general.png",    [],  false},
            {?PREF_EDITOR, "Editor", "prefs/editor.png",   [],  false},
            {?PREF_CONSOLE, "Console", "prefs/console.png",   [],  false},
-           {?PREF_DEBUG, "Debugger", "prefs/debug.png",   [],  false}],
+           {?PREF_DEBUG, "Advanced", "prefs/applications-system.png",   [],  false}],
 
   AddTool = fun({Id, Tooltip, Filename, Args, true}) ->
             wxToolBar:addRadioTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(Filename))), Args),
@@ -113,10 +113,9 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}, userData=T
   wxPanel:hide(Panel), %% Hide whilst loading, and show when complete to stop flicker
   NewPref = load_pref(Str, State),
   wxSizer:add(Sz, NewPref, [{proportion,1}, {flag, ?wxEXPAND}]),
-  wxSizer:fit(Sz, Frame),
-  wxSizer:layout(Sz),
-  wxPanel:layout(Panel),
   wxPanel:show(Panel),
+  wxWindow:setClientSize(Frame, wxWindow:getSize(NewPref)),
+  wxWindow:setMinSize(Frame, wxWindow:getSize(NewPref)),
   {noreply, State#state{pref=NewPref}};
     
 %% Event catchall for testing
