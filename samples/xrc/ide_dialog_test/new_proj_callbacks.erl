@@ -7,7 +7,7 @@
 %% @end 
 %% =====================================================================
 
--module(dlgxrc).
+-module(new_proj_callbacks).
 
 -include_lib("wx/include/wx.hrl").
 

@@ -7,27 +7,36 @@
 %% @end
 %% =====================================================================
 
--module(dlg_ld).
+-module(test).
 
 -include_lib("wx/include/wx.hrl").
 
 -compile(export_all).
 
-% %% For xrc_cb
-% show_dlg(Frame, Name) ->
-%   Env = wx:get_env(),
-%   dlgxrc:start(Frame, Env),
-%   ok.
+wx_object() ->
+  WX = init(),
+  show_dlg(new_proj_wxobject, WX).
   
-show_dlg(Frame, _Name) ->
-  Dlg = new_proj_wxobject:new(Frame),
+callback() ->
+  WX = init(),
+  new_proj_callbacks:start(WX,WX).
+
+init() ->
+  WX = wx:new(),
+  Xrc = wxXmlResource:get(),
+  wxXmlResource:initAllHandlers(Xrc),
+  true = wxXmlResource:load(Xrc, "dlgs.xrc"),
+  WX.
+  
+show_dlg(Mod, Parent) ->
+  Dlg = Mod:start(Parent),
   case wxDialog:showModal(Dlg) of
     ?wxID_OK ->
       io:format("OK~n");
     ?wxID_CANCEL ->
       io:format("CANCEL~n")
   end,
-  dlgxrc:destroy(Dlg),
+  Mod:destroy(Dlg),
   ok.
   
 win_var(Dlg) ->

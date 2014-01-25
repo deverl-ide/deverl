@@ -15,7 +15,7 @@
 %% @end
 %% =====================================================================
 
--module(dlgxrc).
+-module(new_proj_wxobject).
 
 -include_lib("wx/include/wx.hrl").
 
@@ -40,26 +40,26 @@
 start(Config) ->
   wx_object:start({local, ?MODULE},?MODULE, Config, []).
 
-stop(This) ->
+destroy(This) ->
   wx_object:call(This, shutdown).
+  
+  
   
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
 
 init(Config) ->
-  wx:batch(fun() -> do_init(Config) end).
 
-do_init(Config) ->
   Parent = Config,
   
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
-  dlg_ld:dlg_win(Dlg),
+  test:win_var(Dlg),
 
   true = wxXmlResource:loadDialog(Xrc, Dlg, Parent, "new_project"),
   
-  Path = ide_sys_pref_gen:get_preference(project_directory),
+  Path = wx_misc:getHomeDir(),
   PathTc = wxXmlResource:xrcctrl(Dlg, "path_tc", wxTextCtrl),
   NameTc = wxXmlResource:xrcctrl(Dlg, "name_tc", wxTextCtrl),
   wxTextCtrl:setValue(PathTc, Path),
@@ -122,7 +122,7 @@ handle_cast(Msg, State) ->
 code_change(_, _, State) ->
   {stop, ignore, State}.
 
-terminate(_Reason, _State) ->
+terminate(_Reason, State) ->
   %% NOTE!!!! On OSX the call to destroy cause a seg fault when using
   %% XRC. (when an event is connected to an xrc textctrl object.
   %% This means we can't safely destroy the object (memory leak).
@@ -131,6 +131,6 @@ terminate(_Reason, _State) ->
   %% command_text_updated event handler is attached. So its possible
   %% an event is received after it being destroyed. Tried to debug
   %% in GDB.
-  % wxDialog:destroy(State#state.dlg), %% segfault
+  wxDialog:destroy(State#state.dlg), %% segfault
   ok.
 
