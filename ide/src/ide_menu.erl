@@ -139,7 +139,7 @@ build_menu(Frame) ->
   wxMenu:append(Edit, ?wxID_PASTE, "Paste\tCtrl+V"),
   wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
   wxMenu:append(Edit, ?wxID_SEPARATOR, []),
-  wxMenu:append(Edit, ?wxID_SELECTALL, "Select All\tCtrl+A"),
+  wxMenu:append(Edit, ?wxID_SELECTALL, "Select All"), % "\tCtrl+A"),
   wxMenu:appendSeparator(Edit),
   wxMenu:append(Edit, ?MENU_ID_QUICK_FIND, "Quick Find\tCtrl+F"),
   wxMenu:append(Edit, ?wxID_FIND, "Find\tCtrl+Shift+F"),
@@ -266,6 +266,8 @@ build_menu(Frame) ->
   
   wxFrame:connect(Frame, command_menu_selected), 
   %wxFrame:connect(Frame, command_menu_selected, [{id,?wxID_CUT}, {skip, true}]), 
+  % wxFrame:connect(Frame, command_menu_selected,
+  %   [{id,?MENU_ID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
 	wxFrame:connect(Frame, command_menu_selected,
 		[{userData, Theme}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),
 	wxFrame:connect(Frame, command_menu_selected,
@@ -278,7 +280,6 @@ build_menu(Frame) ->
 
 build_toolbar(Frame) ->
 	ToolBar = wxFrame:createToolBar(Frame, []),
-	% wxToolBar:setMargins(ToolBar, 10, 10),
   wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
 	%% Id, StatusBar help, filename/art id, args, add seperator
 	Tools = [  

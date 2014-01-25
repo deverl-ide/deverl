@@ -468,10 +468,10 @@ init(Config) ->
   ?stc:connect(Editor, left_up, [{skip, true}]),
   ?stc:connect(Editor, motion, [{skip, true}]),
   ?stc:connect(Editor, stc_charadded, [callback]),
-  ?stc:connect(Editor, char, [{skip, true}]),
   ?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
   ?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
   ?stc:connect(Editor, set_focus, [{skip, true}]),
+  ?stc:connect(Editor, key_down, [callback, {userData, self()}]),
 
 	%% Restrict the stc_chamge/stc_modified events to insert/delete text
 	?stc:setModEventMask(Editor, ?wxSTC_MOD_DELETETEXT bor ?wxSTC_MOD_INSERTTEXT),
@@ -530,7 +530,7 @@ handle_cast({goto_pos, {Line, Col}}, State=#state{stc=Stc}) ->
 handle_cast(ref, State=#state{stc=Editor}) ->
 	update_sb_line(Editor),
 	update_line_margin(Editor),
-	parse_functions(Editor),
+  % parse_functions(Editor),
   {noreply,State};
 handle_cast(show_search, State=#state{main_sz=Sz, search=#search{tc=Tc}}) ->
   wxSizer:show(Sz, 1),
@@ -693,8 +693,8 @@ handle_event(_E,State) ->
 code_change(_, _, State) ->
   {ok, State}.
 
-terminate(_Reason, #state{stc=_Ed, parent_panel=Panel}) ->
-  % wxPanel:destroy(Panel), %% segfault on OSX
+terminate(_Reason, #state{stc=Ed, parent_panel=Panel}) ->
+  wxPanel:destroy(Panel), %% segfault on OSX
   ok.
 
 %% =====================================================================

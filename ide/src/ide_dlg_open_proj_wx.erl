@@ -80,7 +80,7 @@ init({Parent, Projects}) ->
 		dlg=Dlg, 
     list_ctrl=ListCtrl
 	},
-  
+    
 	{Dlg, State}.
 
 
@@ -113,8 +113,10 @@ handle_cast(_, State) ->
 code_change(_, _, State) ->
   {stop, ignore, State}.
 
-terminate(_Reason, _State) ->
-  % wxDialog:destroy(State#state.dlg),  %% segfault OSX wx3.0 erlR16B03 (see xrc sample directory)
+terminate(_Reason, State) ->
+  %% manual disconnect prevents segfault: OSX wx3.0 erlR16B03 (see xrc sample directory)
+  % wxDialog:disconnect(State#state.list_ctrl),
+  wxDialog:destroy(State#state.dlg),
 	ok.
 	
 

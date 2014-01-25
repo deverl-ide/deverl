@@ -374,6 +374,11 @@ handle_event(#wx{id=?MENU_ID_IMPORT_FILE}, State) ->
 handle_event(#wx{id=?MENU_ID_IMPORT_PROJECT}, State) ->
   ide_proj_man:import(State#state.frame),
   {noreply, State};
+  
+handle_event(#wx{id=?wxID_SELECTALL}, State) ->
+  % wxWindow:findFocus(),
+  
+  {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_PROJECT_CONFIG}, State) ->
   ide_proj_man:set_project_configuration(State#state.frame),
