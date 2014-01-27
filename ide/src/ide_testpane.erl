@@ -45,8 +45,8 @@ new(Config) ->
 %% @doc
 
 add_module_tests(Module) ->
-  code:delete(Module),
   code:purge(Module),
+  code:delete(Module),
   List = wx:typeCast(wxWindow:findWindowById(?ID_LIST), wxListCtrl),
   wxListCtrl:deleteAllItems(List),
   try 
@@ -72,3 +72,4 @@ insert(ListCtrl, L) ->
     Acc + 1
   end,
   lists:foldl(Fn, 0, L).
+  
