@@ -61,7 +61,7 @@ add_module_tests(Module) ->
   List = wx:typeCast(wxWindow:findWindowById(?ID_LIST), wxListCtrl),
   wxListCtrl:deleteAllItems(List),
   try
-    Tests = eunit_data:get_module_tests(Module),
+    Tests = lists:sort(eunit_data:get_module_tests(Module)),
     insert(List, Tests)
   catch
     throw:_E ->
