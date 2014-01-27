@@ -36,7 +36,8 @@ show_dlg(Mod, Parent) ->
     ?wxID_CANCEL ->
       io:format("CANCEL~n")
   end,
-  Mod:destroy(Dlg),
+  % Mod:destroy(Dlg),
+  wxDialog:destroy(Dlg),
   ok.
   
 win_var(Dlg) ->

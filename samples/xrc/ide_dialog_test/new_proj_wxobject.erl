@@ -123,6 +123,7 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 
 terminate(_Reason, State) ->
+  io:format("IN TERMINATE wx_object"),
   %% NOTE!!!! On OSX the call to destroy cause a seg fault when using
   %% XRC. (when an event is connected to an xrc textctrl object.
   %% This means we can't safely destroy the object (memory leak).

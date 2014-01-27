@@ -72,4 +72,3 @@ insert(ListCtrl, L) ->
     Acc + 1
   end,
   lists:foldl(Fn, 0, L).
-  

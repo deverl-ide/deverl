@@ -516,6 +516,12 @@ handle_event(#wx{id=?MENU_ID_RUN}, State) ->
   ide_build:run_project(State#state.frame),
   {noreply, State};
   
+handle_event(#wx{id=?MENU_ID_RUN_TESTS}, State) ->
+  Mod = ide_doc_man_wx:get_active_module(),
+  Listener = ide_eunit_listener:start(),
+  eunit:test(Mod, [{report, Listener}]),
+  {noreply, State};
+  
 handle_event(#wx{id=?MENU_ID_DIALYZER}, State) ->
   ide_dialyzer:run(State#state.frame),
   {noreply, State};

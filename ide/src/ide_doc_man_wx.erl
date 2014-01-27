@@ -33,6 +33,7 @@
 				 apply_to_all_documents/2,
 				 apply_to_active_document/2,
          get_active_document/0,
+         get_active_module/0,
          get_path/1,
          set_selection/1,
          get_standalone_src_files/0
@@ -228,6 +229,16 @@ get_active_document() ->
   wx_object:call(?MODULE, get_active_doc).
 
 
+%% =====================================================================
+%% @doc
+
+-spec get_active_module() -> atom().
+
+get_active_module() ->
+  DocID = wx_object:call(?MODULE, get_active_doc),
+  list_to_atom(filename:basename(ide_doc_man_wx:get_path(DocID), ".erl")).
+  
+  
 %% =====================================================================
 %% @doc
 
@@ -469,11 +480,15 @@ handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) -
 
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed, selection=Idx}},
              State=#state{notebook=Nb, page_to_doc_id=PageToDoc, doc_records=DocRecords}) ->
-  DocId = page_idx_to_doc_id(Nb, Idx, PageToDoc),
-  #document{project_id=PrId} = get_record(DocId, DocRecords),
-  ide_proj_man:set_active_project(PrId),
-  Ebin = list_to_atom(filename:basename(filename:rootname(wxAuiNotebook:getPageText(Nb, Idx)))),
-  ide_testpane:add_module_tests(Ebin),
+  case wxAuiNotebook:getPageCount(Nb) of
+    0 -> ok;
+    _ ->
+      DocId = page_idx_to_doc_id(Nb, Idx, PageToDoc),
+      DocRec = get_record(DocId, DocRecords),
+      ide_proj_man:set_active_project(DocRec#document.project_id),
+      Ebin = list_to_atom(filename:basename(filename:rootname(wxAuiNotebook:getPageText(Nb, Idx)))),
+      ide_testpane:add_module_tests(Ebin)
+  end,
   {noreply, State}.
 
 code_change(_, _, State) ->
@@ -637,16 +652,16 @@ get_modified_docs(Documents) ->
 remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
 
   %% Grab the stc, so we can make sure it's deleted
-  Rec = get_record(DocId, DocRecords),
-  Ed = Rec#document.editor,
-  
-  ide_editor_wx:destroy(Ed),
-  wxAuiNotebook:removePage(Nb, PageIdx), %% These 2 lines =/= to deletePage/2
+  % Rec = get_record(DocId, DocRecords),
+  % Ed = Rec#document.editor,
+  % 
+  % ide_editor_wx:destroy(Ed),
+  % wxAuiNotebook:removePage(Nb, PageIdx), %% These 2 lines =/= to deletePage/2
   
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageIdx, PageToDocId),
   
-  % wxAuiNotebook:deletePage(Nb, PageIdx), %% SEG FAULT OSX, wx3.0 see ticket #81
+  wxAuiNotebook:deletePage(Nb, PageIdx), %% SEG FAULT OSX, wx3.0 see ticket #81
 
   {NewDocRecords, NewPageToDocId}.
 

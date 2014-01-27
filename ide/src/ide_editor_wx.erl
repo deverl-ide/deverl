@@ -693,9 +693,9 @@ handle_event(_E,State) ->
 code_change(_, _, State) ->
   {ok, State}.
 
-terminate(_Reason, #state{stc=Ed, parent_panel=Panel}) ->
-  wxPanel:destroy(Panel), %% segfault on OSX
-  ok.
+terminate(_Reason, #state{parent_panel=Panel}) ->
+  io:format("TERMINATE EDITOR~n"),
+  wxPanel:destroy(Panel). %% segfault on OSX
 
 %% =====================================================================
 %% Internal functions
