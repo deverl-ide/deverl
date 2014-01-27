@@ -275,7 +275,7 @@ set_line_margin_visible(EditorPid, Bool) ->
 	Editor = wx_object:call(EditorPid, stc),
 	case Bool of
 		true ->
-      set_linenumber_default(Editor, ide_sys_pref_gen:get_font(editor));
+      set_linenumber_default(Editor, ide_sys_pref_gen:get_font(editor_font));
 		false -> ?stc:setMarginWidth(Editor, 0, 0)
 	end.
 
@@ -468,10 +468,10 @@ init(Config) ->
   ?stc:connect(Editor, left_up, [{skip, true}]),
   ?stc:connect(Editor, motion, [{skip, true}]),
   ?stc:connect(Editor, stc_charadded, [callback]),
-  ?stc:connect(Editor, char, [{skip, true}]),
   ?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
   ?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
   ?stc:connect(Editor, set_focus, [{skip, true}]),
+  ?stc:connect(Editor, key_down, [callback, {userData, self()}]),
 
 	%% Restrict the stc_chamge/stc_modified events to insert/delete text
 	?stc:setModEventMask(Editor, ?wxSTC_MOD_DELETETEXT bor ?wxSTC_MOD_INSERTTEXT),
@@ -499,7 +499,6 @@ handle_info(Msg, State) ->
   {noreply,State}.
 
 handle_call(shutdown, _From, State) ->
-  io:format("SHUTDOWWWN~n"),
   {stop, normal, ok, State};
 handle_call(is_dirty, _From, State=#state{dirty=Mod}) ->
   {reply,Mod,State};
@@ -531,7 +530,7 @@ handle_cast({goto_pos, {Line, Col}}, State=#state{stc=Stc}) ->
 handle_cast(ref, State=#state{stc=Editor}) ->
 	update_sb_line(Editor),
 	update_line_margin(Editor),
-	parse_functions(Editor),
+  % parse_functions(Editor),
   {noreply,State};
 handle_cast(show_search, State=#state{main_sz=Sz, search=#search{tc=Tc}}) ->
   wxSizer:show(Sz, 1),
@@ -695,9 +694,7 @@ code_change(_, _, State) ->
   {ok, State}.
 
 terminate(_Reason, #state{stc=Ed, parent_panel=Panel}) ->
-  io:format("DESTROYING EDITOR~n"),
-  %receive after 5000 -> ok end, %% Prevent segfault on OSX
-  wxPanel:destroy(Panel),
+  wxPanel:destroy(Panel), %% segfault on OSX
   ok.
 
 %% =====================================================================
@@ -813,10 +810,7 @@ position_to_x_y(Editor, ?stc:getCurrentPos(Editor)).
 update_line_margin(Editor) ->
 	case ide_sys_pref_gen:get_preference(show_line_no) of
 		true ->
-			Font = wxFont:new(ide_sys_pref_gen:get_preference(editor_font_size),
-												ide_sys_pref_gen:get_preference(editor_font_family),
-												ide_sys_pref_gen:get_preference(editor_font_style),
-												ide_sys_pref_gen:get_preference(editor_font_weight), []),
+      Font = ide_sys_pref_gen:get_font(editor_font),
 			set_linenumber_default(Editor, Font);
 		false ->
 			ok

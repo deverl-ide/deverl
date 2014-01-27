@@ -54,8 +54,7 @@ add_module_tests(Module) ->
     insert(List, Tests)
   catch
     throw:_E -> 
-      %Dlg = wxMessageDialog:new(wx:null(), "No tests found. Write tests, then recompile module."),
-      %wxDialog:showModal(Dlg)
+      % List placeholder
       ok
   end.
   

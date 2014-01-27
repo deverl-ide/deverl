@@ -86,15 +86,9 @@ init(Config) ->
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Panel, MainSizer),
 
-  Font = wxFont:new(ide_sys_pref_gen:get_preference(console_font_size),
-                    ide_sys_pref_gen:get_preference(console_font_family),
-                    ide_sys_pref_gen:get_preference(console_font_style),
-                    ide_sys_pref_gen:get_preference(console_font_weight)
-                    %[{face, ide_sys_pref_gen:get_preference(console_font_facename)}]
-                    ),
+  Font = ide_sys_pref_gen:get_font(console_font),
 
 	Output = wxTextCtrl:new(Panel, ?WINDOW_OUTPUT, [{style, ?wxBORDER_NONE bor ?wxTE_DONTWRAP bor ?wxTE_READONLY bor ?wxTE_MULTILINE}]),
-  %wxTextCtrl:setFont(Output, wxFont:new(11, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL,[])),
   wxTextCtrl:setFont(Output, Font),
   wxTextCtrl:setForegroundColour(Output, ?wxBLACK),
   wxTextCtrl:setBackgroundColour(Output, ?wxWHITE),

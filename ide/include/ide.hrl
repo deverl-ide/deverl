@@ -2,6 +2,27 @@
 -type path() :: string().
 -type project_id() :: {integer(), integer(), integer()}.
 
+%% Records
+-record(font, {size,
+               facename,
+               family,
+               style,
+               weight
+               }).
+
+-record(compiler_options, {plt,
+                           include_dirs,
+                           verbose_out,
+                           stats_out,
+                           quiet_out
+                           }).
+
+-record(dialyzer_options, {plt,
+                           include_dirs,
+                           verbose_out,
+                           stats_out,
+                           quiet_out
+                           }).
 %% Global constants
 -define(FIND_ALL, 3).
 -define(REPLACE_ALL, 5).
@@ -67,14 +88,14 @@
 -define(MENU_ID_MAKE_PROJECT,      6047).
 -define(MENU_ID_RUN,               6032).
 -define(MENU_ID_DIALYZER,          6033).
--define(MENU_ID_TESTS,             6034).
--define(MENU_ID_DEBUGGER,          6035).
+-define(MENU_ID_RUN_TESTS,         6034).
+-define(MENU_ID_RUN_OBSERVER,      6041).
+-define(MENU_ID_RUN_DEBUGGER,      6035).
 -define(MENU_ID_PROJECTS_WINDOW,   6036).
 -define(MENU_ID_TESTS_WINDOW,      6037).
 -define(MENU_ID_FUNC_WINDOW,       6038).
--define(MENU_ID_CONSOLE_WINDOW,    6039).
--define(MENU_ID_DIALYSER_WINDOW,   6040).
--define(MENU_ID_DEBUGGER_WINDOW,   6041).
+-define(MENU_ID_OUTPUT_WINDOW,     6039).
+-define(MENU_ID_LOG_WINDOW,        6040).
 -define(MENU_ID_NEXT_TAB,          6042).
 -define(MENU_ID_PREV_TAB,          6043).
 -define(MENU_ID_HOTKEYS,           6044).
@@ -84,7 +105,7 @@
 -define(MENU_ID_IMPORT_FILE,       6051).
 -define(MENU_ID_IMPORT_PROJECT,    6052).
 -define(MENU_ID_EXPORT_EDOC,       6053).
--define(MENU_ID_RUN_OBSERVER,      6055).
+% -define(MENU_ID_RUN_OBSERVER,      6055).
 -define(MENU_ID_QUICK_FIND,        6056).
 -define(MENU_ID_ADD_TO_PLT,        6057).
 -define(MENU_ID_PLT_INFO,          6058).

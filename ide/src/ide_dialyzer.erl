@@ -33,7 +33,7 @@ run(Parent) ->
   case check_plt() of
     {ok, Plt} ->
       run(Parent, Plt);
-    {error, _} ->
+    {error, _E} ->
       init(Parent)
   end.
 
@@ -96,7 +96,8 @@ build_dlg(Parent) ->
   Dlg.
   
 check_plt() ->
-  FileName = "/home/qqq/.dialyzer_plt",
+  %% Get this from the preferences (so it can be changed)
+  FileName = filename:join(wx_misc:getHomeDir(), ".dialyzer_plt"),
   R = case file:read_file(FileName) of
     {ok, Bin} ->
       try binary_to_term(Bin) of
