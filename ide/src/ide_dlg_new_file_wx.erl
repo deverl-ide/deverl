@@ -48,9 +48,11 @@
 
 -define(MODULE_TYPES, ["Erlang Module (.erl)",
                        "Erlang Header File (.hrl)",
-                       "OTP Application (.erl)",
+                       "OTP Application (.app)",
                        "OTP Gen Server (.erl)",
-                       "OTP Supervisor (.erl)"]).
+                       "OTP Supervisor (.erl)",
+                       "OTP Gen FSM (.erl)",
+                       "Wx Object (.erl)"]).
 
 %% Server state
 -record(state, {win,
