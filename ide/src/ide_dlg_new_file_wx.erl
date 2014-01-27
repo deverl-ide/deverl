@@ -277,23 +277,29 @@ handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}}
 handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=Dialog1, dialog2=undefined, swap_sizer=Sz}) ->
   Dialog2 = dialog2(Parent),
+  
   swap(Sz, Dialog1, Dialog2),
   wxButton:enable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
   wxButton:disable(wxWindow:findWindow(Parent, ?NEXT_BUTTON)),
   {ProjectName, ProjectPath} = get_project_choice(Parent),
   set_project_text(Parent, ProjectName),
+  
   PathText = set_default_path_text(Parent, ProjectPath),
+  
   {noreply, State#state{dialog2=Dialog2, path=PathText++"/"}};
 handle_event(#wx{id=?NEXT_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=Dialog1, dialog2=Dialog2, swap_sizer=Sz, desc_panel=Desc}) ->
+             
   swap(Sz, Dialog1, Dialog2),
   wxButton:enable(wxWindow:findWindow(Parent, ?BACK_BUTTON)),
   wxButton:disable(wxWindow:findWindow(Parent, ?NEXT_BUTTON)),
   {ProjectName, ProjectPath} = get_project_choice(Parent),
   set_project_text(Parent, ProjectName),
+  
   PathText = get_default_path_text(Parent, ProjectPath) ++ "/",
   set_path_text(Parent, PathText, get_filename(Parent)),
   check_if_finished(Parent, get_filename(Parent), Desc),
+  
   {noreply, State#state{path=PathText}};
 handle_event(#wx{id=?BACK_BUTTON, event=#wxCommand{type=command_button_clicked}},
              State=#state{win=Parent, dialog1=Dialog1, dialog2=Dialog2, swap_sizer=Sz}) ->
@@ -627,6 +633,8 @@ get_file_extension(Parent) ->
       case wxListBox:getSelection(ModuleType) of
         1 -> %% Erlang header file
           ".hrl";
+        2 ->
+          ".app"; %% OTP app
         _ ->
           ".erl"
       end;
