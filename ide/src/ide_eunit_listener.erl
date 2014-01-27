@@ -31,9 +31,9 @@ init(Options) ->
   end,
   #state{results=[], wx_env=Env}.
 
-handle_begin(test, _Data, _State) ->
+handle_begin(test, _Data, State) ->
   State;
-handle_begin(_Kind, _Data, _State) ->
+handle_begin(_Kind, _Data, State) ->
   State.
     
 handle_end(test, Data, State) ->
