@@ -502,10 +502,7 @@ handle_event(#wx{id=Id}, State) when Id =:= ?MENU_ID_UC_SEL orelse Id =:= ?MENU_
   
 handle_event(#wx{id=?MENU_ID_COMPILE_FILE}, State) ->
   ide_build:compile_file(),
-
-  FilePath = ide_doc_man_wx:get_path(ide_doc_man_wx:get_active_document()),
-  Filename = filename:basename(FilePath, ".erl"),
-  ide_testpane:add_module_tests(list_to_atom(Filename)),
+  ide_testpane:add_module_tests(ide_doc_man_wx:get_active_module()),
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_MAKE_PROJECT}, State) ->
@@ -518,7 +515,7 @@ handle_event(#wx{id=?MENU_ID_RUN}, State) ->
   
 handle_event(#wx{id=?MENU_ID_RUN_TESTS}, State) ->
   Mod = ide_doc_man_wx:get_active_module(),
-  Listener = ide_eunit_listener:start(),
+  Listener = ide_eunit_listener:start([{wx_env, wx:get_env()}]),
   eunit:test(Mod, [{report, Listener}]),
   {noreply, State};
   
@@ -527,8 +524,6 @@ handle_event(#wx{id=?MENU_ID_DIALYZER}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_ADD_TO_PLT}, State) ->
-  %% TESTING XRC DIALOGS
-  % dlg_ld:show_dlg(State#state.frame),
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_PLT_INFO}, State) ->
