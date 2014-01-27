@@ -19,6 +19,10 @@
 
 
 %% =====================================================================
+%% Client API
+%% =====================================================================
+
+%% =====================================================================
 %% @doc
 
 new(Config) ->
@@ -70,26 +74,23 @@ add_module_tests(Module) ->
 %% @doc Set the test indicator icon to signify test pass or failure.
 
 -spec show_test_results(Results) -> ok when
-  Results :: list({string(), boolean()}).
+  Results :: list({atom(), boolean()}).
 
 show_test_results(Results) ->
-  List = wx:typeCast(wxWindow:findWindowById(?ID_LIST), wxListCtrl),
-  show_test_results(Results, List).
+  ListCtrl = wx:typeCast(wxWindow:findWindowById(?ID_LIST), wxListCtrl),
+  show_test_results(Results, ListCtrl).
 
--spec show_test_results(Results, wxListCtrl:wxListCtrl()) -> ok when
-  Results :: list({string(), boolean()}).
-
-show_test_results([], _List) ->
+show_test_results([], _ListCtrl) ->
   ok;
-show_test_results([{FunctionName, Result}|Results], List) ->
-  Item = wxListCtrl:findItem(List, -1, FunctionName),
+show_test_results([{FunctionName, Result}|Results], ListCtrl) ->
+  Item = wxListCtrl:findItem(ListCtrl, -1, atom_to_list(FunctionName)),
   case Result of
     true ->
-      wxListCtrl:setItemImage(List, Item, ?TEST_SUCCESS);
+      wxListCtrl:setItemImage(ListCtrl, Item, ?TEST_SUCCESS);
     false ->
-      wxListCtrl:setItemImage(List, Item, ?TEST_FAIL)
+      wxListCtrl:setItemImage(ListCtrl, Item, ?TEST_FAIL)
   end,
-  show_test_results(Results, List).
+  show_test_results(Results, ListCtrl).
 
 
 %% =====================================================================
