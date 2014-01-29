@@ -278,7 +278,6 @@ terminate(_Reason, #state{dlg=Dialog}) ->
 handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}}, State=#state{dlg=Dlg}) -> 
   ProjPathTc = wxXmlResource:xrcctrl(Dlg, "path_tc", wxTextCtrl),
   ProjectChoice = wxXmlResource:xrcctrl(Dlg, "proj_choice", wxChoice),
-  wxDialog:endModal(Dlg, Id),
   FileTypeList = wxXmlResource:xrcctrl(Dlg, "file_type_lb", wxListBox),
   ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
   Type1 = case wxListBox:getSelection(FileTypeList) of
@@ -292,10 +291,15 @@ handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}},
                 project_id=wxChoice:getClientData(ProjectChoice, wxChoice:getSelection(ProjectChoice)),
                 type=Type1
                 },
+<<<<<<< HEAD
   {noreply, State1};
   
 handle_event(_,State) ->
   {noreply, State}.
+=======
+  wxDialog:endModal(Dlg, Id),
+  {noreply, State1}.
+>>>>>>> 216a596a7768f906d8c216367fa0ec596105b630
 
 %% =====================================================================
 %% Internal functions
