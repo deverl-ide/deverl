@@ -267,7 +267,8 @@ code_change(_, _, State) ->
   {ok, State}.
 
 terminate(_Reason, #state{dlg=Dialog}) ->
-  wxDialog:destroy(Dialog).
+  wxDialog:destroy(Dialog),
+  ok.
 
 
 %% =====================================================================
@@ -291,7 +292,10 @@ handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}},
                 project_id=wxChoice:getClientData(ProjectChoice, wxChoice:getSelection(ProjectChoice)),
                 type=Type1
                 },
-  {noreply, State1}.
+  {noreply, State1};
+  
+handle_event(_,State) ->
+  {noreply, State}.
 
 %% =====================================================================
 %% Internal functions
