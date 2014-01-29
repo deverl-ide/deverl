@@ -55,6 +55,7 @@ create_new_file(Path) ->
       error;
     File ->
       file:close(File),
+      copy_from_template(File),
       ok
   end.
 
@@ -181,6 +182,10 @@ get_error_message(Error, Path) ->
 %% =====================================================================
 %% @doc
 
+copy_from_template(Type, To) ->
+  
+  ok.
+  
 % copy_file(Source, Dest) ->
 %   case file:copy(Source, Dest) of
 %     {ok, _BytesCopied} -> ok;

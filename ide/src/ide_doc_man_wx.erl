@@ -76,22 +76,30 @@ start(Config) ->
 
 new_document(Parent) ->
   OpenProjects = ide_proj_man:get_open_projects(),
-  Dialog = ide_dlg_new_file_wx:start({Parent, OpenProjects, ide_proj_man:get_active_project()}),
-  case wxDialog:showModal(Dialog) of
+  Dlg = ide_dlg_new_file_wx:start({Parent, OpenProjects, ide_proj_man:get_active_project()}),
+  case wxDialog:showModal(Dlg) of
     ?wxID_CANCEL ->
-      ok;
+      ide_dlg_new_file_wx:destroy(Dlg);
     ?wxID_OK ->
-      create_document(ide_dlg_new_file_wx:get_path(Dialog), ide_dlg_new_file_wx:get_project_id(Dialog)),
-      ide_dlg_new_file_wx:close(Dialog)
+      create_document(ide_dlg_new_file_wx:get_path(Dlg), 
+                      ide_dlg_new_file_wx:get_project_id(Dlg),
+                      [{template, ide_dlg_new_file_wx:get_type(Dlg)}]),
+      ide_dlg_new_file_wx:destroy(Dlg)
   end.
 
 
 %% =====================================================================
-%% @doc Insert a documents into the workspace.
+%% @doc Insert a document into the workspace.
 
 -spec create_document(string(), project_id()) -> ok | error.
 
 create_document(Path, ProjectId) ->
+  create_document(Path, ProjectId, []).
+
+-spec create_document(string(), project_id(), [Options]) -> ok | error when
+  Options :: {template, atom()}.
+ 
+create_document(Path, ProjectId, Options) ->
   case ide_io:create_new_file(Path) of
     error ->
       % file not created dialog
