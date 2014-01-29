@@ -39,6 +39,19 @@
                        {supervisor, "OTP Supervisor", ".erl"}
                        ]).
 
+-define(DESC_ERLANG_MODULE,  "A standard Erlang module.").
+-define(DESC_ERLANG_HEADER,  "An Erlang header file. Used for defining global macros, types and records.").
+-define(DESC_OTP_APP,        "An application specification. Create an app from your Erlang project so modules 
+                              may be started and stopped as a unit. Erlang apps may also be used easily by 
+                              other systems.").
+-define(DESC_OTP_GEN_SERVER, "A behaviour module for implementing the server of a client-server relation.").
+-define(DESC_OTP_SUP,        "OTP supervisor behaviour. A supervisor is responsible for starting, stopping 
+                              and monitoring its child processes. The basic idea of a supervisor is that it 
+                              should keep its child processes alive by restarting them when necessary.").
+-define(DESC_GEN_FSM,        "A behaviour module for implementing a generic finite state machine.").
+-define(DESC_WX_OBJECT,      "A behaviour module for a wx object. It works like a regular gen_server module 
+                              and implements the erlang bindings for wxWigets.").
+
 %% Server state
 -record(state, {dlg,
                 path        :: string(),

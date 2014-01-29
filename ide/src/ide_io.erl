@@ -55,7 +55,7 @@ create_new_file(Path) ->
       error;
     File ->
       file:close(File),
-      copy_from_template(File),
+      % copy_from_template(File),
       ok
   end.
 
