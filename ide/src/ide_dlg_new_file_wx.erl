@@ -314,17 +314,22 @@ handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}},
   {noreply, State1};
 
 handle_event(#wx{userData=0, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
+  FileTypeList = wxXmlResource:xrcctrl(Dlg, "file_type_lb", wxListBox),
+  case wxListBox:getStringSelection(FileTypeList) of
+    "Erlang" ->
+      set_description(Dlg);
+    "Plain Text" ->
+      Ctrl = wxXmlResource:xrcctrl(Dlg, "info_string", wxStaticText),
+      wxStaticText:setLabel(Ctrl, "A plain text file. Can be used to make notes and readme files."),
+      wxStaticText:wrap(Ctrl, 400)
+  end,
   ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
   FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),
   wxListBox:enable(ModuleTypeList, [{enable, not wxListBox:isEnabled(ModuleTypeList)}]),
   update_path(Dlg, wxTextCtrl:getValue(FileNameTc)),
   {noreply, State};
 handle_event(#wx{userData=1, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
-  ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
-  {_Type, _Ext, Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
-  Ctrl = wxXmlResource:xrcctrl(Dlg, "info_string", wxStaticText),
-  wxStaticText:setLabel(Ctrl, Desc),
-  wxStaticText:wrap(Ctrl, 400),
+  set_description(Dlg),
   FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),
   update_path(Dlg, wxTextCtrl:getValue(FileNameTc)),
   {noreply, State}.
@@ -335,7 +340,7 @@ handle_event(#wx{userData=1, event=#wxCommand{type=command_listbox_selected}}, S
 %% =====================================================================
 
 %% =====================================================================
-%% @doc
+%% @doc Used to dynamically update the path of the file to be created.
 
 update_path(Dlg, Filename) ->
   ProjectChoice = wxXmlResource:xrcctrl(Dlg, "proj_choice", wxChoice),
@@ -348,6 +353,16 @@ update_path(Dlg, Filename) ->
   ProjPathTc = wxXmlResource:xrcctrl(Dlg, "path_tc", wxTextCtrl),
   set_path_text(Dlg, ProjPathTc, ProjPath, Filename).
 
+
+%% =====================================================================
+%% @doc Set the description box based on the list item selected.
+
+set_description(Dlg) ->
+  ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
+  {_Type, _Ext, Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
+  Ctrl = wxXmlResource:xrcctrl(Dlg, "info_string", wxStaticText),
+  wxStaticText:setLabel(Ctrl, Desc),
+  wxStaticText:wrap(Ctrl, 400).
 
 %% =====================================================================
 %% @doc Set the path text to a given path.
