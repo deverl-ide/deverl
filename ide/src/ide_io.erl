@@ -15,6 +15,7 @@
 -export([
         create_directory_structure/1,
         create_new_file/1,
+        create_new_file/2,
         open_new/1,
         read_file/1,
         save_as/2,
@@ -50,12 +51,15 @@ create_directory_structure(Path) ->
 -spec create_new_file(string()) -> ok | error.
 
 create_new_file(Path) ->
+  create_new_file(Path, []).
+  
+create_new_file(Path, Options) ->
   case file:open(Path, [write, read]) of
     {error, _Reason} ->
       error;
-    File ->
-      file:close(File),
-      % copy_from_template(File),
+    {ok, IoDevice} ->
+      copy_from_template(Path, proplists:get_value(template, Options)),
+      file:close(IoDevice),  
       ok
   end.
 
@@ -64,11 +68,6 @@ create_new_file(Path) ->
 %% @doc Read a file from the path specified by the user.
 
 -spec open_new({'wx_ref',integer(),_,_}) -> 'cancel' | wxFileDialog:charlist().
-
-%-spec open_new(Parent) -> Result when
-%  Parent :: wxWindow:wxWindow(),
-%  Result :: {string(), string(), string()}
-%          | {'cancel'}.
 
 open_new(Parent) ->
 	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_OPEN}]),
@@ -182,12 +181,23 @@ get_error_message(Error, Path) ->
 %% =====================================================================
 %% @doc
 
-copy_from_template(Type, To) ->
-  
+copy_from_template(_File, undefined) -> ok;
+copy_from_template(_File, header) -> ok;
+copy_from_template(_File, plain_text) -> ok;
+copy_from_template(File, Type) -> 
+  Dir = filename:dirname(code:which(?MODULE)),
+  Src = filename:join([Dir, "../priv/templates", atom_to_list(Type) ++ ".txt"]),
+  try
+    copy_file(Src, File)
+  catch
+    _Throw -> ok %% Don't bother with template
+  end,
   ok.
-  
-% copy_file(Source, Dest) ->
-%   case file:copy(Source, Dest) of
-%     {ok, _BytesCopied} -> ok;
-%     {error, Reason} -> throw("Copy failed: " ++ atom_to_list(Reason))
-%   end.
+
+copy_file(Source, Dest) ->
+  case file:copy(Source, Dest) of
+    {ok, _BytesCopied} -> 
+      ok;
+    {error, Reason} -> 
+      throw("Copy failed: " ++ atom_to_list(Reason))
+  end.
