@@ -1211,6 +1211,190 @@
 				<option>1</option>
 				<flag>wxEXPAND | wxALL</flag>
 				<border>10</border>
+				<object class="wxPanel" name="general">
+					<style>wxTAB_TRAVERSAL</style>
+					<object class="wxBoxSizer">
+						<orient>wxVERTICAL</orient>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
+							<object class="wxStaticText" name="m_staticText61">
+								<font>
+									<size>12</size>
+									<family>swiss</family>
+									<style>normal</style>
+									<weight>bold</weight>
+									<underlined>0</underlined>
+								</font>
+								<label>Path Configuration</label>
+								<wrap>-1</wrap>
+							</object>
+						</object>
+						<object class="spacer">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<size>0,10</size>
+						</object>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxFlexGridSizer">
+								<rows>3</rows>
+								<cols>3</cols>
+								<vgap>5</vgap>
+								<hgap>5</hgap>
+								<growablecols>1</growablecols>
+								<growablerows></growablerows>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText" name="m_staticText28">
+										<label>Path to erl</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="path_to_erl_tc">
+										<size>200,-1</size>
+										<enabled>0</enabled>
+										<value></value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="path_to_erl_btn">
+										<enabled>0</enabled>
+										<label>Browse..</label>
+										<default>0</default>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+									<border>5</border>
+									<object class="wxStaticText" name="m_staticText29">
+										<label>Path to erlc</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="path_to_erlc_tc">
+										<value></value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="path_to_erlc_btn">
+										<label>Browse..</label>
+										<default>0</default>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
+									<border>5</border>
+									<object class="wxStaticText" name="m_staticText30">
+										<label>Path to Dialyzer</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL|wxEXPAND</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="path_to_dlzr_tc">
+										<value></value>
+										<maxlength>0</maxlength>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="path_to_dlzr_btn">
+										<label>Browse..</label>
+										<default>0</default>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="spacer">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<size>0,10</size>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
+							<object class="wxStaticText" name="m_staticText47">
+								<font>
+									<size>12</size>
+									<family>swiss</family>
+									<style>normal</style>
+									<weight>bold</weight>
+									<underlined>0</underlined>
+								</font>
+								<label>$HOME Environment Variable</label>
+								<wrap>-1</wrap>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxBoxSizer">
+								<orient>wxHORIZONTAL</orient>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText" name="home_env_st">
+										<label></label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="home_env_btn">
+										<label>Update..</label>
+										<default>0</default>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="spacer">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<size>0,10</size>
+						</object>
+					</object>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxEXPAND | wxALL</flag>
+				<border>10</border>
 				<object class="wxPanel" name="dialyzer">
 					<style>wxTAB_TRAVERSAL</style>
 					<hidden>1</hidden>
@@ -1239,7 +1423,7 @@
 							<object class="wxBoxSizer">
 								<orient>wxHORIZONTAL</orient>
 								<object class="sizeritem">
-									<option>0</option>
+									<option>1</option>
 									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 									<border>5</border>
 									<object class="wxStaticText" name="dlzr_plt_st">
@@ -1251,7 +1435,7 @@
 									<option>0</option>
 									<flag>wxALL</flag>
 									<border>5</border>
-									<object class="wxButton" name="dial_btn_browse">
+									<object class="wxButton" name="dlzr_btn_browse">
 										<label>Browse..</label>
 										<default>0</default>
 									</object>
@@ -1291,7 +1475,7 @@
 									<flag>wxALL|wxEXPAND</flag>
 									<border>5</border>
 									<object class="wxListCtrl" name="dlzr_incs_lc">
-										<style>wxLC_REPORT|wxLC_SINGLE_SEL</style>
+										<style>wxLC_NO_HEADER|wxLC_REPORT|wxLC_SINGLE_SEL</style>
 										<size>300,80</size>
 									</object>
 								</object>
@@ -1350,7 +1534,7 @@
 									<option>0</option>
 									<flag>wxALL</flag>
 									<border>5</border>
-									<object class="wxCheckBox" name="dial_verbose_out">
+									<object class="wxCheckBox" name="dlzr_verbose_out">
 										<label>Enable verbose output</label>
 										<checked>0</checked>
 									</object>
@@ -1359,7 +1543,7 @@
 									<option>0</option>
 									<flag>wxALL</flag>
 									<border>5</border>
-									<object class="wxCheckBox" name="dial_stats_out">
+									<object class="wxCheckBox" name="dlzr_stats_out">
 										<label>Print statistics</label>
 										<checked>0</checked>
 									</object>
@@ -1368,7 +1552,7 @@
 									<option>0</option>
 									<flag>wxALL</flag>
 									<border>5</border>
-									<object class="wxCheckBox" name="dial_quiet_out">
+									<object class="wxCheckBox" name="dlzr_quiet_out">
 										<label>Quiet (reduced output)</label>
 										<checked>0</checked>
 									</object>
@@ -1419,9 +1603,9 @@
 									<option>1</option>
 									<flag>wxALL|wxEXPAND</flag>
 									<border>5</border>
-									<object class="wxListCtrl" name="m_listCtrl211">
-										<style>wxLC_ICON</style>
-										<size>300,-1</size>
+									<object class="wxListCtrl" name="cmp_incs_lc">
+										<style>wxLC_NO_HEADER|wxLC_REPORT|wxLC_SINGLE_SEL</style>
+										<size>300,80</size>
 									</object>
 								</object>
 								<object class="sizeritem">
@@ -1434,7 +1618,7 @@
 											<option>0</option>
 											<flag>wxALL|wxEXPAND</flag>
 											<border>5</border>
-											<object class="wxButton" name="m_button1711">
+											<object class="wxButton" name="cmp_add_inc_btn">
 												<label>Add Folder</label>
 												<default>0</default>
 											</object>
@@ -1443,7 +1627,7 @@
 											<option>0</option>
 											<flag>wxALL|wxEXPAND</flag>
 											<border>5</border>
-											<object class="wxButton" name="m_button1811">
+											<object class="wxButton" name="cmp_rm_inc_btn">
 												<label>Remove Folder</label>
 												<default>0</default>
 											</object>
@@ -1479,7 +1663,7 @@
 									<option>0</option>
 									<flag>wxALL</flag>
 									<border>5</border>
-									<object class="wxCheckBox" name="m_checkBox121">
+									<object class="wxCheckBox" name="cmp_show_warns_cb">
 										<label>Show warnings</label>
 										<checked>0</checked>
 									</object>
@@ -1488,7 +1672,7 @@
 									<option>0</option>
 									<flag>wxALL</flag>
 									<border>5</border>
-									<object class="wxCheckBox" name="m_checkBox101">
+									<object class="wxCheckBox" name="cmp_warn_to_err_cb">
 										<label>Convert warnings to errors</label>
 										<checked>0</checked>
 									</object>
@@ -1497,7 +1681,7 @@
 									<option>0</option>
 									<flag>wxALL</flag>
 									<border>5</border>
-									<object class="wxCheckBox" name="m_checkBox111">
+									<object class="wxCheckBox" name="cmp_verbose_out_cb">
 										<label>Enable verbose output</label>
 										<checked>0</checked>
 									</object>
@@ -1510,23 +1694,11 @@
 								</object>
 							</object>
 						</object>
-					</object>
-				</object>
-			</object>
-			<object class="sizeritem">
-				<option>1</option>
-				<flag>wxEXPAND | wxALL</flag>
-				<border>10</border>
-				<object class="wxPanel" name="general">
-					<style>wxTAB_TRAVERSAL</style>
-					<hidden>1</hidden>
-					<object class="wxBoxSizer">
-						<orient>wxVERTICAL</orient>
 						<object class="sizeritem">
 							<option>0</option>
 							<flag>wxALL</flag>
 							<border>5</border>
-							<object class="wxStaticText" name="m_staticText61">
+							<object class="wxStaticText" name="m_staticText46">
 								<font>
 									<size>12</size>
 									<family>swiss</family>
@@ -1534,100 +1706,24 @@
 									<weight>bold</weight>
 									<underlined>0</underlined>
 								</font>
-								<label>Path Configuration</label>
+								<label>Compiler Flags</label>
 								<wrap>-1</wrap>
 							</object>
 						</object>
 						<object class="sizeritem">
 							<option>1</option>
-							<flag>wxEXPAND</flag>
+							<flag>wxALL|wxEXPAND</flag>
 							<border>5</border>
-							<object class="wxFlexGridSizer">
-								<rows>3</rows>
-								<cols>3</cols>
-								<vgap>0</vgap>
-								<hgap>0</hgap>
-								<growablecols>1</growablecols>
-								<growablerows></growablerows>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
-									<border>5</border>
-									<object class="wxStaticText" name="m_staticText28">
-										<label>Path to erl</label>
-										<wrap>-1</wrap>
-									</object>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALL|wxEXPAND</flag>
-									<border>5</border>
-									<object class="wxTextCtrl" name="m_textCtrl9">
-										<value></value>
-										<maxlength>0</maxlength>
-									</object>
-								</object>
+							<object class="wxStaticBoxSizer">
+								<orient>wxVERTICAL</orient>
+								<label></label>
 								<object class="sizeritem">
 									<option>0</option>
 									<flag>wxALL</flag>
 									<border>5</border>
-									<object class="wxButton" name="m_button25">
-										<label>Browse..</label>
-										<default>0</default>
-									</object>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
-									<border>5</border>
-									<object class="wxStaticText" name="m_staticText29">
-										<label>Path to erlc</label>
-										<wrap>-1</wrap>
-									</object>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALL|wxEXPAND</flag>
-									<border>5</border>
-									<object class="wxTextCtrl" name="m_textCtrl10">
-										<value></value>
-										<maxlength>0</maxlength>
-									</object>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALL</flag>
-									<border>5</border>
-									<object class="wxButton" name="m_button26">
-										<label>Browse..</label>
-										<default>0</default>
-									</object>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALL|wxALIGN_CENTER_VERTICAL</flag>
-									<border>5</border>
-									<object class="wxStaticText" name="m_staticText30">
-										<label>Path to Dialyzer</label>
-										<wrap>-1</wrap>
-									</object>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALL|wxEXPAND</flag>
-									<border>5</border>
-									<object class="wxTextCtrl" name="m_textCtrl11">
-										<value></value>
-										<maxlength>0</maxlength>
-									</object>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALL</flag>
-									<border>5</border>
-									<object class="wxButton" name="m_button27">
-										<label>Browse..</label>
-										<default>0</default>
+									<object class="wxCheckBox" name="cmp_debug_info_cb">
+										<label>Include debug information (debug__info)</label>
+										<checked>0</checked>
 									</object>
 								</object>
 							</object>
@@ -1641,6 +1737,7 @@
 				<border>10</border>
 				<object class="wxPanel" name="console">
 					<style>wxTAB_TRAVERSAL</style>
+					<hidden>1</hidden>
 					<object class="wxBoxSizer">
 						<orient>wxVERTICAL</orient>
 						<object class="sizeritem">
@@ -1666,12 +1763,23 @@
 							<object class="wxBoxSizer">
 								<orient>wxHORIZONTAL</orient>
 								<object class="sizeritem">
-									<option>0</option>
+									<option>1</option>
 									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 									<border>5</border>
 									<object class="wxStaticText" name="console_font_st">
 										<label></label>
 										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALL</flag>
+									<border>5</border>
+									<object class="wxTextCtrl" name="m_textCtrl10">
+										<size>300,-1</size>
+										<hidden>1</hidden>
+										<value></value>
+										<maxlength>0</maxlength>
 									</object>
 								</object>
 								<object class="sizeritem">
@@ -1708,11 +1816,17 @@
 							</object>
 						</object>
 						<object class="sizeritem">
-							<option>1</option>
+							<option>0</option>
 							<flag>wxALL|wxEXPAND</flag>
 							<border>5</border>
-							<object class="wxPanel" name="console_themes_p">
+							<object class="wxPanel" name="console_themes_pan">
 								<style>wxTAB_TRAVERSAL</style>
+								<object class="wxGridSizer">
+									<rows>2</rows>
+									<cols>3</cols>
+									<vgap>5</vgap>
+									<hgap>5</hgap>
+								</object>
 							</object>
 						</object>
 					</object>
@@ -1906,7 +2020,7 @@
 									<option>1</option>
 									<flag>wxEXPAND</flag>
 									<border>0</border>
-									<object class="wxPanel" name="desc">
+									<object class="wxPanel" name="desc_1">
 										<style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
 										<size>-1,100</size>
 										<bg>#ffffff</bg>
@@ -1915,7 +2029,7 @@
 											<orient>wxVERTICAL</orient>
 											<object class="sizeritem">
 												<option>0</option>
-												<flag></flag>
+												<flag>wxEXPAND</flag>
 												<border>0</border>
 												<object class="wxBoxSizer">
 													<orient>wxHORIZONTAL</orient>
@@ -1937,12 +2051,12 @@
 														</object>
 													</object>
 													<object class="sizeritem">
-														<option>0</option>
+														<option>1</option>
 														<flag>wxALIGN_CENTER_VERTICAL</flag>
 														<border>0</border>
 														<object class="wxStaticText" name="info_string">
 															<label>Create a new project.</label>
-															<wrap>-1</wrap>
+															<wrap>300</wrap>
 														</object>
 													</object>
 												</object>
@@ -2171,9 +2285,10 @@
 										</object>
 										<object class="sizeritem">
 											<option>0</option>
-											<flag>wxEXPAND</flag>
+											<flag>wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
 											<border>5</border>
 											<object class="wxTextCtrl" name="path_tc">
+												<enabled>0</enabled>
 												<value></value>
 												<maxlength>0</maxlength>
 											</object>
@@ -2414,6 +2529,53 @@
 							<default>0</default>
 						</object>
 					</object>
+				</object>
+			</object>
+		</object>
+	</object>
+	<object class="wxPanel" name="theme_sample">
+		<style>wxTAB_TRAVERSAL</style>
+		<object class="wxBoxSizer">
+			<orient>wxHORIZONTAL</orient>
+			<object class="sizeritem">
+				<option>0</option>
+				<flag>wxALL</flag>
+				<border>5</border>
+				<object class="wxPanel" name="theme_bg_pan">
+					<style>wxSIMPLE_BORDER|wxTAB_TRAVERSAL</style>
+					<size>65,40</size>
+					<bg>#b5d5ff</bg>
+					<fg>#b5d5ff</fg>
+					<object class="wxBoxSizer">
+						<minsize>65,40</minsize>
+						<orient>wxVERTICAL</orient>
+						<object class="sizeritem">
+							<option>1</option>
+							<flag>wxALL|wxEXPAND</flag>
+							<border>2</border>
+							<object class="wxStaticText" name="theme_font_fg">
+								<font>
+									<size>8</size>
+									<family>teletype</family>
+									<style>normal</style>
+									<weight>normal</weight>
+									<underlined>0</underlined>
+								</font>
+								<label>1&gt; 1+1.\n3\n2&gt;</label>
+								<wrap>-1</wrap>
+							</object>
+						</object>
+					</object>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>0</option>
+				<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+				<border>5</border>
+				<object class="wxRadioButton" name="theme_radio">
+					<style>wxRB_SINGLE</style>
+					<label>RadioBtn</label>
+					<value>0</value>
 				</object>
 			</object>
 		</object>

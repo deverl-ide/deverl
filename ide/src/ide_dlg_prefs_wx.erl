@@ -28,7 +28,12 @@
 %% Server state
 -record(state, {frame,
                 cur_pref
-                }).       
+                }).
+                
+-define(CONSOLE_THEMES, [{"Light", ?wxBLACK, ?wxWHITE, {230,230,230}, ?wxRED},
+                         {"Dark", ?wxWHITE, ?wxBLACK, {30,30,30}, {146, 91, 123}},
+                         {"Matrix", {0,204,0}, ?wxBLACK, {30,30,30}, {146, 91, 123}}
+                         ]).
   
 
 %% =====================================================================
@@ -59,16 +64,79 @@ init(Config) ->
     wxFrame:connect(Frame,command_menu_selected,[{id,Id}, {userData,UD}])
   end,
   [Connect(Str) || Str <- [general, console, compiler, dialyzer]],
+  
+  %% General pref
+  UpdatePath = fun(Tc) ->
+    FileDlg = wxFileDialog:new(Frame, [{style, ?wxFD_FILE_MUST_EXIST}]),
+    case wxFileDialog:showModal(FileDlg) of
+      ?wxID_CANCEL -> ok;
+      ?wxID_OK ->
+        Path = wxFileDialog:getPath(FileDlg),
+        wxTextCtrl:setValue(Tc, Path)
+    end,
+    wxFileDialog:destroy(FileDlg)
+  end,
+  
+  GenPrefs = ide_sys_pref_gen:get_preference(general_prefs),
+  Pref0 = wxXmlResource:xrcctrl(Frame, "general", wxPanel),
+  GTc1 = wxXmlResource:xrcctrl(Frame, "path_to_erl_tc", wxTextCtrl),
+  wxTextCtrl:setValue(GTc1, GenPrefs#general_prefs.path_to_erl),
+  GTc2 = wxXmlResource:xrcctrl(Frame, "path_to_erlc_tc", wxTextCtrl),
+  wxTextCtrl:setValue(GTc2, GenPrefs#general_prefs.path_to_erlc),
+  GTc3 = wxXmlResource:xrcctrl(Frame, "path_to_dlzr_tc", wxTextCtrl),
+  wxTextCtrl:setValue(GTc3, GenPrefs#general_prefs.path_to_dialyzer),
+  GBtn1 = wxXmlResource:xrcctrl(Frame, "path_to_erl_btn", wxButton),
+  wxButton:connect(GBtn1, command_button_clicked, [{callback,
+    fun(_E,_O) ->
+      UpdatePath(GTc1)
+    end
+  }]),
+  GBtn2 = wxXmlResource:xrcctrl(Frame, "path_to_erlc_btn", wxButton),
+  wxButton:connect(GBtn2, command_button_clicked, [{callback,
+    fun(_E,_O) ->
+      UpdatePath(GTc2)
+    end
+  }]),
+  GBtn3 = wxXmlResource:xrcctrl(Frame, "path_to_dlzr_btn", wxButton),
+  wxButton:connect(GBtn3, command_button_clicked, [{callback,
+    fun(_E,_O) ->
+      UpdatePath(GTc3)
+    end
+  }]),
+  GSt = wxXmlResource:xrcctrl(Frame, "home_env_st", wxStaticText),
+  wxStaticText:setLabel(GSt, GenPrefs#general_prefs.home_env_var),
+  Btn2 = wxXmlResource:xrcctrl(Frame, "home_env_btn", wxButton),
+  wxButton:connect(Frame, command_button_clicked, [{callback, 
+    fun(_E,_O) ->
+      TxtDlg = wxTextEntryDialog:new(Frame, "Enter your home directory:"),
+      case wxTextEntryDialog:showModal(TxtDlg) of
+        ?wxID_CANCEL -> ok;
+        ?wxID_OK ->
+          Str = wxTextEntryDialog:getValue(TxtDlg),
+          wxStaticText:setLabel(GSt, Str)
+      end,
+      wxTextEntryDialog:destroy(TxtDlg)
+    end
+  }]),
    
   %% Console pref
-  Pref0 = wxXmlResource:xrcctrl(Frame, "console", wxPanel),
   F0 = ide_sys_pref_gen:get_font(console_font),
   FStr0 = wxXmlResource:xrcctrl(Frame, "console_font_st", wxStaticText),
   wxStaticText:setLabel(FStr0, get_font_string(F0)),
-  Themes = wxXmlResource:xrcctrl(Frame, "console_themes_p", wxPanel),
-  add_themes(Themes),
+  Themes = wxXmlResource:xrcctrl(Frame, "console_themes_pan", wxPanel),
+  FSz = wxPanel:getSizer(Themes),
+  AddTheme = fun({Name, Fg, Bg, _Mrkr, _Err}) ->
+    Theme = wxXmlResource:loadPanel(Xrc, Themes, "theme_sample"),
+    wxPanel:setBackgroundColour(wxXmlResource:xrcctrl(Theme, "theme_bg_pan", wxPanel), Bg),
+    wxStaticText:setForegroundColour(wxXmlResource:xrcctrl(Theme, "theme_font_fg", wxStaticText), Fg),
+    Radio = wxXmlResource:xrcctrl(Theme, "theme_radio", wxRadioButton),
+    wxRadioButton:setLabel(Radio, Name),
+    wxSizer:add(FSz, Theme)
+  end,
+  lists:foreach(AddTheme, ?CONSOLE_THEMES),
+
   Browse0 = wxXmlResource:xrcctrl(Frame, "console_font_btn", wxButton),
-  %% Choose font
+  %% Font
   wxButton:connect(Browse0, command_button_clicked, [{callback, 
     fun(_E,_O) ->
       Fd = wxFontData:new(),
@@ -79,46 +147,100 @@ init(Config) ->
           F = wxFontData:getChosenFont(wxFontDialog:getFontData(Dlg)),
           wxStaticText:setLabel(FStr0, get_font_string(F)),
           ide_sys_pref_gen:set_font(console_font, F),
-          ide_console_wx:set_font(F),
-          wxFrame:layout(Frame);
+          ide_console_wx:set_font(F);
         ?wxID_CANCEL ->
           ok
       end
     end
   }]),
+  
+  
+  InitListCtrl = fun(Lc, Incs) ->
+    wxListCtrl:insertColumn(Lc, 0, ""),
+    wxListCtrl:setColumnWidth(Lc, 0, 300),
+    lists:foldl(
+      fun(Path, Acc) ->
+        wxListCtrl:insertItem(Lc, Acc, ""),
+        wxListCtrl:setItem(Lc, Acc, 0, filename:basename(Path)),
+        ide_lib_widgets:set_list_item_background(Lc, Acc),
+        Acc + 1
+      end, 0, Incs)
+  end,
+    
+  InsertFolder = fun(Lc) ->
+    Dlg = wxDirDialog:new(Frame, [{style, ?wxDD_DIR_MUST_EXIST}]),
+    case wxDialog:showModal(Dlg) of
+      ?wxID_OK ->
+        Inc = wxDirDialog:getPath(Dlg),
+        wxListCtrl:insertItem(Lc, 0, Inc);
+      ?wxID_CANCEL ->
+        ok
+    end
+  end,
+  
+  GetSelected = fun(Lc) ->
+    wxListCtrl:getNextItem(Lc, -1, [{geometry, ?wxLIST_NEXT_ALL}, {state, ?wxLIST_STATE_SELECTED}])
+  end,
   
   %% Dialyzer pref
   DlzrOpts = ide_sys_pref_gen:get_preference(dialyzer_options),
   PLTStr = wxXmlResource:xrcctrl(Frame, "dlzr_plt_st", wxStaticText),
   wxStaticText:setLabel(PLTStr, DlzrOpts#dialyzer_options.plt),
   DlzrIncs = wxXmlResource:xrcctrl(Frame, "dlzr_incs_lc", wxListCtrl),
-  %% Display includes
-  wxListCtrl:insertColumn(DlzrIncs, 0, ""),
-  wxListCtrl:setColumnWidth(DlzrIncs, 0, 300),
-  lists:foldl(
-    fun(Path, Acc) ->
-      wxListCtrl:insertItem(DlzrIncs, Acc, ""),
-      wxListCtrl:setItem(DlzrIncs, Acc, 0, filename:basename(Path)),
-      ide_lib_widgets:set_list_item_background(DlzrIncs, Acc),
-      Acc + 1
-    end, 0, DlzrOpts#dialyzer_options.include_dirs),
+  InitListCtrl(DlzrIncs, DlzrOpts#dialyzer_options.include_dirs),
+  
   %% Add/remove include folders
   Add0 = wxXmlResource:xrcctrl(Frame, "dlzr_add_inc_btn", wxButton),
   wxButton:connect(Add0, command_button_clicked, [{callback,
     fun(_E,_O) ->
-      Dlg = wxDirDialog:new(Frame, [{style, ?wxDD_DIR_MUST_EXIST}]),
-      case wxDialog:showModal(Dlg) of
-        ?wxID_OK ->
-          Inc = wxDirDialog:getPath(Dlg),
-          wxListCtrl:insertItem(DlzrIncs, 0, Inc);
-        ?wxID_CANCEL ->
-          ok
-      end
+      InsertFolder(DlzrIncs)
     end
   }]),
   Rm0 = wxXmlResource:xrcctrl(Frame, "dlzr_rm_inc_btn", wxButton),
+  wxButton:connect(Rm0, command_button_clicked, [{callback,
+    fun(_E,_O) ->
+      Idx = GetSelected(DlzrIncs),
+      wxListCtrl:deleteItem(DlzrIncs, Idx)
+    end
+  }]),
+  
+  %% Checkboxes
+  DlzrCb1 = wxXmlResource:xrcctrl(Frame, "dlzr_verbose_out", wxCheckBox),
+  wxCheckBox:setValue(DlzrCb1, DlzrOpts#dialyzer_options.verbose_out),
+  DlzrCb2 = wxXmlResource:xrcctrl(Frame, "dlzr_stats_out", wxCheckBox),
+  wxCheckBox:setValue(DlzrCb2, DlzrOpts#dialyzer_options.stats_out),
+  DlzrCb3 = wxXmlResource:xrcctrl(Frame, "dlzr_quiet_out", wxCheckBox),
+  wxCheckBox:setValue(DlzrCb3, DlzrOpts#dialyzer_options.quiet_out),
   
   %% Compiler pref
+  CmpOpts = ide_sys_pref_gen:get_preference(compiler_options),
+  CmpIncs = wxXmlResource:xrcctrl(Frame, "cmp_incs_lc", wxListCtrl),
+  InitListCtrl(CmpIncs, CmpOpts#compiler_options.include_dirs),
+  
+  %% Add/remove include folders
+  Add1 = wxXmlResource:xrcctrl(Frame, "cmp_add_inc_btn", wxButton),
+  wxButton:connect(Add1, command_button_clicked, [{callback,
+    fun(_E,_O) ->
+      InsertFolder(CmpIncs)
+    end
+  }]),
+  Rm1 = wxXmlResource:xrcctrl(Frame, "cmp_rm_inc_btn", wxButton),
+  wxButton:connect(Rm1, command_button_clicked, [{callback,
+    fun(_E,_O) ->
+      Idx = GetSelected(CmpIncs),
+      wxListCtrl:deleteItem(CmpIncs, Idx)
+    end
+  }]),
+  
+  %% Checkboxes
+  CmpCb1 = wxXmlResource:xrcctrl(Frame, "cmp_show_warns_cb", wxCheckBox),
+  wxCheckBox:setValue(CmpCb1, CmpOpts#compiler_options.show_warnings),
+  CmpCb2 = wxXmlResource:xrcctrl(Frame, "cmp_warn_to_err_cb", wxCheckBox),
+  wxCheckBox:setValue(CmpCb2, CmpOpts#compiler_options.warn_to_err),
+  CmpCb3 = wxXmlResource:xrcctrl(Frame, "cmp_verbose_out_cb", wxCheckBox),
+  wxCheckBox:setValue(CmpCb3, CmpOpts#compiler_options.verbose_out),
+  CmpCb4 = wxXmlResource:xrcctrl(Frame, "cmp_debug_info_cb", wxCheckBox),
+  wxCheckBox:setValue(CmpCb4, CmpOpts#compiler_options.debug_info),
   
   wxFrame:centre(Frame),
   wxFrame:fit(Frame),
@@ -154,7 +276,6 @@ code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
 
 terminate(_Reason, #state{frame=Frame}) ->
-  % wxFrame:disconnect(Frame),
   wxFrame:destroy(Frame).
     
 
@@ -169,44 +290,3 @@ terminate(_Reason, #state{frame=Frame}) ->
 
 get_font_string(Font) ->
   io_lib:format("~s ~p pt.", [wxFont:getFaceName(Font), wxFont:getPointSize(Font)]).
-  
-
-add_themes(Parent) ->
-  %% Console themes {Name, FgColour, BgColour, MarkerBg, ErrorFg}
-  Themes = [{"Light", ?wxBLACK, ?wxWHITE, {230,230,230}, ?wxRED},
-            {"Dark", ?wxWHITE, ?wxBLACK, {30,30,30}, {146, 91, 123}},
-            {"Matrix", {0,204,0}, ?wxBLACK, {30,30,30}, {146, 91, 123}}],
-            
-  SavedTheme = ide_sys_pref_gen:get_preference(console_theme),  
-  % Sz = wxGridSizer:new(3, [{vgap, 5}, {hgap, 5}]),
-  Sz = wxBoxSizer:new(?wxHORIZONTAL),
-  Add = fun({Name, Fg, Bg, Mrkr, Err}=Theme) ->
-    Sz1 = wxBoxSizer:new(?wxHORIZONTAL),
-    Sample = wxPanel:new(Parent, [{style, ?wxBORDER_SIMPLE}, {size, {65,40}}]),
-    wxPanel:setMinSize(Sample, {65, 40}),
-    T = wxStaticText:new(Sample, ?wxID_ANY, "1> 1+1.\n3\n2>"),
-    wxWindow:setFont(T, wxFont:new(8, ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL)),
-    wxWindow:setForegroundColour(T, Fg),
-    wxWindow:setBackgroundColour(Sample, Bg),
-    Radio = wxRadioButton:new(Parent, ?wxID_ANY, Name, []),
-    wxSizer:add(Sz1, Sample, [{flag, ?wxALIGN_CENTRE}]),
-    wxSizer:add(Sz1, Radio, [{flag, ?wxALIGN_CENTRE}]),
-    wxSizer:add(Sz, Sz1, [{flag, ?wxALIGN_CENTRE}]),
-    wxSizer:layout(Sz),
-    wxPanel:layout(Sample),
-    case SavedTheme of
-      Theme ->
-        wxRadioButton:setValue(Radio, true);
-      _ ->
-        ok
-    end,
-    % Evt Handler
-    Update = fun(_E,_O) ->
-      ide_console_wx:set_theme(Fg, Bg, Mrkr, Err),
-      ide_sys_pref_gen:set_preference(console_theme, Theme)
-    end,
-    wxRadioButton:connect(Radio, command_radiobutton_selected, [{callback,Update}])
-  end, 
-  [ Add(Theme) || Theme <- Themes ],
-  wxPanel:setSizer(Parent, Sz),
-  wxPanel:fit(Parent).

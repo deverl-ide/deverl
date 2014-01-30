@@ -56,8 +56,23 @@ get_defaults() ->
   
     %% Log prefs
     {log_font, DefaultFont},
+    
+    %% General prefs
+    {general_prefs, #general_prefs{path_to_erl = "",
+                     path_to_erlc = "",
+                     path_to_dialyzer = "",
+                     home_env_var = ""
+                     }},
   
     %% Compiler
+    {compiler_options, #compiler_options{show_warnings = true,
+                                         include_dirs = [],
+                                         verbose_out = true,
+                                         warn_to_err = false,
+                                         debug_info = true
+                                         }},
+    
+    %% Dialyzer
     {dialyzer_options, #dialyzer_options{plt = wx_misc:getHomeDir(),
                                          include_dirs = [],
                                          verbose_out = true,

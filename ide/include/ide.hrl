@@ -9,12 +9,18 @@
                style,
                weight
                }).
+               
+-record(general_prefs, {path_to_erl,
+                        path_to_erlc,
+                        path_to_dialyzer,
+                        home_env_var
+                        }).
 
--record(compiler_options, {plt,
+-record(compiler_options, {show_warnings,
                            include_dirs,
                            verbose_out,
-                           stats_out,
-                           quiet_out
+                           warn_to_err,
+                           debug_info
                            }).
 
 -record(dialyzer_options, {plt,

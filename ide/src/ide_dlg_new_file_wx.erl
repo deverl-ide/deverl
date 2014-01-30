@@ -32,25 +32,32 @@
 -define(FILE_TYPE_TEXT,     1).
 -define(FILE_TYPES,   ["Erlang",
                        "Plain Text"]).
--define(MODULE_TYPES, [{erlang_basic, "Erlang Module", ".erl"},
-                       {header, "Erlang Header File", ".hrl"},
-                       {application, "OTP Application", ".app"},
-                       {gen_server, "OTP Gen Server", ".erl"},
-                       {supervisor, "OTP Supervisor", ".erl"}
+-define(MODULE_TYPES, [{erlang_basic, "Erlang Module", 
+                                      ".erl",
+                                      "A standard Erlang module."},
+                       {header, "Erlang Header File",
+                                ".hrl",
+                                "An Erlang header file. Used for defining global macros, types and records."},
+                       {application, "OTP Application",
+                                     ".app",
+                                     "An application specification. Applications group together common modules, allowing them " 
+                                      "to be started and stopped as a single unit. Erlang applications may also be used easily by " 
+                                      "other systems."},
+                       {gen_server, "OTP Gen Server",
+                                    ".erl",
+                                    "A behaviour module for implementing the server of a client-server relationship."},
+                       {supervisor, "OTP Supervisor",
+                                    ".erl",
+                                    "OTP supervisor behaviour. A supervisor is responsible for monitoring child "
+                                    "processes. This includes starting, stopping, and restarting processes "
+                                    "where necessary."},
+                       {event_server, "OTP Gen FSM",
+                                      ".erl",
+                                      "A behaviour module for implementing a generic finite state machine."},
+                       {wx_object, "Wx Object",
+                                   ".erl",
+                                   "A behaviour module for the wxWidgets binding. It works like a regular gen_server module."} 
                        ]).
-
--define(DESC_ERLANG_MODULE,  "A standard Erlang module.").
--define(DESC_ERLANG_HEADER,  "An Erlang header file. Used for defining global macros, types and records.").
--define(DESC_OTP_APP,        "An application specification. Create an app from your Erlang project so modules 
-                              may be started and stopped as a unit. Erlang apps may also be used easily by 
-                              other systems.").
--define(DESC_OTP_GEN_SERVER, "A behaviour module for implementing the server of a client-server relation.").
--define(DESC_OTP_SUP,        "OTP supervisor behaviour. A supervisor is responsible for starting, stopping 
-                              and monitoring its child processes. The basic idea of a supervisor is that it 
-                              should keep its child processes alive by restarting them when necessary.").
--define(DESC_GEN_FSM,        "A behaviour module for implementing a generic finite state machine.").
--define(DESC_WX_OBJECT,      "A behaviour module for a wx object. It works like a regular gen_server module 
-                              and implements the erlang bindings for wxWigets.").
 
 %% Server state
 -record(state, {dlg,
@@ -105,7 +112,9 @@ get_project_id(This) ->
                                      | header
                                      | supervisor
                                      | application
-                                     | gen_server.
+                                     | gen_server
+                                     | event_server
+                                     | wx_object.
 
 get_type(This) ->
   wx_object:call(This, get_type).
@@ -153,9 +162,9 @@ init({Parent, Projects, ActiveProject}) ->
   
   %% Add module types
   ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
-  InsertMod = fun({Type, Name, Ext}) ->
+  InsertMod = fun({Type, Name, Ext, Desc}) ->
     Str = io_lib:format("~-30s[~s]", [Name, Ext]),
-    wxListBox:append(ModuleTypeList, Str, {Type, Ext})
+    wxListBox:append(ModuleTypeList, Str, {Type, Ext, Desc})
   end,
   lists:foreach(InsertMod, ?MODULE_TYPES),
   wxListBox:setSelection(ModuleTypeList, 0),
@@ -195,7 +204,11 @@ init({Parent, Projects, ActiveProject}) ->
  
   %% Listbox 2 handler
   CB2 = fun(_E,_O) ->
-    UpdatePath(wxTextCtrl:getValue(FileNameTc))
+    UpdatePath(wxTextCtrl:getValue(FileNameTc)),
+    {_Type, _Ext, Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
+    Ctrl = wxXmlResource:xrcctrl(Dlg, "info_string", wxStaticText),
+    wxStaticText:setLabel(Ctrl, Desc),
+    wxStaticText:wrap(Ctrl, 400)
   end,
   wxListBox:connect(ModuleTypeList, command_listbox_selected, [{callback, CB2}]),
   
@@ -281,7 +294,7 @@ handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}},
   ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
   Type1 = case wxListBox:getSelection(FileTypeList) of
     ?FILE_TYPE_ERLANG ->
-      {Type, _Ext} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
+      {Type, _Ext, _Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
       Type;
     ?FILE_TYPE_TEXT ->
       plain_text
@@ -292,7 +305,7 @@ handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}},
                 },
   wxDialog:endModal(Dlg, Id),
   {noreply, State1}.
-
+  
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
@@ -347,7 +360,7 @@ get_file_extension(Dlg) ->
   ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
   case wxListBox:getSelection(FileTypeList) of
     ?FILE_TYPE_ERLANG ->
-      {_Type, Ext} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
+      {_Type, Ext, _Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
       Ext;
     ?FILE_TYPE_TEXT ->
       ".txt"
@@ -407,34 +420,6 @@ add_project_data(_, []) ->
 add_project_data(ProjectChoice, [ProjectId|Projects]) ->
   wxChoice:append(ProjectChoice, ide_proj_man:get_name(ProjectId), ProjectId),
   add_project_data(ProjectChoice, Projects).
-
-
-%% =====================================================================
-%% @doc Display information to the user within the 'Description' box.
-%% NOTE This is duplicated from the ide_dlg_new_proj_wx module.
-
--spec insert_desc(wxWindow:wxWindow(), list()) -> boolean().
-
-insert_desc(Description, Msg) ->
-	insert_desc(Description, Msg, []).
-
--spec insert_desc(wxWindow:wxWindow(), list(), Options) -> boolean() when
-  Options :: list().
-
-insert_desc(Description, Msg, Options) ->
-	SzFlags = wxSizerFlags:new([{proportion, 0}]),
-	wxSizerFlags:expand(wxSizerFlags:border(SzFlags, ?wxTOP, 10)),
-  Sz = wxWindow:getSizer(Description),
-  wxSizer:clear(Sz, [{delete_windows, true}]),
-	wxSizer:addSpacer(Sz, 10),
-	case proplists:get_value(bitmap, Options) of
-		undefined ->
-      ok;
-		Bitmap ->
-			wxSizer:add(Sz, wxStaticBitmap:new(Description, ?wxID_ANY, Bitmap), [{border, 5}, {flag, ?wxTOP bor ?wxRIGHT}])
-	end,
-	wxSizer:add(Sz, wxStaticText:new(Description, ?wxID_ANY, Msg), SzFlags),
-	wxPanel:layout(Description).
 
 
 %% =====================================================================
