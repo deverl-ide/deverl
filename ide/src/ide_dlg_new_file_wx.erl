@@ -334,10 +334,6 @@ handle_event(#wx{userData=0, event=#wxCommand{type=command_listbox_selected}}, S
 handle_event(#wx{userData=1, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
   FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),  
   update_path(Dlg, wxTextCtrl:getValue(FileNameTc)),
-  {noreply, State};
-
-handle_event(_,State) ->
-  io:format("huh?~n"),
   {noreply, State}.
 
 
