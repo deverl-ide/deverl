@@ -81,7 +81,7 @@ new_document(Parent) ->
     ?wxID_CANCEL ->
       ide_dlg_new_file_wx:destroy(Dlg);
     ?wxID_OK ->
-      create_document(ide_dlg_new_file_wx:get_path(Dlg), 
+      C = create_document(ide_dlg_new_file_wx:get_path(Dlg), 
                       ide_dlg_new_file_wx:get_project_id(Dlg),
                       ide_dlg_new_file_wx:get_type(Dlg)),
       ide_dlg_new_file_wx:destroy(Dlg)

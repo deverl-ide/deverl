@@ -107,7 +107,7 @@ get_project_id(This) ->
 %% =====================================================================
 %% @doc Return the type of the module (for loading correct skeleton).
 
--spec get_type(wxDialog:wxDialog()) -> plain_text 
+-spec get_type(wxDialog:wxDialog()) -> plain_text
                                      | erlang_basic
                                      | header
                                      | supervisor
@@ -118,7 +118,7 @@ get_project_id(This) ->
 
 get_type(This) ->
   wx_object:call(This, get_type).
-  
+
 
 %% =====================================================================
 %% @doc
@@ -140,7 +140,7 @@ init({Parent, Projects, ActiveProject}) ->
 
   %% Load XRC (Assumes all XRC handlers init previously)
   wxXmlResource:loadDialog(Xrc, Dlg, Parent, "new_file"),
-  
+
   %% Add open projects
   Project = case ActiveProject of
     undefined -> "No Project";
@@ -150,16 +150,16 @@ init({Parent, Projects, ActiveProject}) ->
   wxChoice:append(ProjectChoice, "No Project", undefined),
   add_project_data(ProjectChoice, Projects),
   wxChoice:setSelection(ProjectChoice, wxChoice:findString(ProjectChoice, Project)),
-  
+
   %% Set project name (panel 2)
   ProjNameSt = wxXmlResource:xrcctrl(Dlg, "proj_name_st", wxStaticText),
   wxStaticText:setLabel(ProjNameSt, wxChoice:getString(ProjectChoice, wxChoice:getSelection(ProjectChoice))),
-  
+
   %% Add file types
   FileTypeList = wxXmlResource:xrcctrl(Dlg, "file_type_lb", wxListBox),
   wxListBox:insertItems(FileTypeList, ?FILE_TYPES, 0),
   wxListBox:setSelection(FileTypeList, 0),
-  
+
   %% Add module types
   ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
   InsertMod = fun({Type, Name, Ext, Desc}) ->
@@ -168,18 +168,18 @@ init({Parent, Projects, ActiveProject}) ->
   end,
   lists:foreach(InsertMod, ?MODULE_TYPES),
   wxListBox:setSelection(ModuleTypeList, 0),
-  
+
   UpdatePath = fun(Filename) ->
     ProjPath = case wxChoice:getString(ProjectChoice, wxChoice:getSelection(ProjectChoice)) of
       "No Project" -> wx_misc:getHomeDir();
-      _ -> 
+      _ ->
         filename:join(ide_proj_man:get_root(wxChoice:getClientData(ProjectChoice, wxChoice:getSelection(ProjectChoice))), get_default_folder_text(Dlg))
     end,
     ProjPathTc = wxXmlResource:xrcctrl(Dlg, "path_tc", wxTextCtrl),
     set_path_text(Dlg, ProjPathTc, ProjPath, Filename)
   end,
   UpdatePath(""),
-  
+
   FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),
   CB = fun(_E,_O) ->
     Filename = wxTextCtrl:getValue(FileNameTc),
@@ -187,31 +187,37 @@ init({Parent, Projects, ActiveProject}) ->
     UpdatePath(wxTextCtrl:getValue(FileNameTc))
   end,
   wxTextCtrl:connect(FileNameTc, command_text_updated, [{callback, CB}]),
-  
+
   ChoiceFun = fun(_EvtRec, EvtObj) ->
     ProjNameSt = wxXmlResource:xrcctrl(Dlg, "proj_name_st", wxStaticText),
     wxStaticText:setLabel(ProjNameSt, wxCommandEvent:getString(EvtObj)),
     UpdatePath(wxTextCtrl:getValue(FileNameTc))
   end,
   wxChoice:connect(ProjectChoice, command_choice_selected, [{callback, ChoiceFun}]),
+
+  %% -------------------------------------------------------------------
+  %% The following handlers crash the ERTS when destroying the dialog in Linux
+  %% We suspect a bug in the erlang release we are currently using (R16B01).
+  %% We have used a work around for this below (using userData to match on the event).
+  %% In future versions of erlang the following may work...
   
   %% Listbox 1 handler
-  CB1 = fun(_E,_O) ->
-    wxListBox:enable(ModuleTypeList, [{enable, not wxListBox:isEnabled(ModuleTypeList)}]),
-    UpdatePath(wxTextCtrl:getValue(FileNameTc))
-  end,
-  wxListBox:connect(FileTypeList, command_listbox_selected, [{callback, CB1}]),
- 
+  %CB1 = fun(E, O) ->
+  %    wxListBox:enable(ModuleTypeList, [{enable, not wxListBox:isEnabled(ModuleTypeList)}]),
+  %    UpdatePath(wxTextCtrl:getValue(FileNameTc))
+  %end,
+  %wxDialog:connect(FileTypeList, command_listbox_selected, [{callback, CB1}]),
+
   %% Listbox 2 handler
-  CB2 = fun(_E,_O) ->
-    UpdatePath(wxTextCtrl:getValue(FileNameTc)),
-    {_Type, _Ext, Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
-    Ctrl = wxXmlResource:xrcctrl(Dlg, "info_string", wxStaticText),
-    wxStaticText:setLabel(Ctrl, Desc),
-    wxStaticText:wrap(Ctrl, 400)
-  end,
-  wxListBox:connect(ModuleTypeList, command_listbox_selected, [{callback, CB2}]),
+  %CB2 = fun(_E,_O) ->
+  %  UpdatePath(wxTextCtrl:getValue(FileNameTc))
+  %end,
+  %wxDialog:connect(ModuleTypeList, command_listbox_selected, [{callback, CB2}]),
+  %% -------------------------------------------------------------------
   
+  wxDialog:connect(FileTypeList, command_listbox_selected, [{userData, 0}]),
+  wxDialog:connect(ModuleTypeList, command_listbox_selected, [{userData, 1}]),
+
   %% Browse button
   BrowseBtn = wxXmlResource:xrcctrl(Dlg, "browse_btn", wxButton),
   Browse = fun(_E,_O) ->
@@ -236,30 +242,30 @@ init({Parent, Projects, ActiveProject}) ->
         custom_browse_dialog(Dlg, filename:join(Path, get_default_folder_text(Dlg)), ProjectId)
     end
   end,
-  wxButton:connect(BrowseBtn, command_button_clicked, [{callback, Browse}]),  
-  
+  wxButton:connect(BrowseBtn, command_button_clicked, [{callback, Browse}]),
+
   %% Back/next buttons
   NextBtn1 = wxXmlResource:xrcctrl(Dlg, "next_btn", wxButton),
   BackBtn2 = wxXmlResource:xrcctrl(Dlg, "back_btn2", wxButton),
-  
+
   Panel1 = wxXmlResource:xrcctrl(Dlg, "panel_1", wxPanel),
   Panel2 = wxXmlResource:xrcctrl(Dlg, "panel_2", wxPanel),
   Swap = fun(#wx{userData={Show, Hide}}, _O) ->
     wxPanel:hide(Hide),
     wxPanel:show(Show)
   end,
-  
+
   wxButton:connect(BackBtn2, command_button_clicked, [{callback, Swap}, {userData, {Panel1, Panel2}}]),
   wxButton:connect(NextBtn1, command_button_clicked, [{callback, Swap}, {userData, {Panel2, Panel1}}]),
-  
+
   %% Overide OK handler, normal event
   wxButton:connect(Dlg, command_button_clicked, [{id, ?wxID_OK}]),
 
   State=#state{
-    dlg=Dlg           
+    dlg=Dlg
   },
-  
   {Dlg, State}.
+
 
 handle_cast(_Msg, State) ->
   {noreply, State}.
@@ -275,19 +281,20 @@ handle_call(get_path, _From, State) ->
   {reply, State#state.path, State};
 handle_call(get_type, _From, State) ->
   {reply, State#state.type, State}.
-  
+
 code_change(_, _, State) ->
   {ok, State}.
 
 terminate(_Reason, #state{dlg=Dialog}) ->
-  wxDialog:destroy(Dialog).
+  wxDialog:destroy(Dialog),
+  ok.
 
 
 %% =====================================================================
 %% Event handlers
 %% =====================================================================
 
-handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}}, State=#state{dlg=Dlg}) -> 
+handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}}, State=#state{dlg=Dlg}) ->
   ProjPathTc = wxXmlResource:xrcctrl(Dlg, "path_tc", wxTextCtrl),
   ProjectChoice = wxXmlResource:xrcctrl(Dlg, "proj_choice", wxChoice),
   FileTypeList = wxXmlResource:xrcctrl(Dlg, "file_type_lb", wxListBox),
@@ -304,11 +311,34 @@ handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}},
                 type=Type1
                 },
   wxDialog:endModal(Dlg, Id),
-  {noreply, State1}.
-  
+  {noreply, State1};
+handle_event(#wx{userData=0, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
+  ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
+  FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),  
+  wxListBox:enable(ModuleTypeList, [{enable, not wxListBox:isEnabled(ModuleTypeList)}]),
+  update_path(Dlg, wxTextCtrl:getValue(FileNameTc)),
+  {noreply, State};
+handle_event(#wx{userData=1, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
+  FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),  
+  update_path(Dlg, wxTextCtrl:getValue(FileNameTc)),
+  {noreply, State}.
+
+
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
+
+update_path(Dlg, Filename) ->
+  ProjectChoice = wxXmlResource:xrcctrl(Dlg, "proj_choice", wxChoice),
+  ProjPath = case wxChoice:getString(ProjectChoice, wxChoice:getSelection(ProjectChoice)) of
+    "No Project" -> 
+      wx_misc:getHomeDir();
+    _ ->
+      filename:join(ide_proj_man:get_root(wxChoice:getClientData(ProjectChoice, wxChoice:getSelection(ProjectChoice))), get_default_folder_text(Dlg))
+  end,
+  ProjPathTc = wxXmlResource:xrcctrl(Dlg, "path_tc", wxTextCtrl),
+  set_path_text(Dlg, ProjPathTc, ProjPath, Filename).
+  
 
 %% =====================================================================
 %% @doc Set the path text to a given path.
@@ -323,7 +353,7 @@ set_path_text(Dlg, PathTextBox, Path, Filename) ->
     _ ->
       wxTextCtrl:appendText(PathTextBox, filename:join(Path,Filename ++ get_file_extension(Dlg)))
   end.
-  
+
 
 %% =====================================================================
 %% @doc Get the default folder depending on what file type is selected.
@@ -434,22 +464,22 @@ custom_browse_dialog(Parent, Path, ProjectId) ->
   Dlg = wxDialog:new(),
   ide_lib_dlg_wx:win_var(Dlg),
   wxXmlResource:loadDialog(Xrc, Dlg, Parent, "custom_tree_dlg"),
-  
+
   Tree = wxXmlResource:xrcctrl(Dlg, "browse_tree", wxTreeCtrl),
   RootItem = wxTreeCtrl:addRoot(Tree, filename:basename(Path), [{data, Path}]),
   build_tree(Tree, RootItem, ProjectId),
   wxTreeCtrl:expand(Tree, RootItem),
-  
+
   OkButton = wxXmlResource:xrcctrl(Dlg, "wxID_OK", wxButton),
   Ok = fun(_E,_O) ->
     Selection = wxTreeCtrl:getSelection(Tree),
     ProjPathTc = wxXmlResource:xrcctrl(Parent, "path_tc", wxTextCtrl),
-    set_path_text(Parent, ProjPathTc, wxTreeCtrl:getItemData(Tree, Selection) ++ "/", 
+    set_path_text(Parent, ProjPathTc, wxTreeCtrl:getItemData(Tree, Selection) ++ "/",
         wxTextCtrl:getValue(ProjPathTc)),
     wxDialog:endModal(Dlg, ?wxID_OK)
   end,
   wxButton:connect(OkButton, command_button_clicked, [{callback, Ok}]),
-  
+
   wxDialog:centre(Dlg),
   wxDialog:showModal(Dlg),
   wxDialog:destroy(Dlg).
