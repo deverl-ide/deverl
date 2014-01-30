@@ -73,8 +73,11 @@ open_new(Parent) ->
 	Dialog = wxFileDialog:new(Parent, [{style, ?wxFD_OPEN}]),
 	case wxFileDialog:showModal(Dialog) of
 		?wxID_OK ->
-			wxFileDialog:getPath(Dialog);
+			Path = wxFileDialog:getPath(Dialog),
+      wxFileDialog:destroy(Dialog),
+      Path;
 		?wxID_CANCEL ->
+      wxFileDialog:destroy(Dialog),
 			cancel
 	end.
 

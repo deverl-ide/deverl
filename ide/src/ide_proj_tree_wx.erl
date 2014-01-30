@@ -86,6 +86,7 @@ start(Config) ->
 
 add_project(Id, Dir) ->
 	wx_object:cast(?MODULE, {add_project, Id, Dir}).
+
 add_project(Id, Dir, Pos) ->
 	wx_object:cast(?MODULE, {add_project, Id, Dir, Pos}).
 
@@ -229,11 +230,13 @@ handle_cast({add_project_document, ProjectId, Path}, State=#state{tree=Tree}) ->
   Root = get_item_from_path(Tree, get_all_items(Tree), filename:dirname(Path)),
   case is_in_tree(Tree, Path, get_children_recursively(Tree, Root)) of
     false ->
+      io:format("FALSE~n"),
       Item = append_item(Tree, Root, filename:basename(Path), [{data, {ProjectId, Path}}]),
       wxTreeCtrl:setItemImage(Tree, Item, ?ICON_DOCUMENT),
       wxTreeCtrl:selectItem(Tree, Item),
       alternate_background_of_children(Tree, Root);
     Item ->
+      io:format("TRUE~n"),
       wxTreeCtrl:selectItem(Tree, Item)
   end,
   {noreply,State};

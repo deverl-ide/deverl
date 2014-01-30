@@ -346,7 +346,8 @@ handle_call({create_doc, Path, ProjectId}, _From,
           ide_proj_tree_wx:add_standalone_document(Path);
         _ ->
           %ide_proj_tree_wx:set_has_children(filename:dirname(Path))
-          ide_proj_tree_wx:add_project_document(ProjectId, Path)
+          %ide_proj_tree_wx:add_project_document(ProjectId, Path) 
+          ok
       end,
 			{reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}};
 		DocId ->

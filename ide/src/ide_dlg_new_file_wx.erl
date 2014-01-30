@@ -364,6 +364,7 @@ set_description(Dlg) ->
   wxStaticText:setLabel(Ctrl, Desc),
   wxStaticText:wrap(Ctrl, 400).
 
+
 %% =====================================================================
 %% @doc Set the path text to a given path.
 
@@ -395,8 +396,8 @@ get_default_folder_text(Dlg) ->
       case wxListBox:getSelection(FileTypeList) of
         ?FILE_TYPE_ERLANG ->
           case wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)) of
-            {header, _Ext} ->  "include";
-            {_Type, _Ext} -> "src"
+            {header, _Ext, _Desc} ->  "include";
+            {_Type, _Ext, _Desc} -> "src"
           end;
         ?FILE_TYPE_TEXT ->
           ""

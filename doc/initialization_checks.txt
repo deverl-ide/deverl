@@ -1,0 +1,21 @@
+
+
+==================================
+TO CHECK ON STARTUP:
+==================================
+
+path to erl
+path to erlc
+path to dialyzer
+path to plt/validate plt
+
+home env variable
+
+main project directory
+
+
+==================================
+TO CHECK ON PROJECT OPEN
+==================================
+
+project path
