@@ -258,27 +258,6 @@ init({Parent, Projects, ActiveProject}) ->
   },
   {Dlg, State}.
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-update_path(Dlg, Filename) ->
-  ProjectChoice = wxXmlResource:xrcctrl(Dlg, "proj_choice", wxChoice),
-  ProjPath = case wxChoice:getString(ProjectChoice, wxChoice:getSelection(ProjectChoice)) of
-    "No Project" -> 
-      wx_misc:getHomeDir();
-    _ ->
-      filename:join(ide_proj_man:get_root(wxChoice:getClientData(ProjectChoice, wxChoice:getSelection(ProjectChoice))), get_default_folder_text(Dlg))
-  end,
-  ProjPathTc = wxXmlResource:xrcctrl(Dlg, "path_tc", wxTextCtrl),
-  set_path_text(Dlg, ProjPathTc, ProjPath, Filename).
-  
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
@@ -341,6 +320,21 @@ handle_event(#wx{userData=1, event=#wxCommand{type=command_listbox_selected}}, S
 %% Internal functions
 %% =====================================================================
 
+%% =====================================================================
+%% @doc
+
+update_path(Dlg, Filename) ->
+  ProjectChoice = wxXmlResource:xrcctrl(Dlg, "proj_choice", wxChoice),
+  ProjPath = case wxChoice:getString(ProjectChoice, wxChoice:getSelection(ProjectChoice)) of
+    "No Project" -> 
+      wx_misc:getHomeDir();
+    _ ->
+      filename:join(ide_proj_man:get_root(wxChoice:getClientData(ProjectChoice, wxChoice:getSelection(ProjectChoice))), get_default_folder_text(Dlg))
+  end,
+  ProjPathTc = wxXmlResource:xrcctrl(Dlg, "path_tc", wxTextCtrl),
+  set_path_text(Dlg, ProjPathTc, ProjPath, Filename).
+  
+  
 %% =====================================================================
 %% @doc Set the path text to a given path.
 
