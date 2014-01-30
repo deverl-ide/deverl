@@ -32,7 +32,7 @@
 -define(FILE_TYPE_TEXT,     1).
 -define(FILE_TYPES,   ["Erlang",
                        "Plain Text"]).
--define(MODULE_TYPES, [{erlang_basic, "Erlang Module", 
+-define(MODULE_TYPES, [{erlang_basic, "Erlang Module",
                                       ".erl",
                                       "A standard Erlang module."},
                        {header, "Erlang Header File",
@@ -40,8 +40,8 @@
                                 "An Erlang header file. Used for defining global macros, types and records."},
                        {application, "OTP Application",
                                      ".app",
-                                     "An application specification. Applications group together common modules, allowing them " 
-                                      "to be started and stopped as a single unit. Erlang applications may also be used easily by " 
+                                     "An application specification. Applications group together common modules, allowing them "
+                                      "to be started and stopped as a single unit. Erlang applications may also be used easily by "
                                       "other systems."},
                        {gen_server, "OTP Gen Server",
                                     ".erl",
@@ -56,7 +56,7 @@
                                       "A behaviour module for implementing a generic finite state machine."},
                        {wx_object, "Wx Object",
                                    ".erl",
-                                   "A behaviour module for the wxWidgets binding. It works like a regular gen_server module."} 
+                                   "A behaviour module for the wxWidgets binding. It works like a regular gen_server module."}
                        ]).
 
 %% Server state
@@ -213,10 +213,7 @@ init({Parent, Projects, ActiveProject}) ->
   %  UpdatePath(wxTextCtrl:getValue(FileNameTc)) %% change for update_path/2
   %end,
   %wxDialog:connect(ModuleTypeList, command_listbox_selected, [{callback, CB2}]),
-<<<<<<< HEAD
 
-=======
->>>>>>> 3ee5f26e7ac400807e2e62781deac5a33b9d031a
   %% -------------------------------------------------------------------
 
   wxDialog:connect(FileTypeList, command_listbox_selected, [{userData, 0}]),
@@ -315,10 +312,7 @@ handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}},
                 },
   wxDialog:endModal(Dlg, Id),
   {noreply, State1};
-<<<<<<< HEAD
 
-=======
->>>>>>> 3ee5f26e7ac400807e2e62781deac5a33b9d031a
 handle_event(#wx{userData=0, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
   ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
   FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),
@@ -326,6 +320,11 @@ handle_event(#wx{userData=0, event=#wxCommand{type=command_listbox_selected}}, S
   update_path(Dlg, wxTextCtrl:getValue(FileNameTc)),
   {noreply, State};
 handle_event(#wx{userData=1, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
+  ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
+  {_Type, _Ext, Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
+  Ctrl = wxXmlResource:xrcctrl(Dlg, "info_string", wxStaticText),
+  wxStaticText:setLabel(Ctrl, Desc),
+  wxStaticText:wrap(Ctrl, 400),
   FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),
   update_path(Dlg, wxTextCtrl:getValue(FileNameTc)),
   {noreply, State}.
