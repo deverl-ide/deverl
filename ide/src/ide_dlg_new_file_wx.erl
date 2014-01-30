@@ -266,7 +266,6 @@ init({Parent, Projects, ActiveProject}) ->
   },
   {Dlg, State}.
 
-
 handle_cast(_Msg, State) ->
   {noreply, State}.
 
@@ -328,6 +327,9 @@ handle_event(#wx{userData=1, event=#wxCommand{type=command_listbox_selected}}, S
 %% Internal functions
 %% =====================================================================
 
+%% =====================================================================
+%% @doc
+
 update_path(Dlg, Filename) ->
   ProjectChoice = wxXmlResource:xrcctrl(Dlg, "proj_choice", wxChoice),
   ProjPath = case wxChoice:getString(ProjectChoice, wxChoice:getSelection(ProjectChoice)) of
@@ -339,7 +341,7 @@ update_path(Dlg, Filename) ->
   ProjPathTc = wxXmlResource:xrcctrl(Dlg, "path_tc", wxTextCtrl),
   set_path_text(Dlg, ProjPathTc, ProjPath, Filename).
   
-
+  
 %% =====================================================================
 %% @doc Set the path text to a given path.
 
