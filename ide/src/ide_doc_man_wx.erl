@@ -79,11 +79,13 @@ new_document(Parent) ->
   Dlg = ide_dlg_new_file_wx:start({Parent, OpenProjects, ide_proj_man:get_active_project()}),
   case wxDialog:showModal(Dlg) of
     ?wxID_CANCEL ->
+      io:format("Cancelled~n"),
       ide_dlg_new_file_wx:destroy(Dlg);
     ?wxID_OK ->
-      create_document(ide_dlg_new_file_wx:get_path(Dlg), 
+      C = create_document(ide_dlg_new_file_wx:get_path(Dlg), 
                       ide_dlg_new_file_wx:get_project_id(Dlg),
                       [{template, ide_dlg_new_file_wx:get_type(Dlg)}]),
+      io:format("CREATE DOC ~p~n", [C]),
       ide_dlg_new_file_wx:destroy(Dlg)
   end.
 
