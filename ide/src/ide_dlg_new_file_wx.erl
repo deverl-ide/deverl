@@ -32,7 +32,7 @@
 -define(FILE_TYPE_TEXT,     1).
 -define(FILE_TYPES,   ["Erlang",
                        "Plain Text"]).
--define(MODULE_TYPES, [{erlang_basic, "Erlang Module", 
+-define(MODULE_TYPES, [{erlang_basic, "Erlang Module",
                                       ".erl",
                                       "A standard Erlang module."},
                        {header, "Erlang Header File",
@@ -40,8 +40,8 @@
                                 "An Erlang header file. Used for defining global macros, types and records."},
                        {application, "OTP Application",
                                      ".app",
-                                     "An application specification. Applications group together common modules, allowing them " 
-                                      "to be started and stopped as a single unit. Erlang applications may also be used easily by " 
+                                     "An application specification. Applications group together common modules, allowing them "
+                                      "to be started and stopped as a single unit. Erlang applications may also be used easily by "
                                       "other systems."},
                        {gen_server, "OTP Gen Server",
                                     ".erl",
@@ -56,7 +56,7 @@
                                       "A behaviour module for implementing a generic finite state machine."},
                        {wx_object, "Wx Object",
                                    ".erl",
-                                   "A behaviour module for the wxWidgets binding. It works like a regular gen_server module."} 
+                                   "A behaviour module for the wxWidgets binding. It works like a regular gen_server module."}
                        ]).
 
 %% Server state
@@ -196,25 +196,26 @@ init({Parent, Projects, ActiveProject}) ->
   wxChoice:connect(ProjectChoice, command_choice_selected, [{callback, ChoiceFun}]),
 
   %% -------------------------------------------------------------------
-  %% The following handlers crash the ERTS when destroying the dialog in Linux
+  %% The following handlers crash the ERTS when destroying the dialog in Linux.
   %% We suspect a bug in the erlang release we are currently using (R16B01).
   %% We have used a work around for this below (using userData to match on the event).
   %% In future versions of erlang the following may work...
-  
+
   %% Listbox 1 handler
   %CB1 = fun(E, O) ->
   %    wxListBox:enable(ModuleTypeList, [{enable, not wxListBox:isEnabled(ModuleTypeList)}]),
-  %    UpdatePath(wxTextCtrl:getValue(FileNameTc))
+  %    UpdatePath(wxTextCtrl:getValue(FileNameTc)) %% change for update_path/2
   %end,
   %wxDialog:connect(FileTypeList, command_listbox_selected, [{callback, CB1}]),
 
   %% Listbox 2 handler
   %CB2 = fun(_E,_O) ->
-  %  UpdatePath(wxTextCtrl:getValue(FileNameTc))
+  %  UpdatePath(wxTextCtrl:getValue(FileNameTc)) %% change for update_path/2
   %end,
   %wxDialog:connect(ModuleTypeList, command_listbox_selected, [{callback, CB2}]),
+
   %% -------------------------------------------------------------------
-  
+
   wxDialog:connect(FileTypeList, command_listbox_selected, [{userData, 0}]),
   wxDialog:connect(ModuleTypeList, command_listbox_selected, [{userData, 1}]),
 
@@ -311,14 +312,25 @@ handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}},
                 },
   wxDialog:endModal(Dlg, Id),
   {noreply, State1};
+
 handle_event(#wx{userData=0, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
+  FileTypeList = wxXmlResource:xrcctrl(Dlg, "file_type_lb", wxListBox),
+  case wxListBox:getStringSelection(FileTypeList) of
+    "Erlang" ->
+      set_description(Dlg);
+    "Plain Text" ->
+      Ctrl = wxXmlResource:xrcctrl(Dlg, "info_string", wxStaticText),
+      wxStaticText:setLabel(Ctrl, "A plain text file. Can be used to make notes and readme files."),
+      wxStaticText:wrap(Ctrl, 400)
+  end,
   ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
-  FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),  
+  FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),
   wxListBox:enable(ModuleTypeList, [{enable, not wxListBox:isEnabled(ModuleTypeList)}]),
   update_path(Dlg, wxTextCtrl:getValue(FileNameTc)),
   {noreply, State};
 handle_event(#wx{userData=1, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
-  FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),  
+  set_description(Dlg),
+  FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),
   update_path(Dlg, wxTextCtrl:getValue(FileNameTc)),
   {noreply, State}.
 
@@ -328,20 +340,31 @@ handle_event(#wx{userData=1, event=#wxCommand{type=command_listbox_selected}}, S
 %% =====================================================================
 
 %% =====================================================================
-%% @doc
+%% @doc Used to dynamically update the path of the file to be created.
 
 update_path(Dlg, Filename) ->
   ProjectChoice = wxXmlResource:xrcctrl(Dlg, "proj_choice", wxChoice),
   ProjPath = case wxChoice:getString(ProjectChoice, wxChoice:getSelection(ProjectChoice)) of
-    "No Project" -> 
+    "No Project" ->
       wx_misc:getHomeDir();
     _ ->
       filename:join(ide_proj_man:get_root(wxChoice:getClientData(ProjectChoice, wxChoice:getSelection(ProjectChoice))), get_default_folder_text(Dlg))
   end,
   ProjPathTc = wxXmlResource:xrcctrl(Dlg, "path_tc", wxTextCtrl),
   set_path_text(Dlg, ProjPathTc, ProjPath, Filename).
-  
-  
+
+
+%% =====================================================================
+%% @doc Set the description box based on the list item selected.
+
+set_description(Dlg) ->
+  ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
+  {_Type, _Ext, Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
+  Ctrl = wxXmlResource:xrcctrl(Dlg, "info_string", wxStaticText),
+  wxStaticText:setLabel(Ctrl, Desc),
+  wxStaticText:wrap(Ctrl, 400).
+
+
 %% =====================================================================
 %% @doc Set the path text to a given path.
 
