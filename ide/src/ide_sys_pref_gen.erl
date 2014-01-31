@@ -10,6 +10,8 @@
 -module(ide_sys_pref_gen).
 
 -include("ide.hrl").
+-include_lib("wx/include/wx.hrl").
+-include_lib("kernel/include/file.hrl").
 
 %% gen_server
 -behaviour(gen_server).
@@ -107,6 +109,7 @@ init(Config) ->
     false ->
       create_dets()
   end,
+  initialise_prefs(Table),
 	{ok, #state{prefs_table=Table}}.
 
 handle_info(_, State) ->
@@ -132,6 +135,125 @@ terminate(_Reason, _) ->
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
+
+%% =====================================================================
+%% @doc Validate the saved preferences.
+%% Any invalid prefs should be replaced with the default.
+
+initialise_prefs(Table) ->
+  Defaults = ide_sys_pref_defs:get_defaults(),
+  
+  %% Project dir
+  ProjDir = ets:lookup_element(Table, project_directory, 2),
+  DefaultDir = proplists:get_value(project_directory, Defaults),
+  
+  case ProjDir of 
+    DefaultDir -> %% Using the default, ensure it exists (it wont when the IDE is started the very first time)
+      ensure_proj_dir(DefaultDir);
+    _UserDefined ->
+      case file:read_file_info(ProjDir) of
+        {error, _Reason0} ->
+          %% Project dir invalid, inform user, reset to default
+          Dlg = wxMessageDialog:new(wx:null(), 
+            "Your project home directory " ++ ProjDir ++ " has been moved or deleted.\n\n"
+            "We've reset it to " ++ wx_misc:getHomeDir() ++ ".", [{caption, "Oops"}]),
+          wxMessageDialog:showModal(Dlg),
+          wxMessageDialog:destroy(Dlg),
+          ets:update_element(Table, project_directory, {2, DefaultDir}),
+          ensure_proj_dir(DefaultDir);
+        FileInfo0 ->
+          ok 
+      end
+  end,
+  
+  %% General prefs
+  GenPref0 = ets:lookup_element(Table, general_prefs, 2),
+  
+  %% Home env
+  Home0 = GenPref0#general_prefs.home_env_var,
+  GenPref1 = case file:read_file_info(Home0) of
+    {error, _Reason1} ->
+      %% Point to invalid directory, reset to default
+      GenPref0#general_prefs{home_env_var=wx_misc:getHomeDir()};
+    FileInfo1 ->
+      GenPref0
+  end,
+  
+  %% Set the HOME env for those users who can't set it manually (Uni)
+  case os:getenv("HOME") of
+    false ->
+      %% Set it
+      os:setenv("HOME", GenPref1#general_prefs.home_env_var);
+    Home1 ->
+      ok
+  end,
+  
+  %% Paths
+  Paths = [{erl, GenPref1#general_prefs.path_to_erl},
+           {erlc, GenPref1#general_prefs.path_to_erlc},
+           {dlyz, GenPref1#general_prefs.path_to_dialyzer}],
+  IsPath = fun
+    ({Exe, false}, Acc) -> %% default exe not found, test against hard coded uni path, otherwise prompt
+      %% TODO Check if the exe exists at the Path at UNI
+      % prompt_for_path(Exe),
+      ["The " ++ atom_to_list(Exe) ++ " executable could not be found automatically.\n" | Acc];
+    ({_Exe, _Path}, Acc) -> %% non-default exe, validate?
+      Acc
+  end,
+  case lists:foldl(IsPath, [], Paths) of %[ IsPath(Path) || Path <- Paths],
+    [] -> ok;
+    Err -> %% Couldn't find an exe
+      Dlg1 = wxMessageDialog:new(wx:null(), Err, [{caption, "Oops"}]),
+      wxMessageDialog:show(Dlg1),
+      receive after 5000 -> ok end
+      % wxMessageDialog:destroy(Dlg1)
+  end,
+  
+  %% Update general prefs
+  ets:update_element(Table, general_prefs, {2, GenPref1}),
+  
+  %% Write any updates
+  write_dets(Table),
+  ok.
+
+
+%% =====================================================================
+%% @doc A text prompt for the user to manualy add the path to the
+%% exes when automatic finding has failed.
+  
+prompt_for_path(Exe) ->
+  Dlg = wxTextEntryDialog:new(wx:null(),
+    "The " ++ atom_to_list(Exe) ++ " executable could not be found automatically,\n"
+    "please enter the path:"),
+  case wxTextEntryDialog:showModal(Dlg) of
+    ?wxID_OK ->
+      %% Validate the input
+      ok;
+    ?wxID_CANCEL ->
+      %% Try again (Can't do this forever)
+      prompt_for_path(Exe)
+  end.
+
+
+%% =====================================================================
+%% @doc Ensure the default project directory exists.
+%% Called when the IDE is started for the first time, and if the
+%% project directory has to be reset for any reason.
+
+ensure_proj_dir(DefaultDir) ->
+  case filelib:is_dir(DefaultDir) of
+    false ->
+      file:make_dir(DefaultDir);
+    true ->
+      ok
+  end.
+  
+  
+%% =====================================================================
+%% @doc
+
+
+
 
 %% =====================================================================
 %% @doc Load the preferences from disk and transfer to ETS table.
@@ -185,8 +307,4 @@ write_dets(PrefsTable) ->
 
 insert_default_prefs(PrefsTable) ->
   [ets:insert(PrefsTable, {Key, Value}) || {Key, Value} <- ide_sys_pref_defs:get_defaults()],
-  Folder = case os:type() of
-    {_,linux} -> "erlang_projects";
-    _ -> "ErlangProjects"
-  end,
-  ets:insert(PrefsTable, {project_directory, filename:join(wx_misc:getHomeDir(), Folder)}).
+  ok.

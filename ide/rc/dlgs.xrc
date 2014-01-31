@@ -1219,6 +1219,54 @@
 							<option>0</option>
 							<flag>wxALL</flag>
 							<border>5</border>
+							<object class="wxStaticText" name="m_staticText681">
+								<font>
+									<size>12</size>
+									<family>swiss</family>
+									<style>normal</style>
+									<weight>bold</weight>
+									<underlined>0</underlined>
+								</font>
+								<label>Project Directory</label>
+								<wrap>-1</wrap>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<object class="wxBoxSizer">
+								<orient>wxHORIZONTAL</orient>
+								<object class="sizeritem">
+									<option>1</option>
+									<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+									<border>5</border>
+									<object class="wxStaticText" name="proj_dir_st">
+										<label>Directory</label>
+										<wrap>-1</wrap>
+									</object>
+								</object>
+								<object class="sizeritem">
+									<option>0</option>
+									<flag>wxALIGN_RIGHT|wxALL</flag>
+									<border>5</border>
+									<object class="wxButton" name="proj_dir_btn">
+										<label>Update..</label>
+										<default>0</default>
+									</object>
+								</object>
+							</object>
+						</object>
+						<object class="spacer">
+							<option>0</option>
+							<flag>wxEXPAND</flag>
+							<border>5</border>
+							<size>0,20</size>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
 							<object class="wxStaticText" name="m_staticText61">
 								<font>
 									<size>12</size>
@@ -1262,7 +1310,7 @@
 									<flag>wxALL|wxEXPAND</flag>
 									<border>5</border>
 									<object class="wxTextCtrl" name="path_to_erl_tc">
-										<size>200,-1</size>
+										<size>270,-1</size>
 										<enabled>0</enabled>
 										<value></value>
 										<maxlength>0</maxlength>
@@ -1273,7 +1321,6 @@
 									<flag>wxALL</flag>
 									<border>5</border>
 									<object class="wxButton" name="path_to_erl_btn">
-										<enabled>0</enabled>
 										<label>Browse..</label>
 										<default>0</default>
 									</object>
@@ -1292,6 +1339,7 @@
 									<flag>wxALL|wxEXPAND</flag>
 									<border>5</border>
 									<object class="wxTextCtrl" name="path_to_erlc_tc">
+										<enabled>0</enabled>
 										<value></value>
 										<maxlength>0</maxlength>
 									</object>
@@ -1319,6 +1367,7 @@
 									<flag>wxALL|wxEXPAND</flag>
 									<border>5</border>
 									<object class="wxTextCtrl" name="path_to_dlzr_tc">
+										<enabled>0</enabled>
 										<value></value>
 										<maxlength>0</maxlength>
 									</object>
@@ -1338,7 +1387,7 @@
 							<option>0</option>
 							<flag>wxEXPAND</flag>
 							<border>5</border>
-							<size>0,10</size>
+							<size>0,20</size>
 						</object>
 						<object class="sizeritem">
 							<option>0</option>
@@ -1471,7 +1520,7 @@
 							<object class="wxBoxSizer">
 								<orient>wxHORIZONTAL</orient>
 								<object class="sizeritem">
-									<option>0</option>
+									<option>1</option>
 									<flag>wxALL|wxEXPAND</flag>
 									<border>5</border>
 									<object class="wxListCtrl" name="dlzr_incs_lc">
@@ -1733,10 +1782,11 @@
 			</object>
 			<object class="sizeritem">
 				<option>1</option>
-				<flag>wxEXPAND | wxALL</flag>
+				<flag>wxALL|wxEXPAND</flag>
 				<border>10</border>
 				<object class="wxPanel" name="console">
 					<style>wxTAB_TRAVERSAL</style>
+					<size>400,-1</size>
 					<hidden>1</hidden>
 					<object class="wxBoxSizer">
 						<orient>wxVERTICAL</orient>
@@ -2018,7 +2068,7 @@
 								</object>
 								<object class="sizeritem">
 									<option>1</option>
-									<flag>wxEXPAND</flag>
+									<flag>wxALIGN_BOTTOM|wxEXPAND</flag>
 									<border>0</border>
 									<object class="wxPanel" name="desc_1">
 										<style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
@@ -2092,7 +2142,7 @@
 								</object>
 								<object class="sizeritem">
 									<option>0</option>
-									<flag>wxEXPAND</flag>
+									<flag>wxBOTTOM|wxEXPAND</flag>
 									<border>0</border>
 									<object class="wxBoxSizer">
 										<orient>wxHORIZONTAL</orient>
@@ -2161,10 +2211,11 @@
 			</object>
 			<object class="sizeritem">
 				<option>1</option>
-				<flag>wxEXPAND | wxALL</flag>
+				<flag>wxALL|wxEXPAND</flag>
 				<border>5</border>
 				<object class="wxPanel" name="panel_2">
 					<style>wxTAB_TRAVERSAL</style>
+					<hidden>1</hidden>
 					<object class="wxBoxSizer">
 						<minsize>500,380</minsize>
 						<orient>wxHORIZONTAL</orient>
@@ -2176,7 +2227,7 @@
 						</object>
 						<object class="sizeritem">
 							<option>1</option>
-							<flag>wxEXPAND</flag>
+							<flag>wxALIGN_BOTTOM|wxEXPAND</flag>
 							<border>0</border>
 							<object class="wxBoxSizer">
 								<orient>wxVERTICAL</orient>
@@ -2347,7 +2398,7 @@
 								</object>
 								<object class="sizeritem">
 									<option>1</option>
-									<flag>wxEXPAND</flag>
+									<flag>wxALIGN_BOTTOM|wxEXPAND</flag>
 									<border>0</border>
 									<object class="wxPanel" name="desc1">
 										<style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
@@ -2380,7 +2431,7 @@
 														</object>
 													</object>
 													<object class="sizeritem">
-														<option>0</option>
+														<option>1</option>
 														<flag>wxALIGN_CENTER_VERTICAL</flag>
 														<border>0</border>
 														<object class="wxStaticText" name="info_string1">
@@ -2421,7 +2472,7 @@
 								</object>
 								<object class="sizeritem">
 									<option>0</option>
-									<flag>wxEXPAND</flag>
+									<flag>wxALIGN_BOTTOM|wxEXPAND</flag>
 									<border>0</border>
 									<object class="wxBoxSizer">
 										<orient>wxHORIZONTAL</orient>
@@ -2573,7 +2624,6 @@
 				<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
 				<border>5</border>
 				<object class="wxRadioButton" name="theme_radio">
-					<style>wxRB_SINGLE</style>
 					<label>RadioBtn</label>
 					<value>0</value>
 				</object>

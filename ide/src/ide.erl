@@ -43,16 +43,16 @@
                 }).
 
 %% Macros
--define(DEFAULT_FRAME_WIDTH,  1100).
--define(DEFAULT_FRAME_HEIGHT, 680).
+% -define(DEFAULT_FRAME_WIDTH,  1100).
+% -define(DEFAULT_FRAME_HEIGHT, 680).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
 -define(SPLITTER_SIDEBAR, 100).
 -define(SPLITTER_UTILITIES, 101).
 -define(SPLIITER_LOG, 102).
--define(SPLITTER_SIDEBAR_SASH_POS_DEFAULT, 215).
--define(SPLITTER_UTILITIES_SASH_POS_DEFAULT, -200).
--define(SPLITTER_LOG_SASH_POS_DEFAULT, -500).
+% -define(SPLITTER_SIDEBAR_SASH_POS_DEFAULT, 215).
+% -define(SPLITTER_UTILITIES_SASH_POS_DEFAULT, -200).
+% -define(SPLITTER_LOG_SASH_POS_DEFAULT, -500).
 -define(FRAME_TITLE, "Erlang IDE").
 -define(BUTTON_HIDE_OUTPUT, 0).
 -define(ID_TOGGLE_LOG, 1).
@@ -127,27 +127,22 @@ init(Options) ->
 	Wx = wx:new(Options),
 	WxEnv = wx:get_env(),
 	process_flag(trap_exit, true),
-
-  %% Set small window variant globally
-  % wxSystemOptions:setOption("window-default-variant", ?wxWINDOW_VARIANT_SMALL),
-
+	
+  %% Load modules that should be started by OTP Application and not here
+  ide_sys_pref_gen:start([{wx_env, WxEnv}]),
+  
+  %% UI saved pref
+  UIPrefs = ide_sys_pref_gen:get_preference(ui_prefs),
+  
+  %% Initialise XRC
   Xrc = wxXmlResource:get(),
   wxXmlResource:initAllHandlers(Xrc),
   true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("dlgs.xrc")),
-
-	Frame = wxFrame:new(Wx, ?wxID_ANY, ?FRAME_TITLE, [{size,{?DEFAULT_FRAME_WIDTH,?DEFAULT_FRAME_HEIGHT}}]),
+  
+	Frame = wxFrame:new(Wx, ?wxID_ANY, ?FRAME_TITLE, [{size, UIPrefs#ui_prefs.frame_size}]),
 	wxFrame:connect(Frame, close_window),
 	wxFrame:setMinSize(Frame, {300,200}),
 
-	%% Load modules that should be started by OTP Application and not here
-  ide_sys_pref_gen:start([{wx_env, WxEnv}]),
-  ProjDir = ide_sys_pref_gen:get_preference(project_directory),
-  case filelib:is_dir(ProjDir) of
-    false ->
-      file:make_dir(ProjDir);
-    true ->
-      ok
-  end,
 	ide_proj_man:start([{frame, Frame}, {wx_env, WxEnv}]),
 
 	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
@@ -162,8 +157,8 @@ init(Options) ->
 		{style, SplitterStyle}]),
 	SplitterSidebar = wxSplitterWindow:new(SplitterUtilities, [{id, ?SPLITTER_SIDEBAR},
 		{style, SplitterStyle}]),
-	wxSplitterWindow:setSashGravity(SplitterUtilities, 0.5),
-	wxSplitterWindow:setSashGravity(SplitterSidebar, 0.60),
+  wxSplitterWindow:setSashGravity(SplitterUtilities, 0.5),
+  wxSplitterWindow:setSashGravity(SplitterSidebar, 0.5),
 	wxSizer:add(FrameSizer, SplitterUtilities, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
 	%% Status bar
@@ -180,20 +175,26 @@ init(Options) ->
 	{Utilities, TabbedWindow, ActiveLogWindow} = create_utils(SplitterUtilities),
 
 	wxSplitterWindow:splitVertically(SplitterSidebar, LeftWindow, Workspace,
-	                  [{sashPosition, ?SPLITTER_SIDEBAR_SASH_POS_DEFAULT}]),
+	                  [{sashPosition, UIPrefs#ui_prefs.sash_vert_1}]),
 
 	wxSplitterWindow:splitHorizontally(SplitterUtilities, SplitterSidebar, Utilities,
-                  [{sashPosition, ?SPLITTER_UTILITIES_SASH_POS_DEFAULT}]),
+                  [{sashPosition, UIPrefs#ui_prefs.sash_horiz}]),
 
 	wxSizer:layout(FrameSizer),
 	wxFrame:center(Frame),
-	wxFrame:show(Frame),
+  wxFrame:setSize(Frame, UIPrefs#ui_prefs.frame_size),
+  wxSplitterWindow:setSashPosition(SplitterUtilities, UIPrefs#ui_prefs.sash_horiz),
+  wxSplitterWindow:setSashPosition(SplitterSidebar, UIPrefs#ui_prefs.sash_vert_1),
+	
+  wxFrame:show(Frame),
 
 	wxSplitterWindow:setSashGravity(SplitterUtilities, 1.0), % Only the top window grows on resize
 	wxSplitterWindow:setSashGravity(SplitterSidebar, 0.0), % Only the right window grows
-
+  
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
+  
+  % wxFrame:connect(Frame, size, [{skip, true}]),
 
 	%% Testing accelerator table
   % AccelTab = wxAcceleratorTable:new(1,
@@ -209,9 +210,9 @@ init(Options) ->
             left_pane=LeftWindow,
             utilities=Utilities,
             util_tabbed=TabbedWindow,
-            splitter_sidebar_pos=?SPLITTER_SIDEBAR_SASH_POS_DEFAULT,
-            splitter_utilities_pos=?SPLITTER_UTILITIES_SASH_POS_DEFAULT,
-            splitter_output_pos=?SPLITTER_LOG_SASH_POS_DEFAULT,
+            splitter_sidebar_pos=UIPrefs#ui_prefs.sash_vert_1,
+            splitter_utilities_pos=UIPrefs#ui_prefs.sash_horiz,
+            splitter_output_pos=UIPrefs#ui_prefs.sash_vert_2,
             splitter_sidebar=SplitterSidebar,
             splitter_utilities=SplitterUtilities,
             splitter_output_active=ActiveLogWindow,
@@ -280,6 +281,10 @@ handle_event(#wx{event=#wxClose{}}, State) ->
     cancelled ->
       {noreply, State};
     _ ->
+      %% Save frame size
+      Size = wxFrame:getSize(State#state.frame),
+      Prefs = ide_sys_pref_gen:get_preference(ui_prefs),
+      ide_sys_pref_gen:set_preference(ui_prefs, Prefs#ui_prefs{frame_size=Size}),
       {stop, normal, State}
   end;
 
@@ -299,6 +304,8 @@ handle_event(#wx{id=?SPLITTER_SIDEBAR, event=#wxSplitter{type=command_splitter_s
     N ->
       N
   end,
+  Prefs = ide_sys_pref_gen:get_preference(ui_prefs),
+  ide_sys_pref_gen:set_preference(ui_prefs, Prefs#ui_prefs{sash_vert_1=Pos}),
   {noreply, State#state{splitter_sidebar_pos=Pos}};
 
 handle_event(#wx{id=?SPLITTER_UTILITIES, event=#wxSplitter{type=command_splitter_sash_pos_changed}}, State) ->
@@ -308,6 +315,8 @@ handle_event(#wx{id=?SPLITTER_UTILITIES, event=#wxSplitter{type=command_splitter
     N ->
       N
   end,
+  Prefs = ide_sys_pref_gen:get_preference(ui_prefs),
+  ide_sys_pref_gen:set_preference(ui_prefs, Prefs#ui_prefs{sash_horiz=Pos}),
   {noreply, State#state{splitter_utilities_pos=Pos}};
 
 handle_event(#wx{id=?SPLIITER_LOG, event=#wxSplitter{type=command_splitter_sash_pos_changed}}, State=#state{frame=Frame}) ->
@@ -316,6 +325,7 @@ handle_event(#wx{id=?SPLIITER_LOG, event=#wxSplitter{type=command_splitter_sash_
 
 handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State) ->
   {noreply, State};
+
 
 %% =====================================================================
 %% Menu handlers
@@ -788,7 +798,8 @@ create_utils(ParentA) ->
   Log = CreateWindow(Splitter, ide_log_out_wx, ?WINDOW_LOG),
   CompilerOutput = CreateWindow(Splitter, ide_stdout_wx, ?WINDOW_OUTPUT),
 
-  wxSplitterWindow:splitVertically(Splitter, Console, Log, [{sashPosition, ?SPLITTER_LOG_SASH_POS_DEFAULT}]),
+  UIPrefs = ide_sys_pref_gen:get_preference(ui_prefs),
+  wxSplitterWindow:splitVertically(Splitter, Console, Log, [{sashPosition, UIPrefs#ui_prefs.sash_vert_2}]),
   wxSizer:add(Sz, Splitter, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
   %% Button toolbar

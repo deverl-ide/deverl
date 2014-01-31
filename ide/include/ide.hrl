@@ -29,6 +29,13 @@
                            stats_out,
                            quiet_out
                            }).
+                           
+-record(ui_prefs, {frame_size,
+                   sash_horiz,
+                   sash_vert_1,
+                   sash_vert_2}).
+
+
 %% Global constants
 -define(FIND_ALL, 3).
 -define(REPLACE_ALL, 5).

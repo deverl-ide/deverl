@@ -36,8 +36,18 @@ get_defaults() ->
                       },
   
   [
+    %% State
+    {open_projects, []},    
+    
+    %% UI
+    {ui_prefs, #ui_prefs{frame_size = {1100, 680},
+                         sash_horiz = -200,
+                         sash_vert_1 = 215,
+                         sash_vert_2 = -500
+                         }},
+    
     %% Project/Directory prefs
-    {project_directory, undefined},
+    {project_directory, filename:join(wx_misc:getHomeDir(), "ErlangProjects")},
     {projects, []},
   
     %% Editor prefs
@@ -58,11 +68,11 @@ get_defaults() ->
     {log_font, DefaultFont},
     
     %% General prefs
-    {general_prefs, #general_prefs{path_to_erl = "",
-                     path_to_erlc = "",
-                     path_to_dialyzer = "",
-                     home_env_var = ""
-                     }},
+    {general_prefs, #general_prefs{path_to_erl = os:find_executable("erddl"),
+                                   path_to_erlc = os:find_executable("erlc"),
+                                   path_to_dialyzer = os:find_executable("dialyzer"),
+                                   home_env_var = wx_misc:getHomeDir()
+                                   }},
   
     %% Compiler
     {compiler_options, #compiler_options{show_warnings = true,

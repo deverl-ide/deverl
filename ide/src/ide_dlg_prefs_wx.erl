@@ -79,6 +79,22 @@ init(Config) ->
   
   GenPrefs = ide_sys_pref_gen:get_preference(general_prefs),
   Pref0 = wxXmlResource:xrcctrl(Frame, "general", wxPanel),
+  ProjDir = wxXmlResource:xrcctrl(Frame, "proj_dir_st", wxStaticText),
+  wxStaticText:setLabel(ProjDir, ide_sys_pref_gen:get_preference(project_directory)),
+  ProjBtn = wxXmlResource:xrcctrl(Frame, "proj_dir_btn", wxButton),
+  wxButton:connect(ProjBtn, command_button_clicked, [{callback,
+    fun(_E,_O) ->
+      Dlg = wxDirDialog:new(Frame, []),
+      case wxDialog:showModal(Dlg) of
+        ?wxID_OK ->
+          Dir = wxDirDialog:getPath(Dlg),
+          wxStaticText:setLabel(ProjDir, Dir),
+          ide_sys_pref_gen:set_preference(project_directory, Dir);
+        ?wxID_CANCEL ->
+          ok
+      end
+    end
+  }]),
   GTc1 = wxXmlResource:xrcctrl(Frame, "path_to_erl_tc", wxTextCtrl),
   wxTextCtrl:setValue(GTc1, GenPrefs#general_prefs.path_to_erl),
   GTc2 = wxXmlResource:xrcctrl(Frame, "path_to_erlc_tc", wxTextCtrl),
@@ -125,15 +141,30 @@ init(Config) ->
   wxStaticText:setLabel(FStr0, get_font_string(F0)),
   Themes = wxXmlResource:xrcctrl(Frame, "console_themes_pan", wxPanel),
   FSz = wxPanel:getSizer(Themes),
-  AddTheme = fun({Name, Fg, Bg, _Mrkr, _Err}) ->
+  AddTheme = fun({Name, Fg, Bg, _Mrkr, _Err}, Acc) ->
     Theme = wxXmlResource:loadPanel(Xrc, Themes, "theme_sample"),
     wxPanel:setBackgroundColour(wxXmlResource:xrcctrl(Theme, "theme_bg_pan", wxPanel), Bg),
     wxStaticText:setForegroundColour(wxXmlResource:xrcctrl(Theme, "theme_font_fg", wxStaticText), Fg),
     Radio = wxXmlResource:xrcctrl(Theme, "theme_radio", wxRadioButton),
     wxRadioButton:setLabel(Radio, Name),
-    wxSizer:add(FSz, Theme)
+    wxSizer:add(FSz, Theme),
+    [Radio | Acc]
   end,
-  lists:foreach(AddTheme, ?CONSOLE_THEMES),
+  RadioGroup = lists:foldl(AddTheme, [], ?CONSOLE_THEMES),
+  DoTheme = fun(E=#wx{obj=Selected, userData=Group}, EvtObj) ->
+    lists:foreach(fun(E) ->
+      wxRadioButton:setValue(E, false)
+    end, Group),
+    wxRadioButton:setValue(Selected, true),
+    Name = wxRadioButton:getLabel(Selected),
+    Theme={Name, Fg, Bg, MrkrBg, ErrFg} = lists:keyfind(Name, 1, ?CONSOLE_THEMES),
+    ide_sys_pref_gen:set_preference(console_theme, Theme),
+    ide_console_wx:set_theme(Fg, Bg, MrkrBg, ErrFg)
+  end,
+  lists:foreach(fun(E) -> 
+    wxPanel:connect(E, command_radiobutton_selected, [{callback, DoTheme}, 
+        {userData, RadioGroup}])
+  end, RadioGroup),
 
   Browse0 = wxXmlResource:xrcctrl(Frame, "console_font_btn", wxButton),
   %% Font
@@ -175,7 +206,8 @@ init(Config) ->
         wxListCtrl:insertItem(Lc, 0, Inc);
       ?wxID_CANCEL ->
         ok
-    end
+    end,
+    wxDirDialog:destroy(Dlg)
   end,
   
   GetSelected = fun(Lc) ->

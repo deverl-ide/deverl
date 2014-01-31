@@ -12,7 +12,7 @@ OTPAPP			= $(SRCDIR)/$(APP)
 all: 
 	@ mkdir -p $(BEAMDIR) ;
 	@ $(ERLC) $(ERLCFLAGS) $(SRCDIR)/*.erl ;
-	@if [ -a $(OTPAPP) ]; then $(CP) $(OTPAPP) $(BEAMDIR)/$(APP); fi; # Copy the application metafile (if exists)
+	@ if [ -f $(OTPAPP) ]; then $(CP) $(OTPAPP) $(BEAMDIR)/$(APP); fi; # Copy the application metafile (if exists)
 clean: 
 	@ rm -rf $(BEAMDIR) ;
 	@ rm -rf erl_crush.dumpl
