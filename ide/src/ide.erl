@@ -540,7 +540,6 @@ handle_event(#wx{id=?MENU_ID_ADD_TO_PLT}, State) ->
 handle_event(#wx{id=?MENU_ID_PLT_INFO}, State) ->
   Listener = ide_eunit_listener:start(),
   RAA = eunit:test(ide, [{report, Listener}]),
-  io:format("RAA ~p~n", [RAA]),
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_DIAL_WARN}, State) ->
