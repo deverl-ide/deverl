@@ -245,11 +245,7 @@ get_active_module() ->
   DocID = wx_object:call(?MODULE, get_active_doc),
   list_to_atom(filename:basename(ide_doc_man_wx:get_path(DocID), ".erl")).
 
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> a0c16365095d6b026f06a349fe3167c2c67f6702
 %% =====================================================================
 %% @doc
 
