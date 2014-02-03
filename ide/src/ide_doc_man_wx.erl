@@ -79,14 +79,14 @@ new_document(Parent) ->
   Dlg = ide_dlg_new_file_wx:start({Parent, OpenProjects, ide_proj_man:get_active_project()}),
   case wxDialog:showModal(Dlg) of
     ?wxID_CANCEL ->
-      ide_dlg_new_file_wx:destroy(Dlg);
+      ok;
     ?wxID_OK ->
       C = create_document(ide_dlg_new_file_wx:get_path(Dlg), 
                       ide_dlg_new_file_wx:get_project_id(Dlg),
-                      ide_dlg_new_file_wx:get_type(Dlg)),
-      ide_dlg_new_file_wx:destroy(Dlg)
-  end.
-
+                      ide_dlg_new_file_wx:get_type(Dlg))
+  end,
+  %ide_dlg_new_file_wx:destroy(Dlg).
+  wxDialog:destroy(Dlg).
 
 %% =====================================================================
 %% @doc Insert a document into the workspace.
@@ -345,8 +345,6 @@ handle_call({create_doc, Path, ProjectId}, _From,
           code:add_path(filename:dirname(Path)),
           ide_proj_tree_wx:add_standalone_document(Path);
         _ ->
-          %ide_proj_tree_wx:set_has_children(filename:dirname(Path))
-          %ide_proj_tree_wx:add_project_document(ProjectId, Path) 
           ok
       end,
 			{reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}};

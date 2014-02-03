@@ -6,7 +6,8 @@
 -export([
   new/1,
   add_module_tests/1,
-  show_test_results/2
+  show_test_results/2,
+  clear/0
   ]).
 
 %% The test list.
@@ -68,6 +69,14 @@ add_module_tests(Module) ->
       % List placeholder
       ok
   end.
+
+
+%% =====================================================================
+%% @doc
+
+clear() ->
+  List = wx:typeCast(wxWindow:findWindowById(?ID_LIST), wxListCtrl),
+  wxListCtrl:deleteAllItems(List).
 
 
 %% =====================================================================

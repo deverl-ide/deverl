@@ -139,7 +139,7 @@ init({Parent, Projects, ActiveProject}) ->
   ide_lib_dlg_wx:win_var(Dlg),
 
   %% Load XRC (Assumes all XRC handlers init previously)
-  wxXmlResource:loadDialog(Xrc, Dlg, Parent, "new_file"),
+  wxXmlResource:loadDialog(Xrc, Dlg, wx:null(), "new_file"),
 
   %% Add open projects
   Project = case ActiveProject of
