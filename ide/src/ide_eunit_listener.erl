@@ -14,6 +14,8 @@
    
 -record(state, {
   results :: [{atom(), atom()}], %% {module, pass | fail}
+  passed :: integer(),
+  failed :: integer(),
   wx_env
 }).
    
@@ -29,26 +31,27 @@ init(Options) ->
   	{start, _Reference} ->
 	    ok
   end,
-  #state{results=[], wx_env=Env}.
+  #state{results=[], wx_env=Env, passed=0, failed=0}.
 
 handle_begin(test, _Data, State) ->
   State;
 handle_begin(_Kind, _Data, State) ->
   State.
     
-handle_end(test, Data, State) ->
+handle_end(test, Data, State=#state{results=Results, passed=Passed, failed=Failed}) ->
   {_Mod, Func, _Arity} = proplists:get_value(source, Data),
-  Result = case proplists:get_value(status, Data) of
-    ok ->
-      true;
-    _ -> %% error
-      false
-  end,
-  Results = [{Func, Result} | State#state.results],
-  State#state{results=Results};
+  case proplists:get_value(status, Data) of
+    ok -> %% passed test
+      State#state{results=[{Func, true} | Results], passed=Passed+1};
+    _ -> %% failed test
+      State#state{results=[{Func, false} | Results], failed=Failed+1}
+  end;
 handle_end(group, Data, State) ->
   case proplists:get_value(id, Data) of
-    [] -> ide_testpane:show_test_results(State#state.results, State#state.wx_env);
+    [] -> 
+      ide_testpane:show_test_results(State#state.results, State#state.wx_env),
+      Msg = io_lib:format("Tests complete: ~p passed, ~p failed.", [State#state.passed, State#state.failed]),
+      ide_log_out_wx:message(Msg);
     _ -> ok
   end,
   State;

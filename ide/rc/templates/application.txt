@@ -1,0 +1,11 @@
+%% The template for an application. Fill in the relevant fields.
+
+{application, '',                       %% The application's name :: atom()
+[
+    {description, ""},                  %% A description of the application :: string()
+    {vsn, ""},                          %% Version number :: string()
+    {modules, []},                      %% All modules in the application go in this list :: atom()
+    {registered, []},                   %% Registered module names go in this list :: atom()
+    {applications, [kernel, stdlib]},   %% Other applications that this application uses (kernel and stdlib by default) :: atom()
+    {mod, {'', []}}                     %% This module's name :: atom, and list of arguments :: term()
+]}.

@@ -188,10 +188,9 @@ copy_from_template(_File, undefined) -> ok;
 copy_from_template(_File, header) -> ok;
 copy_from_template(_File, plain_text) -> ok;
 copy_from_template(File, Type) -> 
-  Dir = filename:dirname(code:which(?MODULE)),
-  Src = filename:join([Dir, "../priv/templates", atom_to_list(Type) ++ ".txt"]),
+  Dir = ide_lib_widgets:rc_dir(filename:join("templates", atom_to_list(Type) ++ ".txt")),
   try
-    copy_file(Src, File)
+    copy_file(Dir, File)
   catch
     _Throw -> ok %% Don't bother with template
   end,
