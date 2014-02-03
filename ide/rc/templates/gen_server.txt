@@ -37,6 +37,7 @@ start() ->
 %%             | {stop, Reason}
 %%             | ignore
 %% Initialises the server, called when the gen_server is started.
+
 init(Config) ->
 	State=#state{}, %% Initialise the server's state
 	{ok, State}.

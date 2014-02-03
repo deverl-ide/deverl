@@ -66,7 +66,7 @@ add_module_tests(Module) ->
     insert(List, Tests)
   catch
     throw:_E ->
-      % List placeholder
+      wxListCtrl:insertItem(List, 0, "No tests to run."),
       ok
   end.
 

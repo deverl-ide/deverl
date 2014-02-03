@@ -81,7 +81,7 @@ new_document(Parent) ->
     ?wxID_CANCEL ->
       ok;
     ?wxID_OK ->
-      create_document(ide_dlg_new_file_wx:get_path(Dlg), 
+      create_document(ide_dlg_new_file_wx:get_path(Dlg),
                       ide_dlg_new_file_wx:get_project_id(Dlg),
                       ide_dlg_new_file_wx:get_type(Dlg))
   end,
@@ -97,7 +97,7 @@ create_document(Path, ProjectId) ->
   create_document(Path, ProjectId, undefined).
 
 -spec create_document(string(), project_id(), atom()) -> ok | error.
- 
+
 create_document(Path, ProjectId, Type) ->
   case ide_io:create_new_file(Path, [{template, Type}]) of
     error ->
@@ -244,8 +244,8 @@ get_active_document() ->
 get_active_module() ->
   DocID = wx_object:call(?MODULE, get_active_doc),
   list_to_atom(filename:basename(ide_doc_man_wx:get_path(DocID), ".erl")).
-  
-  
+
+
 %% =====================================================================
 %% @doc
 
@@ -369,8 +369,8 @@ handle_call({get_project_docs, ProjectId}, _From,
 			Acc
 		end, [], DocRecords),
   {reply, DocList, State};
-  
-handle_call(stdln_src, _From, State=#state{doc_records=DocRecords}) -> 
+
+handle_call(stdln_src, _From, State=#state{doc_records=DocRecords}) ->
   SrcFiles = lists:foldl(
       fun
       ({_DocId, Doc=#document{project_id=undefined}}, Acc) ->
@@ -660,13 +660,13 @@ remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
   %% Grab the stc, so we can make sure it's deleted
   % Rec = get_record(DocId, DocRecords),
   % Ed = Rec#document.editor,
-  % 
+  %
   % ide_editor_wx:destroy(Ed),
   % wxAuiNotebook:removePage(Nb, PageIdx), %% These 2 lines =/= to deletePage/2
-  
+
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageIdx, PageToDocId),
-  
+
   wxAuiNotebook:deletePage(Nb, PageIdx), %% SEG FAULT OSX, wx3.0 see ticket #81
 
   {NewDocRecords, NewPageToDocId}.
