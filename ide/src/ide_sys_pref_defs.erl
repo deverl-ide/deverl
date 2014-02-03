@@ -68,7 +68,7 @@ get_defaults() ->
     {log_font, DefaultFont},
     
     %% General prefs
-    {general_prefs, #general_prefs{path_to_erl = os:find_executable("erddl"),
+    {general_prefs, #general_prefs{path_to_erl = os:find_executable("erl"),
                                    path_to_erlc = os:find_executable("erlc"),
                                    path_to_dialyzer = os:find_executable("dialyzer"),
                                    home_env_var = wx_misc:getHomeDir()

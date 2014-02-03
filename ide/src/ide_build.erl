@@ -115,7 +115,7 @@ compile_file(Path) ->
           load_file(Path, [])
       end;
     {_From, error} ->
-      ok
+      {error, failed}
   end.
 
 
@@ -207,4 +207,3 @@ execute_function({M, F}) ->
   ide_console_port_gen:eval(M ++ ":" ++ F ++ "()." ++ io_lib:nl());
 execute_function({M, F, Args}) ->
   ide_console_port_gen:eval("erlang:apply(" ++ M ++ "," ++ F ++ ",[" ++ Args ++ "])." ++ io_lib:nl()).
-

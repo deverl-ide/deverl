@@ -341,12 +341,9 @@ handle_call({create_doc, Path, ProjectId}, _From,
 			load_editor_contents(Editor, Path),
       case ProjectId of
         undefined ->
-          io:format("DIR ADDED: ~p~n", [filename:dirname(Path)]),
           code:add_path(filename:dirname(Path)),
           ide_proj_tree_wx:add_standalone_document(Path);
         _ ->
-          %ide_proj_tree_wx:set_has_children(filename:dirname(Path))
-          %ide_proj_tree_wx:add_project_document(ProjectId, Path) 
           ok
       end,
 			{reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}};
@@ -469,7 +466,8 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
   {S, D} = F(F, Docs, DocRecords, PageToDocId),
   case wxAuiNotebook:getPageCount(Nb) of
     0 ->
-      %% Called when the last document is closed.
+      %% Called when the last document is closed
+      ide_testpane:clear(),
       ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_EMPTY], false),
       show_placeholder(Sz),
       ide:set_title([]);

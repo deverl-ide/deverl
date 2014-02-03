@@ -347,7 +347,7 @@ menu_groups() ->
                                   ?MENU_ID_UC_SEL, ?MENU_ID_LC_SEL, ?MENU_ID_FOLD_ALL, 
                                   ?MENU_ID_UNFOLD_ALL, ?MENU_ID_WRANGLER, ?MENU_ID_COMPILE_FILE, 
                                   ?MENU_ID_MAKE_PROJECT, ?MENU_ID_RUN, ?MENU_ID_NEXT_TAB, 
-                                  ?MENU_ID_PREV_TAB]},
+                                  ?MENU_ID_PREV_TAB, ?MENU_ID_RUN_TESTS, ?MENU_ID_DIALYZER]},
     {?MENU_GROUP_PROJECTS_EMPTY, [?MENU_ID_CLOSE_PROJECT, ?MENU_ID_IMPORT_FILE, ?MENU_ID_PROJECT_CONFIG,
                                   ?MENU_ID_MAKE_PROJECT, ?MENU_ID_RUN, ?MENU_ID_SAVE_PROJECT]}
   ].

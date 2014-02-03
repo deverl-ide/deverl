@@ -188,25 +188,29 @@ initialise_prefs(Table) ->
       ok
   end,
   
-  %% Paths
+  %% Paths to binaries
   Paths = [{erl, GenPref1#general_prefs.path_to_erl},
            {erlc, GenPref1#general_prefs.path_to_erlc},
            {dlyz, GenPref1#general_prefs.path_to_dialyzer}],
   IsPath = fun
-    ({Exe, false}, Acc) -> %% default exe not found, test against hard coded uni path, otherwise prompt
-      %% TODO Check if the exe exists at the Path at UNI
-      % prompt_for_path(Exe),
-      ["The " ++ atom_to_list(Exe) ++ " executable could not be found automatically.\n" | Acc];
-    ({_Exe, _Path}, Acc) -> %% non-default exe, validate?
+    ({Exe, false}, Acc) -> %% default exe not found
+      %% TODO
+      case areWeOnCampus() of %% check if we are at Uni
+        true -> %% save the pref
+          Acc;
+        false -> %% notify not found
+          ["The " ++ atom_to_list(Exe) ++ " executable could not be found automatically.\n" | Acc]
+      end;
+    ({_Exe, Path}, Acc) -> %% User defined path, validate the exe
+      
       Acc
   end,
-  case lists:foldl(IsPath, [], Paths) of %[ IsPath(Path) || Path <- Paths],
+  case lists:foldl(IsPath, [], Paths) of
     [] -> ok;
     Err -> %% Couldn't find an exe
       Dlg1 = wxMessageDialog:new(wx:null(), Err, [{caption, "Oops"}]),
-      wxMessageDialog:show(Dlg1),
-      receive after 5000 -> ok end
-      % wxMessageDialog:destroy(Dlg1)
+      wxMessageDialog:showModal(Dlg1),
+      wxMessageDialog:destroy(Dlg1)
   end,
   
   %% Update general prefs
@@ -216,6 +220,9 @@ initialise_prefs(Table) ->
   write_dets(Table),
   ok.
 
+
+areWeOnCampus() ->
+  false.
 
 %% =====================================================================
 %% @doc A text prompt for the user to manualy add the path to the

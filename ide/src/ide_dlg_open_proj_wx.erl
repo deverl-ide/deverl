@@ -116,7 +116,7 @@ code_change(_, _, State) ->
 terminate(_Reason, State) ->
   %% manual disconnect prevents segfault: OSX wx3.0 erlR16B03 (see xrc sample directory)
   % wxDialog:disconnect(State#state.list_ctrl),
-  % wxDialog:destroy(State#state.dlg),
+  wxDialog:destroy(State#state.dlg),
 	ok.
 	
 

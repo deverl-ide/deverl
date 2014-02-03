@@ -30,7 +30,6 @@
         start/1,
         add_project/2,
 				add_project/3,
-        add_project_document/2,
         add_standalone_document/1,
 				remove_project/1,
         remove_standalone_document/1,
@@ -98,15 +97,6 @@ add_project(Id, Dir, Pos) ->
 
 remove_project(Id) ->
 	wx_object:cast(?MODULE, {remove_project, Id}).
-
-
-%% =====================================================================
-%% @doc
-
--spec add_project_document(project_id(), path()) -> ok.
-
-add_project_document(ProjectId, Path) ->
-  wx_object:cast(?MODULE, {add_project_document, ProjectId, Path}).
 
 
 %% =====================================================================
@@ -202,7 +192,6 @@ handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
 
-%% ALMOST IDENTICAL TO THE SUBSEQUENT add_* HANDLER
 handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
   wxPanel:freeze(Tree),
   Root = get_projects_root(Tree),
@@ -224,21 +213,6 @@ handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) -
   alternate_background_of_children(Tree, get_projects_root(Tree)),
   insert_placeholder(Tree, get_projects_root(Tree), ?HEADER_PROJECTS_EMPTY),
 	wxPanel:thaw(Panel),
-  {noreply,State};
-
-handle_cast({add_project_document, ProjectId, Path}, State=#state{tree=Tree}) ->
-  Root = get_item_from_path(Tree, get_all_items(Tree), filename:dirname(Path)),
-  case is_in_tree(Tree, Path, get_children_recursively(Tree, Root)) of
-    false ->
-      io:format("FALSE~n"),
-      Item = append_item(Tree, Root, filename:basename(Path), [{data, {ProjectId, Path}}]),
-      wxTreeCtrl:setItemImage(Tree, Item, ?ICON_DOCUMENT),
-      wxTreeCtrl:selectItem(Tree, Item),
-      alternate_background_of_children(Tree, Root);
-    Item ->
-      io:format("TRUE~n"),
-      wxTreeCtrl:selectItem(Tree, Item)
-  end,
   {noreply,State};
 
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->

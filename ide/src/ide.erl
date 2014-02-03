@@ -43,29 +43,15 @@
                 }).
 
 %% Macros
-% -define(DEFAULT_FRAME_WIDTH,  1100).
-% -define(DEFAULT_FRAME_HEIGHT, 680).
 -define(DEFAULT_UTIL_HEIGHT,  200).
 -define(DEFAULT_TEST_WIDTH,   200).
 -define(SPLITTER_SIDEBAR, 100).
 -define(SPLITTER_UTILITIES, 101).
 -define(SPLIITER_LOG, 102).
-% -define(SPLITTER_SIDEBAR_SASH_POS_DEFAULT, 215).
-% -define(SPLITTER_UTILITIES_SASH_POS_DEFAULT, -200).
-% -define(SPLITTER_LOG_SASH_POS_DEFAULT, -500).
 -define(FRAME_TITLE, "Erlang IDE").
 -define(BUTTON_HIDE_OUTPUT, 0).
 -define(ID_TOGGLE_LOG, 1).
 -define(ID_TOGGLE_OUTPUT, 2).
-
-
-add(A, B) -> A + B.
-add_test() -> 20 = add(10,10).
-
-mult(A, B) -> A * B.
-mult0_test() -> 20 = mult(4,5).
-mult_test() -> 20 = mult(4,6).
-
 
 %% =====================================================================
 %% Client API
@@ -112,6 +98,7 @@ toggle_menu_group(Groups, Toggle) ->
 %% =====================================================================
 %% @doc Show the window identified by WinId in the output window, hiding the
 %% window currently displayed.
+%% ?WINDOW_LOG or ?WINDOW_OUTPUT
 
 -spec display_output_window(integer()) -> ok.
 
@@ -387,7 +374,6 @@ handle_event(#wx{id=?MENU_ID_IMPORT_PROJECT}, State) ->
   
 handle_event(#wx{id=?wxID_SELECTALL}, State) ->
   % wxWindow:findFocus(),
-  
   {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_PROJECT_CONFIG}, State) ->
@@ -512,7 +498,6 @@ handle_event(#wx{id=Id}, State) when Id =:= ?MENU_ID_UC_SEL orelse Id =:= ?MENU_
   
 handle_event(#wx{id=?MENU_ID_COMPILE_FILE}, State) ->
   ide_build:compile_file(),
-  ide_testpane:add_module_tests(ide_doc_man_wx:get_active_module()),
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_MAKE_PROJECT}, State) ->
@@ -524,9 +509,17 @@ handle_event(#wx{id=?MENU_ID_RUN}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_RUN_TESTS}, State) ->
-  Mod = ide_doc_man_wx:get_active_module(),
-  Listener = ide_eunit_listener:start([{wx_env, wx:get_env()}]),
-  eunit:test(Mod, [{report, Listener}]),
+  case ide_build:compile_file() of
+    {error, _} -> % Compilation failed
+      ide_log_out_wx:error("ERROR: Tests couldn't be run."),
+      display_output_window(?WINDOW_LOG);
+    ok ->
+      Mod = ide_doc_man_wx:get_active_module(),
+      ide_testpane:add_module_tests(Mod),
+      Listener = ide_eunit_listener:start([{wx_env, wx:get_env()}]),
+      eunit:test(Mod, [{report, Listener}]),
+      ide_tabbed_win_img_wx:set_selection(State#state.left_pane, 2)
+  end,
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_DIALYZER}, State) ->
