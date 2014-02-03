@@ -63,11 +63,16 @@ add_module_tests(Module) ->
   wxListCtrl:deleteAllItems(List),
   try
     Tests = lists:sort(eunit_data:get_module_tests(Module)),
-    insert(List, Tests)
+    insert(List, Tests),
+    case length(Tests) of
+      0 ->
+        wxListCtrl:insertItem(List, 0, " No tests to run.");
+      _ ->
+        ok
+    end
   catch
     throw:_E ->
-      % List placeholder
-      ok
+      wxListCtrl:insertItem(List, 0, " No tests to run.")
   end.
 
 
