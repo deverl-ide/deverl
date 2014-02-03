@@ -522,6 +522,14 @@ handle_event(#wx{id=?MENU_ID_RUN_TESTS}, State) ->
   end,
   {noreply, State};
   
+handle_event(#wx{id=?MENU_ID_RUN_OBSERVER}, State) ->
+  ide_console_port_gen:eval("observer:start().\n", false), 
+  {noreply, State};
+  
+handle_event(#wx{id=?MENU_ID_RUN_DEBUGGER}, State) ->
+  ide_console_port_gen:eval("debugger:start().\n", false), 
+  {noreply, State};
+  
 handle_event(#wx{id=?MENU_ID_DIALYZER}, State) ->
   ide_dialyzer:run(State#state.frame),
   {noreply, State};

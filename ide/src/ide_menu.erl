@@ -81,8 +81,10 @@ get_checked_menu_item([H|T]) ->
 
 init(Config) ->
   Frame = proplists:get_value(parent, Config),
-  wxFrame:setMenuBar(Frame, build_menu(Frame)),
-  _Tb = build_toolbar(Frame),
+  Mb = build_menu(Frame),
+  wxFrame:setMenuBar(Frame, Mb),
+  Tb = build_toolbar(Frame),
+  disable_not_implemented(Mb, Tb), %% during dev.
   menu_groups(). %% Returned to ide
 
 
@@ -272,6 +274,7 @@ build_menu(Frame) ->
 		[{userData, Theme}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),
 	wxFrame:connect(Frame, command_menu_selected,
 		[{userData, IndentWidth}, {id,?MENU_ID_TAB_WIDTH_LOWEST}, {lastId, ?MENU_ID_TAB_WIDTH_HIGHEST}]),
+    
   MenuBar.
 
 
@@ -340,15 +343,15 @@ build_toolbar(Frame) ->
 menu_groups() ->
   Groups = [
     {?MENU_GROUP_NOTEBOOK_EMPTY, [?wxID_SAVE, ?wxID_SAVEAS, ?MENU_ID_SAVE_ALL, 
-                                  ?MENU_ID_SAVE_PROJECT, ?wxID_PRINT, ?wxID_CLOSE, 
-                                  ?wxID_CLOSE_ALL, ?MENU_ID_QUICK_FIND, ?wxID_FIND,
+                                  ?MENU_ID_SAVE_PROJECT, ?wxID_CLOSE, 
+                                  ?wxID_CLOSE_ALL, ?MENU_ID_QUICK_FIND,
                                   ?MENU_ID_FONT_BIGGER, ?MENU_ID_FONT_SMALLER, ?MENU_ID_INDENT_RIGHT,
                                   ?MENU_ID_INDENT_LEFT, ?MENU_ID_TOGGLE_COMMENT, ?MENU_ID_GOTO_LINE,
-                                  ?MENU_ID_UC_SEL, ?MENU_ID_LC_SEL, ?MENU_ID_FOLD_ALL, 
-                                  ?MENU_ID_UNFOLD_ALL, ?MENU_ID_WRANGLER, ?MENU_ID_COMPILE_FILE, 
+                                  ?MENU_ID_UC_SEL, ?MENU_ID_LC_SEL, 
+                                  ?MENU_ID_COMPILE_FILE, 
                                   ?MENU_ID_MAKE_PROJECT, ?MENU_ID_RUN, ?MENU_ID_NEXT_TAB, 
                                   ?MENU_ID_PREV_TAB, ?MENU_ID_RUN_TESTS, ?MENU_ID_DIALYZER]},
-    {?MENU_GROUP_PROJECTS_EMPTY, [?MENU_ID_CLOSE_PROJECT, ?MENU_ID_IMPORT_FILE, ?MENU_ID_PROJECT_CONFIG,
+    {?MENU_GROUP_PROJECTS_EMPTY, [?MENU_ID_CLOSE_PROJECT, ?MENU_ID_PROJECT_CONFIG,
                                   ?MENU_ID_MAKE_PROJECT, ?MENU_ID_RUN, ?MENU_ID_SAVE_PROJECT]}
   ].
   
@@ -378,3 +381,28 @@ generate_radio_submenu(Menu, [Label|T], Label, StartId) ->
 generate_radio_submenu(Menu, [Label|T], ToCheck, StartId) ->
 	wxMenu:appendRadioItem(Menu, StartId, Label),
 	generate_radio_submenu(Menu, T, ToCheck, StartId + 1).
+
+
+%% =====================================================================
+%% @doc 
+
+disable_not_implemented(MenuBar, ToolBar) ->
+  ToDisable = [?MENU_ID_FOLD_ALL,
+               ?MENU_ID_UNFOLD_ALL ,
+               ?MENU_ID_ADD_TO_PLT,
+               ?MENU_ID_PLT_INFO,
+               ?MENU_ID_DIAL_WARN,
+               ?MENU_ID_WRANGLER,
+               ?MENU_ID_MANUAL,
+               ?MENU_ID_HOTKEYS,
+               ?wxID_FIND,
+               ?wxID_PRINT,
+               ?MENU_ID_EXPORT_EDOC,
+               ?MENU_ID_IMPORT_FILE
+               ],
+  Disable = fun(Item) ->
+    wxMenuItem:enable(wxMenuBar:findItem(MenuBar, Item), [{enable, false}])
+    % wxToolBar:enableTool(ToolBar, Item, false)
+  end,
+  [Disable(Id) || Id <- ToDisable],
+  ok.

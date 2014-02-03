@@ -59,6 +59,7 @@ make_project(PrintMsg) ->
       ProjectId = ide_proj_man:get_active_project(),
       Path = ide_proj_man:get_root(ProjectId),
       ide_compiler_port:start(Path),
+      ide:display_output_window(?WINDOW_OUTPUT),
       receive
         {_From, ok} ->
           ide_proj_tree_wx:set_has_children(Path ++ "/ebin"),
