@@ -26,15 +26,17 @@
 %% API
 -export([new/1,
          append/1,
+         append_header/1,
          clear/0,
-         finished/0
+         append_footer/0,
+         append_footer/1
          ]).
 
 %% Server state
 -record(state, {win,
 								output}).
 
--define(OUT_WIDTH, 66).
+-define(OUT_WIDTH, 60).
 
 %% =====================================================================
 %% Client API
@@ -52,11 +54,48 @@ new(Config) ->
 %% =====================================================================
 %% @doc
 
+-spec append_header(string()) -> ok.
+
+append_header(Msg) ->
+  append_fixed_width(Msg).
+
+
+%% =====================================================================
+%% @doc
+
+-spec append_footer() -> ok.
+
+append_footer() ->
+  append_footer("Complete").
+  
+-spec append_footer(string()) -> ok.
+
+append_footer(Msg) ->
+  append_fixed_width(Msg).
+ 
+ 
+%% =====================================================================
+%% @doc Append text of fixed width to output. Width is defined
+%% in the OUT_WIDTH macro.
+
+-spec append_fixed_width(string()) -> ok.
+ 
+append_fixed_width(Msg) ->
+  Op = round(?OUT_WIDTH/2) + round(length(Msg)/2),
+  Msg1 = io_lib:format([126] ++ integer_to_list(?OUT_WIDTH)
+                            ++ "." ++ integer_to_list(Op)
+                            ++ ".=s~n", [Msg]),
+  append(Msg1).
+  
+  
+%% =====================================================================
+%% @doc
+
 -spec append(string()) -> ok.
 
 append(Msg) ->
   wx_object:cast(?MODULE, Msg).
-
+  
 
 %% =====================================================================
 %% @doc
@@ -65,17 +104,8 @@ append(Msg) ->
 
 clear() ->
   wx_object:cast(?MODULE, clear).
-
-
-%% =====================================================================
-%% @doc
-
--spec finished() -> ok.
-
-finished() ->
-  append("Finished").
   
-  
+
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
@@ -86,12 +116,12 @@ init(Config) ->
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Panel, MainSizer),
 
-  Font = ide_sys_pref_gen:get_font(console_font),
+  Font0 = ide_sys_pref_gen:get_font(console_font),
+  Font1 = wxFont:new(wxFont:getPointSize(Font0), ?wxFONTFAMILY_TELETYPE, ?wxNORMAL, ?wxNORMAL),
+  Style = wxTextAttr:new(?wxBLACK, [{font, Font1}]),
 
-	Output = wxTextCtrl:new(Panel, ?WINDOW_OUTPUT, [{style, ?wxBORDER_NONE bor ?wxTE_DONTWRAP bor ?wxTE_READONLY bor ?wxTE_MULTILINE}]),
-  wxTextCtrl:setFont(Output, Font),
-  wxTextCtrl:setForegroundColour(Output, ?wxBLACK),
-  wxTextCtrl:setBackgroundColour(Output, ?wxWHITE),
+	Output = wxTextCtrl:new(Panel, ?WINDOW_OUTPUT, [{style, ?wxBORDER_NONE bor ?wxTE_DONTWRAP bor ?wxTE_RICH2 bor ?wxTE_READONLY bor ?wxTE_MULTILINE}]),
+  wxTextCtrl:setDefaultStyle(Output, Style),
 
 	wxSizer:add(MainSizer, Output, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
@@ -108,7 +138,7 @@ handle_info(Msg, State) ->
   {noreply, State}.
 
 handle_cast(clear, State=#state{output=Output}) ->
-  wxTextCtrl:clear(Output),
+  wxTextCtrl:setValue(Output, ""), %% keeps the default style
   {noreply, State};
 handle_cast(Msg, State=#state{output=Output}) ->
   wxTextCtrl:appendText(Output, Msg),

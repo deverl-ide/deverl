@@ -106,7 +106,8 @@ compile(From, Path, Config) ->
                                          {cd, Cwd},
                                          {args, lists:append(Flags, Args)}]),
                                          
-  ide_stdout_wx:append("========================= Compiler Output ========================\n"),
+  % ide_stdout_wx:append("========================= Compiler Output ========================\n"),
+  ide_stdout_wx:append_header("Compiler Output"),
   loop(From, filename:basename(Path)).
 
 
@@ -123,11 +124,11 @@ loop(From, Name) ->
       loop(From, Name);
     {_Port, {exit_status, 0}} ->
       ide_log_out_wx:message("Compiled " ++ Name ++ " successfully."),
-      ide_stdout_wx:finished(),
+      ide_stdout_wx:append_footer(),
       From ! {self(), ok};
     {_Port, {exit_status, _}} ->
       ide_log_out_wx:error("ERROR: Compilation failed " ++ Name ++ ". See output.", [{hotspot, "output"}]),
-      ide_stdout_wx:finished(),
+      ide_stdout_wx:append_footer(),
       From ! {self(), error}
   after
     10000 ->
