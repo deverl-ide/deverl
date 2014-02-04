@@ -20,3 +20,5 @@ An tool designed with learners in mind.
 ### Bug/Issues
 
 To view/report bugs viits our [trac page](http://www.tgrsvr.co.uk/trac "trac").
+
+<div align="center"><a href="https://github.com/tomrichmond/erlangIDE"><img src="http://i.imgur.com/ckSte1h.png" alt="Erlang IDE" /></a></div>
