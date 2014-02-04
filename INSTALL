@@ -15,12 +15,21 @@ PATH="$(pwd)":$PATH ; export PATH
 
 ## Build erlang
 
-Download erlang R17
+Download erlang R17 (for R16 see below)
 cd otp_src_R17XX
 otpbuild autoconf (only required when downloading non-release sources)
 ./configure --enable-darwin-64bit
 make
 make install (optional, will install to default directory [usually /usr/local])
+
+## R16 Releases
+
+These is a bug in erlang releases prior to R17 which crashes the wx app. If you're using R16 then you will need to perform the following fix:
+Delete the line:
+
+  Disconnect andalso (catch wxEvtHandler:disconnect_impl(CbH,O)),
+
+in wxe_server (otp_src_R16XX/lib/wx/src).
 
 
 LINUX
