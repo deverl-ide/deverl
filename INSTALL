@@ -1,6 +1,30 @@
 Erlang/wxWidgets Installation
 
 
+MacOSX 10.9
+
+## Build wxWidgets
+
+Download/extract wxWidgets-3.X
+cd wxWidgets3.X
+mkdir build-rel
+cd build-rel
+../configure --with-cocoa --prefix="$(pwd)" --enable-debug
+make
+PATH="$(pwd)":$PATH ; export PATH
+
+## Build erlang
+
+Download erlang R17
+cd otp_src_R17XX
+otpbuild autoconf (only required when downloading non-release sources)
+./configure --enable-darwin-64bit
+make
+make install (optional, will install to default directory [usually /usr/local])
+
+
+LINUX
+
 Ubuntu Trusty
 
 Open terminal, type:
@@ -20,3 +44,8 @@ cd bin
 
 # In the erlang shell type:
 wx:demo().
+
+
+Microsoft Windows
+
+Download and install the erlang binary from erlang solutions.
