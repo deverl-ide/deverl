@@ -1,10 +1,11 @@
-# erlangIDE
+# Erlang IDE
 
-## An Integrated Development Environment for learning erlang.
-----------------------------------------------------------
+An tool designed with learners in mind.
 
 ### Installation
 
+1. Install [wxWidgets](http://www.wxwidgets.org/downloads/ "wxWidgets")
+2. Install [erlang](http://www.erlang.org/download.html "erlang")
 
 
 ### Folders
