@@ -9,7 +9,7 @@ An tool designed with learners in mind.
 3. `git clone` this repository
 4. `cd erlangIDE/ide`
 5. Type `erl -pa ebin -s ide start` at the unix command prompt, or start the erlang shell and run:
-6. `ide:start()`
+6. `ide:start().`
 
 
 ### Folders
