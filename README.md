@@ -4,14 +4,21 @@ An tool designed with learners in mind.
 
 ### Installation
 
-1. Install [wxWidgets](http://www.wxwidgets.org/downloads/ "wxWidgets")
-2. Install [erlang](http://www.erlang.org/download.html "erlang")
+1. Install [wxWidgets](http://www.wxwidgets.org/downloads/ "wxWidgets").
+2. Install the latest [erlang release](http://www.erlang.org/download.html "erlang release").
+3. `git clone` this repository
+4. `cd erlangIDE/ide`
+5. Type `erl -pa ebin -s ide start` at the unix command prompt, or start the erlang shell and run:
+6. `ide:start().`
 
 
 ### Folders
 
-	/doc   - All documentation pertaining to project design and planning.
+	/doc   - All documentation pertaining to the project.
 	/ide   - The main project directory for source code and distribution.
-	/misc  - Miscellaneous files.
-	/proto - Directory containing prototype modules for early versions of
-			     the IDE.
+
+### Bug/Issues
+
+To view/report bugs viits our [trac page](http://www.tgrsvr.co.uk/trac "trac").
+
+<div align="center"><a href="https://github.com/tomrichmond/erlangIDE"><img src="http://i.imgur.com/ckSte1h.png" alt="Erlang IDE" /></a></div>
