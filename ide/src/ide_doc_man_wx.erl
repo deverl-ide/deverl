@@ -85,8 +85,8 @@ new_document(Parent) ->
                       ide_dlg_new_file_wx:get_project_id(Dlg),
                       ide_dlg_new_file_wx:get_type(Dlg))
   end,
-  %ide_dlg_new_file_wx:destroy(Dlg).
-  wxDialog:destroy(Dlg).
+  ide_dlg_new_file_wx:destroy(Dlg).
+  % wxDialog:destroy(Dlg).
 
 %% =====================================================================
 %% @doc Insert a document into the workspace.
@@ -212,16 +212,16 @@ save_active_project() ->
 %% =====================================================================
 %% @doc Apply the function Fun to all open documents.
 
--spec apply_to_all_documents(function(), list()) -> ok.
+-spec apply_to_all_documents(function(), list()) -> [term()].
 
 apply_to_all_documents(Fun, Args) ->
 	apply_to_documents(Fun, Args, get_open_documents()).
 
 
 %% =====================================================================
-%% @doc
+%% @doc Returns the result of the applied function in a list.
 
--spec apply_to_active_document(function(), list()) -> ok.
+-spec apply_to_active_document(function(), list()) -> [term()].
 
 apply_to_active_document(Fun, Args) ->
 	apply_to_documents(Fun, Args, [get_active_document()]).
@@ -441,14 +441,14 @@ handle_call({save_as, DocId}, _From,
 	{reply, ok, State#state{doc_records=NewRecs, page_to_doc_id=NewPage2Ids}};
 
 handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_records=DocRecords}) ->
-	Fun2 = fun(Editor) -> apply(Fun, [Editor | Args]) end,
-	List = lists:map(
-		fun(DocId) ->
-			Record = proplists:get_value(DocId, DocRecords),
-			Record#document.editor
-		end, DocIds),
-	lists:foreach(Fun2, List),
-	{reply, ok, State};
+	Fun2 = fun(Editor, Acc) -> [apply(Fun, [Editor | Args]) | Acc] end,
+  List = lists:map(
+    fun(DocId) ->
+      Record = proplists:get_value(DocId, DocRecords),
+      Record#document.editor
+    end, DocIds),
+  Results = lists:foldl(Fun2, [], List),
+	{reply, Results, State};
 
 handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId, sizer=Sz}) ->
   F = fun(_G, [], Dr, P2d) -> {Dr, P2d};
@@ -656,19 +656,9 @@ get_modified_docs(Documents) ->
   {[document_record()], [{wxWindow:wxWindow(), document_id()}]}.
 
 remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
-
-  %% Grab the stc, so we can make sure it's deleted
-  % Rec = get_record(DocId, DocRecords),
-  % Ed = Rec#document.editor,
-  %
-  % ide_editor_wx:destroy(Ed),
-  % wxAuiNotebook:removePage(Nb, PageIdx), %% These 2 lines =/= to deletePage/2
-
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageIdx, PageToDocId),
-
-  wxAuiNotebook:deletePage(Nb, PageIdx), %% SEG FAULT OSX, wx3.0 see ticket #81
-
+  wxAuiNotebook:deletePage(Nb, PageIdx), %% SEG FAULT OSX, wx3.0 <R17 see ticket #81
   {NewDocRecords, NewPageToDocId}.
 
 

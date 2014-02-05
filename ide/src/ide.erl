@@ -464,29 +464,36 @@ handle_event(#wx{id=?MENU_ID_TOGGLE_COMMENT}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_GOTO_LINE}, State) ->
-	Callback =
-	fun(#wx{id=?wxID_OK, userData=Input},O) -> %% OK clicked
-		wxEvent:skip(O),
-	  {Line, Column} = case string:tokens(wxTextCtrl:getValue(Input), ":") of
-			[] ->  {0, 0};
-	    [Ln | []] -> {Ln, 0};
-	    [Ln, Col | _ ] -> {Ln, Col}
-	  end,
-	  L = try
-	    list_to_integer(Line)
-	  catch _:_ -> 0
-	  end,
-	  C = try
-	    list_to_integer(Column)
-	  catch _:_ -> 0
-	  end,
-		ide_editor_wx:go_to_position(ide_doc_man_wx:get_active_document_ref(), {L,C});
-	(_,O) -> wxEvent:skip(O) %% Cancel/Close
-	end,
-	{Ln, Col} = ide_editor_wx:get_current_pos(ide_doc_man_wx:get_active_document_ref()),
-	ide_lib_dlg_wx:text_input_dialog(State#state.frame, "Go to Line", "Enter line:", "Go",
-		[{callback, Callback}, {init_text, integer_to_list(Ln)++":"++integer_to_list(Col)}]),
-  {noreply, State};
+  %% Process the user input
+  Process = fun(Input) ->
+    {Ln1, Col1} = case string:tokens(Input, ":") of
+      [] ->  {0, 0};
+      [Ln0 | []] -> {Ln0, 0};
+      [Ln0, Col0 | _ ] -> {Ln0, Col0}
+    end,
+    Ln2 = try
+        list_to_integer(Ln1)
+      catch _:_ -> 0
+    end,
+    Col2 = try
+        list_to_integer(Col1)
+      catch _:_ -> 0
+    end,
+    ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:go_to_position/2, [{Ln2,Col2}])
+  end,
+  %% Show the dialog
+  [{Ln, Col} | T] = ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:get_current_pos/1, []),
+  Value = integer_to_list(Ln)++":"++integer_to_list(Col),
+  Dlg = wxTextEntryDialog:new(State#state.frame, "Enter line:", [{caption, "Go to Line:"}, {value, Value}]),
+  case wxTextEntryDialog:showModal(Dlg) of
+    ?wxID_OK ->
+      V = wxTextEntryDialog:getValue(Dlg),
+      Process(V);
+    _ -> 
+      ok
+  end,
+  wxTextEntryDialog:destroy(Dlg),
+   {noreply, State};
   
 handle_event(#wx{id=Id}, State) when Id =:= ?MENU_ID_UC_SEL orelse Id =:= ?MENU_ID_LC_SEL ->
 	Cmd = case Id of
