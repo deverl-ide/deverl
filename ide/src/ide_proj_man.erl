@@ -272,40 +272,29 @@ set_project_configuration(Parent) ->
 %% =====================================================================
 %% @doc
 
--spec import(wxFrame:wxFrame()) -> ok | cancelled.
+-spec import(wxFrame:wxFrame()) -> ok.
 
-% import(Parent) ->
-%   Dlg = ide_dlg_import_proj_wx:start(Parent),
-%   case wxDialog:showModal(Dlg) of
-%     20 -> %% Copy files to proj directory
-%       io:format("Copy not implemented~n"),
-%       Path = ide_dlg_import_proj_wx:get_path(Dlg),
-%       ide_dlg_import_proj_wx:destroy(Dlg),
-%       ide_proj_man:add_project(Path);
-%     30 -> %% 
-%       Path = ide_dlg_import_proj_wx:get_path(Dlg),
-%       ide_dlg_import_proj_wx:destroy(Dlg),
-%       ide_proj_man:add_project(Path);
-%     ?wxID_CANCEL ->
-%       ide_dlg_import_proj_wx:destroy(Dlg),
-%       cancelled
-%   end.
 import(Parent) ->
-  Dlg = ide_dlg_import_proj_wx:start(Parent),
+  Dlg = ide_dlg_import_proj_wx:new(Parent),
   case wxDialog:showModal(Dlg) of
-    20 -> %% Copy files to proj directory
-      io:format("Copy not implemented~n"),
-      Path = ide_dlg_import_proj_wx:get_path(Dlg),
-      ide_dlg_import_proj_wx:destroy(Dlg),
-      ide_proj_man:add_project(Path);
-    30 -> %%
-      Path = ide_dlg_import_proj_wx:get_path(Dlg),
-      ide_dlg_import_proj_wx:destroy(Dlg),
-      ide_proj_man:add_project(Path);
+    ?wxID_OK ->
+        Path = ide_dlg_import_proj_wx:get_path(Dlg),
+        case ide_dlg_import_proj_wx:copy_dir(Dlg) of
+          true -> %% Copy the directory to 
+            wx_misc:beginBusyCursor(),
+            case ide_io:copy_to_poject_dir(Path, ide_sys_pref_gen:get_preference(project_directory)) of
+              ok ->
+                ide_proj_man:add_project(Path);
+              {error, _} -> ok
+            end,
+            wx_misc:endBusyCursor();
+          false -> 
+            ok
+        end;
     ?wxID_CANCEL ->
-      ide_dlg_import_proj_wx:destroy(Dlg),
-      cancelled
-  end.
+      ok
+  end,
+  ide_dlg_import_proj_wx:destroy(Dlg).
 
 %% =====================================================================
 %% Callback functions

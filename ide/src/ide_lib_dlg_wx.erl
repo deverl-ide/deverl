@@ -15,7 +15,7 @@
 -export([
 	get_dir/1,
 	get_existing_dir/1,
-	text_input_dialog/5,
+  % text_input_dialog/5,
 	msg_error/2,
 	msg_notice/2,
 	save_changes_dialog/2,
@@ -68,50 +68,50 @@ win_var(Dlg) ->
 %% Call skip on EventObject::wxObject() to allow default behaviour of
 %% buttons.
 
-text_input_dialog(Parent, Title, HelpStr, OkLabel, Options) ->
-	AffirmitiveId = proplists:get_value(affirmitive_id, Options, ?wxID_OK),
-	Callback = proplists:get_value(callback, Options),
-	InitText = proplists:get_value(init_text, Options, []),
-
-	Dialog = wxDialog:new(Parent, ?wxID_ANY, Title),
-
-	Panel = wxPanel:new(Dialog),
-	Sz = wxBoxSizer:new(?wxVERTICAL),
-	wxSizer:addSpacer(Sz, 10),
-
-	wxSizer:add(Sz, wxStaticText:new(Panel, ?wxID_ANY, HelpStr),
-	  [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT}]),
-	wxSizer:addSpacer(Sz, 7),
-	Input = wxTextCtrl:new(Panel, ?wxID_ANY, []),
-	wxTextCtrl:setValue(Input, InitText),
-	wxSizer:add(Sz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
-	wxSizer:addSpacer(Sz, 15),
-
-	ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
-	wxSizer:addSpacer(ButtonSz, 10),
-	wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL,
-	  [{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
-	DefButton = wxButton:new(Panel, AffirmitiveId, [{label,OkLabel}]),
-	wxButton:setDefault(DefButton),
-	wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
-	wxSizer:addSpacer(ButtonSz, 10),
-	wxSizer:add(Sz, ButtonSz),
-
-	EvtOptions = [{userData, Input}],
-	Result = case Callback of
-		undefined ->
-			%% Force events to propagate beyond this dialog
-			wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
-			[];
-		Cb -> [{callback, Cb}]
-	end,
-	wxButton:connect(Dialog, command_button_clicked, EvtOptions ++ Result),
-
-	wxPanel:setSizer(Panel, Sz),
-	wxSizer:layout(Sz),
-	wxSizer:setSizeHints(Sz, Dialog),
-	wxDialog:show(Dialog),
-	wxWindow:setFocusFromKbd(Input).
+% text_input_dialog(Parent, Title, HelpStr, OkLabel, Options) ->
+%   AffirmitiveId = proplists:get_value(affirmitive_id, Options, ?wxID_OK),
+%   Callback = proplists:get_value(callback, Options),
+%   InitText = proplists:get_value(init_text, Options, []),
+% 
+%   Dialog = wxDialog:new(Parent, ?wxID_ANY, Title),
+% 
+%   Panel = wxPanel:new(Dialog),
+%   Sz = wxBoxSizer:new(?wxVERTICAL),
+%   wxSizer:addSpacer(Sz, 10),
+% 
+%   wxSizer:add(Sz, wxStaticText:new(Panel, ?wxID_ANY, HelpStr),
+%     [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT}]),
+%   wxSizer:addSpacer(Sz, 7),
+%   Input = wxTextCtrl:new(Panel, ?wxID_ANY, []),
+%   wxTextCtrl:setValue(Input, InitText),
+%   wxSizer:add(Sz, Input, [{border,10}, {flag, ?wxEXPAND bor ?wxLEFT bor ?wxRIGHT}, {proportion, 1}]),
+%   wxSizer:addSpacer(Sz, 15),
+% 
+%   ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
+%   wxSizer:addSpacer(ButtonSz, 10),
+%   wxSizer:add(ButtonSz, wxButton:new(Panel, ?wxID_CANCEL,
+%     [{label,"Cancel"}]), [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM}]),
+%   DefButton = wxButton:new(Panel, AffirmitiveId, [{label,OkLabel}]),
+%   wxButton:setDefault(DefButton),
+%   wxSizer:add(ButtonSz, DefButton, [{border,10}, {flag, ?wxEXPAND bor ?wxBOTTOM bor ?wxLEFT}]),
+%   wxSizer:addSpacer(ButtonSz, 10),
+%   wxSizer:add(Sz, ButtonSz),
+% 
+%   EvtOptions = [{userData, Input}],
+%   Result = case Callback of
+%     undefined ->
+%       %% Force events to propagate beyond this dialog
+%       wxDialog:setExtraStyle(Dialog, wxDialog:getExtraStyle(Dialog) band (bnot ?wxWS_EX_BLOCK_EVENTS)),
+%       [];
+%     Cb -> [{callback, Cb}]
+%   end,
+%   wxButton:connect(Dialog, command_button_clicked, EvtOptions ++ Result),
+% 
+%   wxPanel:setSizer(Panel, Sz),
+%   wxSizer:layout(Sz),
+%   wxSizer:setSizeHints(Sz, Dialog),
+%   wxDialog:show(Dialog),
+%   wxWindow:setFocusFromKbd(Input).
 
 
 %% =====================================================================
@@ -267,7 +267,7 @@ generic_dialog(Parent, Heading, Buttons, Option) ->
 
 
 %% =====================================================================
-%% @doc Display a choose directory dialog; gets a directory grom the
+%% @doc Display a choose directory dialog; gets a directory from the
 %% user.
 %% @private
 

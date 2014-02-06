@@ -18,40 +18,34 @@
 				 
 %% API
 -export([
-  start/1,
+  new/1,
   get_path/1,
+  copy_dir/1,
   set_focus/1,
   destroy/1
   ]).
 	
 %% Server state			 
 -record(state, {dialog,
-                parent,
-								path_tc,
-								path_input,
-								copy_cb,
-								desc_panel
+                input,
+                copy_dir :: boolean()
             	 }).
 
-%% Macros							 
--define(ID_BROWSE_PROJECTS, 200).
--define(ID_PROJ_PATH, 201).
--define(ID_DEFAULT_PATH_CB, 203).
--define(ID_DESCRIPTION, 204).
--define(ID_BITMAP_INFO, 0).
--define(ID_BITMAP_STOP, 1).
 
 
 %% =====================================================================
 %% Client API
 %% =====================================================================
 
-start(Parent) ->
+new(Parent) ->
   wx_object:start({local, ?MODULE}, ?MODULE, Parent, []).
   
 get_path(This) ->
   wx_object:call(This, path).
 
+copy_dir(This) ->
+  wx_object:call(This, copy).
+  
 set_focus(This) ->
 	wx_object:cast(This, setfocus).
 	
@@ -67,151 +61,65 @@ init(Parent) ->
   wx:batch(fun() -> do_init(Parent) end).
 
 do_init(Parent) ->
-	Dialog = wxDialog:new(Parent, ?wxID_ANY, "Import Project", 
-		[{size,{500,370}}, {style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}]),
-	wxDialog:centre(Dialog),
-	
-	%% Conditional compilation OSX
-	case os:type() of
-		{_, darwin} ->
-			wxPanel:setWindowVariant(Dialog, ?wxWINDOW_VARIANT_SMALL);
-		 _ -> ok
-	end,
-	
-  LRSizer = wxBoxSizer:new(?wxHORIZONTAL),
-  wxPanel:setSizer(Dialog, LRSizer),
-  wxSizer:addSpacer(LRSizer, 20),
+  Xrc = wxXmlResource:get(),
+  Dlg = wxDialog:new(),
+  ide_lib_dlg_wx:win_var(Dlg),
+  wxXmlResource:loadDialog(Xrc, Dlg, Parent, "import_proj"),
 
-  VertSizer = wxBoxSizer:new(?wxVERTICAL),
-	%% Header
-  wxSizer:addSpacer(VertSizer, 40),
-	wxSizer:add(VertSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Import an Erlang Project"), []),
-	wxSizer:addSpacer(VertSizer, 5),
-  wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 
-              [{flag, ?wxEXPAND}]),
-  wxSizer:addSpacer(VertSizer, 20),
+  Input = wxXmlResource:xrcctrl(Dlg, "import_input_tc", wxTextCtrl),
+  wxTextCtrl:connect(Input, command_text_updated),
   
-  FlexGridSz = wxFlexGridSizer:new(3, [{vgap, 10}, {hgap, 10}]),
-
-	%% Erlang project
-  wxSizer:add(FlexGridSz, wxStaticText:new(Dialog, ?wxID_ANY, "Erlang Project:"), []),
-	ProjPath = wxTextCtrl:new(Dialog, ?ID_PROJ_PATH, []),
-  wxSizer:add(FlexGridSz, ProjPath, [{proportion, 1}, {flag, ?wxEXPAND}]),
-	Browse = wxButton:new(Dialog, ?ID_BROWSE_PROJECTS, [{label, "Browse.."}]),
-  wxSizer:add(FlexGridSz, Browse, [{proportion, 0}]),
-	
-	%% Copy to erlang project directory checkbox
-  wxSizer:add(FlexGridSz, 0, 0, []),
-	CopyCb = wxCheckBox:new(Dialog, ?ID_DEFAULT_PATH_CB, "Copy to default project directory"),
-	wxCheckBox:setValue(CopyCb, false),
-  wxSizer:add(FlexGridSz,CopyCb, []),
-  wxSizer:add(FlexGridSz, 0, 0, []),
-   
-  wxFlexGridSizer:addGrowableCol(FlexGridSz, 1),                      
-  wxSizer:add(VertSizer, FlexGridSz, [{flag, ?wxEXPAND}, {proportion, 0}]),      
-  wxSizer:addSpacer(VertSizer, 20),   
-	
-  wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 
-              [{flag, ?wxEXPAND}]),
-  wxSizer:addSpacer(VertSizer, 20),
-
-	%% Decscription
-	wxSizer:add(VertSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Description"), []),
-	wxSizer:addSpacer(VertSizer, 5),  
-	Desc = wxPanel:new(Dialog),
-
-	wxPanel:setBackgroundColour(Desc, ?wxWHITE),
-	wxPanel:setForegroundColour(Desc, ?wxBLACK),
-	insert_desc(Desc, "Import a project."),
-	wxSizer:add(VertSizer, Desc, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:addSpacer(VertSizer, 40),
-	
-  wxSizer:add(VertSizer, wxStaticLine:new(Dialog, [{style, ?wxLI_HORIZONTAL}]), 
-              [{flag, ?wxEXPAND}]),
-	wxSizer:addSpacer(VertSizer, 20),
+  Browse = wxXmlResource:xrcctrl(Dlg, "import_browse_btn", wxButton),
+  DirPicker = fun(_E, _O) ->
+    case ide_lib_dlg_wx:get_dir(Parent) of
+      cancelled -> ok;
+      Path -> 
+        wxTextCtrl:setValue(Input, Path),
+        wxTextCtrl:setInsertionPointEnd(Input)
+    end
+  end,
+  wxButton:connect(Browse, command_button_clicked, [{callback, DirPicker}]),
   
-  %% Buttons
-  ButtonSz = wxBoxSizer:new(?wxHORIZONTAL),
-	wxSizer:addStretchSpacer(ButtonSz),
-	Finish = wxButton:new(Dialog, ?wxID_OK, [{label, "Finish"}]),
-	wxButton:disable(Finish),
-  wxSizer:add(ButtonSz, Finish, [{proportion, 0}]),
-	wxSizer:addSpacer(ButtonSz, 10),  
-  wxSizer:add(ButtonSz, wxButton:new(Dialog, ?wxID_CANCEL, [{label, "Cancel"}]), [{proportion, 0}]),
-	wxSizer:add(VertSizer, ButtonSz, [{flag, ?wxEXPAND}, {proportion, 0}]),   
-	wxSizer:addSpacer(VertSizer, 20),     
-  
-  wxSizer:add(LRSizer, VertSizer, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:addSpacer(LRSizer, 20),
-	
-	wxSizer:layout(LRSizer),
-		
-  %% Uses default handlers for ?wxID_CANCEL and close_window
-  wxDialog:connect(Dialog, command_button_clicked, [{id, ?ID_BROWSE_PROJECTS}]), 
-	wxDialog:connect(Dialog, command_button_clicked, [{id, ?wxID_OK}]), 
-  wxDialog:connect(Dialog, command_text_updated, [{skip, false}]),
-		
-	%% Setup the image list
-	ImageList = wxImageList:new(24,24),
-	wxImageList:add(ImageList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("information.png")))),
-	wxImageList:add(ImageList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("prohibition.png")))),
-	
+  wxDialog:connect(Dlg, command_button_clicked, [{id, ?wxID_OK}]),
+    
 	State = #state{
-		dialog=Dialog, 
-    parent=Parent,
-    path_tc=ProjPath,
-    copy_cb=CopyCb,
-		desc_panel=Desc
+		dialog=Dlg
 	},
   
-	{Dialog, State}.
+	{Dlg, State}.
       
 %% =====================================================================
 %% Event callbacks
 %% =====================================================================
 
 handle_event(#wx{event=#wxCommand{type=command_text_updated, cmdString=Str}}, State) ->
-  case Str of
-    [] ->
+  case validate(Str) of
+    false ->
+      %% write notice to description 
       wxWindow:disable(wxWindow:findWindowById(?wxID_OK));
-    _ ->
+    true ->
       wxWindow:enable(wxWindow:findWindowById(?wxID_OK))
   end,
-  {noreply, State#state{path_input=Str}};
-  
-handle_event(#wx{id=?ID_BROWSE_PROJECTS, event=#wxCommand{type=command_button_clicked}}, 
-             State=#state{parent=Parent, path_tc=PathTc}) ->
-	case ide_lib_dlg_wx:get_dir(Parent) of
-		cancelled -> ok;
-		Path -> 
-      wxTextCtrl:setValue(PathTc, Path),
-      wxTextCtrl:setInsertionPointEnd(PathTc)
-	end,
-	{noreply, State};
+  {noreply, State#state{input=Str}};
 
 handle_event(#wx{id=?wxID_OK, event=#wxCommand{type=command_button_clicked}}, 
-             State=#state{dialog=Dlg, path_tc=PathTc, copy_cb=Cb}) ->
-	Path = wxTextCtrl:getValue(PathTc), 
-  case wxCheckBox:isChecked(Cb) of
-    true -> %% Copy all files over to project directory
-      wxDialog:endModal(Dlg, 20);
-    false -> %% Leave where it is
-      wxDialog:endModal(Dlg, 30)
-  end,
-  {noreply, State}.
-
+             State=#state{dialog=Dlg}) ->
+  Cb = wxXmlResource:xrcctrl(Dlg, "import_copy_cb", wxCheckBox),
+  wxDialog:endModal(Dlg, ?wxID_OK),
+  {noreply, State#state{copy_dir=wxCheckBox:isChecked(Cb)}}.
 
 handle_info(Msg, State) ->
-  io:format( "Got Info ~p~nMsg:~p",[State, Msg]),
   {noreply,State}.
 
 handle_call(path, _From, State) ->
-  {reply, State#state.path_input, State};
+  {reply, State#state.input, State};
+handle_call(copy, _From, State) ->
+  {reply, State#state.copy_dir, State};
 handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State}.
 
-handle_cast(setfocus, State=#state{path_tc=Tc}) ->
-  wxWindow:setFocus(Tc),
+handle_cast(setfocus, State) ->
+  % wxWindow:setFocus(Tc),
   {noreply,State}.
 
 code_change(_, _, State) ->
@@ -225,6 +133,13 @@ terminate(_Reason, #state{dialog=Dialog}) ->
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
+
+%% @doc Validate this is a directory
+
+validate([]) -> false;
+validate(Str) ->
+  filelib:is_dir(Str).
+  
 	
 %% =====================================================================
 %% @doc Display information to the user within the 'Description' box.	

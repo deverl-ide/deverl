@@ -19,7 +19,8 @@
         open_new/1,
         read_file/1,
         save_as/2,
-        save/2
+        save/2,
+        copy_to_poject_dir/2
         ]).
 
 
@@ -35,10 +36,10 @@
 create_directory_structure(Path) ->
   try
     create_dir(Path),
-    create_dir(filename:join([Path, "ebin"])),
-    create_dir(filename:join([Path, "priv"])),
-    create_dir(filename:join([Path, "include"])),
-    create_dir(filename:join([Path, "src"])),
+    create_dir(Path, "ebin"),
+    create_dir(Path, "priv"),
+    create_dir(Path, "include"),
+    create_dir(Path, "src"),
 		Path
   catch
     throw:E -> throw(E)
@@ -140,6 +141,29 @@ save(Path, Contents) ->
 		error:{badmatch,{error,Error}} ->
       get_error_message(Error, Path)
 	end.
+  
+ 
+%% =====================================================================
+%% @doc Copy the directory at Source to Dest, providing they aren't in
+%% the same dir to begin with. The user will be notified if an error
+%% occurs.
+
+-spec copy_to_poject_dir(file:filename(), file:filename()) ->
+  ok | {error, term()}.
+
+copy_to_poject_dir(Source, Dest) ->
+  SubPath = string:sub_string(Source, 1, length(Dest)),
+  case string:equal(SubPath, Dest) of %% check we're not copying from/to same dir
+    true -> ok; %% same dir
+    false ->
+      case copy_dir_recursive(Source, Dest) of
+        ok -> ok;
+        {error, E} ->
+          Dlg = wxMessageDialog:new(wx:null(), E, [{caption, "Oops"}]),
+          wxMessageDialog:showModal(Dlg),
+          {error, E}
+      end
+  end.
 
 
 %% =====================================================================
@@ -147,9 +171,108 @@ save(Path, Contents) ->
 %% =====================================================================
 
 %% =====================================================================
-%% @doc Create directory Dir.
+%% @doc Recursively copy directory from Source to Dest.
+%% If an error occurs mid-operaiton the user will be notified, and given
+%% the choice to cancel or skip/continue. If they cancel any files
+%% copied up to that point will be deleted.
 
--spec create_dir(string()) -> ok | no_return().
+-spec copy_dir_recursive(file:filename(), file:filename()) -> ok | {error, string()}.
+
+copy_dir_recursive(Source, Dest) ->
+  case file:list_dir(Source) of
+    {ok, Files} ->
+      Root = filename:join(Dest, filename:basename(Source)),
+      try
+        ok = file:make_dir(Root),
+        copy_dir_recursive(Files, Source, Root)
+      catch
+        throw:cancelled -> %% User cancelled the op, cleanup
+          del_dir(filename:join(Dest, filename:basename(Source))); 
+          
+        _:{badmatch, {error, E}} -> 
+          {error, format_error_msg(E, Root)}
+      end;
+    {error, Error} ->
+      {error, format_error_msg(Error, Source)}
+  end.
+  
+copy_dir_recursive([], Source, Dest) -> ok;
+copy_dir_recursive([File | T], Source, Dest) ->
+  Cd = filename:join(Source, File),
+  case filelib:is_file(Cd) of
+    true ->
+      case filelib:is_dir(Cd) of
+        true -> %% Copy the directory recursively
+          Dir = filename:join(Dest, File),
+          ok = file:make_dir(Dir),
+          Files = list_dirs(Cd),
+          Files1 = lists:map(fun(L) -> filename:join(File, L) end, Files),
+          copy_dir_recursive(Files1, Source, Dest);
+        false -> %% Copy file
+          do_copy(Cd, filename:join(Dest, File))
+      end,
+      copy_dir_recursive(T, Source, Dest), %% Process the rest of the list
+      ok;
+    false -> ok
+  end.
+  
+do_copy(Source, Dest) ->
+  case file:copy(Source, Dest) of
+    {ok, _Copied} -> ok;
+    {error, Error} -> 
+      notify_error(Error, Source)
+  end.
+  
+list_dirs(Name) ->
+  case file:list_dir(Name) of
+    {ok, Filenames} ->
+      Filenames;
+    {error, Error} ->
+      notify_error(Error, Name),
+      []
+  end.
+  
+%% Notify the user of a problem mid-operation. i.e. Trying to copy a file
+%% without permission.  
+  
+notify_error(Error, Path) ->
+  Msg = format_error_msg(Error, Path) ++ 
+        "\n\nClick Ok to continue, or Cancel to stop the operation.",
+  Dlg = wxMessageDialog:new(wx:null(), Msg, [{caption, "Oops"}, {style, ?wxOK bor ?wxCANCEL}]),
+  case wxMessageDialog:showModal(Dlg) of
+    ?wxID_CANCEL -> %% Stop the operation
+      throw(cancelled);
+    ?wxID_OK -> ok
+  end.
+ 
+del_dir(Dir) ->
+   lists:foreach(fun(D) ->
+                    ok = file:del_dir(D)
+                 end, del_all_files([Dir], [])).
+ 
+del_all_files([], EmptyDirs) ->
+   EmptyDirs;
+del_all_files([Dir | T], EmptyDirs) ->
+   {ok, FilesInDir} = file:list_dir(Dir),
+   {Files, Dirs} = lists:foldl(fun(F, {Fs, Ds}) ->
+                                  Path = Dir ++ "/" ++ F,
+                                  case filelib:is_dir(Path) of
+                                     true ->
+                                          {Fs, [Path | Ds]};
+                                     false ->
+                                          {[Path | Fs], Ds}
+                                  end
+                               end, {[],[]}, FilesInDir),
+   lists:foreach(fun(F) ->
+                         ok = file:delete(F)
+                 end, Files),
+   del_all_files(T ++ Dirs, [Dir | EmptyDirs]). 
+  
+%% =====================================================================
+%% @doc Create directory Dir.
+%% @throws an error :: string()
+
+% -spec create_dir(string()) -> ok | no_return().
 
 create_dir(Dir) ->
 	case file:make_dir(Dir) of
@@ -158,27 +281,47 @@ create_dir(Dir) ->
     ok ->
       ok
 	end.
+  
+create_dir(Dest, Name) ->
+  create_dir(Dest, Name, []).
 
+create_dir(Dest, Name, Options) ->
+  Path = filename:join(Dest, Name),
+  Msg = proplists:get_value(use_in_error, Options, Path),
+	case file:make_dir(Path) of
+    {error, Error} ->
+      get_error_message(Error, Msg);
+    ok ->
+      ok
+	end.
 
 %% =====================================================================
 %% @doc Get a more comprehensive error message.
 
 -spec get_error_message(string(), string()) -> no_return().
 
-get_error_message(Error, Path) ->
-  Filename = filename:basename(Path),
+get_error_message(Error, Filename) ->
+  % Filename = filename:basename(Path),
   case Error of
     eacces ->
-			throw("Cannot access " ++ Filename ++ ", check your permissions.");
+			throw("Permission denied.\n\nCannot access " ++ Filename ++ ", please check your permissions.");
 		eexist ->
 			throw(Filename ++ " already exists.");
 		enoent ->
-			throw("The path " ++ Path ++ " is invalid.");
+			throw("No such file or directory: " ++ Filename);
 		enospc ->
 			throw("There is a no space left on the device.");
 		_ ->
   		throw("An error occurred.")
   end.
+  
+format_error_msg(eacces) -> "Permission denied. Please check your permissions.".
+format_error_msg(eacces, Path) -> "Permission denied.\n\nCannot access " ++ Path ++ ", please check your permissions.";
+format_error_msg(eexist, Path) -> "The file already exists.";
+format_error_msg(enoent, Path) -> "No such file or directory.";
+format_error_msg(enospc, Path) -> "There is no space left on the device. The disk is full.";
+format_error_msg(enotdir, Path) -> "Not a directory.";
+format_error_msg(_Posix, Path) -> "An error occured.".
 
 
 %% =====================================================================
