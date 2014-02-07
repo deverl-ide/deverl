@@ -562,7 +562,9 @@ handle_event(#wx{id=?MENU_ID_PREV_TAB}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?wxID_ABOUT}, State) ->
-  ide_dlg_about_wx:start(State#state.frame),
+  Dlg = ide_dlg_about_wx:new(State#state.frame),
+  wxDialog:showModal(Dlg),
+  ide_dlg_about_wx:destroy(Dlg),
   {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_SEARCH_DOC}, State) ->

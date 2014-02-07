@@ -286,25 +286,29 @@ build_toolbar(Frame) ->
   wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
 	%% Id, StatusBar help, filename/art id, args, add seperator
 	Tools = [  
-      {?wxID_NEW, "ToolTip", {custom, "document_08.png"},    
-      % {?wxID_NEW, "ToolTip", {custom, "file01.png"},
+      % {?wxID_NEW, "ToolTip", {custom, "document_08.png"},    
+      {?wxID_NEW, "ToolTip", {custom, "tom1.png"},
   			[{shortHelp, "Create a new document"}], false},
-      {?wxID_OPEN, "ToolTip", {custom, "document_06.png"},   
-      % {?wxID_OPEN, "ToolTip", {custom, "file02.png"},   
+      % {?wxID_OPEN, "ToolTip", {custom, "document_06.png"},   
+      {?wxID_OPEN, "ToolTip", {custom, "tom2.png"},   
   			[{shortHelp, "Open an existing document"}], false},
-      {?wxID_SAVE, "ToolTip", {custom, "document_12.png"},   
-      % {?wxID_SAVE, "ToolTip", {custom, "file03.png"},   
+      % {?wxID_SAVE, "ToolTip", {custom, "document_12.png"},   
+      {?wxID_SAVE, "ToolTip", {custom, "tom3.png"},   
   			[{shortHelp, "Save the current document"}], false}, 
-      {?wxID_CLOSE, "ToolTip", {custom, "document_03.png"},  
+      {?wxID_CLOSE, "ToolTip", {custom, "tom4.png"},  
       % {?wxID_CLOSE, "ToolTip", {custom, "file04.png"},  
   			[{shortHelp, "Close the current document"}], false},
-  		{?MENU_ID_NEW_PROJECT, "ToolTip", {custom, "folders_08.png"},    
+      % {?MENU_ID_NEW_PROJECT, "ToolTip", {custom, "folders_08.png"},    
+  		{?MENU_ID_NEW_PROJECT, "ToolTip", {custom, "tom5.png"},    
   			[{shortHelp, "Create a new project"}], false},
-  		{?MENU_ID_OPEN_PROJECT, "ToolTip", {custom, "folders_12.png"},   
+      % {?MENU_ID_OPEN_PROJECT, "ToolTip", {custom, "folders_12.png"},   
+  		{?MENU_ID_OPEN_PROJECT, "ToolTip", {custom, "tom6.png"},   
   			[{shortHelp, "Open an existing project"}], false},
-  		{?MENU_ID_SAVE_PROJECT, "ToolTip", {custom, "folders_06.png"},   
+  		{?MENU_ID_SAVE_PROJECT, "ToolTip", {custom, "tom7.png"},   
+      % {?MENU_ID_SAVE_PROJECT, "ToolTip", {custom, "folders_06.png"},   
   			[{shortHelp, "Save the current project"}], false},			
-  		{?MENU_ID_CLOSE_PROJECT, "ToolTip", {custom, "folders_03.png"},  
+  		{?MENU_ID_CLOSE_PROJECT, "ToolTip", {custom, "tom8.png"},  
+      % {?MENU_ID_CLOSE_PROJECT, "ToolTip", {custom, "folders_03.png"},  
   			[{shortHelp, "Close the current project"}], true},
   		{?MENU_ID_COMPILE_FILE, "ToolTip", {custom, "document_10.png"},  
   			[{shortHelp, "Compile the current file"}], false},
@@ -340,6 +344,7 @@ build_toolbar(Frame) ->
             end,  
 
 	[AddTool(Tool) || Tool <- Tools],
+    
 	wxToolBar:realize(ToolBar).
 
 
