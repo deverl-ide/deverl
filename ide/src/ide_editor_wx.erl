@@ -545,7 +545,7 @@ handle_cast(show_search, State=#state{main_sz=Sz, search=#search{tc=Tc}}) ->
 handle_sync_event(#wx{event=#wxKey{}, userData=This}, Event, #state{stc=Editor}) ->
 	wxEvent:skip(Event),
 	wx_object:cast(This, ref), %% Serviced when caret has moved
-	?stc:setCaretWidth(Editor, 1),
+	%?stc:setCaretWidth(Editor, 1), %% This line causes lag while typing in Linux
 	ok;
 
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
