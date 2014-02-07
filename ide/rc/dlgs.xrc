@@ -2442,4 +2442,75 @@
 			</object>
 		</object>
 	</object>
+	<object class="wxDialog" name="message">
+		<style>wxDEFAULT_DIALOG_STYLE</style>
+		<title></title>
+		<centered>1</centered>
+		<object class="wxBoxSizer">
+			<orient>wxHORIZONTAL</orient>
+			<object class="sizeritem">
+				<option>0</option>
+				<flag>wxALL</flag>
+				<border>10</border>
+				<object class="wxStaticBitmap" name="m_bitmap9">
+					<size>100,100</size>
+					<bitmap>dlg_tmp.png</bitmap>
+				</object>
+			</object>
+			<object class="sizeritem">
+				<option>1</option>
+				<flag>wxBOTTOM|wxEXPAND|wxRIGHT|wxTOP</flag>
+				<border>5</border>
+				<object class="wxPanel" name="panel">
+					<style>wxTAB_TRAVERSAL</style>
+					<object class="wxBoxSizer">
+						<orient>wxVERTICAL</orient>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
+							<object class="wxStaticText" name="caption">
+								<hidden>1</hidden>
+								<font>
+									<size>13</size>
+									<family>swiss</family>
+									<style>normal</style>
+									<weight>bold</weight>
+									<underlined>0</underlined>
+								</font>
+								<label>caption</label>
+								<wrap>350</wrap>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
+							<object class="wxStaticText" name="text1">
+								<hidden>1</hidden>
+								<label>text1</label>
+								<wrap>350</wrap>
+							</object>
+						</object>
+						<object class="sizeritem">
+							<option>0</option>
+							<flag>wxALL</flag>
+							<border>5</border>
+							<object class="wxStaticText" name="text2">
+								<hidden>1</hidden>
+								<label>text2</label>
+								<wrap>-1</wrap>
+							</object>
+						</object>
+					</object>
+				</object>
+			</object>
+			<object class="spacer">
+				<option>0</option>
+				<flag>wxEXPAND</flag>
+				<border>5</border>
+				<size>0,0</size>
+			</object>
+		</object>
+	</object>
 </resource>

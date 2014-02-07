@@ -99,8 +99,8 @@ new_project(Parent) ->
         Path = ide_io:create_directory_structure(ide_dlg_new_proj_wx:get_path(Dlg)),
         add_project(Path)
       catch
-        throw:E ->
-          ide_lib_dlg_wx:msg_error(Parent, E)
+        throw:Error ->
+          ide_lib_dlg_wx:message_quick(Parent, "Oops", Error)
       end;
     ?wxID_CANCEL ->
       ok
@@ -281,13 +281,11 @@ import(Parent) ->
         Path = ide_dlg_import_proj_wx:get_path(Dlg),
         case ide_dlg_import_proj_wx:copy_dir(Dlg) of
           true -> %% Copy the directory to 
-            wx_misc:beginBusyCursor(),
             case ide_io:copy_to_poject_dir(Path, ide_sys_pref_gen:get_preference(project_directory)) of
               ok ->
                 ide_proj_man:add_project(Path);
               {error, _} -> ok
-            end,
-            wx_misc:endBusyCursor();
+            end;
           false -> 
             ok
         end;
@@ -345,22 +343,23 @@ handle_call({get_root, ProjectId}, _From, State=#state{projects=Projects}) ->
 	{reply, Root, State};
 
 handle_call({get_build_config, ProjectId}, _From, State=#state{projects=Projects0}) ->
-	#project{build_config=Bc0, root=Root}=Project = proplists:get_value(ProjectId, Projects0),
-  {Bc1, Projects1} = case Bc0 of
-    undefined -> %% Attempt to read the config file
-      Bc2 = load_build_config(Root),
-      Tmp = proplists:delete(ProjectId, Projects0),
-      {Bc2, [{ProjectId, Project#project{build_config=Bc2}} | Tmp]};
-    C ->
-      {C, Projects0}
-  end,
-  M = proplists:get_value(module, Bc1),
-  F = proplists:get_value(function, Bc1),
-  Bc3 = case M =:= [] orelse F =:= [] of
-    true -> undefined;
-    _ -> Bc1
-  end,
-	{reply, Bc3, State#state{projects=Projects1}};
+  % #project{build_config=Bc0, root=Root}=Project = proplists:get_value(ProjectId, Projects0),
+  %   {Bc1, Projects1} = case Bc0 of
+  %     undefined -> %% Attempt to read the config file
+  %       Bc2 = load_build_config(Root),
+  %       Tmp = proplists:delete(ProjectId, Projects0),
+  %       {Bc2, [{ProjectId, Project#project{build_config=Bc2}} | Tmp]};
+  %     C ->
+  %       {C, Projects0}
+  %   end,
+  %   M = proplists:get_value(module, Bc1),
+  %   F = proplists:get_value(function, Bc1),
+  %   Bc3 = case M =:= [] orelse F =:= [] of
+  %     true -> undefined;
+  %     _ -> Bc1
+  %   end,
+  % {reply, Bc3, State#state{projects=Projects1}};
+	{reply, undefined, State};
 
 handle_call(close_project, _From, State=#state{frame=Frame, active_project=ActiveProject, projects=Projects}) ->
   ide_proj_tree_wx:remove_project(ActiveProject),

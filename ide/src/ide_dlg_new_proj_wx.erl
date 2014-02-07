@@ -54,7 +54,7 @@ get_path(This) ->
 init(Parent) ->
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
-  ide_lib_dlg_wx:win_var(Dlg),
+  ide_lib_dlg_wx:win_variant(Dlg),
 
   %% Load XRC (Assumes all XRC handlers init previously)
   wxXmlResource:loadDialog(Xrc, Dlg, Parent, "new_project"),

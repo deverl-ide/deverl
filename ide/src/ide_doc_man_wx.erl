@@ -54,7 +54,8 @@
                 page_to_doc_id :: [{wxWindow:wxWindow(), document_id()}],
                 doc_records :: [document_record()],
 								sizer,
-								parent
+								parent,
+                frame
                 }).
 
 
@@ -277,6 +278,7 @@ get_standalone_src_files() ->
 
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
+  Frame = proplists:get_value(frame, Config),
 
 	Style = (0
 			bor ?wxAUI_NB_TOP
@@ -306,7 +308,8 @@ init(Config) ->
                  page_to_doc_id=[],
                  doc_records=[],
                  sizer=Sz,
-                 parent=Parent},
+                 parent=Parent,
+                 frame=Frame},
 
   {Panel, State}.
 
@@ -382,7 +385,7 @@ handle_call(stdln_src, _From, State=#state{doc_records=DocRecords}) ->
   {reply, SrcFiles, State};
 
 handle_call({get_modified_docs, DocIdList}, _From,
-				    State=#state{parent=Parent, doc_records=DocRecords}) ->
+				    State=#state{parent=Parent, frame=Frame, doc_records=DocRecords}) ->
   List = lists:foldl(
     fun(DocId, Acc) ->
       Record = get_record(DocId, DocRecords),
@@ -393,7 +396,7 @@ handle_call({get_modified_docs, DocIdList}, _From,
           Acc
       end
     end, [], DocIdList),
-  {reply, {List, Parent}, State};
+  {reply, {List, Frame}, State};
 
 handle_call({get_doc_names, DocIdList}, _From,
 				    State=#state{doc_records=DocRecords}) ->
@@ -534,17 +537,20 @@ load_editor_contents(Editor, Path) ->
   cancelled | ok.
 
 show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocIdList) ->
-  Dialog = ide_lib_dlg_wx:save_changes_dialog(Parent, ModifiedDocNames),
-  case wxDialog:showModal(Dialog) of
-		?wxID_CANCEL -> %% Cancel close
-			cancelled;
-		?wxID_REVERT_TO_SAVED ->  %% Close without saving
-			close(DocIdList);
-		?wxID_SAVE -> %% Save the document
+  Dlg = ide_lib_dlg_wx:message(wx:null(), 
+    [{caption, "The following documents have been modified. Would you like to save the changes?"},
+     {text1, {list, ModifiedDocNames}},
+     {text2, "All changes will be lost if you don't save."},
+     {buttons, [?wxID_SAVE, ?wxID_CANCEL, ?wxID_NO]}]),
+  Result = case wxDialog:showModal(Dlg) of
+    ?wxID_CANCEL -> cancelled;
+    ?wxID_NO -> close(DocIdList); %% Don't save
+    ?wxID_SAVE ->
       close(lists:subtract(DocIdList, ModifiedDocIdList)),
       save_and_close(ModifiedDocIdList)
-	end.
-
+  end,
+  wxDialog:destroy(Dlg),
+  Result.
 
 %% =====================================================================
 %% @doc
@@ -579,7 +585,7 @@ save_documents([DocId|DocIdList], {Saved, Failed}) ->
       ide_editor_wx:set_savepoint(Record#document.editor),
       save_documents(DocIdList, {[DocId|Saved], Failed});
     {error, {Msg, Parent}} ->
-      ide_lib_dlg_wx:msg_error(Parent, Msg),
+      ide_lib_dlg_wx:message_quick(Parent, "Oops", Msg),
       save_documents(DocIdList, {Saved, [DocId|Failed]})
   end.
 

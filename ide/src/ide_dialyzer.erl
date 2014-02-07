@@ -62,13 +62,14 @@ run1(Files) ->
   ok.
 
 init(Parent) ->
-  Msg = "Before Dialyzer is ran, the PLT table must be built.\nWould you like to build it now?",
-  Dlg = wxMessageDialog:new(Parent, Msg, [{style, ?wxYES_NO}]),
-  case wxMessageDialog:showModal(Dlg) of
-    ?wxID_YES ->
+  Dlg = ide_lib_dlg_wx:message(Parent, 
+    [{caption, "Before Dialyzer is ran, the PLT table must be built. Would you like to build it now?"},
+     {buttons, [?wxID_CANCEL, ?wxID_OK]}]),
+  case wxDialog:showModal(Dlg) of
+    ?wxID_OK ->
       wxDialog:destroy(Dlg),
       spawn_link(?MODULE, build_plt, [Parent, wx:get_env()]);
-    ?wxID_NO ->
+    ?wxID_CANCEL ->
       wxDialog:destroy(Dlg),
       cancelled
   end.

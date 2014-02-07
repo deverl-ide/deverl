@@ -61,7 +61,7 @@ init({Parent, Config}) ->
   
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
-  ide_lib_dlg_wx:win_var(Dlg),
+  ide_lib_dlg_wx:win_variant(Dlg),
   wxXmlResource:loadDialog(Xrc, Dlg, Parent, "dialyzer"),
 
   Choice = wxXmlResource:xrcctrl(Dlg, "source", wxChoice), 

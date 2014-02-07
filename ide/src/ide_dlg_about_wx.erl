@@ -49,7 +49,7 @@ init(Parent) ->
   
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
-  ide_lib_dlg_wx:win_var(Dlg),
+  ide_lib_dlg_wx:win_variant(Dlg),
   wxXmlResource:loadDialog(Xrc, Dlg, Parent, "about"),
   
   Html0 = wxXmlResource:xrcctrl(Dlg, "about_html", wxHtmlWindow),

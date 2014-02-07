@@ -55,7 +55,7 @@ destroy(This) ->
 init({Parent, Projects}) ->    
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
-  ide_lib_dlg_wx:win_var(Dlg),
+  ide_lib_dlg_wx:win_variant(Dlg),
   wxXmlResource:loadDialog(Xrc, Dlg, Parent, "open_project"),
 
 	ListCtrl = wxXmlResource:xrcctrl(Dlg, "listctrl", wxListCtrl),

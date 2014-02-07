@@ -114,17 +114,17 @@ init(Options) ->
 	Wx = wx:new(Options),
 	WxEnv = wx:get_env(),
 	process_flag(trap_exit, true),
+  
+  %% Initialise XRC
+  Xrc = wxXmlResource:get(),
+  wxXmlResource:initAllHandlers(Xrc),
+  true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("dlgs.xrc")),
 	
   %% Load modules that should be started by OTP Application and not here
   ide_sys_pref_gen:start([{wx_env, WxEnv}]),
   
   %% UI saved pref
   UIPrefs = ide_sys_pref_gen:get_preference(ui_prefs),
-  
-  %% Initialise XRC
-  Xrc = wxXmlResource:get(),
-  wxXmlResource:initAllHandlers(Xrc),
-  true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("dlgs.xrc")),
   
 	Frame = wxFrame:new(Wx, ?wxID_ANY, ?FRAME_TITLE, [{size, UIPrefs#ui_prefs.frame_size}]),
 	wxFrame:connect(Frame, close_window),
@@ -153,7 +153,7 @@ init(Options) ->
 	%% Menubar
   MenuGroups = ide_menu:create([{parent, Frame}]),
 	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},{proportion, 0}]),
-	Workspace = create_workspace(SplitterSidebar),
+	Workspace = create_workspace(SplitterSidebar, Frame),
 
 	%% The left window
 	LeftWindow = create_left_window(Frame, SplitterSidebar),
@@ -542,6 +542,52 @@ handle_event(#wx{id=?MENU_ID_DIALYZER}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_ADD_TO_PLT}, State) ->
+  % Dlg = ide_lib_dlg_wx:message(wx:null(), 
+  %   [{caption, "There once was a boy called Tom. There once was a boy called Tom. He was ace."},
+  %    {text1, "Who lived in a flat in Canterbury"},
+  %    {text2, {list, ["tom", "bob", "mon", "cd"]}},
+  %    {buttons, [?wxID_SAVE, ?wxID_CANCEL, ?wxID_NO]}]),
+  % case wxDialog:showModal(Dlg) of
+  %   Result ->
+  %     io:format("RESULT: ~p~n", [Result])
+  %   
+  %   
+  % end,
+  ide_lib_dlg_wx:message_quick(wx:null(), "Oops", "This is an error message"),
+  
+  %% Testing dialog
+  %% If you end up with buttons in strange positions. You are
+  %% probably using an incorrect cobination of button id's.
+  
+  %% button :: wxID_OK | wxID_YES | wxID_SAVE | wxID_APPLY | wxID_NO | wxID_CANCEL | wxID_HELP | wxID_CONTEXT_HELP
+  %% {buttons, [button]}
+  %% {caption, string()}
+  %% {text1, string() | [string()] } %% if a list is passed each item is printed on a seperate line.
+  %% {text2, string()}
+  
+  %% fold over the buttons, ensure they're valid
+  % foldl(fun(Btn) ->
+  %   )
+  
+  % Xrc = wxXmlResource:get(),
+  % Dlg = wxDialog:new(),
+  % ide_lib_dlg_wx:win_variant(Dlg),
+  % wxXmlResource:loadDialog(Xrc, Dlg, wx:null(), "message"),
+  
+  % Panel = wxXmlResource:xrcctrl(Dlg, "panel", wxPanel),
+  % Sz = wxPanel:getSizer(Panel),
+ %  Btn0 = wxButton:new(Panel, ?wxID_NO),
+ %  Btn1 = wxButton:new(Panel, ?wxID_SAVE),
+ %  Btn2 = wxButton:new(Panel, ?wxID_CANCEL),
+ %  BtnSz = wxStdDialogButtonSizer:new(),
+ %  wxStdDialogButtonSizer:addButton(BtnSz, Btn0), 
+ %  wxStdDialogButtonSizer:addButton(BtnSz, Btn1), 
+ %  wxStdDialogButtonSizer:addButton(BtnSz, Btn2),
+ %  wxStdDialogButtonSizer:realize(BtnSz),
+ %  wxSizer:add(Sz, BtnSz, [{flag, ?wxEXPAND bor ?wxTOP}, {border, 15}]),
+  % wxDialog:fit(Dlg),
+  % wxDialog:showModal(Dlg),
+  
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_PLT_INFO}, State) ->
@@ -869,10 +915,10 @@ create_left_window(Frame, Parent) ->
 %% =====================================================================
 %% @doc Create the editor workspace.
 
--spec create_workspace(wxWindow:wxWindow()) -> wx_object:wx_object().
+-spec create_workspace(wxWindow:wxWindow(), wxWindow:wxWindow()) -> wx_object:wx_object().
 
-create_workspace(Parent) ->
-	ide_doc_man_wx:start([{parent, Parent}]).
+create_workspace(Parent, Frame) ->
+	ide_doc_man_wx:start([{parent, Parent}, {frame, Frame}]).
 
 
 %% =====================================================================

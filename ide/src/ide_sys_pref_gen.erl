@@ -154,11 +154,12 @@ initialise_prefs(Table) ->
       case file:read_file_info(ProjDir) of
         {error, _Reason0} ->
           %% Project dir invalid, inform user, reset to default
-          Dlg = wxMessageDialog:new(wx:null(), 
-            "Your project home directory " ++ ProjDir ++ " has been moved or deleted.\n\n"
-            "We've reset it to " ++ wx_misc:getHomeDir() ++ ".", [{caption, "Oops"}]),
-          wxMessageDialog:showModal(Dlg),
-          wxMessageDialog:destroy(Dlg),
+          Dlg = ide_lib_dlg_wx:message(wx:null(), 
+            [{caption, "Your project home directory " ++ ProjDir ++ " has been moved or deleted."},
+             {text1, "We've reset it to " ++ wx_misc:getHomeDir()},
+             {buttons, [?wxID_OK]}]),
+          wxDialog:showModal(Dlg),
+          wxDialog:destroy(Dlg),
           ets:update_element(Table, project_directory, {2, DefaultDir}),
           ensure_proj_dir(DefaultDir);
         FileInfo0 ->
@@ -208,9 +209,14 @@ initialise_prefs(Table) ->
   case lists:foldl(IsPath, [], Paths) of
     [] -> ok;
     Err -> %% Couldn't find an exe
-      Dlg1 = wxMessageDialog:new(wx:null(), Err, [{caption, "Oops"}]),
-      wxMessageDialog:showModal(Dlg1),
-      wxMessageDialog:destroy(Dlg1)
+      % Dlg1 = wxMessageDialog:new(wx:null(), Err, [{caption, "Oops"}]),
+      Dlg = ide_lib_dlg_wx:message(wx:null(), 
+        [{caption, "Oops."},
+         {text1, Err},
+         {text2, "You can set the path manually in the preferences."},
+         {buttons, [?wxID_OK]}]),
+      wxDialog:showModal(Dlg),
+      wxDialog:destroy(Dlg),
   end,
   
   %% Update general prefs

@@ -158,10 +158,9 @@ copy_to_poject_dir(Source, Dest) ->
     false ->
       case copy_dir_recursive(Source, Dest) of
         ok -> ok;
-        {error, E} ->
-          Dlg = wxMessageDialog:new(wx:null(), E, [{caption, "Oops"}]),
-          wxMessageDialog:showModal(Dlg),
-          {error, E}
+        {error, Error} ->
+          Dlg = ide_lib_dlg_wx:message_quick(wx:null(), "Oops", Error),
+          {error, Error}
       end
   end.
 
@@ -234,39 +233,46 @@ list_dirs(Name) ->
   
 %% Notify the user of a problem mid-operation. i.e. Trying to copy a file
 %% without permission.  
-  
 notify_error(Error, Path) ->
-  Msg = format_error_msg(Error, Path) ++ 
-        "\n\nClick Ok to continue, or Cancel to stop the operation.",
-  Dlg = wxMessageDialog:new(wx:null(), Msg, [{caption, "Oops"}, {style, ?wxOK bor ?wxCANCEL}]),
-  case wxMessageDialog:showModal(Dlg) of
+  Dlg = ide_lib_dlg_wx:message(wx:null(), 
+    [{caption, "Oops"},
+     {text1, format_error_msg(Error, Path)},
+     {text2, "Click Ok to continue, or Cancel to stop the operation."},
+     {buttons, [?wxID_CANCEL, ?wxID_OK]}]),
+  case wxDialog:showModal(Dlg) of
     ?wxID_CANCEL -> %% Stop the operation
+      wxDialog:destroy(Dlg),
       throw(cancelled);
-    ?wxID_OK -> ok
+    ?wxID_OK -> wxDialog:destroy(Dlg)
   end.
  
+
+%% =====================================================================
+%% @doc Delete the directory Dir. This will recursively delete all
+%% contents of the directory.
+
 del_dir(Dir) ->
-   lists:foreach(fun(D) ->
-                    ok = file:del_dir(D)
-                 end, del_all_files([Dir], [])).
+  lists:foreach(fun(D) ->
+    ok = file:del_dir(D)
+  end, del_all_files([Dir], [])).
  
 del_all_files([], EmptyDirs) ->
-   EmptyDirs;
+  EmptyDirs;
 del_all_files([Dir | T], EmptyDirs) ->
-   {ok, FilesInDir} = file:list_dir(Dir),
-   {Files, Dirs} = lists:foldl(fun(F, {Fs, Ds}) ->
-                                  Path = Dir ++ "/" ++ F,
-                                  case filelib:is_dir(Path) of
-                                     true ->
-                                          {Fs, [Path | Ds]};
-                                     false ->
-                                          {[Path | Fs], Ds}
-                                  end
-                               end, {[],[]}, FilesInDir),
-   lists:foreach(fun(F) ->
-                         ok = file:delete(F)
-                 end, Files),
-   del_all_files(T ++ Dirs, [Dir | EmptyDirs]). 
+  {ok, FilesInDir} = file:list_dir(Dir),
+  {Files, Dirs} = lists:foldl(fun(F, {Fs, Ds}) ->
+    Path = Dir ++ "/" ++ F,
+    case filelib:is_dir(Path) of
+      true ->
+        {Fs, [Path | Ds]};
+      false ->
+        {[Path | Fs], Ds}
+    end
+  end, {[],[]}, FilesInDir),
+  lists:foreach(fun(F) ->
+    ok = file:delete(F)
+  end, Files),
+  del_all_files(T ++ Dirs, [Dir | EmptyDirs]). 
   
 %% =====================================================================
 %% @doc Create directory Dir.

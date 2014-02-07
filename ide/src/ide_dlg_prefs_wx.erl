@@ -55,7 +55,7 @@ init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Xrc = wxXmlResource:get(),
   Frame = wxFrame:new(),
-  ide_lib_dlg_wx:win_var(Frame),
+  ide_lib_dlg_wx:win_variant(Frame),
   wxXmlResource:loadFrame(Xrc, Frame, Parent, "prefs"),
   
   %% Connect tools

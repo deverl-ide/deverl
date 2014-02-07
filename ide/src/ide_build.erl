@@ -181,13 +181,18 @@ build_project(Parent, ProjectId) ->
 -spec notify_missing_config(wxFrame:wxFrame()) -> ok | cancelled | error.
 
 notify_missing_config(Parent) ->
-  Dialog = ide_lib_dlg_wx:notify_missing_config(Parent),
-  case wxDialog:showModal(Dialog) of
+  Dlg = ide_lib_dlg_wx:message(wx:null(), 
+    [{caption, "The project needs to be configured before it can be run."},
+     {text1, "Do you want to configure it now?"},
+     {buttons, [?wxID_CANCEL, ?wxID_OK]}]),
+  Result = case wxDialog:showModal(Dlg) of
 		?wxID_CANCEL ->
 			cancelled;
 		?wxID_OK ->
       ide_proj_man:set_project_configuration(Parent)
-	end.
+	end,
+  wxDialog:destroy(Dlg),
+  Result.
 
 
 %% =====================================================================

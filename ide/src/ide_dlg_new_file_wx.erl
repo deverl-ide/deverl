@@ -136,7 +136,7 @@ destroy(This) ->
 init({Parent, Projects, ActiveProject}) ->
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
-  ide_lib_dlg_wx:win_var(Dlg),
+  ide_lib_dlg_wx:win_variant(Dlg),
 
   %% Load XRC (Assumes all XRC handlers init previously)
   wxXmlResource:loadDialog(Xrc, Dlg, wx:null(), "new_file"),
@@ -487,7 +487,7 @@ add_project_data(ProjectChoice, [ProjectId|Projects]) ->
 custom_browse_dialog(Parent, Path, ProjectId) ->
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
-  ide_lib_dlg_wx:win_var(Dlg),
+  ide_lib_dlg_wx:win_variant(Dlg),
   wxXmlResource:loadDialog(Xrc, Dlg, Parent, "custom_tree_dlg"),
 
   Tree = wxXmlResource:xrcctrl(Dlg, "browse_tree", wxTreeCtrl),

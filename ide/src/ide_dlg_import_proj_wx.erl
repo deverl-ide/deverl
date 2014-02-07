@@ -63,7 +63,7 @@ init(Parent) ->
 do_init(Parent) ->
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
-  ide_lib_dlg_wx:win_var(Dlg),
+  ide_lib_dlg_wx:win_variant(Dlg),
   wxXmlResource:loadDialog(Xrc, Dlg, Parent, "import_proj"),
 
   Input = wxXmlResource:xrcctrl(Dlg, "import_input_tc", wxTextCtrl),
