@@ -53,6 +53,14 @@
 -define(ID_TOGGLE_LOG, 1).
 -define(ID_TOGGLE_OUTPUT, 2).
 
+%% Dynamic bitmaps
+-define(BITMAP_LOG_ON,  "log_on.png").
+-define(BITMAP_LOG_OFF,  "log_off.png").
+-define(BITMAP_OUTPUT_ON, "output_on.png").
+-define(BITMAP_OUTPUT_OFF, "output_off.png").
+-define(BITMAP_OUTPUT_SHOWN, "output_shown.png").
+-define(BITMAP_OUTPUT_HIDDEN, "output_hidden.png").
+
 %% =====================================================================
 %% Client API
 %% =====================================================================
@@ -243,9 +251,10 @@ handle_cast({title, Title}, State=#state{frame=Frame}) ->
 	wxFrame:setTitle(Frame, Str),
   {noreply, State};
   
-handle_cast({output_display, Id}, State=#state{splitter_output_pos=Pos}) ->
+handle_cast({output_display, Id}, State) ->
   Splitter = wx:typeCast(wxWindow:findWindowById(?SPLITTER_OUTPUT), wxSplitterWindow),
-  replace_output_window(Splitter, wxWindow:findWindowById(Id), Pos),
+  replace_output_window(Splitter, wxWindow:findWindowById(Id), 
+    State#state.splitter_output_active, State#state.splitter_output_pos),
   {noreply, State}.
 
 %% @hidden
@@ -317,7 +326,7 @@ handle_event(#wx{id=?SPLITTER_OUTPUT, event=#wxSplitter{type=command_splitter_un
   case wxWindow:isShown(Win) of
     true ->
       Btn = wx:typeCast(wxWindow:findWindowById(?BUTTON_HIDE_OUTPUT), wxBitmapButton),
-      Bmp = wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_down.png"))),
+      Bmp = wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(?BITMAP_OUTPUT_HIDDEN))),
       wxBitmapButton:setBitmapLabel(Btn, Bmp);
     false ->
       ok
@@ -336,9 +345,10 @@ handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State)
 % Output windows (log, output etc.)
 handle_event(#wx{userData={Splitter, Window}, event=#wxCommand{type=command_button_clicked}},
              State=#state{splitter_output_pos=Pos}) ->
-  replace_output_window(Splitter, Window, Pos),
+  replace_output_window(Splitter, Window, 
+    State#state.splitter_output_active, Pos),
   Btn = wx:typeCast(wxWindow:findWindowById(?BUTTON_HIDE_OUTPUT), wxBitmapButton),
-  Bmp = wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_left.png"))),
+  Bmp = wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(?BITMAP_OUTPUT_SHOWN))),
   wxBitmapButton:setBitmapLabel(Btn, Bmp),
   {noreply, State};
   
@@ -645,7 +655,6 @@ handle_event(#wx{id=Id0}, State)
 % wxEventHandler->proccess_event() function that would allow us to pass the event to the in-focus
 % control, and so this is the workaround we have adopted. wx2.8 erlangR16B02
 handle_event(#wx{id=?wxID_PASTE}, State) ->
-  io:format("PASTE~n"),
   Fw = wxWindow:findFocus(),
   Id = wxWindow:getId(Fw),
   case Id of
@@ -830,14 +839,19 @@ create_utils(ParentA) ->
   wxPanel:setSizer(ToolBar, ToolBarSz),
 
   ButtonFlags = [{style, ?wxBORDER_NONE}],
-  Button1 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_LOG, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
-  Button2 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_OUTPUT, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
-  Button3 = wxBitmapButton:new(ToolBar, ?BUTTON_HIDE_OUTPUT, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_left.png"))), ButtonFlags),
+  Button1 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_LOG, 
+    wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("log_on.png"))), ButtonFlags),
+  Button2 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_OUTPUT,
+    wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("output_off.png"))), ButtonFlags),
+  Button3 = wxBitmapButton:new(ToolBar, ?BUTTON_HIDE_OUTPUT,
+    wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("output_shown.png"))), ButtonFlags),
 
   %% Connect button handlers
   wxPanel:connect(Button1, command_button_clicked, [{userData, {Splitter, Log}}]),
   wxPanel:connect(Button2, command_button_clicked, [{userData, {Splitter, CompilerOutput}}]),
   wxPanel:connect(Button3, command_button_clicked, [{userData, Splitter}]),
+  
+  wxSplitterWindow:connect(Splitter, command_splitter_unsplit),
 
   SzFlags = [{border, 3}, {flag, ?wxALL}],
   wxSizer:add(ToolBarSz, Button1, SzFlags),
@@ -906,30 +920,35 @@ toggle_menu_item(MenuBar, ToolBar, ItemId, Enable) ->
 %% =====================================================================
 %% @doc Replace the the old output window with Window.
 
--spec replace_output_window(wxWindow:wxWindow(), wxWindow:wxWindow(), integer()) -> ok | boolean().
+-spec replace_output_window(wxSplitterWindow:wxSplitterWindow(), wxWindow:wxWindow(), 
+  wxWindow:wxWindow(), integer()) -> ok | boolean().
 
-replace_output_window(Splitter, Window, Pos) -> 
-  case wxSplitterWindow:isSplit(Splitter) of
+replace_output_window(Splitter, Window, OldWindow, Pos) ->
+  {Old, New} = case wxSplitterWindow:isSplit(Splitter) of
     true ->
       case wxWindow:isShown(Window) of
-        true -> ok;
+        true -> {ok, ok};
         false ->
-          OldWindow = wxSplitterWindow:getWindow2(Splitter),
-          wxSplitterWindow:replaceWindow(Splitter, OldWindow, Window),
-          wxWindow:hide(OldWindow),
-          wxWindow:show(Window)
+          Window2 = wxSplitterWindow:getWindow2(Splitter),
+          wxSplitterWindow:replaceWindow(Splitter, Window2, Window),
+          wxWindow:hide(Window2),
+          wxWindow:show(Window),
+          {Window2, Window}
       end;
     _ ->
       Window1 = wxSplitterWindow:getWindow1(Splitter),
       case wxWindow:getId(Window1) of
         ?WINDOW_CONSOLE -> %% console currently maximised
-          wxSplitterWindow:splitVertically(Splitter, Window1, Window, [{sashPosition, Pos}]);
+          wxSplitterWindow:splitVertically(Splitter, Window1, Window, [{sashPosition, Pos}]),
+          {OldWindow, Window};
         _ -> %% one of the output windows is maximised
           wxSplitterWindow:replaceWindow(Splitter, Window1, Window),
           wxWindow:hide(Window1),
-          wxWindow:show(Window)
+          wxWindow:show(Window),
+          {Window1, Window}
       end
-  end.
+  end,
+  toggle_button(Old, New).
 
 
 %% =====================================================================
@@ -944,20 +963,42 @@ show_hide_output(Splitter, PrevOutput, Pos) ->
     true -> %% hide
       Window2 = wxSplitterWindow:getWindow2(Splitter),
       wxSplitterWindow:unsplit(Splitter),
-      wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_down.png")))),
+      wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(?BITMAP_OUTPUT_HIDDEN)))),
       Window2;
     _ ->
       Window1 = wxSplitterWindow:getWindow1(Splitter),
       case wxWindow:getId(Window1) of
         ?WINDOW_CONSOLE -> %% console currently maximised
           wxSplitterWindow:splitVertically(Splitter, Window1, PrevOutput, [{sashPosition, Pos}]),
-          wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_left.png"))));
+          wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(?BITMAP_OUTPUT_SHOWN))));
         _ -> %% one of the output windows is maximised, hide it
           Console = wxWindow:findWindowById(?WINDOW_CONSOLE),
           wxSplitterWindow:replaceWindow(Splitter, Window1, Console),
           wxWindow:show(Console),
           wxWindow:hide(Window1),
-          wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_down.png"))))
+          wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(?BITMAP_OUTPUT_HIDDEN))))
       end,
       PrevOutput
   end.
+  
+
+toggle_button(ok, ok) ->  ok;
+toggle_button(Old, New) ->
+  Win0 = wxWindow:getId(Old),
+  Win1 = wxWindow:getId(New),
+  Toggle = fun(Id, Bool) ->
+    case Id of
+      ?WINDOW_LOG when Bool ->
+        {wx:typeCast(wxWindow:findWindowById(?ID_TOGGLE_LOG), wxBitmapButton), ?BITMAP_LOG_ON};
+      ?WINDOW_LOG ->
+        {wx:typeCast(wxWindow:findWindowById(?ID_TOGGLE_LOG), wxBitmapButton), ?BITMAP_LOG_OFF};
+      ?WINDOW_OUTPUT when Bool ->
+        {wx:typeCast(wxWindow:findWindowById(?ID_TOGGLE_OUTPUT), wxBitmapButton), ?BITMAP_OUTPUT_ON};
+      ?WINDOW_OUTPUT ->
+        {wx:typeCast(wxWindow:findWindowById(?ID_TOGGLE_OUTPUT), wxBitmapButton), ?BITMAP_OUTPUT_OFF}
+    end
+  end,
+  {BmpBtn0, IconName0} = Toggle(Win0, false),
+  {BmpBtn1, IconName1} = Toggle(Win1, true),
+  wxBitmapButton:setBitmapLabel(BmpBtn0, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(IconName0)))),
+  wxBitmapButton:setBitmapLabel(BmpBtn1, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(IconName1)))).
