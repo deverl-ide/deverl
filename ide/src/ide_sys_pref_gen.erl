@@ -209,14 +209,13 @@ initialise_prefs(Table) ->
   case lists:foldl(IsPath, [], Paths) of
     [] -> ok;
     Err -> %% Couldn't find an exe
-      % Dlg1 = wxMessageDialog:new(wx:null(), Err, [{caption, "Oops"}]),
-      Dlg = ide_lib_dlg_wx:message(wx:null(), 
+      Dlg1 = ide_lib_dlg_wx:message(wx:null(), 
         [{caption, "Oops."},
          {text1, Err},
          {text2, "You can set the path manually in the preferences."},
          {buttons, [?wxID_OK]}]),
-      wxDialog:showModal(Dlg),
-      wxDialog:destroy(Dlg),
+      wxDialog:showModal(Dlg1),
+      wxDialog:destroy(Dlg1)
   end,
   
   %% Update general prefs

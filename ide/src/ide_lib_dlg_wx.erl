@@ -56,16 +56,12 @@ win_variant(Dlg) ->
 %% =====================================================================
 %% @doc Display an error message to the user, with a single OK button.
 
-% message_quick(Parent, Msg) ->
-%   Dlg = message(Parent, [{caption, "Oops"}, {text1, Msg}, {buttons, [?wxID_OK]}]),
-%   wxDialog:showModal(Dlg),
-%   wxDialog:destroy(Dlg).
-
 message_quick(Parent, Caption, Msg) ->
   Dlg = message(Parent, [{caption, Caption}, {text1, Msg}, {buttons, [?wxID_OK]}]),
   wxDialog:showModal(Dlg),
   wxDialog:destroy(Dlg).
   
+
 %% =====================================================================
 %% @doc Display a customised (standard application formatting) 
 %% message dialog.
@@ -130,7 +126,7 @@ message(Parent, Options) ->
       undefined -> ok;
       {list, Items} ->
         Text1 = wxXmlResource:xrcctrl(Dlg, NameStr, wxStaticText),
-        Flat = lists:flatten([Item ++ io_lib:nl() || Item <- Items]),
+        Flat = string:strip(lists:flatten([Item ++ io_lib:nl() || Item <- Items]), both, $\n),
         SetText(Text1, Flat);
       Str -> 
         Text1 = wxXmlResource:xrcctrl(Dlg, NameStr, wxStaticText),

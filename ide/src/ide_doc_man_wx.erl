@@ -527,7 +527,7 @@ load_editor_contents(Editor, Path) ->
 		_Throw ->
 			io:format("LOAD EDITOR ERROR~n"),
       error
-	end.
+	end. 
 
 
 %% =====================================================================
@@ -538,7 +538,7 @@ load_editor_contents(Editor, Path) ->
 
 show_save_changes_dialog(Parent, ModifiedDocNames, ModifiedDocIdList, DocIdList) ->
   Dlg = ide_lib_dlg_wx:message(wx:null(), 
-    [{caption, "The following documents have been modified. Would you like to save the changes?"},
+    [{caption, "The following documents have been modified.\nWould you like to save the changes?"},
      {text1, {list, ModifiedDocNames}},
      {text2, "All changes will be lost if you don't save."},
      {buttons, [?wxID_SAVE, ?wxID_CANCEL, ?wxID_NO]}]),

@@ -400,7 +400,7 @@ generate_radio_submenu(Menu, [Label|T], ToCheck, StartId) ->
 disable_not_implemented(MenuBar, ToolBar) ->
   ToDisable = [?MENU_ID_FOLD_ALL,
                ?MENU_ID_UNFOLD_ALL ,
-               % ?MENU_ID_ADD_TO_PLT,
+               ?MENU_ID_ADD_TO_PLT,
                ?MENU_ID_PLT_INFO,
                ?MENU_ID_DIAL_WARN,
                ?MENU_ID_WRANGLER,
