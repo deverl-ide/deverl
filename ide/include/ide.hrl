@@ -153,6 +153,9 @@
 -define(WINDOW_OUTPUT, 503).
 -define(WINDOW_FUNCTION_SEARCH, 504).
 
+
+-define(CONSOLE, 1000). %% wxStyledTextCtrl
+
 %% Global colours
 -define(ROW_BG_EVEN, {250,250,250,255}).
 -define(ROW_BG_ODD, {237,243,254,255}).

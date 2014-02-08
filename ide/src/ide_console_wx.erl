@@ -156,11 +156,11 @@ paste(This) ->
 
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
-	Panel = wxPanel:new(Parent, []),
+	Panel = wxPanel:new(Parent, [{winid, ?WINDOW_CONSOLE}]),
 	MainSizer = wxBoxSizer:new(?wxVERTICAL),
 	wxWindow:setSizer(Panel, MainSizer),
 
-	Console = ?stc:new(Panel, [{id, ?WINDOW_CONSOLE}, {style, ?wxBORDER_NONE}]),
+	Console = ?stc:new(Panel, [{id, ?CONSOLE}, {style, ?wxBORDER_NONE}]),
 	?stc:setMarginWidth(Console, 0, 0),
 	?stc:setMarginWidth(Console, 1, 0),
 	?stc:setMarginWidth(Console, 2, 0),

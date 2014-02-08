@@ -47,7 +47,7 @@
 -define(DEFAULT_TEST_WIDTH,   200).
 -define(SPLITTER_SIDEBAR, 100).
 -define(SPLITTER_UTILITIES, 101).
--define(SPLIITER_LOG, 102).
+-define(SPLITTER_OUTPUT, 102).
 -define(FRAME_TITLE, "Erlang IDE").
 -define(BUTTON_HIDE_OUTPUT, 0).
 -define(ID_TOGGLE_LOG, 1).
@@ -180,6 +180,7 @@ init(Options) ->
   
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
+  wxSplitterWindow:connect(Frame, command_splitter_unsplit),
   
   % wxFrame:connect(Frame, size, [{skip, true}]),
 
@@ -244,7 +245,7 @@ handle_cast({title, Title}, State=#state{frame=Frame}) ->
   {noreply, State};
   
 handle_cast({output_display, Id}, State=#state{splitter_output_pos=Pos}) ->
-  Splitter = wx:typeCast(wxWindow:findWindowById(?SPLIITER_LOG), wxSplitterWindow),
+  Splitter = wx:typeCast(wxWindow:findWindowById(?SPLITTER_OUTPUT), wxSplitterWindow),
   replace_output_window(Splitter, wxWindow:findWindowById(Id), Pos),
   {noreply, State}.
 
@@ -306,12 +307,65 @@ handle_event(#wx{id=?SPLITTER_UTILITIES, event=#wxSplitter{type=command_splitter
   ide_sys_pref_gen:set_preference(ui_prefs, Prefs#ui_prefs{sash_horiz=Pos}),
   {noreply, State#state{splitter_utilities_pos=Pos}};
 
-handle_event(#wx{id=?SPLIITER_LOG, event=#wxSplitter{type=command_splitter_sash_pos_changed}}, State=#state{frame=Frame}) ->
-  Pos = wxSplitterWindow:getSashPosition(wx:typeCast(wxWindow:findWindow(Frame, ?SPLIITER_LOG), wxSplitterWindow)),
+handle_event(#wx{id=?SPLITTER_OUTPUT, event=#wxSplitter{type=command_splitter_sash_pos_changed}}, State=#state{frame=Frame}) ->
+  Pos = wxSplitterWindow:getSashPosition(wx:typeCast(wxWindow:findWindow(Frame, ?SPLITTER_OUTPUT), wxSplitterWindow)),
   {noreply, State#state{splitter_output_pos=Pos}};
 
+handle_event(#wx{id=?SPLITTER_OUTPUT, event=#wxSplitter{type=command_splitter_unsplit}}, State) ->
+  Win = wxWindow:findWindow(State#state.frame, ?WINDOW_CONSOLE),
+  case wxWindow:isShown(Win) of
+    true ->
+      Btn = wx:typeCast(wxWindow:findWindowById(?BUTTON_HIDE_OUTPUT), wxBitmapButton),
+      Bmp = wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_down.png"))),
+      wxBitmapButton:setBitmapLabel(Btn, Bmp);
+    false ->
+      ok
+  end,
+  {noreply, State};
+  
 handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State) ->
   {noreply, State};
+
+
+%% =====================================================================
+%% Other handlers
+%%
+%% =====================================================================
+
+% Output windows (log, output etc.)
+handle_event(#wx{userData={Splitter, Window}, event=#wxCommand{type=command_button_clicked}},
+             State=#state{splitter_output_pos=Pos}) ->
+  replace_output_window(Splitter, Window, Pos),
+  Btn = wx:typeCast(wxWindow:findWindowById(?BUTTON_HIDE_OUTPUT), wxBitmapButton),
+  Bmp = wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_left.png"))),
+  wxBitmapButton:setBitmapLabel(Btn, Bmp),
+  {noreply, State};
+  
+handle_event(#wx{id=?BUTTON_HIDE_OUTPUT=Id, userData=Splitter, event=#wxCommand{type=command_button_clicked}},
+             State=#state{splitter_output_active=PrevOutput, splitter_output_pos=Pos}) ->
+  Btn = wx:typeCast(wxWindow:findWindowById(Id), wxBitmapButton),
+  CurrOutput = case wxSplitterWindow:isSplit(Splitter) of
+    true -> %% hide
+      Window2 = wxSplitterWindow:getWindow2(Splitter),
+      wxSplitterWindow:unsplit(Splitter),
+      wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_down.png")))),
+      Window2;
+    _ ->
+      Window1 = wxSplitterWindow:getWindow1(Splitter),
+      case wxWindow:getId(Window1) of
+        ?WINDOW_CONSOLE -> %% console currently maximised
+          wxSplitterWindow:splitVertically(Splitter, Window1, PrevOutput, [{sashPosition, Pos}]),
+          wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_left.png"))));
+        _ -> %% one of the output windows is maximised, hide it
+          Console = wxWindow:findWindowById(?WINDOW_CONSOLE),
+          wxSplitterWindow:replaceWindow(Splitter, Window1, Console),
+          wxWindow:show(Console),
+          wxWindow:hide(Window1),
+          wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_down.png"))))
+      end,
+      PrevOutput
+  end,
+  {noreply, State#state{splitter_output_active=CurrOutput}};
 
 
 %% =====================================================================
@@ -542,52 +596,6 @@ handle_event(#wx{id=?MENU_ID_DIALYZER}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_ADD_TO_PLT}, State) ->
-  % Dlg = ide_lib_dlg_wx:message(wx:null(), 
-  %   [{caption, "There once was a boy called Tom. There once was a boy called Tom. He was ace."},
-  %    {text1, "Who lived in a flat in Canterbury"},
-  %    {text2, {list, ["tom", "bob", "mon", "cd"]}},
-  %    {buttons, [?wxID_SAVE, ?wxID_CANCEL, ?wxID_NO]}]),
-  % case wxDialog:showModal(Dlg) of
-  %   Result ->
-  %     io:format("RESULT: ~p~n", [Result])
-  %   
-  %   
-  % end,
-  ide_lib_dlg_wx:message_quick(wx:null(), "Oops", "This is an error message"),
-  
-  %% Testing dialog
-  %% If you end up with buttons in strange positions. You are
-  %% probably using an incorrect cobination of button id's.
-  
-  %% button :: wxID_OK | wxID_YES | wxID_SAVE | wxID_APPLY | wxID_NO | wxID_CANCEL | wxID_HELP | wxID_CONTEXT_HELP
-  %% {buttons, [button]}
-  %% {caption, string()}
-  %% {text1, string() | [string()] } %% if a list is passed each item is printed on a seperate line.
-  %% {text2, string()}
-  
-  %% fold over the buttons, ensure they're valid
-  % foldl(fun(Btn) ->
-  %   )
-  
-  % Xrc = wxXmlResource:get(),
-  % Dlg = wxDialog:new(),
-  % ide_lib_dlg_wx:win_variant(Dlg),
-  % wxXmlResource:loadDialog(Xrc, Dlg, wx:null(), "message"),
-  
-  % Panel = wxXmlResource:xrcctrl(Dlg, "panel", wxPanel),
-  % Sz = wxPanel:getSizer(Panel),
- %  Btn0 = wxButton:new(Panel, ?wxID_NO),
- %  Btn1 = wxButton:new(Panel, ?wxID_SAVE),
- %  Btn2 = wxButton:new(Panel, ?wxID_CANCEL),
- %  BtnSz = wxStdDialogButtonSizer:new(),
- %  wxStdDialogButtonSizer:addButton(BtnSz, Btn0), 
- %  wxStdDialogButtonSizer:addButton(BtnSz, Btn1), 
- %  wxStdDialogButtonSizer:addButton(BtnSz, Btn2),
- %  wxStdDialogButtonSizer:realize(BtnSz),
- %  wxSizer:add(Sz, BtnSz, [{flag, ?wxEXPAND bor ?wxTOP}, {border, 15}]),
-  % wxDialog:fit(Dlg),
-  % wxDialog:showModal(Dlg),
-  
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_PLT_INFO}, State) ->
@@ -659,10 +667,11 @@ handle_event(#wx{id=Id0}, State=#state{util_tabbed=Utils})
 % wxEventHandler->proccess_event() function that would allow us to pass the event to the in-focus
 % control, and so this is the workaround we have adopted. wx2.8 erlangR16B02
 handle_event(#wx{id=?wxID_PASTE}, State) ->
+  io:format("PASTE~n"),
   Fw = wxWindow:findFocus(),
   Id = wxWindow:getId(Fw),
   case Id of
-    ?WINDOW_CONSOLE ->
+    ?CONSOLE ->
       ide_console_wx:paste(wx:typeCast(Fw, wxStyledTextCtrl));
     Tc when Tc =:= ?WINDOW_OUTPUT; Tc =:= ?WINDOW_FUNCTION_SEARCH ->
        wxTextCtrl:paste(wx:typeCast(Fw, wxTextCtrl));
@@ -770,32 +779,7 @@ handle_event(#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_select
   ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_tab_width/2, [list_to_integer(wxMenu:getLabel(Menu, Id))]),
   ide_sys_pref_gen:set_preference(tab_width, wxMenu:getLabel(Menu, Id)),
 	{noreply, State};
-
-%% =====================================================================
-%% Other handlers
-%%
-%% =====================================================================
-
-% Output windows (log, output etc.)
-handle_event(#wx{userData={Splitter, Window}, event=#wxCommand{type=command_button_clicked}},
-             State=#state{splitter_output_pos=Pos}) ->
-  replace_output_window(Splitter, Window, Pos),
-  {noreply, State};
   
-handle_event(#wx{id=?BUTTON_HIDE_OUTPUT=Id, userData=Splitter, event=#wxCommand{type=command_button_clicked}},
-             State=#state{splitter_output_active=Aw, splitter_output_pos=Pos}) ->
-  Window2 = wxSplitterWindow:getWindow2(Splitter),
-  Bmp = case wxSplitterWindow:isSplit(Splitter) of
-    true ->
-      wxSplitterWindow:unsplit(Splitter),
-      wxArtProvider:getBitmap("wxART_GO_DOWN", [{size, {16,16}}]);
-    _ ->
-      wxSplitterWindow:splitVertically(Splitter, wxSplitterWindow:getWindow1(Splitter), Aw, [{sashPosition, Pos}]),
-      wxArtProvider:getBitmap("wxART_GO_BACK", [{size, {16,16}}])
-  end,
-  Btn = wx:typeCast(wxWindow:findWindowById(Id), wxBitmapButton),
-  wxBitmapButton:setBitmapLabel(Btn, Bmp),
-  {noreply, State#state{splitter_output_active=Window2}};
 
 %% Event catchall for testing
 handle_event(Ev, State) ->
@@ -827,7 +811,7 @@ create_utils(ParentA) ->
  		{_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
  		_ -> ?wxSP_3DSASH
  	end,
-	Splitter = wxSplitterWindow:new(Parent, [{id, ?SPLIITER_LOG}, {style, SplitterStyle}]),
+	Splitter = wxSplitterWindow:new(Parent, [{id, ?SPLITTER_OUTPUT}, {style, SplitterStyle}]),
   wxSplitterWindow:setSashGravity(Splitter, 0.5),
 
   %% Splitter window 1
@@ -865,7 +849,7 @@ create_utils(ParentA) ->
   ButtonFlags = [{style, ?wxBORDER_NONE}],
   Button1 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_LOG, wxArtProvider:getBitmap("wxART_FIND", [{size, {16,16}}]), ButtonFlags),
   Button2 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_OUTPUT, wxArtProvider:getBitmap("wxART_WARNING", [{size, {16,16}}]), ButtonFlags),
-  Button3 = wxBitmapButton:new(ToolBar, ?BUTTON_HIDE_OUTPUT, wxArtProvider:getBitmap("wxART_GO_BACK", [{size, {16,16}}]), ButtonFlags),
+  Button3 = wxBitmapButton:new(ToolBar, ?BUTTON_HIDE_OUTPUT, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_left.png"))), ButtonFlags),
 
   %% Connect button handlers
   wxPanel:connect(Button1, command_button_clicked, [{userData, {Splitter, Log}}]),
@@ -937,11 +921,12 @@ toggle_menu_item(MenuBar, ToolBar, ItemId, Enable) ->
 
 
 %% =====================================================================
-%% @doc Change the currently shown window in the output window.
+%% @doc Replace the the old output window with Window.
 
 -spec replace_output_window(wxWindow:wxWindow(), wxWindow:wxWindow(), integer()) -> ok | boolean().
 
 replace_output_window(Splitter, Window, Pos) ->
+  
   case wxSplitterWindow:isSplit(Splitter) of
     true ->
       case wxWindow:isShown(Window) of
@@ -954,5 +939,12 @@ replace_output_window(Splitter, Window, Pos) ->
       end;
     _ ->
       Window1 = wxSplitterWindow:getWindow1(Splitter),
-      wxSplitterWindow:splitVertically(Splitter, Window1, Window, [{sashPosition, Pos}])
+      case wxWindow:getId(Window1) of
+        ?WINDOW_CONSOLE -> %% console currently maximised
+          wxSplitterWindow:splitVertically(Splitter, Window1, Window, [{sashPosition, Pos}]);
+        _ -> %% one of the output windows is maximised
+          wxSplitterWindow:replaceWindow(Splitter, Window1, Window),
+          wxWindow:hide(Window1),
+          wxWindow:show(Window)
+      end
   end.
