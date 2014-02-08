@@ -180,7 +180,6 @@ init(Options) ->
   
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
-  wxSplitterWindow:connect(Frame, command_splitter_unsplit),
   
   % wxFrame:connect(Frame, size, [{skip, true}]),
 
@@ -309,6 +308,8 @@ handle_event(#wx{id=?SPLITTER_UTILITIES, event=#wxSplitter{type=command_splitter
 
 handle_event(#wx{id=?SPLITTER_OUTPUT, event=#wxSplitter{type=command_splitter_sash_pos_changed}}, State=#state{frame=Frame}) ->
   Pos = wxSplitterWindow:getSashPosition(wx:typeCast(wxWindow:findWindow(Frame, ?SPLITTER_OUTPUT), wxSplitterWindow)),
+  Prefs = ide_sys_pref_gen:get_preference(ui_prefs),
+  ide_sys_pref_gen:set_preference(ui_prefs, Prefs#ui_prefs{sash_vert_2=Pos}),
   {noreply, State#state{splitter_output_pos=Pos}};
 
 handle_event(#wx{id=?SPLITTER_OUTPUT, event=#wxSplitter{type=command_splitter_unsplit}}, State) ->
@@ -341,30 +342,9 @@ handle_event(#wx{userData={Splitter, Window}, event=#wxCommand{type=command_butt
   wxBitmapButton:setBitmapLabel(Btn, Bmp),
   {noreply, State};
   
-handle_event(#wx{id=?BUTTON_HIDE_OUTPUT=Id, userData=Splitter, event=#wxCommand{type=command_button_clicked}},
+handle_event(#wx{userData=Splitter, event=#wxCommand{type=command_button_clicked}},
              State=#state{splitter_output_active=PrevOutput, splitter_output_pos=Pos}) ->
-  Btn = wx:typeCast(wxWindow:findWindowById(Id), wxBitmapButton),
-  CurrOutput = case wxSplitterWindow:isSplit(Splitter) of
-    true -> %% hide
-      Window2 = wxSplitterWindow:getWindow2(Splitter),
-      wxSplitterWindow:unsplit(Splitter),
-      wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_down.png")))),
-      Window2;
-    _ ->
-      Window1 = wxSplitterWindow:getWindow1(Splitter),
-      case wxWindow:getId(Window1) of
-        ?WINDOW_CONSOLE -> %% console currently maximised
-          wxSplitterWindow:splitVertically(Splitter, Window1, PrevOutput, [{sashPosition, Pos}]),
-          wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_left.png"))));
-        _ -> %% one of the output windows is maximised, hide it
-          Console = wxWindow:findWindowById(?WINDOW_CONSOLE),
-          wxSplitterWindow:replaceWindow(Splitter, Window1, Console),
-          wxWindow:show(Console),
-          wxWindow:hide(Window1),
-          wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_down.png"))))
-      end,
-      PrevOutput
-  end,
+  CurrOutput = show_hide_output(Splitter, PrevOutput, Pos),
   {noreply, State#state{splitter_output_active=CurrOutput}};
 
 
@@ -536,7 +516,7 @@ handle_event(#wx{id=?MENU_ID_GOTO_LINE}, State) ->
     ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:go_to_position/2, [{Ln2,Col2}])
   end,
   %% Show the dialog
-  [{Ln, Col} | T] = ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:get_current_pos/1, []),
+  [{Ln, Col} | _T] = ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:get_current_pos/1, []),
   Value = integer_to_list(Ln)++":"++integer_to_list(Col),
   Dlg = wxTextEntryDialog:new(State#state.frame, "Enter line:", [{caption, "Go to Line:"}, {value, Value}]),
   case wxTextEntryDialog:showModal(Dlg) of
@@ -599,8 +579,6 @@ handle_event(#wx{id=?MENU_ID_ADD_TO_PLT}, State) ->
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_PLT_INFO}, State) ->
-  Listener = ide_eunit_listener:start(),
-  RAA = eunit:test(ide, [{report, Listener}]),
   {noreply, State};
   
 handle_event(#wx{id=?MENU_ID_DIAL_WARN}, State) ->
@@ -648,7 +626,7 @@ handle_event(#wx{id=Id}, State=#state{left_pane=LeftPane})
   ide_tabbed_win_img_wx:set_selection(LeftPane, Idx), %% Default to projects
   {noreply, State};
 
-handle_event(#wx{id=Id0}, State=#state{util_tabbed=Utils})
+handle_event(#wx{id=Id0}, State)
     when (Id0 >= ?MENU_ID_OUTPUT_WINDOW) and (Id0 =< ?MENU_ID_LOG_WINDOW) ->
   Id1 = case Id0 of
     ?MENU_ID_OUTPUT_WINDOW -> ?WINDOW_OUTPUT;
@@ -710,6 +688,11 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_T
    end,
    wxWindow:thaw(V),
 	{noreply, State};
+  
+handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_OUTPUT},
+             State=#state{splitter_output_active=PrevOutput, splitter_output_pos=Pos}) ->
+  CurrOutput = show_hide_output(wx:typeCast(wxWindow:findWindowById(?SPLITTER_OUTPUT), wxSplitterWindow), PrevOutput, Pos),
+  {noreply, State#state{splitter_output_active=CurrOutput}};
   
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_UTIL},
 						 State=#state{splitter_utilities=H, splitter_sidebar=V, utilities=Utils, splitter_utilities_pos=HPos}) ->
@@ -925,8 +908,7 @@ toggle_menu_item(MenuBar, ToolBar, ItemId, Enable) ->
 
 -spec replace_output_window(wxWindow:wxWindow(), wxWindow:wxWindow(), integer()) -> ok | boolean().
 
-replace_output_window(Splitter, Window, Pos) ->
-  
+replace_output_window(Splitter, Window, Pos) -> 
   case wxSplitterWindow:isSplit(Splitter) of
     true ->
       case wxWindow:isShown(Window) of
@@ -947,4 +929,35 @@ replace_output_window(Splitter, Window, Pos) ->
           wxWindow:hide(Window1),
           wxWindow:show(Window)
       end
+  end.
+
+
+%% =====================================================================
+%% @doc Toggle the output window.
+
+-spec show_hide_output(wxSplitterWindow:wxSplitterWindow(), wxWindow:wxWindow(), integer()) ->
+  wxWindow:wxWindow(). %% The new 'current' window
+
+show_hide_output(Splitter, PrevOutput, Pos) ->
+  Btn = wx:typeCast(wxWindow:findWindowById(?BUTTON_HIDE_OUTPUT), wxBitmapButton),
+  case wxSplitterWindow:isSplit(Splitter) of
+    true -> %% hide
+      Window2 = wxSplitterWindow:getWindow2(Splitter),
+      wxSplitterWindow:unsplit(Splitter),
+      wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_down.png")))),
+      Window2;
+    _ ->
+      Window1 = wxSplitterWindow:getWindow1(Splitter),
+      case wxWindow:getId(Window1) of
+        ?WINDOW_CONSOLE -> %% console currently maximised
+          wxSplitterWindow:splitVertically(Splitter, Window1, PrevOutput, [{sashPosition, Pos}]),
+          wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_left.png"))));
+        _ -> %% one of the output windows is maximised, hide it
+          Console = wxWindow:findWindowById(?WINDOW_CONSOLE),
+          wxSplitterWindow:replaceWindow(Splitter, Window1, Console),
+          wxWindow:show(Console),
+          wxWindow:hide(Window1),
+          wxBitmapButton:setBitmapLabel(Btn, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("arrow_down.png"))))
+      end,
+      PrevOutput
   end.

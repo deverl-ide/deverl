@@ -118,11 +118,12 @@
 -define(MENU_ID_IMPORT_FILE,       6051).
 -define(MENU_ID_IMPORT_PROJECT,    6052).
 -define(MENU_ID_EXPORT_EDOC,       6053).
-% -define(MENU_ID_RUN_OBSERVER,      6055).
--define(MENU_ID_QUICK_FIND,        6056).
--define(MENU_ID_ADD_TO_PLT,        6057).
--define(MENU_ID_PLT_INFO,          6058).
--define(MENU_ID_DIAL_WARN,         6059).
+-define(MENU_ID_HIDE_OUTPUT,       6054).
+-define(MENU_ID_QUICK_FIND,        6055).
+-define(MENU_ID_ADD_TO_PLT,        6056).
+-define(MENU_ID_PLT_INFO,          6057).
+-define(MENU_ID_DIAL_WARN,         6058).
+
 % -define(MENU_ID_ADD_TO_PLT,        6057).
 % -define(MENU_ID_ADD_TO_PLT,        6057).
 % -define(MENU_ID_ADD_TO_PLT,        6057).

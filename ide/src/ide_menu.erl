@@ -195,6 +195,7 @@ build_menu(Frame) ->
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_HIDE_TEST, "Toggle Left Pane\tShift+Alt+T", []),
   wxMenu:append(View, ?MENU_ID_HIDE_UTIL, "Toggle Utilities Pane\tShift+Alt+U", []),
+  wxMenu:append(View, ?MENU_ID_HIDE_OUTPUT, "Toggle Output Pane\tShift+Alt+O", []),
   wxMenu:append(View, ?MENU_ID_MAX_EDITOR, "Maximise/Minimise Editor\tAlt+E", []),
   wxMenu:append(View, ?MENU_ID_MAX_UTIL, "Maximise/Minimise Utilities\tAlt+U", []),
 
