@@ -23,7 +23,8 @@
          start/1,
          set_title/1,
          display_output_window/1,
-         toggle_menu_group/2
+         toggle_menu_group/2,
+         toggle_menu_items/2
          ]).
 
 %% Server state
@@ -102,6 +103,13 @@ set_title(Title) ->
 
 toggle_menu_group(Groups, Toggle) ->
   wx_object:cast(?MODULE, {toggle_menu_group, Groups, Toggle}).
+
+
+-spec toggle_menu_items([integer()], boolean()) -> ok.
+
+toggle_menu_items(Items, Toggle) ->
+  wx_object:cast(?MODULE, {toggle_menu_items, Items, Toggle}).
+  
 
 %% =====================================================================
 %% @doc Show the window identified by WinId in the output window, hiding the
@@ -241,6 +249,14 @@ handle_cast({toggle_menu_group, Groups, Toggle}, State) ->
       toggle_menu_item(Mb, Tb, MenuId, Toggle) 
     end, MenuIds)
   end, Groups),
+  {noreply, State};
+  
+handle_cast({toggle_menu_items, Items, Toggle}, State) ->
+  Mb = wxFrame:getMenuBar(State#state.frame),
+  Tb = wxFrame:getToolBar(State#state.frame),
+  wx:foreach(fun(Item) ->
+      toggle_menu_item(Mb, Tb, Item, Toggle) 
+  end, Items),
   {noreply, State};
   
 handle_cast({title, Title}, State=#state{frame=Frame}) ->
@@ -416,8 +432,64 @@ handle_event(#wx{id=?MENU_ID_IMPORT_PROJECT}, State) ->
   ide_proj_man:import(State#state.frame),
   {noreply, State};
   
-handle_event(#wx{id=?wxID_SELECTALL}, State) ->
-  % wxWindow:findFocus(),
+handle_event(#wx{id=?wxID_UNDO}, State) -> %% only enabled when an editor is in focus
+  wxStyledTextCtrl:undo(wx:typeCast(wxWindow:findFocus(), wxStyledTextCtrl)),
+  {noreply, State};
+ 
+handle_event(#wx{id=?wxID_REDO}, State) ->
+  wxStyledTextCtrl:redo(wx:typeCast(wxWindow:findFocus(), wxStyledTextCtrl)),
+  {noreply, State}; 
+  
+%% Handle copy/paste
+% Currently on MSW and Linux the menu event is not caught by the in focus control even when
+% it has a registered handler for it. On OSX the event is caught as expected (and will
+% propagate up through the hierarchy). Not sure which of
+% these behaviours is correct. Due to this we have to catch the copy/paste/cut etc. menu
+% events here, find out which control was in focus and then execute the correct function on it.
+% We have tried but failed to find an wxErlang alternative to the wxWidget
+% wxEventHandler->proccess_event() function that would allow us to pass the event to the in-focus
+% control, and so this is the workaround we have adopted. wx2.8 erlangR16B02
+
+%% The following text functions use default handlers for wxTextCtrl,
+%% (?wxID_CUT, ?wxID_COPY, ?wxID_PASTE, ?wxID_SELECTALL, ?wxID_DELETE), so only the
+%% wxStyledTextCtrl functions need to be implemented manually.
+handle_event(#wx{id=?wxID_PASTE}, State) ->
+  Fw = wxWindow:findFocus(),
+  Id = wxWindow:getId(Fw),
+  case Id of
+    ?CONSOLE -> %% Special paste implementation
+      ide_console_wx:paste(wx:typeCast(Fw, wxStyledTextCtrl));
+    % Tc when Tc =:= ?WINDOW_OUTPUT; Tc =:= ?WINDOW_FUNCTION_SEARCH ->
+    %    wxTextCtrl:paste(wx:typeCast(Fw, wxTextCtrl));
+    _ ->
+      catch wxStyledTextCtrl:paste(wx:typeCast(Fw, wxStyledTextCtrl))
+  end,
+  {noreply, State};
+  
+handle_event(#wx{id=?wxID_COPY}, State) ->
+  % Fw = wxWindow:findFocus(),
+  % Id = wxWindow:getId(Fw),
+  % case Id of
+  %   Tc when Tc =:= ?WINDOW_OUTPUT; Tc =:= ?WINDOW_FUNCTION_SEARCH ->
+  %     wxTextCtrl:copy(wx:typeCast(Fw, wxTextCtrl));
+  %   _ -> wxStyledTextCtrl:copy(wx:typeCast(Fw, wxStyledTextCtrl))
+  % end,
+  catch wxStyledTextCtrl:copy(wx:typeCast(wxWindow:findFocus(), wxStyledTextCtrl)),
+  {noreply, State};
+
+handle_event(#wx{id=?wxID_CUT}, State) ->
+  % Fw = wxWindow:findFocus(),
+  % Id = wxWindow:getId(Fw),
+  % case Id of
+  %   Tc when Tc =:= ?WINDOW_OUTPUT; Tc =:= ?WINDOW_FUNCTION_SEARCH ->
+  %     wxTextCtrl:copy(wx:typeCast(Fw, wxTextCtrl));
+  %   _ -> wxStyledTextCtrl:copy(wx:typeCast(Fw, wxStyledTextCtrl))
+  % end,
+  catch wxStyledTextCtrl:cut(wx:typeCast(wxWindow:findFocus(), wxStyledTextCtrl)),
+  {noreply, State};
+  
+handle_event(#wx{id=?wxID_SELECTALL}, State) -> %% Only enabled when either a wxStyledTextCtrl of wxTextCtrl are in focus
+  catch wxStyledTextCtrl:selectAll(wx:typeCast(wxWindow:findFocus(), wxStyledTextCtrl)),
   {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_PROJECT_CONFIG}, State) ->
@@ -643,38 +715,6 @@ handle_event(#wx{id=Id0}, State)
     ?MENU_ID_LOG_WINDOW -> ?WINDOW_LOG
   end,
   display_output_window(Id1),
-  {noreply, State};
-  
-%% Handle copy/paste
-% Currently on MSW and Linux the menu event is not caught by the in focus control even when
-% it has a registered handler for it. On OSX the event is caught as expected (and will
-% propagate up through the hierarchy). Not sure which of
-% these behaviours is correct. Due to this we have to catch the copy/paste/cut etc. menu
-% events here, find out which control was in focus and then execute the correct function on it.
-% We have tried but failed to find an wxErlang alternative to the wxWidget
-% wxEventHandler->proccess_event() function that would allow us to pass the event to the in-focus
-% control, and so this is the workaround we have adopted. wx2.8 erlangR16B02
-handle_event(#wx{id=?wxID_PASTE}, State) ->
-  Fw = wxWindow:findFocus(),
-  Id = wxWindow:getId(Fw),
-  case Id of
-    ?CONSOLE ->
-      ide_console_wx:paste(wx:typeCast(Fw, wxStyledTextCtrl));
-    Tc when Tc =:= ?WINDOW_OUTPUT; Tc =:= ?WINDOW_FUNCTION_SEARCH ->
-       wxTextCtrl:paste(wx:typeCast(Fw, wxTextCtrl));
-    _ ->
-      wxStyledTextCtrl:paste(wx:typeCast(Fw, wxStyledTextCtrl))
-  end,
-  {noreply, State};
-  
-handle_event(#wx{id=?wxID_COPY}, State) ->
-  Fw = wxWindow:findFocus(),
-  Id = wxWindow:getId(Fw),
-  case Id of
-    Tc when Tc =:= ?WINDOW_OUTPUT; Tc =:= ?WINDOW_FUNCTION_SEARCH ->
-      wxTextCtrl:copy(wx:typeCast(Fw, wxTextCtrl));
-    _ -> wxStyledTextCtrl:copy(wx:typeCast(Fw, wxStyledTextCtrl))
-  end,
   {noreply, State};
 
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSCREEN=Id},

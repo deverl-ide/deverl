@@ -128,6 +128,10 @@ init(Config) ->
   ?stc:markerSetBackground(Log, ?MARKER_EVEN, ?ROW_BG_EVEN),
   ?stc:markerDefine(Log, ?MARKER_ODD, ?wxSTC_MARK_BACKGROUND),
   ?stc:markerSetBackground(Log, ?MARKER_ODD, ?ROW_BG_ODD),
+  
+  %% Events
+  ?stc:connect(Log, set_focus, [{skip, true}]),
+  ?stc:connect(Log, kill_focus, [{skip, true}]),
 
 	wxSizer:add(MainSizer, Log, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
@@ -199,7 +203,15 @@ handle_event(#wx{event=#wxStyledText{type=stc_hotspot_click, position=Pos}},
   R = Rightmost(Rightmost, Pos + 1),
   Range = ?stc:getTextRange(Log, L, R),
   hotspot_action(Range),
-	{noreply, State}.
+	{noreply, State};
+handle_event(#wx{event=#wxFocus{type=set_focus}}, State) ->
+  %% Enable undo/redo
+  ide:toggle_menu_items([?wxID_COPY, ?wxID_SELECTALL], true),
+  {noreply, State};
+handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->
+  %% Disable undo
+  ide:toggle_menu_items([?wxID_COPY, ?wxID_SELECTALL], false),
+  {noreply, State}.
 
 code_change(_, _, State) ->
 	{ok, State}.

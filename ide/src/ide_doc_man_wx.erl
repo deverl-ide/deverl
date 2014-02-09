@@ -303,6 +303,8 @@ init(Config) ->
 
 	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [callback]),
   wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed, []),
+  wxAuiNotebook:connect(Notebook, command_set_focus, [{callback, fun(_,_) -> io:format("RAAAA") end}]),
+  wxAuiNotebook:connect(Notebook, command_kill_focus, [{callback, fun(_,_) -> io:format("RAAAA") end}]),
 
   State = #state{notebook=Notebook,
                  page_to_doc_id=[],

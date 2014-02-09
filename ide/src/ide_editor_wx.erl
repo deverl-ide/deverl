@@ -471,6 +471,7 @@ init(Config) ->
   ?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
   ?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
   ?stc:connect(Editor, set_focus, [{skip, true}]),
+  ?stc:connect(Editor, kill_focus, [{skip, true}]),
   ?stc:connect(Editor, key_down, [callback, {userData, self()}]),
 
 	%% Restrict the stc_chamge/stc_modified events to insert/delete text
@@ -620,9 +621,11 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position=Pos, margin=
 %% =====================================================================
 
 handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State) ->
+  ide:toggle_menu_items([?wxID_SAVE], false),
   {noreply, State#state{dirty=false}};
 
 handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State) ->
+  ide:toggle_menu_items([?wxID_SAVE], true),
   {noreply, State#state{dirty=true}};
 
 %% =====================================================================
@@ -684,10 +687,17 @@ handle_event(#wx{id=?ID_SEARCH, event=#wxCommand{cmdString=Str}},
 handle_event(#wx{id=?WINDOW_EDITOR, event=#wxFocus{type=set_focus}}, State=#state{main_sz=Sz}) ->
   wxSizer:hide(Sz, 1),
   wxSizer:layout(Sz),
+  %% Enable undo/redo
+  ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_KILL_FOCUS, ?MENU_GROUP_TEXT], true),
   {noreply, State};
 
-handle_event(_E,State) ->
-  io:format("Unhandled event in editor.~n"),
+handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->
+  %% Disable undo
+  ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_KILL_FOCUS, ?MENU_GROUP_TEXT], false),
+  {noreply, State};
+  
+handle_event(E,State) ->
+  io:format("Unhandled event in editor: ~p~n", [E]),
   {noreply, State}.
 
 code_change(_, _, State) ->

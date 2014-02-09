@@ -287,7 +287,7 @@ import(Parent) ->
               {error, _} -> ok
             end;
           false -> 
-            ok
+            ide_proj_man:add_project(Path)
         end;
     ?wxID_CANCEL ->
       ok

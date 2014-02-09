@@ -143,7 +143,7 @@ build_menu(Frame) ->
   wxMenu:append(Edit, ?wxID_PASTE, "Paste\tCtrl+V"),
   wxMenu:append(Edit, ?wxID_DELETE, "Delete"),
   wxMenu:append(Edit, ?wxID_SEPARATOR, []),
-  wxMenu:append(Edit, ?wxID_SELECTALL, "Select All"), % "\tCtrl+A"),
+  wxMenu:append(Edit, ?wxID_SELECTALL, "Select All\tCtrl+A"),
   wxMenu:appendSeparator(Edit),
   wxMenu:append(Edit, ?MENU_ID_QUICK_FIND, "Quick Find\tCtrl+F"),
   wxMenu:append(Edit, ?wxID_FIND, "Find\tCtrl+Shift+F"),
@@ -358,7 +358,9 @@ menu_groups() ->
                                   ?MENU_ID_MAKE_PROJECT, ?MENU_ID_RUN, ?MENU_ID_NEXT_TAB, 
                                   ?MENU_ID_PREV_TAB, ?MENU_ID_RUN_TESTS, ?MENU_ID_DIALYZER]},
     {?MENU_GROUP_PROJECTS_EMPTY, [?MENU_ID_CLOSE_PROJECT, ?MENU_ID_PROJECT_CONFIG,
-                                  ?MENU_ID_MAKE_PROJECT, ?MENU_ID_RUN, ?MENU_ID_SAVE_PROJECT]}
+                                  ?MENU_ID_MAKE_PROJECT, ?MENU_ID_RUN, ?MENU_ID_SAVE_PROJECT]},
+    {?MENU_GROUP_NOTEBOOK_KILL_FOCUS, [?wxID_UNDO, ?wxID_REDO, ?wxID_FIND, ?MENU_ID_QUICK_FIND]},
+    {?MENU_GROUP_TEXT, [?wxID_CUT, ?wxID_COPY, ?wxID_PASTE, ?wxID_SELECTALL, ?wxID_DELETE]}
   ].
   
   

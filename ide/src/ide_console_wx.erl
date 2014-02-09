@@ -188,6 +188,8 @@ init(Config) ->
 	?stc:connect(Console, key_down, [callback]),
   ?stc:connect(Console, right_up),
   ?stc:connect(Console, command_menu_selected),
+  ?stc:connect(Console, kill_focus, [{skip, true}]),
+  ?stc:connect(Console, set_focus, [{skip, true}]),
 
   %% Add initial text
   InitText = ?CONSOLE_HEADER ?PROMPT,
@@ -319,6 +321,15 @@ handle_event(#wx{id=?wxID_PASTE, event=#wxCommand{type=command_menu_selected}},
             State=#state{textctrl=Console}) ->
               Env = wx:get_env(),
   spawn(fun() -> wx:set_env(Env), paste(Console) end),
+  {noreply, State};
+handle_event(#wx{event=#wxFocus{type=set_focus}}, State) ->
+  %% Enable undo/redo
+  ide:toggle_menu_items([?wxID_COPY, ?wxID_PASTE, ?wxID_SELECTALL], true),
+  {noreply, State};
+
+handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->
+  %% Disable undo
+  ide:toggle_menu_items([?wxID_COPY, ?wxID_PASTE, ?wxID_SELECTALL], false),
   {noreply, State}.
 
 code_change(_, _, State) ->

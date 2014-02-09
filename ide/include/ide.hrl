@@ -141,7 +141,9 @@
 
 %% Menu groups (Bit flags/fields)
 -define(MENU_GROUP_NOTEBOOK_EMPTY, 	1).
--define(MENU_GROUP_PROJECTS_EMPTY, 	(?MENU_GROUP_NOTEBOOK_EMPTY bsl 1)).
+-define(MENU_GROUP_PROJECTS_EMPTY, 	2).
+-define(MENU_GROUP_NOTEBOOK_KILL_FOCUS, 3).
+-define(MENU_GROUP_TEXT, 4).
 
 %% Documents
 -define(DEFAULT_TAB_LABEL, "untitled").
