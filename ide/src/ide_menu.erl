@@ -20,6 +20,8 @@
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
 
+-define(ICONS, "icons_orig"). %% Specify the subdirectory containing the icon set
+
 
 %% =====================================================================
 %% Client API
@@ -287,41 +289,33 @@ build_toolbar(Frame) ->
   wxToolBar:setToolBitmapSize(ToolBar, {24,24}),
 	%% Id, StatusBar help, filename/art id, args, add seperator
 	Tools = [  
-      % {?wxID_NEW, "ToolTip", {custom, "document_08.png"},    
-      {?wxID_NEW, "ToolTip", {custom, "tom1.png"},
+      {?wxID_NEW, "ToolTip", {custom, "document_new.png"},    
   			[{shortHelp, "Create a new document"}], false},
-      % {?wxID_OPEN, "ToolTip", {custom, "document_06.png"},   
-      {?wxID_OPEN, "ToolTip", {custom, "tom2.png"},   
+      {?wxID_OPEN, "ToolTip", {custom, "document_open.png"},   
   			[{shortHelp, "Open an existing document"}], false},
-      % {?wxID_SAVE, "ToolTip", {custom, "document_12.png"},   
-      {?wxID_SAVE, "ToolTip", {custom, "tom3.png"},   
+      {?wxID_SAVE, "ToolTip", {custom, "document_save.png"},   
   			[{shortHelp, "Save the current document"}], false}, 
-      {?wxID_CLOSE, "ToolTip", {custom, "tom4.png"},  
-      % {?wxID_CLOSE, "ToolTip", {custom, "file04.png"},  
+      {?wxID_CLOSE, "ToolTip", {custom, "document_close.png"},  
   			[{shortHelp, "Close the current document"}], false},
-      % {?MENU_ID_NEW_PROJECT, "ToolTip", {custom, "folders_08.png"},    
-  		{?MENU_ID_NEW_PROJECT, "ToolTip", {custom, "tom5.png"},    
+      {?MENU_ID_NEW_PROJECT, "ToolTip", {custom, "project_new.png"},    
   			[{shortHelp, "Create a new project"}], false},
-      % {?MENU_ID_OPEN_PROJECT, "ToolTip", {custom, "folders_12.png"},   
-  		{?MENU_ID_OPEN_PROJECT, "ToolTip", {custom, "tom6.png"},   
+      {?MENU_ID_OPEN_PROJECT, "ToolTip", {custom, "project_open.png"},   
   			[{shortHelp, "Open an existing project"}], false},
-  		{?MENU_ID_SAVE_PROJECT, "ToolTip", {custom, "tom7.png"},   
-      % {?MENU_ID_SAVE_PROJECT, "ToolTip", {custom, "folders_06.png"},   
+      {?MENU_ID_SAVE_PROJECT, "ToolTip", {custom, "project_save.png"},   
   			[{shortHelp, "Save the current project"}], false},			
-  		{?MENU_ID_CLOSE_PROJECT, "ToolTip", {custom, "tom8.png"},  
-      % {?MENU_ID_CLOSE_PROJECT, "ToolTip", {custom, "folders_03.png"},  
+      {?MENU_ID_CLOSE_PROJECT, "ToolTip", {custom, "project_close.png"},  
   			[{shortHelp, "Close the current project"}], true},
-  		{?MENU_ID_COMPILE_FILE, "ToolTip", {custom, "document_10.png"},  
+  		{?MENU_ID_COMPILE_FILE, "ToolTip", {custom, "compile.png"},  
   			[{shortHelp, "Compile the current file"}], false},
-      {?MENU_ID_MAKE_PROJECT, "ToolTip", {custom, "folders_14.png"},  
+      {?MENU_ID_MAKE_PROJECT, "ToolTip", {custom, "project_build.png"},  
   			[{shortHelp, "Make Project"}], false},
-  		{?MENU_ID_RUN, "ToolTip", {custom, "folders_10.png"},      
+  		{?MENU_ID_RUN, "ToolTip", {custom, "project_run.png"},      
   			[{shortHelp, "Run Project"}], true},
-  		{?MENU_ID_DIALYZER, "ToolTip", {custom, "kidney_24.png"},      
+  		{?MENU_ID_DIALYZER, "ToolTip", {custom, "dialyzer.png"},      
   			[{shortHelp, "Run Dialyzer"}], false},
   		{?MENU_ID_RUN_TESTS, "ToolTip", {custom, "tests.png"},      
   			[{shortHelp, "Run Tests"}], false},
-  		{?MENU_ID_RUN_OBSERVER, "ToolTip", {custom, "eye.png"},      
+  		{?MENU_ID_RUN_OBSERVER, "ToolTip", {custom, "observer.png"},      
   			[{shortHelp, "Run Observer"}], true},
       {?MENU_ID_HIDE_TEST, "ToolTip", {custom, "application_08.png"},       
   			[{shortHelp, "Toggle left pane visibility"}], false},
@@ -333,10 +327,10 @@ build_toolbar(Frame) ->
   			[{shortHelp, "Maximise/restore the utilities"}], false}],
 
 	AddTool = fun({Id, Tooltip, {custom, File1}, Args, true}) ->
-                  wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(File1))), Args),
+                  wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(filename:join(?ICONS, File1)))), Args),
                   wxToolBar:addSeparator(ToolBar);
                ({Id, Tooltip, {custom, File1}, Args, false}) ->
-                  wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(File1))), Args);
+                  wxToolBar:addTool(ToolBar, Id, Tooltip, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(filename:join(?ICONS, File1)))), Args);
                ({Id, Tooltip, {default, Art}, Args, true}) ->
                   wxToolBar:addTool(ToolBar, Id, Tooltip, wxArtProvider:getBitmap(Art), Args),
                   wxToolBar:addSeparator(ToolBar);

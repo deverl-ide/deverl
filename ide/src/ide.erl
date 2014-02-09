@@ -841,10 +841,13 @@ create_utils(ParentA) ->
   ButtonFlags = [{style, ?wxBORDER_NONE}],
   Button1 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_LOG, 
     wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("log_on.png"))), ButtonFlags),
+  wxWindow:setToolTip(Button1, "Log"),
   Button2 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_OUTPUT,
     wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("output_off.png"))), ButtonFlags),
+  wxWindow:setToolTip(Button2, "Output"),
   Button3 = wxBitmapButton:new(ToolBar, ?BUTTON_HIDE_OUTPUT,
     wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("output_shown.png"))), ButtonFlags),
+  wxWindow:setToolTip(Button3, "Show/Hide"),
 
   %% Connect button handlers
   wxPanel:connect(Button1, command_button_clicked, [{userData, {Splitter, Log}}]),
@@ -886,8 +889,8 @@ create_left_window(Frame, Parent) ->
   TestPanel = ide_testpane:new([{parent, Toolbook}]),
 	ide_tabbed_win_img_wx:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
 
-	FunctionsPanel = ide_sl_wx:start([{parent, Toolbook}]),
-	ide_tabbed_win_img_wx:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
+  % FunctionsPanel = ide_sl_wx:start([{parent, Toolbook}]),
+  % ide_tabbed_win_img_wx:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
 
 	ide_tabbed_win_img_wx:set_selection(Toolbook, 1), %% Default to projects
 	Toolbook.

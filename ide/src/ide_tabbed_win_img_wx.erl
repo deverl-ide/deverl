@@ -115,8 +115,6 @@ handle_cast({add_page, {Page, Text, Options}},
 	wxSizer:add(ContentSz, Page, SzFlags),
 	UpdatedPages = [{Button, {Page, Options}} | Pages],
 	wxPanel:layout(TabPanel),
-	Tip = wxToolTip:new(Label),
-	wxWindow:setToolTip(Button, Tip),
   {noreply,State#state{pages=UpdatedPages}};
 handle_cast({set_selection, Index},
 						State=#state{tabs={Tabs, _}, active_btn=ActiveBtn, pages=Pages, content={Cont, _}}) ->
@@ -182,7 +180,8 @@ terminate(_Reason, _State) ->
 create_button(Parent, Sz, Label, Options) ->
 	SzFlags = wxSizerFlags:new([{proportion, 0}]),
 	wxSizerFlags:right(SzFlags),
-	Btn = wxWindow:new(Parent, ?wxID_ANY, [{size,{34,34}}]), %% TESTING
+	Btn = wxPanel:new(Parent, [{size,{34,34}}]), %% TESTING
+  wxWindow:setToolTip(Btn, Label),
 	wxSizer:add(Sz, Btn, SzFlags),
   wxPanel:connect(Btn, paint, [callback, {userData, {Label, Options}}]),
 	wxPanel:connect(Btn, left_down, [{skip, true}, {userData, {Label, Options}}]),
