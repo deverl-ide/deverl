@@ -303,8 +303,7 @@ init(Config) ->
 
 	wxAuiNotebook:connect(Notebook, command_auinotebook_page_close, [callback]),
   wxAuiNotebook:connect(Notebook, command_auinotebook_page_changed, []),
-  wxAuiNotebook:connect(Notebook, command_set_focus, [{callback, fun(_,_) -> io:format("RAAAA") end}]),
-  wxAuiNotebook:connect(Notebook, command_kill_focus, [{callback, fun(_,_) -> io:format("RAAAA") end}]),
+
 
   State = #state{notebook=Notebook,
                  page_to_doc_id=[],
@@ -499,7 +498,9 @@ handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed, sel
       DocRec = get_record(DocId, DocRecords),
       ide_proj_man:set_active_project(DocRec#document.project_id),
       Ebin = list_to_atom(filename:basename(filename:rootname(wxAuiNotebook:getPageText(Nb, Idx)))),
-      ide_testpane:add_module_tests(Ebin)
+      ide_testpane:add_module_tests(Ebin),
+      %% set focus to editor
+      wxWindow:setFocus(wxAuiNotebook:getPage(Nb, Idx))
   end,
   {noreply, State}.
 

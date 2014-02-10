@@ -56,9 +56,9 @@
 	fn_list/2,
 	link_poller/2,
 	empty_undo_buffer/1,
-
   get_stc/1,
-  destroy/1
+  destroy/1,
+  select_all/1
 	]).
 
 %% Macros
@@ -401,6 +401,13 @@ empty_undo_buffer(This) ->
 
 
 %% =====================================================================
+%% @doc Select all has to toggle some menu items.
+
+select_all(This) ->
+  wx_object:call(This, select_all).
+
+
+%% =====================================================================
 %% Callback functions
 %% =====================================================================
 
@@ -464,19 +471,15 @@ init(Config) ->
 
 	%% Attach events
   ?stc:connect(Editor, stc_marginclick, []),
-  ?stc:connect(Editor, left_down, [{skip, true}]),
-  ?stc:connect(Editor, left_up, [{skip, true}]),
-  ?stc:connect(Editor, motion, [{skip, true}]),
   ?stc:connect(Editor, stc_charadded, [callback]),
   ?stc:connect(Editor, stc_savepointreached, [{skip, true}]),
   ?stc:connect(Editor, stc_savepointleft, [{skip, true}]),
   ?stc:connect(Editor, set_focus, [{skip, true}]),
   ?stc:connect(Editor, kill_focus, [{skip, true}]),
-  ?stc:connect(Editor, key_down, [callback, {userData, self()}]),
-
-	%% Restrict the stc_chamge/stc_modified events to insert/delete text
-	?stc:setModEventMask(Editor, ?wxSTC_MOD_DELETETEXT bor ?wxSTC_MOD_INSERTTEXT),
-
+  ?stc:connect(Editor, stc_updateui, []),
+  ?stc:connect(Editor, stc_change, [{skip, true}]), %% undo/redo stop points
+  ?stc:setModEventMask(Editor, ?wxSTC_LASTSTEPINUNDOREDO), %% restrict to undo/redo notices
+  
 	% ?stc:setSavePoint(Editor),
 	wxWindow:setFocusFromKbd(Editor),
 
@@ -510,6 +513,10 @@ handle_call(stc, _From, State) ->
   {reply,State#state.stc,State};
 handle_call(parent_panel, _From, State) ->
   {reply,State#state.parent_panel,State};
+handle_call(select_all, _From, State) ->
+  ?stc:selectAll(State#state.stc),
+  ide:toggle_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], true),
+  {reply,ok,State};
 handle_call(Msg, _From, State) ->
   io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
   {reply,State,State}.
@@ -537,17 +544,15 @@ handle_cast(show_search, State=#state{main_sz=Sz, search=#search{tc=Tc}}) ->
   wxSizer:show(Sz, 1),
   wxTextCtrl:setFocus(Tc),
   wxSizer:layout(Sz),
-  {noreply,State}.
+  {noreply,State};
+handle_cast(enable_menus, State) ->  
+  %% Enable undo/redo
+  menu_init(State#state.stc),
+  {noreply, State}.
 
 %% =====================================================================
 %% Sync events
 %% =====================================================================
-
-handle_sync_event(#wx{event=#wxKey{}, userData=This}, Event, #state{stc=Editor}) ->
-	wxEvent:skip(Event),
-	wx_object:cast(This, ref), %% Serviced when caret has moved
-	%?stc:setCaretWidth(Editor, 1), %% This line causes lag while typing in Linux
-	ok;
 
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
 									State=#state{stc=Editor}) when Key =:= ?WXK_RETURN ->
@@ -568,38 +573,6 @@ handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded}}, Event,
 									_State) ->
 		wxEvent:skip(Event).
 
-%% =====================================================================
-%% Mouse events
-%% =====================================================================
-
-handle_event(#wx{event=#wxMouse{type=left_down}},
-             State = #state{stc=Editor}) ->
-	?stc:setCaretWidth(Editor, 1),
-	case ?stc:getSelectedText(Editor) of
-		[] -> update_sb_line(Editor);
-		_ -> ok
-	end,
-	{noreply, State};
-
-handle_event(#wx{event=#wxMouse{type=motion, leftDown=true}},
-             State = #state{stc=Editor}) ->
-	?stc:setCaretWidth(Editor, 0), % Hide the caret during selection
-	%% Update status bar selection info
-	update_sb_selection(Editor),
-	{noreply, State};
-
-handle_event(#wx{event=#wxMouse{type=left_up}},
-             State = #state{stc=Editor}) ->
-	%% Update status bar selection info
-	case ?stc:getSelectedText(Editor) of
-		[] -> update_sb_line(Editor);
-		_ -> update_sb_selection(Editor)
-	end,
-	{noreply, State};
-
-%% For testing:
-handle_event(#wx{event=#wxMouse{}}, State) ->
-	{noreply, State};
 
 %% =====================================================================
 %% Document events
@@ -626,7 +599,7 @@ handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State) ->
 
 handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State) ->
   ide:toggle_menu_items([?wxID_SAVE], true),
-  {noreply, State#state{dirty=true}};
+  {noreply, State#state{dirty=true}}; %% UNDO
 
 %% =====================================================================
 %% Search events
@@ -685,17 +658,38 @@ handle_event(#wx{id=?ID_SEARCH, event=#wxCommand{cmdString=Str}},
   end;
 
 handle_event(#wx{id=?WINDOW_EDITOR, event=#wxFocus{type=set_focus}}, State=#state{main_sz=Sz}) ->
+  %% Introduce a natural delay (cast) here to ensure any previous kill_focus event is handled first
+  wx_object:cast(self(), enable_menus),
   wxSizer:hide(Sz, 1),
   wxSizer:layout(Sz),
-  %% Enable undo/redo
-  ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_KILL_FOCUS, ?MENU_GROUP_TEXT], true),
   {noreply, State};
 
 handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->
-  %% Disable undo
   ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_KILL_FOCUS, ?MENU_GROUP_TEXT], false),
   {noreply, State};
-  
+
+handle_event(#wx{event=#wxStyledText{type=stc_change}=E}, State=#state{stc=Editor}) ->
+  case ?stc:canUndo(Editor) of
+    true -> ide:toggle_menu_items([?wxID_UNDO], true);
+    false -> ide:toggle_menu_items([?wxID_UNDO], false)
+  end,
+  case ?stc:canRedo(Editor) of
+    true -> ide:toggle_menu_items([?wxID_REDO], true);
+    false -> ide:toggle_menu_items([?wxID_REDO], false)
+  end,
+  {noreply, State};
+
+handle_event(#wx{event=#wxStyledText{type=stc_updateui}},State=#state{stc=Editor}) ->
+  case ?stc:getSelection(Editor) of
+    {N,N} -> 
+      ide:toggle_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], false),
+      update_sb_line(Editor);
+    _ -> 
+      ide:toggle_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], true),
+      update_sb_selection(Editor)
+  end,
+  {noreply, State};
+     
 handle_event(E,State) ->
   io:format("Unhandled event in editor: ~p~n", [E]),
   {noreply, State}.
@@ -706,6 +700,7 @@ code_change(_, _, State) ->
 terminate(_Reason, #state{parent_panel=Panel}) ->
   io:format("TERMINATE EDITOR~n"),
   wxPanel:destroy(Panel). %% segfault on OSX
+
 
 %% =====================================================================
 %% Internal functions
@@ -809,7 +804,7 @@ Editor :: ?stc:?stc(),
 Result :: {integer(), integer()}.
 
 get_caret_position(Editor) ->
-position_to_x_y(Editor, ?stc:getCurrentPos(Editor)).
+  position_to_x_y(Editor, ?stc:getCurrentPos(Editor)).
 
 
 %% =====================================================================
@@ -1207,3 +1202,34 @@ replace_all(Editor, Str, RepStr, Start, End) ->
 %   ?stc:setTargetStart(Editor, Start),
 %   ?stc:setTargetEnd(Editor, End),
 %   ?stc:replaceTarget(Editor, Str).
+
+
+%% =====================================================================
+%% @doc Initialise menu items 
+
+menu_init(Editor) ->
+  ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_SET_FOCUS], true),
+  Undo = case ?stc:canUndo(Editor) of
+    true -> ?wxID_UNDO;
+    false -> []
+  end,
+  Redo = case ?stc:canRedo(Editor) of
+    true -> ?wxID_REDO;
+    false -> []
+  end,
+  Paste = case ?stc:canPaste(Editor) of
+    true -> ?wxID_PASTE;
+    false -> []
+  end,
+  %% Cut, Copy, Delete
+  Others = case ?stc:getSelection(Editor) of
+    {N, N} -> []; %% no selection
+    _ -> [?wxID_CUT, ?wxID_COPY, ?wxID_DELETE]
+  end,
+  Save = case ?stc:getModify(Editor) of
+    true -> ?wxID_SAVE;
+    false -> []
+  end,
+  Enable = lists:flatten([Undo, Redo, Paste, Save, Others]),
+  ide:toggle_menu_items(Enable, true),
+  ok.

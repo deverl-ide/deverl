@@ -132,6 +132,7 @@ init(Config) ->
   %% Events
   ?stc:connect(Log, set_focus, [{skip, true}]),
   ?stc:connect(Log, kill_focus, [{skip, true}]),
+  ?stc:connect(Log, stc_updateui, []),
 
 	wxSizer:add(MainSizer, Log, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
@@ -211,6 +212,14 @@ handle_event(#wx{event=#wxFocus{type=set_focus}}, State) ->
 handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->
   %% Disable undo
   ide:toggle_menu_items([?wxID_COPY, ?wxID_SELECTALL], false),
+  {noreply, State};
+handle_event(#wx{event=#wxStyledText{type=stc_updateui}},State=#state{log=Log}) ->
+  case ?stc:getSelection(Log) of
+    {N,N} -> 
+      ide:toggle_menu_items([?wxID_COPY], false);
+    _ -> 
+      ide:toggle_menu_items([?wxID_COPY], true)
+  end,
   {noreply, State}.
 
 code_change(_, _, State) ->

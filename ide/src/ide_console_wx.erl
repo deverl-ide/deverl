@@ -8,11 +8,11 @@
 %% @end
 %% In the current implementation we manage the prompt ourselves
 %% (ide_console_parser strips the prompt returned from the port), so that
-%% we can write to the textctrl anywhere we like without having to
+%% we can write to the console anywhere we like without having to
 %% worry about deleting/re-numbering prompts.
 %% We settled on this current implementation as a comprimise (in the
 %% original implementation everything received from the port was
-%% written to the textctrl). The optimal solution would be to use the
+%% written to the console). The optimal solution would be to use the
 %% erl_parse/erl_eval/erl_scan APIs in the same way that shell.erl does
 %% from std lib. We may well use that approach in the future.
 %% =====================================================================
@@ -55,7 +55,7 @@
 
 %% Server state
 -record(state, {win,
-								textctrl,
+								console,
 								cmd_history,
 								current_cmd,
                 input,
@@ -190,6 +190,7 @@ init(Config) ->
   ?stc:connect(Console, command_menu_selected),
   ?stc:connect(Console, kill_focus, [{skip, true}]),
   ?stc:connect(Console, set_focus, [{skip, true}]),
+  ?stc:connect(Console, stc_updateui),
 
   %% Add initial text
   InitText = ?CONSOLE_HEADER ?PROMPT,
@@ -209,7 +210,7 @@ init(Config) ->
   wxWindow:setAcceleratorTable(Console, AccelTab),
 
 	State=#state{win=Panel,
-				       textctrl=Console,
+				       console=Console,
 				       cmd_history=[],
 				       current_cmd=0,
                input=[],
@@ -222,7 +223,7 @@ handle_info(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
 
-handle_cast({set_theme, Fg, Bg, MrkrBg, _ErrFg}, State=#state{textctrl=Console}) ->
+handle_cast({set_theme, Fg, Bg, MrkrBg, _ErrFg}, State=#state{console=Console}) ->
   SetColour = fun(StyleId) ->
     ?stc:styleSetBackground(Console, StyleId, Bg),
     ?stc:styleSetForeground(Console, StyleId, Fg)
@@ -231,20 +232,20 @@ handle_cast({set_theme, Fg, Bg, MrkrBg, _ErrFg}, State=#state{textctrl=Console})
   ?stc:setCaretForeground(Console, Fg),
   ?stc:markerSetBackground(Console, ?MARKER_MSG, MrkrBg),
   {noreply,State};
-handle_cast({set_font, Font}, State=#state{textctrl=Console}) ->
+handle_cast({set_font, Font}, State=#state{console=Console}) ->
   ?stc:styleSetFont(Console, 0, Font),
   ?stc:styleSetFont(Console, ?wxSTC_STYLE_DEFAULT, Font),
   ?stc:styleSetFont(Console, ?STYLE_PROMPT, Font),
   {noreply,State};
-handle_cast({append, {response, complete}}, State=#state{textctrl=Console}) ->
+handle_cast({append, {response, complete}}, State=#state{console=Console}) ->
   prompt_2_console(Console, ?PROMPT, false),
   {noreply, State#state{busy=false}};
-handle_cast({append, {response, Response}}, State=#state{textctrl=Console}) ->
+handle_cast({append, {response, Response}}, State=#state{console=Console}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   ?stc:addText(Console, Response),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   {noreply, State};
-handle_cast({append_msg, Msg, Prompt}, State=#state{textctrl=Console}) ->
+handle_cast({append_msg, Msg, Prompt}, State=#state{console=Console}) ->
   ?stc:freeze(Console),
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   case Prompt of
@@ -270,7 +271,7 @@ handle_cast({call_parser, Cmd, Busy}, State) ->
   {noreply, State#state{busy=Busy, input=[]}};
 handle_cast({append_input, Input}, State=#state{input=Cmd}) ->
   {noreply, State#state{input=Cmd++Input}};
-handle_cast(clear, State=#state{textctrl=Console, busy=Busy}) ->
+handle_cast(clear, State=#state{console=Console, busy=Busy}) ->
   ?stc:clearAll(Console),
   case Busy of
     true ->
@@ -279,7 +280,7 @@ handle_cast(clear, State=#state{textctrl=Console, busy=Busy}) ->
       prompt_2_console(Console, ?PROMPT, false)
   end,
   {noreply, State};
-handle_cast(eval, State=#state{textctrl=Console, input=Cmd, cmd_history=Hst0, current_cmd=Idx0}) ->
+handle_cast(eval, State=#state{console=Console, input=Cmd, cmd_history=Hst0, current_cmd=Idx0}) ->
   {Hst1, Idx1} = case eval(Console, Cmd, Hst0) of
     ok -> {Hst0, Idx0};
     Upt -> Upt
@@ -288,7 +289,7 @@ handle_cast(eval, State=#state{textctrl=Console, input=Cmd, cmd_history=Hst0, cu
 
 handle_call({update_cmd_index, Index}, _From, State) ->
   {reply, ok, State#state{current_cmd=Index}};
-handle_call({paste, Line}, _From, State=#state{textctrl=Console, input=Cmd, cmd_history=Hst0, current_cmd=Idx0}) ->
+handle_call({paste, Line}, _From, State=#state{console=Console, input=Cmd, cmd_history=Hst0, current_cmd=Idx0}) ->
   ?stc:gotoPos(Console, ?stc:getLength(Console)),
   ?stc:addText(Console, Line),
   {Hst1, Idx1} = case eval(Console, Cmd, Hst0) of
@@ -304,7 +305,7 @@ handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
   wxWindow:popupMenu(Console, Menu),
 	{noreply, State};
 handle_event(#wx{id=?ID_RESET_CONSOLE, event=#wxCommand{type=command_menu_selected}},
-            State=#state{textctrl=Console}) ->
+            State=#state{console=Console}) ->
   ide_console_port_gen:close_port(),
   append_message("Console reset"),
   prompt_2_console(Console, ?PROMPT),
@@ -314,11 +315,11 @@ handle_event(#wx{id=?ID_CLEAR_CONSOLE, event=#wxCommand{type=command_menu_select
   clear(),
   {noreply, State};
 handle_event(#wx{id=?wxID_COPY, event=#wxCommand{type=command_menu_selected}},
-            State=#state{textctrl=Console}) ->
+            State=#state{console=Console}) ->
   ?stc:cmdKeyExecute(Console, ?wxSTC_CMD_COPY),
   {noreply, State};
 handle_event(#wx{id=?wxID_PASTE, event=#wxCommand{type=command_menu_selected}},
-            State=#state{textctrl=Console}) ->
+            State=#state{console=Console}) ->
               Env = wx:get_env(),
   spawn(fun() -> wx:set_env(Env), paste(Console) end),
   {noreply, State};
@@ -330,6 +331,15 @@ handle_event(#wx{event=#wxFocus{type=set_focus}}, State) ->
 handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->
   %% Disable undo
   ide:toggle_menu_items([?wxID_COPY, ?wxID_PASTE, ?wxID_SELECTALL], false),
+  {noreply, State};
+  
+handle_event(#wx{event=#wxStyledText{type=stc_updateui}},State=#state{console=Console}) ->
+  case ?stc:getSelection(Console) of
+    {N,N} -> 
+      ide:toggle_menu_items([?wxID_COPY], false);
+    _ -> 
+      ide:toggle_menu_items([?wxID_COPY], true)
+  end,
   {noreply, State}.
 
 code_change(_, _, State) ->
