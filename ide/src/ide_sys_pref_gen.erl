@@ -105,7 +105,7 @@ set_font(Name, Font) ->
 
 init(Config) ->
   wx:set_env(proplists:get_value(wx_env, Config)),
-  Table = case filelib:is_file(system_prefs) of
+  Table = case filelib:is_file(get_pref_file()) of
     true ->
       load_prefs();
     false ->
@@ -254,7 +254,6 @@ areWeOnCampus(Name) ->
   Path = filename:join(?UNI_PATH_TO_ERTS, Name),
   case filelib:is_file(Path) of
     true -> %% Yes, we probably are
-      io:format("AT UNI"),
       Path;
     false ->
       ok
@@ -304,7 +303,7 @@ ensure_proj_dir(DefaultDir) ->
 -spec load_prefs() -> ets:ets().
 
 load_prefs() ->
-  case dets:open_file(system_prefs, []) of
+  case dets:open_file(get_pref_file(), []) of
     {ok, DetsTable} ->
       PrefsTable = dets:to_ets(DetsTable, ets:new(prefs ,[])),
       dets:close(DetsTable),
@@ -333,7 +332,7 @@ create_dets() ->
 -spec write_dets(ets:ets()) -> ets:ets().
 
 write_dets(PrefsTable) ->
-  case dets:open_file(system_prefs, []) of
+  case dets:open_file(get_pref_file(), []) of
     {ok, DetsTable} ->
       ets:to_dets(PrefsTable, DetsTable),
       dets:close(DetsTable),
@@ -351,3 +350,10 @@ write_dets(PrefsTable) ->
 insert_default_prefs(PrefsTable) ->
   [ets:insert(PrefsTable, {Key, Value}) || {Key, Value} <- ide_sys_pref_defs:get_defaults()],
   ok.
+
+
+%% =====================================================================
+%% @doc Get the system pref file.
+
+get_pref_file() ->
+  filename:join(filename:dirname(code:which(?MODULE)), system_prefs).

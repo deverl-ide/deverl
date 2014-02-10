@@ -9,6 +9,8 @@
 
 -module(ide_dialyzer_port).
 
+-include("ide.hrl").
+
 %% API
 -export([run/2]).
 
@@ -31,7 +33,10 @@ run(From, Config) ->
   end,
   Flags = lists:foldl(SetFlags, [], Config),
   ide_stdout_wx:clear(),
-  open_port({spawn_executable, dialyzer()}, [use_stdio,
+  
+  #general_prefs{path_to_dialyzer=Dlzr} = ide_sys_pref_gen:get_preference(general_prefs),
+  
+  open_port({spawn_executable, Dlzr}, [use_stdio,
                                              exit_status,
                                              {args, Flags}]),
                                              
@@ -58,18 +63,4 @@ loop(From) ->
     {_Port, {exit_status, _}} ->
       ide_log_out_wx:error("ERROR: Dialyzer failed. See output.", [{hotspot, "output"}]),
       From ! {self(), error}
-  end.
-
-
-%% =====================================================================
-%% @doc Get the path to erlc.
-
--spec dialyzer() -> file:filename().
-
-dialyzer() ->
-  case os:type() of
-		{win32,_} ->
-			"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\dialyzer";
-    _ ->
-      string:strip(os:cmd("which dialyzer"), both, $\n)
   end.
