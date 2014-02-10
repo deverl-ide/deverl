@@ -12,14 +12,13 @@
 
 -module(ide_compiler_port).
 
+-include("ide.hrl").
+
 %% API
 -export([start/1, start/2]).
 
 %% Spawned process
 -export([compile/3]).
-
-%% Type
--type path() :: string().
 
 
 %% =====================================================================
@@ -100,8 +99,10 @@ compile(From, Path, Config) ->
       {Path, lists:append(DirFlags, Files)}
   end,
 
+  #general_prefs{path_to_erlc=ErlC} = ide_sys_pref_gen:get_preference(general_prefs),
+
   ide_stdout_wx:clear(),
-  open_port({spawn_executable, erlc()}, [use_stdio,
+  open_port({spawn_executable, ErlC}, [use_stdio,
                                          exit_status,
                                          {cd, Cwd},
                                          {args, lists:append(Flags, Args)}]),
@@ -140,12 +141,12 @@ loop(From, Name) ->
 %% =====================================================================
 %% @doc Get the path to erlc.
 
--spec erlc() -> path().
-
-erlc() ->
-  case os:type() of
-		{win32,_} ->
-			"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erlc";
-    _ ->
-      string:strip(os:cmd("which erlc"), both, $\n)
-  end.
+% -spec erlc() -> path().
+% 
+% erlc() ->
+%   case os:type() of
+%     {win32,_} ->
+%       "C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erlc";
+%     _ ->
+%       string:strip(os:cmd("which erlc"), both, $\n)
+%   end.

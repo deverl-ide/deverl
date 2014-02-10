@@ -30,6 +30,8 @@
 %% Server state
 -record(state, {prefs_table}).
 
+-define(UNI_PATH_TO_ERTS, "Q:\\Erlang_VFS\\erl5.8.3\\erts-5.10.1\\bin").
+
 
 %% =====================================================================
 %% Client API
@@ -184,50 +186,79 @@ initialise_prefs(Table) ->
   case os:getenv("HOME") of
     false ->
       %% Set it
-      os:setenv("HOME", GenPref1#general_prefs.home_env_var);
+      os:putenv("HOME", GenPref1#general_prefs.home_env_var);
     Home1 ->
       ok
   end,
   
-  %% Paths to binaries
-  Paths = [{erl, GenPref1#general_prefs.path_to_erl},
-           {erlc, GenPref1#general_prefs.path_to_erlc},
-           {dlyz, GenPref1#general_prefs.path_to_dialyzer}],
-  IsPath = fun
-    ({Exe, false}, Acc) -> %% default exe not found
-      %% TODO
-      case areWeOnCampus() of %% check if we are at Uni
-        true -> %% save the pref
-          Acc;
-        false -> %% notify not found
-          ["The " ++ atom_to_list(Exe) ++ " executable could not be found automatically.\n" | Acc]
-      end;
-    ({_Exe, Path}, Acc) -> %% User defined path, validate the exe
-      
-      Acc
+  NotifyNotFound = fun(Name) ->
+    Dlg1 = ide_lib_dlg_wx:message(wx:null(), 
+            [{caption, "Oops."},
+             {text1, Name},
+             {text2, "You can set the path manually in the preferences."},
+             {buttons, [?wxID_OK]}]),
+    wxDialog:showModal(Dlg1),
+    wxDialog:destroy(Dlg1)
   end,
-  case lists:foldl(IsPath, [], Paths) of
-    [] -> ok;
-    Err -> %% Couldn't find an exe
-      Dlg1 = ide_lib_dlg_wx:message(wx:null(), 
-        [{caption, "Oops."},
-         {text1, Err},
-         {text2, "You can set the path manually in the preferences."},
-         {buttons, [?wxID_OK]}]),
-      wxDialog:showModal(Dlg1),
-      wxDialog:destroy(Dlg1)
+  
+  %% Test path to erl
+  GenPref2 = case GenPref1#general_prefs.path_to_erl of
+    false -> %% default not found
+      case areWeOnCampus("erl.exe") of
+        false -> %% notify not found, disable ctrls
+          NotifyNotFound("erl"),
+          GenPref1;
+        ErlPath -> %% save into prefs
+          GenPref1#general_prefs{path_to_erl=ErlPath}
+      end;
+    Path0 -> %% validate the path
+      GenPref1
+  end,
+    
+  % Test path to erlc
+  GenPref3 = case GenPref2#general_prefs.path_to_erlc of
+    false -> %% default not found
+      case areWeOnCampus("erlc.exe") of
+        false -> %% notify not found, disable ctrls
+          NotifyNotFound("erlc"),
+          GenPref2;
+        ErlcPath -> %% save into prefs
+          GenPref2#general_prefs{path_to_erlc=ErlcPath}
+      end;
+    Path1 -> %% validate the path
+      GenPref2
+  end,
+  
+  %% Test path to dialyzer
+  GenPref4 = case GenPref3#general_prefs.path_to_dialyzer of
+    false -> %% default not found
+      case areWeOnCampus("dialyzer.exe") of
+        false -> %% notify not found, disable ctrls
+          NotifyNotFound("dialyzer"),
+          GenPref3;
+        DlzrPath -> %% save into prefs
+          GenPref3#general_prefs{path_to_dialyzer=DlzrPath}
+      end;
+    Path2 -> %% validate the path
+      GenPref3
   end,
   
   %% Update general prefs
-  ets:update_element(Table, general_prefs, {2, GenPref1}),
+  ets:update_element(Table, general_prefs, {2, GenPref4}),
   
   %% Write any updates
   write_dets(Table),
   ok.
 
-
-areWeOnCampus() ->
-  false.
+areWeOnCampus(Name) ->
+  Path = filename:join(?UNI_PATH_TO_ERTS, Name),
+  case filelib:is_file(Path) of
+    true -> %% Yes, we probably are
+      io:format("AT UNI"),
+      Path;
+    false ->
+      ok
+  end.
 
 %% =====================================================================
 %% @doc A text prompt for the user to manualy add the path to the

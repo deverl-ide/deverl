@@ -75,13 +75,17 @@ close_port() ->
 %% =====================================================================
 
 init(_Args) ->
-	{Path, Options} = case os:type() of
-		{win32,_} ->
-			{"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erl", [use_stdio]};
-		_Other ->
-      {string:strip(os:cmd("which erl"), both, $\n), [use_stdio, exit_status]}
-	end,
-	try open(Path, Options) of
+  %% get peth to erl from prefs
+  #general_prefs{path_to_erl=Erl} = ide_sys_pref_gen:get_preference(general_prefs),
+  % {Path, Options} = case os:type() of
+  %   {win32,_} ->
+  %     {"C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erl", [use_stdio]};
+  %   _Other ->
+  %       {string:strip(os:cmd("which erl"), both, $\n), [use_stdio, exit_status]}
+  % end,
+  
+  Options = [use_stdio, exit_status],
+	try open(Erl, Options) of
 		Port ->
 			{ok, #state{port=Port, respond=false}}
 	catch
