@@ -450,11 +450,13 @@ path_to_project_id([_|T], Path) ->
 is_subpath(_Path, []) ->
   false;
 is_subpath(Path, [ProjectPath|ProjectPaths]) ->
-  case string:equal(string:sub_string(Path, 1, string:len(ProjectPath)), ProjectPath) of
+  Path1 = filename:join([Path]),
+  ProjectPath1 = filename:join([ProjectPath]),
+  case string:equal(string:sub_string(Path1, 1, string:len(ProjectPath1)), ProjectPath1) of
     true ->
-      {true, ProjectPath};
+      {true, ProjectPath1};
     false ->
-      is_subpath(Path, ProjectPaths)
+      is_subpath(Path1, ProjectPaths)
   end.
 
 
