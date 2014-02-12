@@ -61,7 +61,7 @@
 -define(ID_GENERATE_MAKEFILE, 5).
 
 %% Server state
--record(state, {frame, panel, tree}).
+-record(state, {frame, panel, tree, menu}).
 
 
 %% =====================================================================
@@ -176,6 +176,8 @@ init(Config) ->
   AddRoot(?HEADER_FILES, "Standalone Files", ?HEADER_FILES_EMPTY),
 
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  
+  Menu = build_menu(),
 
   wxTreeCtrl:connect(Tree, command_tree_item_activated, [{skip, true}]),
   wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
@@ -186,7 +188,7 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
   wxTreeCtrl:connect(Tree, command_tree_item_menu, []),
 
-	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
+	{Panel, #state{frame=Frame, panel=Panel, tree=Tree, menu=Menu}}.
 
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
@@ -305,21 +307,20 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
     false -> ok
   end,
 	{noreply, State};
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_menu}}, State) ->
-  Menu = create_menu(),
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_menu, item=Item}}, State) ->
+  Menu = init_menu(State#state.menu, Tree, Item),
   wxWindow:popupMenu(Tree, Menu),
 	{noreply, State};
 handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
-            State=#state{frame=Frame}) ->
+            State=#state{frame=Frame, tree=Tree}) ->
+  Item = wxTreeCtrl:getSelection(Tree),
   case Id of
     ?wxID_NEW ->
       ide_doc_man_wx:new_document(Frame);
     ?MENU_ID_CLOSE_PROJECT ->
       ok;
-    ?ID_NEW_FOLDER ->
-      ok;
     ?ID_RENAME ->
-      ok;
+      wxTreeCtrl:editLabel(Tree, Item) %% command_tree_end_label_edit is generated if the label is changed;
     ?ID_DELETE_FILE ->
       ok;
     ?ID_IMPORT_FILE ->
@@ -582,7 +583,7 @@ check_dir_has_contents(Tree, Item, FilePath) ->
 -spec add_dummy_child(wxTreeCtrl:wxTreeCtrl(), integer()) -> integer().
 
 add_dummy_child(Tree, Item) ->
-  wxTreeCtrl:appendItem(Tree, Item, "DUMMY").
+  wxTreeCtrl:appendItem(Tree, Item, "Loading..").
 
 
 %% =====================================================================
@@ -835,12 +836,11 @@ set_item_bold(Tree, Item) ->
 %% =====================================================================
 %% @doc Create the popup menu.
 
--spec create_menu() -> wxMenu:wxMenu().
+-spec build_menu() -> wxMenu:wxMenu().
 
-create_menu() ->
+build_menu() ->
     Menu = wxMenu:new([]),
     wxMenu:append(Menu, ?wxID_NEW, "New File\tCtrl+N", []),
-    wxMenu:append(Menu, ?ID_NEW_FOLDER, "New Folder", []),
     wxMenu:append(Menu, ?ID_RENAME, "Rename", []),
     wxMenu:append(Menu, ?ID_DELETE_FILE, "Delete File", []),
     wxMenu:appendSeparator(Menu),
@@ -853,6 +853,36 @@ create_menu() ->
     Menu.
 
 
+%% =====================================================================
+%% @doc Show the popup menu.
+
+% -spec init_menu(wxMenu:wxMenu()) -> wxMenu:wxMenu().
+
+init_menu(Menu, Tree, Item) ->
+    Type = case wxTreeCtrl:getItemData(Tree, Item) of
+      {_ProjId, Path} ->
+        case filelib:is_dir(Path) of
+          true -> dir;
+          false -> file
+        end;
+      _ -> 
+        undefined
+    end,
+    
+    Toggle = fun(ID, Enable) ->
+      wxMenuItem:enable(wxMenu:findItem(Menu, ID), [{enable, Enable}])
+    end,
+    
+    case Type of
+      file ->
+        [Toggle(Id, true) || Id <- [?ID_RENAME, ?ID_DELETE_FILE]];
+      _ -> 
+        [Toggle(Id, false) || Id <- [?ID_RENAME, ?ID_DELETE_FILE]]
+    end,
+
+    Menu.
+    
+    
 %% =====================================================================
 %% @doc
 
