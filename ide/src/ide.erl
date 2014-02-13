@@ -15,7 +15,7 @@
 
 %% wx_object
 -behaviour(wx_object).
--export([init/1, terminate/2, code_change/3, handle_info/2, 
+-export([init/1, terminate/2, code_change/3, handle_info/2,
          handle_call/3, handle_cast/2, handle_event/2]).
 
 %% API
@@ -109,7 +109,7 @@ toggle_menu_group(Groups, Toggle) ->
 
 toggle_menu_items(Items, Toggle) ->
   wx_object:cast(?MODULE, {toggle_menu_items, Items, Toggle}).
-  
+
 
 %% =====================================================================
 %% @doc Show the window identified by WinId in the output window, hiding the
@@ -130,18 +130,18 @@ init(Options) ->
 	Wx = wx:new(Options),
 	WxEnv = wx:get_env(),
 	process_flag(trap_exit, true),
-  
+
   %% Initialise XRC
   Xrc = wxXmlResource:get(),
   wxXmlResource:initAllHandlers(Xrc),
   true = wxXmlResource:load(Xrc, ide_lib_widgets:rc_dir("dlgs.xrc")),
-	
+
   %% Load modules that should be started by OTP Application and not here
   ide_sys_pref_gen:start([{wx_env, WxEnv}]),
-  
+
   %% UI saved pref
   UIPrefs = ide_sys_pref_gen:get_preference(ui_prefs),
-  
+
 	Frame = wxFrame:new(Wx, ?wxID_ANY, ?FRAME_TITLE, [{size, UIPrefs#ui_prefs.frame_size}]),
 	wxFrame:connect(Frame, close_window),
 	wxFrame:setMinSize(Frame, {300,200}),
@@ -188,15 +188,15 @@ init(Options) ->
   wxFrame:setSize(Frame, UIPrefs#ui_prefs.frame_size),
   wxSplitterWindow:setSashPosition(SplitterUtilities, UIPrefs#ui_prefs.sash_horiz),
   wxSplitterWindow:setSashPosition(SplitterSidebar, UIPrefs#ui_prefs.sash_vert_1),
-	
+
   wxFrame:show(Frame),
 
 	wxSplitterWindow:setSashGravity(SplitterUtilities, 1.0), % Only the top window grows on resize
 	wxSplitterWindow:setSashGravity(SplitterSidebar, 0.0), % Only the right window grows
-  
+
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
-  
+
   % wxFrame:connect(Frame, size, [{skip, true}]),
 
 	%% Testing accelerator table
@@ -247,20 +247,20 @@ handle_cast({toggle_menu_group, Groups, Toggle}, State) ->
   Tb = wxFrame:getToolBar(State#state.frame),
   wx:foreach(fun(Group) ->
     MenuIds = proplists:get_value(Group, State#state.menu_groups),
-    lists:map(fun(MenuId) -> 
-      toggle_menu_item(Mb, Tb, MenuId, Toggle) 
+    lists:map(fun(MenuId) ->
+      toggle_menu_item(Mb, Tb, MenuId, Toggle)
     end, MenuIds)
   end, Groups),
   {noreply, State};
-  
+
 handle_cast({toggle_menu_items, Items, Toggle}, State) ->
   Mb = wxFrame:getMenuBar(State#state.frame),
   Tb = wxFrame:getToolBar(State#state.frame),
   wx:foreach(fun(Item) ->
-      toggle_menu_item(Mb, Tb, Item, Toggle) 
+      toggle_menu_item(Mb, Tb, Item, Toggle)
   end, Items),
   {noreply, State};
-  
+
 handle_cast({title, Title}, State=#state{frame=Frame}) ->
 	Str = case Title of
 		[] -> ?FRAME_TITLE;
@@ -268,10 +268,10 @@ handle_cast({title, Title}, State=#state{frame=Frame}) ->
 	end,
 	wxFrame:setTitle(Frame, Str),
   {noreply, State};
-  
+
 handle_cast({output_display, Id}, State) ->
   Splitter = wx:typeCast(wxWindow:findWindowById(?SPLITTER_OUTPUT), wxSplitterWindow),
-  replace_output_window(Splitter, wxWindow:findWindowById(Id), 
+  replace_output_window(Splitter, wxWindow:findWindowById(Id),
     State#state.splitter_output_active, State#state.splitter_output_pos),
   {noreply, State}.
 
@@ -350,7 +350,7 @@ handle_event(#wx{id=?SPLITTER_OUTPUT, event=#wxSplitter{type=command_splitter_un
       ok
   end,
   {noreply, State};
-  
+
 handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State) ->
   {noreply, State};
 
@@ -363,13 +363,13 @@ handle_event(#wx{event=#wxSplitter{type=command_splitter_doubleclicked}}, State)
 % Output windows (log, output etc.)
 handle_event(#wx{userData={Splitter, Window}, event=#wxCommand{type=command_button_clicked}},
              State=#state{splitter_output_pos=Pos}) ->
-  replace_output_window(Splitter, Window, 
+  replace_output_window(Splitter, Window,
     State#state.splitter_output_active, Pos),
   Btn = wx:typeCast(wxWindow:findWindowById(?BUTTON_HIDE_OUTPUT), wxBitmapButton),
   Bmp = wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir(?BITMAP_OUTPUT_SHOWN))),
   wxBitmapButton:setBitmapLabel(Btn, Bmp),
   {noreply, State};
-  
+
 handle_event(#wx{userData=Splitter, event=#wxCommand{type=command_button_clicked}},
              State=#state{splitter_output_active=PrevOutput, splitter_output_pos=Pos}) ->
   CurrOutput = show_hide_output(Splitter, PrevOutput, Pos),
@@ -388,11 +388,11 @@ handle_event(#wx{id=?wxID_NEW}, State) ->
 handle_event(#wx{id=?MENU_ID_NEW_PROJECT}, State) ->
   ide_proj_man:new_project(State#state.frame),
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_OPEN_PROJECT}, State) ->
   ide_proj_man:open_project_dialog(State#state.frame),
   {noreply, State};
-  
+
 handle_event(#wx{id=?wxID_OPEN}, State) ->
   ide_doc_man_wx:open_document_dialog(State#state.frame),
   {noreply, State};
@@ -404,43 +404,43 @@ handle_event(#wx{id=?wxID_SAVE}, State) ->
 handle_event(#wx{id=?wxID_SAVEAS}, State) ->
   ide_doc_man_wx:save_as(),
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_SAVE_ALL}, State) ->
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_SAVE_PROJECT}, State) ->
   ide_doc_man_wx:save_active_project(),
   {noreply, State};
-  
+
 handle_event(#wx{id=?wxID_PRINT}, State) ->
   {noreply, State};
-  
+
 handle_event(#wx{id=?wxID_CLOSE}, State) ->
   ide_doc_man_wx:close_active_document(),
   {noreply, State};
-  
+
 handle_event(#wx{id=?wxID_CLOSE_ALL}, State) ->
   ide_doc_man_wx:close_all(),
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_CLOSE_PROJECT}, State) ->
   ide_proj_man:close_active_project(),
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_IMPORT_FILE}, State) ->
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_IMPORT_PROJECT}, State) ->
   ide_proj_man:import(State#state.frame),
   {noreply, State};
-  
+
 handle_event(#wx{id=?wxID_UNDO}, State) -> %% only enabled when an editor is in focus
   wxStyledTextCtrl:undo(wx:typeCast(wxWindow:findFocus(), wxStyledTextCtrl)),
   {noreply, State};
- 
+
 handle_event(#wx{id=?wxID_REDO}, State) ->
   wxStyledTextCtrl:redo(wx:typeCast(wxWindow:findFocus(), wxStyledTextCtrl)),
-  {noreply, State}; 
+  {noreply, State};
 
 %% The following text functions use default handlers for wxTextCtrl,
 %% (?wxID_CUT, ?wxID_COPY, ?wxID_PASTE, ?wxID_SELECTALL, ?wxID_DELETE), so only the
@@ -456,7 +456,7 @@ handle_event(#wx{id=?wxID_PASTE}, State) ->
       wxStyledTextCtrl:paste(wx:typeCast(Fw, wxStyledTextCtrl))
   end,
   {noreply, State};
-  
+
 handle_event(#wx{id=?wxID_COPY}, State) ->
   catch wxStyledTextCtrl:copy(wx:typeCast(wxWindow:findFocus(), wxStyledTextCtrl)),
   {noreply, State};
@@ -468,7 +468,7 @@ handle_event(#wx{id=?wxID_CUT}, State) ->
 handle_event(#wx{id=?wxID_DELETE}, State) ->
   catch wxStyledTextCtrl:clear(wx:typeCast(wxWindow:findFocus(), wxStyledTextCtrl)),
   {noreply, State};
-  
+
 handle_event(#wx{id=?wxID_SELECTALL}, State) ->
   catch wxStyledTextCtrl:selectAll(wx:typeCast(wxWindow:findFocus(), wxStyledTextCtrl)),
   {noreply, State};
@@ -484,7 +484,7 @@ handle_event(#wx{id=?wxID_PREFERENCES}, State) ->
 handle_event(#wx{id=?MENU_ID_QUICK_FIND}, State) ->
   ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:quick_find/1, []),
   {noreply, State};
-  
+
 handle_event(#wx{id=?wxID_FIND}, State) ->
   FindData = ide_dlg_data_find_wx:new(),
   ide_dlg_data_find_wx:set_options(FindData, ?IGNORE_CASE bor ?WHOLE_WORD bor ?START_WORD),
@@ -496,7 +496,7 @@ handle_event(#wx{id=?wxID_FIND}, State) ->
       wxDialog:raise(ide_dlg_find_wx:get_ref(Pid))
   end,
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_FONT}, State) ->
   %% Display the system font picker
   FD = wxFontData:new(),
@@ -559,7 +559,7 @@ handle_event(#wx{id=?MENU_ID_INDENT_LEFT}, State) ->
 handle_event(#wx{id=?MENU_ID_TOGGLE_COMMENT}, State) ->
   ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:comment/1, []),
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_GOTO_LINE}, State) ->
   %% Process the user input
   Process = fun(Input) ->
@@ -586,12 +586,12 @@ handle_event(#wx{id=?MENU_ID_GOTO_LINE}, State) ->
     ?wxID_OK ->
       V = wxTextEntryDialog:getValue(Dlg),
       Process(V);
-    _ -> 
+    _ ->
       ok
   end,
   wxTextEntryDialog:destroy(Dlg),
    {noreply, State};
-  
+
 handle_event(#wx{id=Id}, State) when Id =:= ?MENU_ID_UC_SEL orelse Id =:= ?MENU_ID_LC_SEL ->
 	Cmd = case Id of
 		?MENU_ID_UC_SEL -> uppercase;
@@ -599,11 +599,15 @@ handle_event(#wx{id=Id}, State) when Id =:= ?MENU_ID_UC_SEL orelse Id =:= ?MENU_
 	end,
 	ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:transform_selection/2, [{transform, Cmd}]),
   {noreply, State};
-  
+
+handle_event(#wx{id=?MENU_ID_STRIP_SPACES}, State) ->
+
+  {noreply, State};
+
 handle_event(#wx{id=?MENU_ID_COMPILE_FILE}, State) ->
   ide_build:compile_file(),
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_MAKE_PROJECT}, State) ->
   ide_build:make_project(),
   {noreply, State};
@@ -611,7 +615,7 @@ handle_event(#wx{id=?MENU_ID_MAKE_PROJECT}, State) ->
 handle_event(#wx{id=?MENU_ID_RUN}, State) ->
   ide_build:run_project(State#state.frame),
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_RUN_TESTS}, State) ->
   case ide_build:compile_file() of
     {error, _} -> % Compilation failed
@@ -625,29 +629,29 @@ handle_event(#wx{id=?MENU_ID_RUN_TESTS}, State) ->
       ide_tabbed_win_img_wx:set_selection(State#state.left_pane, 2)
   end,
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_RUN_OBSERVER}, State) ->
-  ide_console_port_gen:eval("observer:start().\n", false), 
+  ide_console_port_gen:eval("observer:start().\n", false),
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_RUN_DEBUGGER}, State) ->
-  ide_console_port_gen:eval("debugger:start().\n", false), 
+  ide_console_port_gen:eval("debugger:start().\n", false),
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_DIALYZER}, State) ->
   ide_dialyzer:run(State#state.frame),
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_ADD_TO_PLT}, State) ->
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_PLT_INFO}, State) ->
   {noreply, State};
-  
+
 handle_event(#wx{id=?MENU_ID_DIAL_WARN}, State) ->
   {noreply, State};
-  
-  
+
+
 handle_event(#wx{id=?MENU_ID_NEXT_TAB}, State) ->
   ide_doc_man_wx:set_selection(right),
   {noreply, State};
@@ -655,7 +659,7 @@ handle_event(#wx{id=?MENU_ID_NEXT_TAB}, State) ->
 handle_event(#wx{id=?MENU_ID_PREV_TAB}, State) ->
   ide_doc_man_wx:set_selection(left),
   {noreply, State};
-  
+
 handle_event(#wx{id=?wxID_ABOUT}, State) ->
   Dlg = ide_dlg_about_wx:new(State#state.frame),
   wxDialog:showModal(Dlg),
@@ -718,12 +722,12 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_T
    end,
    wxWindow:thaw(V),
 	{noreply, State};
-  
+
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_OUTPUT},
              State=#state{splitter_output_active=PrevOutput, splitter_output_pos=Pos}) ->
   CurrOutput = show_hide_output(wx:typeCast(wxWindow:findWindowById(?SPLITTER_OUTPUT), wxSplitterWindow), PrevOutput, Pos),
   {noreply, State#state{splitter_output_active=CurrOutput}};
-  
+
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_UTIL},
 						 State=#state{splitter_utilities=H, splitter_sidebar=V, utilities=Utils, splitter_utilities_pos=HPos}) ->
 	IsShown = wxSplitterWindow:isShown(Utils),
@@ -738,7 +742,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_U
 		false -> ok
 	end,
 	{noreply, State};
-  
+
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_EDITOR},
 						 State=#state{splitter_utilities=H, splitter_sidebar=V, utilities=Utils, left_pane=LeftPane,
 						 							splitter_utilities_pos=HPos, splitter_sidebar_pos=VPos, workspace=Ws, frame=Frame}) ->
@@ -759,7 +763,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_ED
 	end,
   wxFrame:thaw(Frame),
 	{noreply, State};
-  
+
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UTIL},
 						 State=#state{frame=Frame, splitter_utilities=H, splitter_sidebar=V, utilities=Utils,
 						 							splitter_utilities_pos=HPos}) ->
@@ -776,7 +780,7 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UT
 	end,
   wxFrame:thaw(Frame),
 	{noreply, State};
-  
+
 %% Sub-menus
 handle_event(#wx{id=Id, userData=ThemeMenu, event=#wxCommand{type=command_menu_selected}},
              State) when (Id >= ?MENU_ID_THEME_LOWEST) and (Id =< ?MENU_ID_THEME_HIGHEST) ->
@@ -792,7 +796,7 @@ handle_event(#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_select
   ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_tab_width/2, [list_to_integer(wxMenu:getLabel(Menu, Id))]),
   ide_sys_pref_gen:set_preference(tab_width, wxMenu:getLabel(Menu, Id)),
 	{noreply, State};
-  
+
 
 %% Event catchall for testing
 handle_event(Ev, State) ->
@@ -860,7 +864,7 @@ create_utils(ParentA) ->
   wxPanel:setSizer(ToolBar, ToolBarSz),
 
   ButtonFlags = [{style, ?wxBORDER_NONE}],
-  Button1 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_LOG, 
+  Button1 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_LOG,
     wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("log_on.png"))), ButtonFlags),
   wxWindow:setToolTip(Button1, "Log"),
   Button2 = wxBitmapButton:new(ToolBar, ?ID_TOGGLE_OUTPUT,
@@ -874,7 +878,7 @@ create_utils(ParentA) ->
   wxPanel:connect(Button1, command_button_clicked, [{userData, {Splitter, Log}}]),
   wxPanel:connect(Button2, command_button_clicked, [{userData, {Splitter, CompilerOutput}}]),
   wxPanel:connect(Button3, command_button_clicked, [{userData, Splitter}]),
-  
+
   wxSplitterWindow:connect(Splitter, command_splitter_unsplit),
 
   SzFlags = [{border, 3}, {flag, ?wxALL}],
@@ -944,7 +948,7 @@ toggle_menu_item(MenuBar, ToolBar, ItemId, Enable) ->
 %% =====================================================================
 %% @doc Replace the the old output window with Window.
 
--spec replace_output_window(wxSplitterWindow:wxSplitterWindow(), wxWindow:wxWindow(), 
+-spec replace_output_window(wxSplitterWindow:wxSplitterWindow(), wxWindow:wxWindow(),
   wxWindow:wxWindow(), integer()) -> ok | boolean().
 
 replace_output_window(Splitter, Window, OldWindow, Pos) ->
@@ -1004,7 +1008,7 @@ show_hide_output(Splitter, PrevOutput, Pos) ->
       end,
       PrevOutput
   end.
-  
+
 
 toggle_button(ok, ok) ->  ok;
 toggle_button(Old, New) ->

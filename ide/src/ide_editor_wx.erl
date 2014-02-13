@@ -572,24 +572,23 @@ handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
 
 %% Auto completion for container characters.
 handle_sync_event(#wx{event=#wxKey{type=char, keyCode=Key}}, Event,
-									State=#state{stc=Editor}) when Key =:= ${ orelse 
-                                                 Key =:= $( orelse 
+									State=#state{stc=Editor}) when Key =:= ${ orelse
+                                                 Key =:= $( orelse
                                                  Key =:= $[ orelse
                                                  Key =:= $" orelse
                                                  Key =:= $' orelse
                                                  Key =:= $` ->
-  %ShiftDown = wxKeyEvent:shiftDown(Event),
   {OpeningChar, ClosingChar} = case Key of
-        ${ -> {"{", "}"};
-        $( -> {"(", ")"};
-        $[ -> {"[", "]"};
-        $" -> {"\"", "\""};
-        $' -> {"\'", "\'"};
-        $` -> {"`", "`"}
+    ${ -> {"{", "}"};
+    $( -> {"(", ")"};
+    $[ -> {"[", "]"};
+    $" -> {"\"", "\""};
+    $' -> {"\'", "\'"};
+    $` -> {"`", "`"}
   end,
   case ?stc:getSelection(Editor) of
     %% With no selection
-    {N, N} -> 
+    {N, N} ->
       io:format("NO SELECT~n"),
       Pos = ?stc:getCurrentPos(Editor),
       ?stc:addText(Editor, ClosingChar),
@@ -604,17 +603,17 @@ handle_sync_event(#wx{event=#wxKey{type=char, keyCode=Key}}, Event,
       ?stc:addText(Editor, ClosingChar),
       ?stc:setSelection(Editor, Start, End+2)
   end;
-  
+
 %% Catch-alls.
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded}}, Event,
 									_State) ->
-  
+
   wxEvent:skip(Event);
 handle_sync_event(#wx{event=#wxKey{type=char}}, Event,
 									_State) ->
   wxEvent:skip(Event).
 
-             
+
 %% =====================================================================
 %% Document events
 %% =====================================================================
