@@ -57,8 +57,8 @@ new(Config) ->
 %% @doc
 
 add_module_tests(Module) ->
-  code:purge(Module),
   code:delete(Module),
+  code:purge(Module),
   List = wx:typeCast(wxWindow:findWindowById(?ID_LIST), wxListCtrl),
   wxListCtrl:deleteAllItems(List),
   try

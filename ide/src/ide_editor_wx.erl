@@ -478,8 +478,9 @@ init(Config) ->
   ?stc:connect(Editor, kill_focus, [{skip, true}]),
   ?stc:connect(Editor, stc_updateui, []),
   ?stc:connect(Editor, stc_change, [{skip, true}]), %% undo/redo stop points
+  ?stc:connect(Editor, char, [callback]),
   ?stc:setModEventMask(Editor, ?wxSTC_LASTSTEPINUNDOREDO), %% restrict to undo/redo notices
-  
+
 	% ?stc:setSavePoint(Editor),
 	wxWindow:setFocusFromKbd(Editor),
 
@@ -545,7 +546,7 @@ handle_cast(show_search, State=#state{main_sz=Sz, search=#search{tc=Tc}}) ->
   wxTextCtrl:setFocus(Tc),
   wxSizer:layout(Sz),
   {noreply,State};
-handle_cast(enable_menus, State) ->  
+handle_cast(enable_menus, State) ->
   %% Enable undo/redo
   menu_init(State#state.stc),
   {noreply, State}.
@@ -556,22 +557,61 @@ handle_cast(enable_menus, State) ->
 
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
 									State=#state{stc=Editor}) when Key =:= ?WXK_RETURN ->
-		Pos = ?stc:getCurrentPos(Editor),
-		Line = ?stc:lineFromPosition(Editor, Pos),
-		CurInd = ?stc:getLineIndentation(Editor, Line - 1),
-		Width = case to_indent(?stc:getLine(Editor, Line - 1)) of
-			true ->
-				CurInd + ?stc:getTabWidth(Editor);
-			false ->
-				CurInd
-		end,
-		?stc:setLineIndentation(Editor, Line, Width),
-		?stc:gotoPos(Editor, ?stc:getLineEndPosition(Editor, Line)),
-		wxEvent:skip(Event);
+  Pos = ?stc:getCurrentPos(Editor),
+  Line = ?stc:lineFromPosition(Editor, Pos),
+  CurInd = ?stc:getLineIndentation(Editor, Line - 1),
+  Width = case to_indent(?stc:getLine(Editor, Line - 1)) of
+    true ->
+      CurInd + ?stc:getTabWidth(Editor);
+    false ->
+      CurInd
+  end,
+  ?stc:setLineIndentation(Editor, Line, Width),
+  ?stc:gotoPos(Editor, ?stc:getLineEndPosition(Editor, Line)),
+  wxEvent:skip(Event);
 
+%% Auto completion for container characters.
+handle_sync_event(#wx{event=#wxKey{type=char, keyCode=Key}}, Event,
+									State=#state{stc=Editor}) when Key =:= ${ orelse
+                                                 Key =:= $( orelse
+                                                 Key =:= $[ orelse
+                                                 Key =:= $" orelse
+                                                 Key =:= $' orelse
+                                                 Key =:= $` ->
+  {OpeningChar, ClosingChar} = case Key of
+    ${ -> {"{", "}"};
+    $( -> {"(", ")"};
+    $[ -> {"[", "]"};
+    $" -> {"\"", "\""};
+    $' -> {"\'", "\'"};
+    $` -> {"`", "`"}
+  end,
+  case ?stc:getSelection(Editor) of
+    %% With no selection
+    {N, N} ->
+      io:format("NO SELECT~n"),
+      Pos = ?stc:getCurrentPos(Editor),
+      ?stc:addText(Editor, ClosingChar),
+      ?stc:gotoPos(Editor, Pos),
+      wxEvent:skip(Event);
+    %% With selection
+    {Start, End} ->
+      io:format("SELECT~n"),
+      ?stc:gotoPos(Editor, Start),
+      ?stc:addText(Editor, OpeningChar),
+      ?stc:gotoPos(Editor, End+1),
+      ?stc:addText(Editor, ClosingChar),
+      ?stc:setSelection(Editor, Start, End+2)
+  end;
+
+%% Catch-alls.
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded}}, Event,
 									_State) ->
-		wxEvent:skip(Event).
+
+  wxEvent:skip(Event);
+handle_sync_event(#wx{event=#wxKey{type=char}}, Event,
+									_State) ->
+  wxEvent:skip(Event).
 
 
 %% =====================================================================
@@ -579,7 +619,7 @@ handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded}}, Event,
 %% =====================================================================
 
 handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position=Pos, margin=Margin}=_E},
-             State = #state{stc=Editor}) ->
+             State=#state{stc=Editor}) ->
   Ln = ?stc:lineFromPosition(Editor, Pos),
   Fl = ?stc:getFoldLevel(Editor, Ln),
   case Margin of
@@ -681,15 +721,15 @@ handle_event(#wx{event=#wxStyledText{type=stc_change}=E}, State=#state{stc=Edito
 
 handle_event(#wx{event=#wxStyledText{type=stc_updateui}},State=#state{stc=Editor}) ->
   case ?stc:getSelection(Editor) of
-    {N,N} -> 
+    {N,N} ->
       ide:toggle_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], false),
       update_sb_line(Editor);
-    _ -> 
+    _ ->
       ide:toggle_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], true),
       update_sb_selection(Editor)
   end,
   {noreply, State};
-     
+
 handle_event(E,State) ->
   io:format("Unhandled event in editor: ~p~n", [E]),
   {noreply, State}.
@@ -1205,7 +1245,7 @@ replace_all(Editor, Str, RepStr, Start, End) ->
 
 
 %% =====================================================================
-%% @doc Initialise menu items 
+%% @doc Initialise menu items
 
 menu_init(Editor) ->
   ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_SET_FOCUS], true),
