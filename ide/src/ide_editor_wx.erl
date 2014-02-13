@@ -586,23 +586,23 @@ handle_sync_event(#wx{event=#wxKey{type=char, keyCode=Key}}, Event,
     $' -> {"\'", "\'"};
     $` -> {"`", "`"}
   end,
+  ?stc:beginUndoAction(Editor),
   case ?stc:getSelection(Editor) of
     %% With no selection
     {N, N} ->
-      io:format("NO SELECT~n"),
       Pos = ?stc:getCurrentPos(Editor),
       ?stc:addText(Editor, ClosingChar),
       ?stc:gotoPos(Editor, Pos),
       wxEvent:skip(Event);
     %% With selection
     {Start, End} ->
-      io:format("SELECT~n"),
       ?stc:gotoPos(Editor, Start),
       ?stc:addText(Editor, OpeningChar),
       ?stc:gotoPos(Editor, End+1),
       ?stc:addText(Editor, ClosingChar),
       ?stc:setSelection(Editor, Start, End+2)
-  end;
+  end,
+  ?stc:endUndoAction(Editor);
 
 %% Catch-alls.
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded}}, Event,

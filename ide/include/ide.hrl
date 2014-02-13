@@ -121,7 +121,7 @@
 -define(MENU_ID_ADD_TO_PLT,        6056).
 -define(MENU_ID_PLT_INFO,          6057).
 -define(MENU_ID_DIAL_WARN,         6058).
-
+-define(MENU_ID_STRIP_SPACES,      6059).
 % -define(MENU_ID_ADD_TO_PLT,        6057).
 % -define(MENU_ID_ADD_TO_PLT,        6057).
 % -define(MENU_ID_ADD_TO_PLT,        6057).
