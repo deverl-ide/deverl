@@ -52,7 +52,6 @@ start(Cwd, Config)->
   spawn(?MODULE, compile, [self(), Cwd, Config]).
 
 
-
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
@@ -136,17 +135,3 @@ loop(From, Name) ->
       io:format("TIMEOUT~n"),
       error
   end.
-
-
-%% =====================================================================
-%% @doc Get the path to erlc.
-
-% -spec erlc() -> path().
-% 
-% erlc() ->
-%   case os:type() of
-%     {win32,_} ->
-%       "C:\\Program Files\\erl5.10.3\\erts-5.10.3\\bin\\erlc";
-%     _ ->
-%       string:strip(os:cmd("which erlc"), both, $\n)
-%   end.

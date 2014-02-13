@@ -61,8 +61,6 @@
 -define(SB_ID_FUNCTION, 3).
 -define(SB_ID_HELP, 4).
 
--define(THEME_DIRECTORY, "../priv/themes").
-
 %% New menu items sholud be defined within the reserved range:
 %% MENU_ID_LOWEST < NEW_ITEM < MENU_ID_HIGHEST
 -define(MENU_ID_LOWEST,						 6000).

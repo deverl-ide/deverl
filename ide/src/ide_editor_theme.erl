@@ -15,12 +15,13 @@
 get_themes(D) ->
 	filelib:fold_files(D, ".+\.theme$", true, fun(F, L) -> [F|L] end, []).
 
+
 %% =====================================================================
 %% @doc Returns a list containing the names of all themes in the themes
 %% directory.
 
 get_theme_names() ->
-	parse_theme_names(?THEME_DIRECTORY).
+	parse_theme_names(get_theme_dir()).
 
 
 %% =====================================================================
@@ -58,7 +59,7 @@ read_xml(Path) ->
 %% @doc Return a theme in its parsed format.
 
 load_theme(Name) ->
-	try read_xml(filename:join(?THEME_DIRECTORY, Name ++ ".theme")) of
+	try read_xml(filename:join(get_theme_dir(), Name ++ ".theme")) of
 		Result ->
 			parse_all(Result)
 	catch
@@ -103,6 +104,14 @@ hexstr_to_rgb([A,B | T], Acc) ->
 	hexstr_to_rgb(T, [list_to_integer([A,B], 16) | Acc]).
 
 
+%% =====================================================================
+%% @doc Get the absolute path to the theme directory
+
+get_theme_dir() ->
+  Dir = filename:dirname(code:which(?MODULE)),
+	filename:join([Dir,"../priv","themes"]).
+  
+  
 %% =====================================================================
 %% @doc Alternative SAX parser. Marvelous documentation on this.
 %% It may well be faster than the current DOM implemenation, however.
