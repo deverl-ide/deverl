@@ -556,7 +556,9 @@ handle_cast(enable_menus, State) ->
 %% =====================================================================
 
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
-									State=#state{stc=Editor}) when Key =:= ?WXK_RETURN ->
+									State=#state{stc=Editor}) when Key =:= ?WXK_RETURN orelse
+                                                 Key =:= ?WXK_NUMPAD_ENTER orelse
+                                                 Key =:= 10 ->
   Pos = ?stc:getCurrentPos(Editor),
   Line = ?stc:lineFromPosition(Editor, Pos),
   CurInd = ?stc:getLineIndentation(Editor, Line - 1),
@@ -570,7 +572,7 @@ handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
   ?stc:gotoPos(Editor, ?stc:getLineEndPosition(Editor, Line)),
   wxEvent:skip(Event);
 
-%% Auto completion for container characters.
+%% Auto completion for paired characters.
 handle_sync_event(#wx{event=#wxKey{type=char, keyCode=Key}}, Event,
 									State=#state{stc=Editor}) when Key =:= ${ orelse
                                                  Key =:= $( orelse
