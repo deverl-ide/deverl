@@ -53,12 +53,14 @@
 -define(HEADER_FILES_EMPTY, "No open files").
 
 %% Popup menu
--define(ID_NEW_FOLDER, 0).
+-define(ID_OPEN, 8). 
 -define(ID_RENAME, 1).
 -define(ID_DELETE_FILE, 2).
--define(ID_IMPORT_FILE, 3).
--define(ID_QUICK_NEW_FILE, 4).
--define(ID_GENERATE_MAKEFILE, 5).
+-define(ID_DELETE_PROJ, 3).
+-define(ID_CLOSE_FILE, 4).
+-define(ID_CLOSE_PROJECT, 5).
+-define(ID_IMPORT, 6).
+-define(ID_CLEAR_EBIN, 7). 
 
 %% Server state
 -record(state, {frame, panel, tree, menu}).
@@ -315,20 +317,24 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
             State=#state{frame=Frame, tree=Tree}) ->
   Item = wxTreeCtrl:getSelection(Tree),
   case Id of
+    ?ID_OPEN -> ok;
     ?wxID_NEW ->
       ide_doc_man_wx:new_document(Frame);
-    ?MENU_ID_CLOSE_PROJECT ->
-      ok;
+    ?ID_IMPORT -> ok;
     ?ID_RENAME ->
-      wxTreeCtrl:editLabel(Tree, Item) %% command_tree_end_label_edit is generated if the label is changed;
+      wxTreeCtrl:editLabel(Tree, Item); %% command_tree_end_label_edit is generated if the label is changed;
     ?ID_DELETE_FILE ->
-      ok;
-    ?ID_IMPORT_FILE ->
-      ok;
-    ?ID_QUICK_NEW_FILE ->
-      ok;
-    ?ID_GENERATE_MAKEFILE ->
-      ok
+      {_ProjId, Path} = wxTreeCtrl:getItemData(Tree, Item),
+      case ide_doc_man_wx:delete_document(Path) of
+        ok -> %% remove from tree
+          wxTreeCtrl:delete(Tree, Item);
+        _ ->
+          ok
+      end;
+    ?ID_DELETE_PROJ -> ok;
+    ?ID_CLOSE_FILE -> ok;
+    ?MENU_ID_CLOSE_PROJECT -> ok;
+    ?ID_CLEAR_EBIN -> ok
   end,
 	{noreply, State}.
 
@@ -840,16 +846,28 @@ set_item_bold(Tree, Item) ->
 
 build_menu() ->
     Menu = wxMenu:new([]),
+    wxMenu:append(Menu, ?ID_OPEN, "Open", []),
+    wxMenu:appendSeparator(Menu),
     wxMenu:append(Menu, ?wxID_NEW, "New File\tCtrl+N", []),
-    wxMenu:append(Menu, ?ID_RENAME, "Rename", []),
+    wxMenu:appendSeparator(Menu),
+    wxMenu:append(Menu, ?ID_IMPORT, "Import File", []),
+    wxMenu:appendSeparator(Menu),
+    wxMenu:append(Menu, ?ID_RENAME, "Rename File", []),
+    wxMenu:appendSeparator(Menu),
     wxMenu:append(Menu, ?ID_DELETE_FILE, "Delete File", []),
+    wxMenu:append(Menu, ?ID_DELETE_PROJ, "Delete Project", []),
     wxMenu:appendSeparator(Menu),
-    wxMenu:append(Menu, ?MENU_ID_CLOSE_PROJECT, "Close Project", []),
-    wxMenu:append(Menu, ?ID_IMPORT_FILE, "Import File", []),
-    wxMenu:append(Menu, ?ID_QUICK_NEW_FILE, "Quick New File", []),
+    wxMenu:append(Menu, ?ID_CLOSE_FILE, "Close File", []),
+    wxMenu:append(Menu, ?ID_CLOSE_PROJECT, "Close Project", []),
     wxMenu:appendSeparator(Menu),
-    wxMenu:append(Menu, ?ID_GENERATE_MAKEFILE, "Generate Makefile", []),
+    wxMenu:append(Menu, ?ID_CLEAR_EBIN, "Clear ebin", []),
     wxMenu:connect(Menu, command_menu_selected),
+    
+    %% Disable unimplemented items during development
+    Disable = fun(Id) ->
+      wxMenuItem:enable(wxMenu:findItem(Menu, Id), [{enable, false}])
+    end,
+    lists:foreach(Disable, [?ID_OPEN, ?ID_IMPORT, ?ID_RENAME, ?ID_DELETE_PROJ, ?ID_CLOSE_FILE, ?ID_CLOSE_PROJECT, ?ID_CLEAR_EBIN]),
     Menu.
 
 

@@ -36,7 +36,8 @@
          get_active_module/0,
          get_path/1,
          set_selection/1,
-         get_standalone_src_files/0
+         get_standalone_src_files/0,
+         delete_document/1
          ]).
 
 %% Records
@@ -273,6 +274,20 @@ get_standalone_src_files() ->
 
 
 %% =====================================================================
+%% @doc
+
+is_open(Path) ->
+  wx_object:call(?MODULE, {is_open, Path}).
+  
+%% =====================================================================
+%% @doc
+
+delete_document(Path) ->
+  wx_object:call(?MODULE, {delete, Path}).
+  
+    
+  
+%% =====================================================================
 %% Callbacks
 %% =====================================================================
 
@@ -328,6 +343,16 @@ handle_cast({set_sel, Direction}, State=#state{notebook=Nb}) ->
       (Cur + 1) rem N
   end,
   wxAuiNotebook:setSelection(Nb, Idx),
+  {noreply, State};
+handle_cast(notebook_empty, State=#state{notebook=Nb, sizer=Sz}) ->  
+  case wxAuiNotebook:getPageCount(Nb) of
+    0 -> %% Called when the last document is closed
+      ide_testpane:clear(),
+      ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_EMPTY], false),
+      show_placeholder(Sz),
+      ide:set_title([]);
+    _ -> ok
+  end,
   {noreply, State}.
 
 handle_call({create_doc, Path, ProjectId}, _From,
@@ -469,17 +494,33 @@ handle_call({close_docs, Docs}, _From, State=#state{notebook=Nb, doc_records=Doc
             G(G, T, NewDocRecords, NewPageToDocId)
        end,
   {S, D} = F(F, Docs, DocRecords, PageToDocId),
-  case wxAuiNotebook:getPageCount(Nb) of
-    0 ->
-      %% Called when the last document is closed
-      ide_testpane:clear(),
-      ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_EMPTY], false),
-      show_placeholder(Sz),
-      ide:set_title([]);
-    _ -> ok
-  end,
-  {reply, ok, State#state{doc_records=S, page_to_doc_id=D}}.
+  wx_object:cast(self(), notebook_empty),
+  {reply, ok, State#state{doc_records=S, page_to_doc_id=D}};
 
+handle_call({delete, Path}, _From, State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=P2d}) ->
+  IsOpen = is_already_open(Path, DocRecords),
+  Caption = case IsOpen of
+    false ->
+      "Are you sure you want to delete this file?";
+    _DocID ->
+      "The file " ++ filename:basename(Path) ++ " is currently open.\nAre you sure you want to delete it?"
+  end,
+  Dlg = ide_lib_dlg_wx:message(wx:null(), 
+    [{caption, Caption},
+     {buttons, [?wxID_OK, ?wxID_CANCEL]}]),
+  {R, {DocRecs2, P2d2}} = case wxDialog:showModal(Dlg) of
+    ?wxID_CANCEL -> {cancelled, {DocRecords, P2d}};
+    ?wxID_OK when not IsOpen -> %% delete
+      V = ide_io:delete(Path),
+      {V, {DocRecords, P2d}};
+    ?wxID_OK -> %% close/delete
+      {DocRecords1, P2d1} = remove_document(Nb, IsOpen, doc_id_to_page_id(Nb, IsOpen, P2d), DocRecords, P2d),
+      wx_object:cast(self(), notebook_empty),
+      V = ide_io:delete(Path),
+      {V, {DocRecords1, P2d1}}
+  end,
+  {reply, R, State#state{doc_records=DocRecs2, page_to_doc_id=P2d2}}.
+  
 %% Close event
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
@@ -494,6 +535,7 @@ handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed, sel
   case wxAuiNotebook:getPageCount(Nb) of
     0 -> ok;
     _ ->
+      io:format("IN PAGE CHANGED~n"),
       DocId = page_idx_to_doc_id(Nb, Idx, PageToDoc),
       DocRec = get_record(DocId, DocRecords),
       ide_proj_man:set_active_project(DocRec#document.project_id),
@@ -509,7 +551,6 @@ code_change(_, _, State) ->
 
 terminate(_Reason, #state{}) ->
 	ok.
-
 
 %% =====================================================================
 %% Internal functions
@@ -668,7 +709,9 @@ get_modified_docs(Documents) ->
 remove_document(Nb, DocId, PageIdx, DocRecords, PageToDocId) ->
   NewDocRecords = proplists:delete(DocId, DocRecords),
   NewPageToDocId = proplists:delete(PageIdx, PageToDocId),
-  wxAuiNotebook:deletePage(Nb, PageIdx), %% SEG FAULT OSX, wx3.0 <R17 see ticket #81
+  #document{editor=Editor} = proplists:get_value(DocId, DocRecords),
+  wxAuiNotebook:removePage(Nb, PageIdx),
+  ide_editor_wx:destroy(Editor),
   {NewDocRecords, NewPageToDocId}.
 
 
