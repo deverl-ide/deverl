@@ -20,7 +20,7 @@
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
 
--define(ICONS, "icons_orig"). %% Specify the subdirectory containing the icon set
+-define(ICONS, "icons_block"). %% Specify the subdirectory containing the icon set
 
 
 %% =====================================================================
@@ -213,7 +213,7 @@ build_menu(Frame) ->
   wxMenu:append(Document, ?MENU_ID_UC_SEL, "Uppercase Selection\tCtrl+U"),
   wxMenu:append(Document, ?MENU_ID_LC_SEL, "Lowercase Selection\tCtrl+Shift+U"),
   wxMenu:append(Document, ?wxID_SEPARATOR, []),
-  wxMenu:append(Document, ?MENU_ID_STRIP_SPACES, "Strip Trailing Spaces"),
+  wxMenu:append(Document, ?MENU_ID_STRIP_SPACES, "Strip Trailing Whitespace"),
   wxMenu:append(Document, ?wxID_SEPARATOR, []),
   wxMenu:append(Document, ?MENU_ID_FOLD_ALL, "Fold All"),
   wxMenu:append(Document, ?MENU_ID_UNFOLD_ALL, "Unfold All"),

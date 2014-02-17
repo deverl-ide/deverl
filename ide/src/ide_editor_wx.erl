@@ -53,6 +53,7 @@
 	transform_uc_selection/1,
 	transform_lc_selection/1,
 	transform_selection/2,
+  strip_trailing_whitespace/1,
 	fn_list/2,
 	link_poller/2,
 	empty_undo_buffer/1,
@@ -118,6 +119,7 @@
 
 get_stc(This) ->
   wx_object:call(This, stc).
+
 destroy(This) ->
   wx_object:call(This, shutdown).
 
@@ -322,8 +324,8 @@ comment(EditorPid) ->
 %% =====================================================================
 %% @doc Move the caret to the line Line and Column Col.
 
- go_to_position(This, Pos) ->
-	wx_object:cast(This, {goto_pos, Pos}).
+go_to_position(This, Pos) ->
+	wx_object:cast(This, {goto_pos, Pos, true}).
 
 
 %% =====================================================================
@@ -377,6 +379,22 @@ transform_selection(EditorPid, {transform, Type}) ->
 	end,
 	?stc:cmdKeyExecute(Editor, Cmd).
 
+
+%% =====================================================================
+%% @doc Strip trailing whitespace from active document.
+
+strip_trailing_whitespace(EditorPid) ->
+  Editor = wx_object:call(EditorPid, stc),
+  CurrentText = ?stc:getText(Editor),
+  StrippedText = re:replace(CurrentText, "\s+$", "", [global, multiline, {return, list}, {newline, any}]),
+  case StrippedText of
+    CurrentText ->
+      ok;
+    _ ->
+      Pos = position_to_x_y(Editor, ?stc:getCurrentPos(Editor)),
+      ?stc:setText(Editor, StrippedText),
+      wx_object:cast(EditorPid, {goto_pos, Pos, false})
+  end.
 
 %% =====================================================================
 %% @doc
@@ -525,7 +543,7 @@ handle_call(Msg, _From, State) ->
 handle_cast({link_poller, Path}, State) ->
 	ide_file_poll_sup:start_link([{editor_pid, self()}, {path, Path}]),
   {noreply,State};
-handle_cast({goto_pos, {Line, Col}}, State=#state{stc=Stc}) ->
+handle_cast({goto_pos, {Line, Col}, Flash}, State=#state{stc=Stc}) ->
 	?stc:gotoLine(Stc, Line - 1),
 	NewPos = ?stc:getCurrentPos(Stc),
 	EndPos = ?stc:getLineEndPosition(Stc, Line - 1),
@@ -534,7 +552,12 @@ handle_cast({goto_pos, {Line, Col}}, State=#state{stc=Stc}) ->
 		Pos -> Pos
 	end,
 	?stc:gotoPos(Stc, ColPos),
-	flash_current_line(Stc, {255,0,0}, 500, 1),
+  case Flash of
+    true ->
+      flash_current_line(Stc, {255,0,0}, 500, 1);
+    false ->
+      ok
+  end,
   {noreply,State};
 handle_cast(ref, State=#state{stc=Editor}) ->
 	update_sb_line(Editor),
@@ -556,7 +579,7 @@ handle_cast(enable_menus, State) ->
 %% =====================================================================
 
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
-									State=#state{stc=Editor}) when Key =:= ?WXK_RETURN orelse
+									_State=#state{stc=Editor}) when Key =:= ?WXK_RETURN orelse
                                                  Key =:= ?WXK_NUMPAD_ENTER orelse
                                                  Key =:= 10 ->
   Pos = ?stc:getCurrentPos(Editor),
@@ -574,7 +597,7 @@ handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
 
 %% Auto completion for paired characters.
 handle_sync_event(#wx{event=#wxKey{type=char, keyCode=Key}}, Event,
-									State=#state{stc=Editor}) when Key =:= ${ orelse
+									_State=#state{stc=Editor}) when Key =:= ${ orelse
                                                  Key =:= $( orelse
                                                  Key =:= $[ orelse
                                                  Key =:= $" orelse
@@ -710,7 +733,7 @@ handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->
   ide:toggle_menu_group([?MENU_GROUP_NOTEBOOK_KILL_FOCUS, ?MENU_GROUP_TEXT], false),
   {noreply, State};
 
-handle_event(#wx{event=#wxStyledText{type=stc_change}=E}, State=#state{stc=Editor}) ->
+handle_event(#wx{event=#wxStyledText{type=stc_change}}, State=#state{stc=Editor}) ->
   case ?stc:canUndo(Editor) of
     true -> ide:toggle_menu_items([?wxID_UNDO], true);
     false -> ide:toggle_menu_items([?wxID_UNDO], false)
