@@ -601,7 +601,7 @@ handle_event(#wx{id=Id}, State) when Id =:= ?MENU_ID_UC_SEL orelse Id =:= ?MENU_
   {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_STRIP_SPACES}, State) ->
-
+  ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:strip_trailing_whitespace/1, []),
   {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_COMPILE_FILE}, State) ->

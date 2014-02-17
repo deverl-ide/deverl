@@ -53,6 +53,7 @@
 	transform_uc_selection/1,
 	transform_lc_selection/1,
 	transform_selection/2,
+  strip_trailing_whitespace/1,
 	fn_list/2,
 	link_poller/2,
 	empty_undo_buffer/1,
@@ -118,6 +119,7 @@
 
 get_stc(This) ->
   wx_object:call(This, stc).
+
 destroy(This) ->
   wx_object:call(This, shutdown).
 
@@ -377,6 +379,14 @@ transform_selection(EditorPid, {transform, Type}) ->
 	end,
 	?stc:cmdKeyExecute(Editor, Cmd).
 
+
+%% =====================================================================
+%% @doc Strip trailing whitespace from active document.
+
+strip_trailing_whitespace(EditorPid) ->
+  Editor = wx_object:call(EditorPid, stc),
+  StrippedText = re:replace(?stc:getText(Editor), "\s+$", "", [global, multiline, {return, list}, {newline, any}]),
+  ?stc:setText(Editor, StrippedText).
 
 %% =====================================================================
 %% @doc

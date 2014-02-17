@@ -67,51 +67,52 @@
 -define(MENU_ID_NEW_PROJECT,			 6001).
 -define(MENU_ID_OPEN_PROJECT,			 6002).
 -define(MENU_ID_SAVE_ALL,          6003).
--define(MENU_ID_SAVE_PROJECT,      6048).
--define(MENU_ID_CLOSE_PROJECT,     6049).
--define(MENU_ID_FONT,              6004).
--define(MENU_ID_FONT_BIGGER,       6005).
--define(MENU_ID_FONT_SMALLER,      6006).
--define(MENU_ID_LN_TOGGLE,         6007).
--define(MENU_ID_INDENT_TYPE,       6008).
--define(MENU_ID_TAB_WIDTH,      	 6009).
--define(MENU_ID_INDENT_TABS,       6010).
--define(MENU_ID_INDENT_SPACES,     6011).
--define(MENU_ID_INDENT_GUIDES,		 6012).
--define(MENU_ID_THEME_SELECT, 		 6013).
--define(MENU_ID_FULLSCREEN,        6015).
--define(MENU_ID_HIDE_TEST,         6016).
--define(MENU_ID_HIDE_UTIL,         6017).
--define(MENU_ID_MAX_EDITOR,        6018).
--define(MENU_ID_MAX_UTIL,          6019).
--define(MENU_ID_LINE_WRAP,         6020).
--define(MENU_ID_AUTO_INDENT,       6021).
--define(MENU_ID_INDENT_RIGHT,  		 6022).
--define(MENU_ID_INDENT_LEFT,  	 	 6023).
--define(MENU_ID_TOGGLE_COMMENT, 	 6024).
--define(MENU_ID_UC_SEL, 				   6025).
--define(MENU_ID_LC_SEL, 				 	 6026).
--define(MENU_ID_FOLD_ALL,          6027).
--define(MENU_ID_UNFOLD_ALL,        6028).
--define(MENU_ID_GOTO_LINE, 		     6029).
--define(MENU_ID_WRANGLER,          6030).
--define(MENU_ID_COMPILE_FILE,      6031).
--define(MENU_ID_MAKE_PROJECT,      6047).
--define(MENU_ID_RUN,               6032).
--define(MENU_ID_DIALYZER,          6033).
--define(MENU_ID_RUN_TESTS,         6034).
--define(MENU_ID_RUN_OBSERVER,      6041).
--define(MENU_ID_RUN_DEBUGGER,      6035).
--define(MENU_ID_PROJECTS_WINDOW,   6036).
--define(MENU_ID_TESTS_WINDOW,      6037).
--define(MENU_ID_FUNC_WINDOW,       6038).
--define(MENU_ID_OUTPUT_WINDOW,     6039).
--define(MENU_ID_LOG_WINDOW,        6040).
--define(MENU_ID_NEXT_TAB,          6042).
--define(MENU_ID_PREV_TAB,          6043).
--define(MENU_ID_HOTKEYS,           6044).
--define(MENU_ID_SEARCH_DOC,        6045).
--define(MENU_ID_MANUAL,            6046).
+-define(MENU_ID_SAVE_PROJECT,      6004).
+-define(MENU_ID_CLOSE_PROJECT,     6005).
+-define(MENU_ID_FONT,              6006).
+-define(MENU_ID_FONT_BIGGER,       6007).
+-define(MENU_ID_FONT_SMALLER,      6008).
+-define(MENU_ID_LN_TOGGLE,         6009).
+-define(MENU_ID_INDENT_TYPE,       6010).
+-define(MENU_ID_TAB_WIDTH,      	 6011).
+-define(MENU_ID_INDENT_TABS,       6012).
+-define(MENU_ID_INDENT_SPACES,     6013).
+-define(MENU_ID_INDENT_GUIDES,		 6014).
+-define(MENU_ID_THEME_SELECT, 		 6015).
+-define(MENU_ID_FULLSCREEN,        6016).
+-define(MENU_ID_HIDE_TEST,         6017).
+-define(MENU_ID_HIDE_UTIL,         6018).
+-define(MENU_ID_MAX_EDITOR,        6019).
+-define(MENU_ID_MAX_UTIL,          6020).
+-define(MENU_ID_LINE_WRAP,         6021).
+-define(MENU_ID_AUTO_INDENT,       6022).
+-define(MENU_ID_INDENT_RIGHT,  		 6023).
+-define(MENU_ID_INDENT_LEFT,  	 	 6024).
+-define(MENU_ID_TOGGLE_COMMENT, 	 6025).
+-define(MENU_ID_UC_SEL, 				   6026).
+-define(MENU_ID_LC_SEL, 				 	 6027).
+-define(MENU_ID_STRIP_SPACES,      6028).
+-define(MENU_ID_FOLD_ALL,          6029).
+-define(MENU_ID_UNFOLD_ALL,        6030).
+-define(MENU_ID_GOTO_LINE, 		     6031).
+-define(MENU_ID_WRANGLER,          6032).
+-define(MENU_ID_COMPILE_FILE,      6033).
+-define(MENU_ID_MAKE_PROJECT,      6034).
+-define(MENU_ID_RUN,               6035).
+-define(MENU_ID_DIALYZER,          6036).
+-define(MENU_ID_RUN_TESTS,         6037).
+-define(MENU_ID_RUN_OBSERVER,      6038).
+-define(MENU_ID_RUN_DEBUGGER,      6039).
+-define(MENU_ID_PROJECTS_WINDOW,   6040).
+-define(MENU_ID_TESTS_WINDOW,      6041).
+-define(MENU_ID_FUNC_WINDOW,       6042).
+-define(MENU_ID_OUTPUT_WINDOW,     6043).
+-define(MENU_ID_LOG_WINDOW,        6044).
+-define(MENU_ID_NEXT_TAB,          6045).
+-define(MENU_ID_PREV_TAB,          6046).
+-define(MENU_ID_HOTKEYS,           6047).
+-define(MENU_ID_SEARCH_DOC,        6048).
+-define(MENU_ID_MANUAL,            6049).
 -define(MENU_ID_PROJECT_CONFIG,    6050).
 -define(MENU_ID_IMPORT_FILE,       6051).
 -define(MENU_ID_IMPORT_PROJECT,    6052).
@@ -122,10 +123,10 @@
 -define(MENU_ID_PLT_INFO,          6057).
 -define(MENU_ID_DIAL_WARN,         6058).
 
-% -define(MENU_ID_ADD_TO_PLT,        6057).
-% -define(MENU_ID_ADD_TO_PLT,        6057).
-% -define(MENU_ID_ADD_TO_PLT,        6057).
-% -define(MENU_ID_ADD_TO_PLT,        6057).
+% -define(MENU_ID_ADD_TO_PLT,      6059).
+% -define(MENU_ID_ADD_TO_PLT,      6059).
+% -define(MENU_ID_ADD_TO_PLT,      6059).
+% -define(MENU_ID_ADD_TO_PLT,      6059).
 -define(MENU_ID_HIGHEST,					 6999).
 
 %% Sub-menus
