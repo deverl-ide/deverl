@@ -632,8 +632,8 @@ handle_sync_event(#wx{event=#wxKey{type=char, keyCode=Key}}, Event,
 %% Catch-alls.
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded}}, Event,
 									_State) ->
-
   wxEvent:skip(Event);
+
 handle_sync_event(#wx{event=#wxKey{type=char}}, Event,
 									_State) ->
   wxEvent:skip(Event).
@@ -1203,7 +1203,6 @@ flash_current_line(Editor, Colour, Interval, N) ->
 
 %% =====================================================================
 %% @doc
-%% @private
 
 get_focus(This) ->
 	?stc:setFocus(This).
