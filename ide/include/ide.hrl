@@ -122,11 +122,19 @@
 -define(MENU_ID_ADD_TO_PLT,        6056).
 -define(MENU_ID_PLT_INFO,          6057).
 -define(MENU_ID_DIAL_WARN,         6058).
+<<<<<<< HEAD
 
 % -define(MENU_ID_ADD_TO_PLT,      6059).
 % -define(MENU_ID_ADD_TO_PLT,      6059).
 % -define(MENU_ID_ADD_TO_PLT,      6059).
 % -define(MENU_ID_ADD_TO_PLT,      6059).
+=======
+-define(MENU_ID_STRIP_SPACES,      6059).
+% -define(MENU_ID_ADD_TO_PLT,        6057).
+% -define(MENU_ID_ADD_TO_PLT,        6057).
+% -define(MENU_ID_ADD_TO_PLT,        6057).
+% -define(MENU_ID_ADD_TO_PLT,        6057).
+>>>>>>> 7d5fd5f19444ba6977b50a1bdef52b17cd6da83c
 -define(MENU_ID_HIGHEST,					 6999).
 
 %% Sub-menus

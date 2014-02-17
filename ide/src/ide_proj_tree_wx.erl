@@ -53,15 +53,17 @@
 -define(HEADER_FILES_EMPTY, "No open files").
 
 %% Popup menu
--define(ID_NEW_FOLDER, 0).
+-define(ID_OPEN, 8). 
 -define(ID_RENAME, 1).
 -define(ID_DELETE_FILE, 2).
--define(ID_IMPORT_FILE, 3).
--define(ID_QUICK_NEW_FILE, 4).
--define(ID_GENERATE_MAKEFILE, 5).
+-define(ID_DELETE_PROJ, 3).
+-define(ID_CLOSE_FILE, 4).
+-define(ID_CLOSE_PROJECT, 5).
+-define(ID_IMPORT, 6).
+-define(ID_CLEAR_EBIN, 7). 
 
 %% Server state
--record(state, {frame, panel, tree}).
+-record(state, {frame, panel, tree, menu}).
 
 
 %% =====================================================================
@@ -176,6 +178,8 @@ init(Config) ->
   AddRoot(?HEADER_FILES, "Standalone Files", ?HEADER_FILES_EMPTY),
 
 	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
+  
+  Menu = build_menu(),
 
   wxTreeCtrl:connect(Tree, command_tree_item_activated, [{skip, true}]),
   wxTreeCtrl:connect(Tree, command_tree_sel_changed, []),
@@ -186,7 +190,7 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
   wxTreeCtrl:connect(Tree, command_tree_item_menu, []),
 
-	{Panel, #state{frame=Frame, panel=Panel, tree=Tree}}.
+	{Panel, #state{frame=Frame, panel=Panel, tree=Tree, menu=Menu}}.
 
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
@@ -305,29 +309,32 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=
     false -> ok
   end,
 	{noreply, State};
-handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_menu}}, State) ->
-  Menu = create_menu(),
+handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_menu, item=Item}}, State) ->
+  Menu = init_menu(State#state.menu, Tree, Item),
   wxWindow:popupMenu(Tree, Menu),
 	{noreply, State};
 handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
-            State=#state{frame=Frame}) ->
+            State=#state{frame=Frame, tree=Tree}) ->
+  Item = wxTreeCtrl:getSelection(Tree),
   case Id of
+    ?ID_OPEN -> ok;
     ?wxID_NEW ->
       ide_doc_man_wx:new_document(Frame);
-    ?MENU_ID_CLOSE_PROJECT ->
-      ok;
-    ?ID_NEW_FOLDER ->
-      ok;
+    ?ID_IMPORT -> ok;
     ?ID_RENAME ->
-      ok;
+      wxTreeCtrl:editLabel(Tree, Item); %% command_tree_end_label_edit is generated if the label is changed;
     ?ID_DELETE_FILE ->
-      ok;
-    ?ID_IMPORT_FILE ->
-      ok;
-    ?ID_QUICK_NEW_FILE ->
-      ok;
-    ?ID_GENERATE_MAKEFILE ->
-      ok
+      {_ProjId, Path} = wxTreeCtrl:getItemData(Tree, Item),
+      case ide_doc_man_wx:delete_document(Path) of
+        ok -> %% remove from tree
+          wxTreeCtrl:delete(Tree, Item);
+        _ ->
+          ok
+      end;
+    ?ID_DELETE_PROJ -> ok;
+    ?ID_CLOSE_FILE -> ok;
+    ?MENU_ID_CLOSE_PROJECT -> ok;
+    ?ID_CLEAR_EBIN -> ok
   end,
 	{noreply, State}.
 
@@ -582,7 +589,7 @@ check_dir_has_contents(Tree, Item, FilePath) ->
 -spec add_dummy_child(wxTreeCtrl:wxTreeCtrl(), integer()) -> integer().
 
 add_dummy_child(Tree, Item) ->
-  wxTreeCtrl:appendItem(Tree, Item, "DUMMY").
+  wxTreeCtrl:appendItem(Tree, Item, "Loading..").
 
 
 %% =====================================================================
@@ -835,24 +842,65 @@ set_item_bold(Tree, Item) ->
 %% =====================================================================
 %% @doc Create the popup menu.
 
--spec create_menu() -> wxMenu:wxMenu().
+-spec build_menu() -> wxMenu:wxMenu().
 
-create_menu() ->
+build_menu() ->
     Menu = wxMenu:new([]),
+    wxMenu:append(Menu, ?ID_OPEN, "Open", []),
+    wxMenu:appendSeparator(Menu),
     wxMenu:append(Menu, ?wxID_NEW, "New File\tCtrl+N", []),
-    wxMenu:append(Menu, ?ID_NEW_FOLDER, "New Folder", []),
-    wxMenu:append(Menu, ?ID_RENAME, "Rename", []),
+    wxMenu:appendSeparator(Menu),
+    wxMenu:append(Menu, ?ID_IMPORT, "Import File", []),
+    wxMenu:appendSeparator(Menu),
+    wxMenu:append(Menu, ?ID_RENAME, "Rename File", []),
+    wxMenu:appendSeparator(Menu),
     wxMenu:append(Menu, ?ID_DELETE_FILE, "Delete File", []),
+    wxMenu:append(Menu, ?ID_DELETE_PROJ, "Delete Project", []),
     wxMenu:appendSeparator(Menu),
-    wxMenu:append(Menu, ?MENU_ID_CLOSE_PROJECT, "Close Project", []),
-    wxMenu:append(Menu, ?ID_IMPORT_FILE, "Import File", []),
-    wxMenu:append(Menu, ?ID_QUICK_NEW_FILE, "Quick New File", []),
+    wxMenu:append(Menu, ?ID_CLOSE_FILE, "Close File", []),
+    wxMenu:append(Menu, ?ID_CLOSE_PROJECT, "Close Project", []),
     wxMenu:appendSeparator(Menu),
-    wxMenu:append(Menu, ?ID_GENERATE_MAKEFILE, "Generate Makefile", []),
+    wxMenu:append(Menu, ?ID_CLEAR_EBIN, "Clear ebin", []),
     wxMenu:connect(Menu, command_menu_selected),
+    
+    %% Disable unimplemented items during development
+    Disable = fun(Id) ->
+      wxMenuItem:enable(wxMenu:findItem(Menu, Id), [{enable, false}])
+    end,
+    lists:foreach(Disable, [?ID_OPEN, ?ID_IMPORT, ?ID_RENAME, ?ID_DELETE_PROJ, ?ID_CLOSE_FILE, ?ID_CLOSE_PROJECT, ?ID_CLEAR_EBIN]),
     Menu.
 
 
+%% =====================================================================
+%% @doc Show the popup menu.
+
+% -spec init_menu(wxMenu:wxMenu()) -> wxMenu:wxMenu().
+
+init_menu(Menu, Tree, Item) ->
+    Type = case wxTreeCtrl:getItemData(Tree, Item) of
+      {_ProjId, Path} ->
+        case filelib:is_dir(Path) of
+          true -> dir;
+          false -> file
+        end;
+      _ -> 
+        undefined
+    end,
+    
+    Toggle = fun(ID, Enable) ->
+      wxMenuItem:enable(wxMenu:findItem(Menu, ID), [{enable, Enable}])
+    end,
+    
+    case Type of
+      file ->
+        [Toggle(Id, true) || Id <- [?ID_RENAME, ?ID_DELETE_FILE]];
+      _ -> 
+        [Toggle(Id, false) || Id <- [?ID_RENAME, ?ID_DELETE_FILE]]
+    end,
+
+    Menu.
+    
+    
 %% =====================================================================
 %% @doc
 

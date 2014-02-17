@@ -20,7 +20,8 @@
         read_file/1,
         save_as/2,
         save/2,
-        copy_to_poject_dir/2
+        copy_to_poject_dir/2,
+        delete/1
         ]).
 
 
@@ -162,6 +163,22 @@ copy_to_poject_dir(Source, Dest) ->
           Dlg = ide_lib_dlg_wx:message_quick(wx:null(), "Oops", Error),
           {error, Error}
       end
+  end.
+
+
+%% =====================================================================
+%% @doc
+
+delete(Path) ->
+  case file:delete(Path) of
+    ok -> 
+      ok;
+    {error, Error} ->
+      Dlg = ide_lib_dlg_wx:message(wx:null(), 
+        [{caption, "Oops, the file could't be deleted."},
+         {text1, format_error_msg(Error, Path)},
+         {buttons, [?wxID_OK]}]),
+      {error, Error}
   end.
 
 

@@ -566,7 +566,9 @@ handle_cast(enable_menus, State) ->
 %% =====================================================================
 
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
-									State=#state{stc=Editor}) when Key =:= ?WXK_RETURN ->
+									State=#state{stc=Editor}) when Key =:= ?WXK_RETURN orelse
+                                                 Key =:= ?WXK_NUMPAD_ENTER orelse
+                                                 Key =:= 10 ->
   Pos = ?stc:getCurrentPos(Editor),
   Line = ?stc:lineFromPosition(Editor, Pos),
   CurInd = ?stc:getLineIndentation(Editor, Line - 1),
@@ -580,7 +582,7 @@ handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
   ?stc:gotoPos(Editor, ?stc:getLineEndPosition(Editor, Line)),
   wxEvent:skip(Event);
 
-%% Auto completion for container characters.
+%% Auto completion for paired characters.
 handle_sync_event(#wx{event=#wxKey{type=char, keyCode=Key}}, Event,
 									State=#state{stc=Editor}) when Key =:= ${ orelse
                                                  Key =:= $( orelse
@@ -596,23 +598,23 @@ handle_sync_event(#wx{event=#wxKey{type=char, keyCode=Key}}, Event,
     $' -> {"\'", "\'"};
     $` -> {"`", "`"}
   end,
+  ?stc:beginUndoAction(Editor),
   case ?stc:getSelection(Editor) of
     %% With no selection
     {N, N} ->
-      io:format("NO SELECT~n"),
       Pos = ?stc:getCurrentPos(Editor),
       ?stc:addText(Editor, ClosingChar),
       ?stc:gotoPos(Editor, Pos),
       wxEvent:skip(Event);
     %% With selection
     {Start, End} ->
-      io:format("SELECT~n"),
       ?stc:gotoPos(Editor, Start),
       ?stc:addText(Editor, OpeningChar),
       ?stc:gotoPos(Editor, End+1),
       ?stc:addText(Editor, ClosingChar),
       ?stc:setSelection(Editor, Start, End+2)
-  end;
+  end,
+  ?stc:endUndoAction(Editor);
 
 %% Catch-alls.
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded}}, Event,

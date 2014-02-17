@@ -110,7 +110,6 @@ compile_file(Path) ->
       case ide_proj_man:is_known_project(Path) of
         {true, P0} ->
           P1 = filename:join([P0, "ebin", filename:basename(Path)]),
-          io:format("ADDED DIR: ~p~n", [P1]),
           ide_proj_tree_wx:set_has_children(filename:dirname(P1)),
           load_file(P1, []);
         _ ->
