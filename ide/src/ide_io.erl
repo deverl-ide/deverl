@@ -87,7 +87,7 @@ open_new(Parent) ->
 %% =====================================================================
 %% @doc Read the file at Path.
 
--spec read_file(string()) -> [byte()] | no_return().
+-spec read_file(string()) -> list() | no_return().
 
 read_file(Path) ->
 	try

@@ -106,7 +106,7 @@ create_document(Path, ProjectId, Type) ->
       % file not created dialog
       error;
     ok ->
-      wx_object:call(?MODULE, {create_doc, Path, ProjectId})
+      wx_object:cast(?MODULE, {create_doc, Path, ProjectId})
   end.
 
 
@@ -353,10 +353,9 @@ handle_cast(notebook_empty, State=#state{notebook=Nb, sizer=Sz}) ->
       ide:set_title([]);
     _ -> ok
   end,
-  {noreply, State}.
-
-handle_call({create_doc, Path, ProjectId}, _From,
-						State=#state{notebook=Nb, sizer=Sz, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
+  {noreply, State};
+handle_cast({create_doc, Path, ProjectId},
+            State=#state{notebook=Nb, sizer=Sz, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->  
 	case is_already_open(Path, DocRecords) of
 		false ->
 			ensure_notebook_visible(Nb, Sz),
@@ -376,11 +375,14 @@ handle_call({create_doc, Path, ProjectId}, _From,
           ide_proj_tree_wx:set_has_children(filename:dirname(Path)),
           ok
       end,
-			{reply, ok, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}};
+			{noreply, State#state{doc_records=NewDocRecords, page_to_doc_id=[{Key, DocId}|PageToDocId]}};
 		DocId ->
-			wxAuiNotebook:setSelection(Nb, doc_id_to_page_id(Nb, DocId, PageToDocId)),
-			{reply, ok, State}
-	end;
+      %% Reload, incase a saveas
+      Record = get_record(DocId, DocRecords),
+      load_editor_contents(Record#document.editor, Path),
+			wxAuiNotebook:setSelection(Nb, doc_id_to_page_id(Nb, DocId, PageToDocId)),    
+			{noreply, State}
+  end.
 
 handle_call(get_open_docs, _From, State=#state{doc_records=DocRecords}) ->
   {reply, lists:map(fun({DocId, _}) -> DocId end, DocRecords), State};
@@ -451,24 +453,16 @@ handle_call({save, DocId}, _From,
   end,
   {reply, Result, State};
 
-handle_call({save_as, DocId}, _From,
-				    State=#state{notebook=Nb, doc_records=DocRecords, page_to_doc_id=PageToDocId}) ->
-  Record = proplists:get_value(DocId, DocRecords),
+%% The old doc isn't closed atm
+handle_call({save_as, DocId}, _From, State) ->
+  Record = proplists:get_value(DocId, State#state.doc_records),
 	Editor = Record#document.editor,
 	Contents = ide_editor_wx:get_text(Editor),
-	{NewRecs, NewPage2Ids} = case ide_io:save_as(Nb, Contents) of
-		{cancel} ->
-			{DocRecords, PageToDocId};
-		{ok, {Path, Filename}}  ->
-			wxAuiNotebook:setPageText(Nb, wxAuiNotebook:getSelection(Nb), Filename),
-			NewId = generate_id(),
-			NewPageToDocId = proplists:delete(wxAuiNotebook:getPage(Nb, wxAuiNotebook:getSelection(Nb)), PageToDocId),
-			NewDocRecords = proplists:delete(DocId, DocRecords),
-			NewRecord = #document{path=Path, editor=Editor},
-			ide_editor_wx:set_savepoint(Editor),
-			{[{NewId, NewRecord} | NewDocRecords], [{wxAuiNotebook:getPage(Nb, wxAuiNotebook:getSelection(Nb)), NewId} | NewPageToDocId]}
+	case ide_io:save_as(State#state.notebook, Contents) of
+		{cancel} -> ok;
+		{ok, {Path, Filename}}  -> open_document(Path)
 	end,
-	{reply, ok, State#state{doc_records=NewRecs, page_to_doc_id=NewPage2Ids}};
+	{reply, ok, State};
 
 handle_call({apply_to_docs, {Fun, Args, DocIds}}, _From, State=#state{doc_records=DocRecords}) ->
 	Fun2 = fun(Editor, Acc) -> [apply(Fun, [Editor | Args]) | Acc] end,
@@ -535,7 +529,6 @@ handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed, sel
   case wxAuiNotebook:getPageCount(Nb) of
     0 -> ok;
     _ ->
-      io:format("IN PAGE CHANGED~n"),
       DocId = page_idx_to_doc_id(Nb, Idx, PageToDoc),
       DocRec = get_record(DocId, DocRecords),
       ide_proj_man:set_active_project(DocRec#document.project_id),
@@ -863,7 +856,8 @@ open_document(Path) ->
       ide_proj_tree_wx:add_standalone_document(Path),
       undefined
   end,
-  wx_object:call(?MODULE, {create_doc, Path, ProjectId}).
+  % wx_object:call(?MODULE, {create_doc, Path, ProjectId}).
+  wx_object:cast(?MODULE, {create_doc, Path, ProjectId}).
 
 
 %% =====================================================================

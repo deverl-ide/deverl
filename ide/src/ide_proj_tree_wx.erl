@@ -126,6 +126,13 @@ remove_standalone_document(Path) ->
 
 set_has_children(Path) ->
   wx_object:cast(?MODULE, {set_has_children, Path}).
+  
+ 
+%% =====================================================================
+%% @doc 
+  
+update_client_data(OldPath, NewPath) ->
+  wx_object:cast(?MODULE, {update_client_data, OldPath, NewPath}).
 
 
 %% =====================================================================
@@ -236,6 +243,7 @@ handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
 handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
   wxTreeCtrl:setItemHasChildren(Tree, get_item_from_path(Tree, get_all_items(Tree), Path)),
   {noreply, State}.
+
 
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State};

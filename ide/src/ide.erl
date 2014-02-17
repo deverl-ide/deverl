@@ -600,9 +600,8 @@ handle_event(#wx{id=Id}, State) when Id =:= ?MENU_ID_UC_SEL orelse Id =:= ?MENU_
 	ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:transform_selection/2, [{transform, Cmd}]),
   {noreply, State};
 
-% handle_event(#wx{id=?MENU_ID_STRIP_SPACES}, State) ->
-% 
-%   {noreply, State};
+handle_event(#wx{id=?MENU_ID_STRIP_SPACES}, State) ->
+  {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_COMPILE_FILE}, State) ->
   ide_build:compile_file(),
