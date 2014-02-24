@@ -44,7 +44,21 @@ Open terminal, type:
 
 `sudo apt-get install build-essential libwxgtk3.0-dev freeglut3-dev libncurses5-dev`
 
-If using earlier Ubuntu version than 14.04, must also install libgtk-3-dev
+to install necessary packages, then download and extract the latest erlang release from [here](http://www.erlang.org/download.html here).
+
+Now type:
+
+<pre><code>cd otp_src_xxx
+./configure
+make
+</pre></code>
+
+
+**Ubuntu 13**
+
+Open terminal, type:
+
+`sudo apt-get install build-essential freeglut3-dev libncurses5-dev libgtk-3-dev`
 
 Download/extract wxWidgets-3.x, then:
 <pre><code>cd wxWidgets-3.x
