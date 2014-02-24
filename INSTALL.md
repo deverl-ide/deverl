@@ -47,12 +47,10 @@ Open terminal, type:
 to install necessary packages, then download and extract the latest erlang release from [here](http://www.erlang.org/download.html here).
 
 Now type:
-
 <pre><code>cd otp_src_xxx
 ./configure
 make
-</pre></code>
-
+</code></pre>
 
 **Ubuntu 13**
 
