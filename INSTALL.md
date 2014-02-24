@@ -44,6 +44,15 @@ Open terminal, type:
 
 `sudo apt-get install build-essential libwxgtk3.0-dev freeglut3-dev libncurses5-dev`
 
+Download/extract wxWidgets-3.x, then:
+<pre><code>cd wxWidgets-3.x
+mkdir build-rel
+cd build-rel
+../configure --prefix="$(pwd)" --enable-debug
+make
+PATH="$(pwd)":$PATH ; export PATH
+</code></pre>
+
 to install necessary packages, then download and extract the latest erlang release from [here](http://www.erlang.org/download.html here).
 
 Now type:
