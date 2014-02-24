@@ -44,6 +44,8 @@ Open terminal, type:
 
 `sudo apt-get install build-essential libwxgtk3.0-dev freeglut3-dev libncurses5-dev`
 
+If using earlier Ubuntu version than 14.04, install libgtk-3-dev
+
 Download/extract wxWidgets-3.x, then:
 <pre><code>cd wxWidgets-3.x
 mkdir build-rel
