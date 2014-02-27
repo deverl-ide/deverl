@@ -47,6 +47,29 @@ Open terminal, type:
 to install necessary packages, then download and extract the latest erlang release from [here](http://www.erlang.org/download.html here).
 
 Now type:
+<pre><code>cd otp_src_xxx
+./configure
+make
+</code></pre>
+
+**Ubuntu 13**
+
+Open terminal, type:
+
+`sudo apt-get install build-essential freeglut3-dev libncurses5-dev libgtk-3-dev`
+
+Download/extract wxWidgets-3.x, then:
+<pre><code>cd wxWidgets-3.x
+mkdir build-rel
+cd build-rel
+../configure --prefix="$(pwd)" --enable-debug
+make
+PATH="$(pwd)":$PATH ; export PATH
+</code></pre>
+
+to install necessary packages, then download and extract the latest erlang release from [here](http://www.erlang.org/download.html here).
+
+Now type:
 
 <pre><code>cd otp_src_xxx
 ./configure

@@ -20,7 +20,7 @@
 -include_lib("wx/include/wx.hrl").
 -include("ide.hrl").
 
--define(ICONS, "icons_block"). %% Specify the subdirectory containing the icon set
+-define(ICONS, "icons_orig"). %% Specify the subdirectory containing the icon set
 
 
 %% =====================================================================

@@ -79,11 +79,22 @@ add_module_tests(Module) ->
 %% =====================================================================
 %% @doc
 
-clear() ->
+clear() ->  
   List = wx:typeCast(wxWindow:findWindowById(?ID_LIST), wxListCtrl),
+<<<<<<< HEAD
 	wxListCtrl:deleteAllItems(List).
 	
   
+=======
+  case wx:is_null(List) of
+    true -> ok; %% notebook_empty cast sent after test pane is destroyed
+    false ->  wxListCtrl:deleteAllItems(List)
+  end,
+  io:format("LISTCTRL: ~p~n", [List]),
+  io:format("IS NULL: ~p~n", [wx:is_null(List)]).
+
+
+>>>>>>> 1ce445d23366d6d3e2a3fe1f092d28efee33d337
 %% =====================================================================
 %% @doc Set the test indicator icon to signify test pass or failure.
 

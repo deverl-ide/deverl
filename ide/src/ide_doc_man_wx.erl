@@ -659,6 +659,7 @@ save_project(ProjectId) ->
 
 -spec close_documents([document_id()]) -> ok | cancelled.
 
+close_documents([]) -> ok;
 close_documents(Documents) ->
   case get_modified_docs(Documents) of
     {[], _Parent} ->
@@ -673,8 +674,7 @@ close_documents(Documents) ->
 
 -spec close([document_id()]) -> ok.
 
-close(Docs) ->
-  wx_object:call(?MODULE, {close_docs, Docs}).
+close(Docs) -> wx_object:call(?MODULE, {close_docs, Docs}).
 
 
 %% =====================================================================
