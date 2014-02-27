@@ -81,9 +81,9 @@ add_module_tests(Module) ->
 
 clear() ->
   List = wx:typeCast(wxWindow:findWindowById(?ID_LIST), wxListCtrl),
-  wxListCtrl:deleteAllItems(List).
-
-
+	wxListCtrl:deleteAllItems(List).
+	
+  
 %% =====================================================================
 %% @doc Set the test indicator icon to signify test pass or failure.
 
