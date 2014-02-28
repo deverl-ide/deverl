@@ -281,6 +281,7 @@ code_change(_, _, State) ->
 
 %% @hidden
 terminate(_Reason, #state{frame=Frame}) ->
+  ide_doc_man_wx:destroy(),
   wxFrame:destroy(Frame),
   wx:destroy().
 
