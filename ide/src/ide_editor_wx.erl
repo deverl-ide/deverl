@@ -579,7 +579,7 @@ handle_cast(enable_menus, State) ->
 %% =====================================================================
 
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
-									_State=#state{stc=Editor}) when Key =:= ?WXK_RETURN orelse
+									#state{stc=Editor}) when Key =:= ?WXK_RETURN orelse
                                                  Key =:= ?WXK_NUMPAD_ENTER orelse
                                                  Key =:= 10 ->
   Pos = ?stc:getCurrentPos(Editor),
@@ -593,6 +593,7 @@ handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
   end,
   ?stc:setLineIndentation(Editor, Line, Width),
   ?stc:gotoPos(Editor, ?stc:getLineEndPosition(Editor, Line)),
+  update_line_margin(Editor),
   wxEvent:skip(Event);
 
 %% Auto completion for paired characters.
@@ -753,6 +754,7 @@ handle_event(#wx{event=#wxStyledText{type=stc_updateui}},State=#state{stc=Editor
       ide:toggle_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], true),
       update_sb_selection(Editor)
   end,
+  update_line_margin(Editor),
   {noreply, State};
 
 handle_event(E,State) ->

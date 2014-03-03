@@ -19,6 +19,7 @@
 
 %% API
 -export([start/1,
+         destroy/0,
 				 new_document/1,
 				 create_document/2,
          open_document_dialog/1,
@@ -69,6 +70,10 @@
 
 start(Config) ->
   wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
+  
+  
+destroy() ->
+  wx_object:call(?MODULE, shutdown).
 
 
 %% =====================================================================
@@ -384,6 +389,9 @@ handle_cast({create_doc, Path, ProjectId},
 			{noreply, State}
   end.
 
+handle_call(shutdown, _From, State) ->
+  {stop, normal, ok, State};
+  
 handle_call(get_open_docs, _From, State=#state{doc_records=DocRecords}) ->
   {reply, lists:map(fun({DocId, _}) -> DocId end, DocRecords), State};
 
