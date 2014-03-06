@@ -65,7 +65,9 @@ init(Config) ->
   end,
   [Connect(Str) || Str <- [general, console, compiler, dialyzer]],
   
+  %%
   %% General pref
+  %%
   UpdatePath = fun(Tc) ->
     FileDlg = wxFileDialog:new(Frame, [{style, ?wxFD_FILE_MUST_EXIST}]),
     case wxFileDialog:showModal(FileDlg) of
@@ -134,12 +136,19 @@ init(Config) ->
       wxTextEntryDialog:destroy(TxtDlg)
     end
   }]),
-   
+  %%
+  %% end General pref
+  %%
+  
+  %%
   %% Console pref
+  %%
   F0 = ide_sys_pref_gen:get_font(console_font),
   FStr0 = wxXmlResource:xrcctrl(Frame, "console_font_st", wxStaticText),
   wxStaticText:setLabel(FStr0, get_font_string(F0)),
   Themes = wxXmlResource:xrcctrl(Frame, "console_themes_pan", wxPanel),
+  
+  %% Add mini theme samples with radio button
   FSz = wxPanel:getSizer(Themes),
   AddTheme = fun({Name, Fg, Bg, _Mrkr, _Err}, Acc) ->
     Theme = wxXmlResource:loadPanel(Xrc, Themes, "theme_sample"),
@@ -151,6 +160,8 @@ init(Config) ->
     [Radio | Acc]
   end,
   RadioGroup = lists:foldl(AddTheme, [], ?CONSOLE_THEMES),
+  
+  %% Connect handlers
   DoTheme = fun(E=#wx{obj=Selected, userData=Group}, EvtObj) ->
     lists:foreach(fun(E) ->
       wxRadioButton:setValue(E, false)
@@ -184,7 +195,9 @@ init(Config) ->
       end
     end
   }]),
-  
+  %%
+  %% end Console pref
+  %%
   
   InitListCtrl = fun(Lc, Incs) ->
     wxListCtrl:insertColumn(Lc, 0, ""),
@@ -214,7 +227,9 @@ init(Config) ->
     wxListCtrl:getNextItem(Lc, -1, [{geometry, ?wxLIST_NEXT_ALL}, {state, ?wxLIST_STATE_SELECTED}])
   end,
   
+  %%
   %% Dialyzer pref
+  %%
   DlzrOpts = ide_sys_pref_gen:get_preference(dialyzer_options),
   PLTStr = wxXmlResource:xrcctrl(Frame, "dlzr_plt_st", wxStaticText),
   wxStaticText:setLabel(PLTStr, DlzrOpts#dialyzer_options.plt),
@@ -244,7 +259,9 @@ init(Config) ->
   DlzrCb3 = wxXmlResource:xrcctrl(Frame, "dlzr_quiet_out", wxCheckBox),
   wxCheckBox:setValue(DlzrCb3, DlzrOpts#dialyzer_options.quiet_out),
   
+  %%
   %% Compiler pref
+  %%
   CmpOpts = ide_sys_pref_gen:get_preference(compiler_options),
   CmpIncs = wxXmlResource:xrcctrl(Frame, "cmp_incs_lc", wxListCtrl),
   InitListCtrl(CmpIncs, CmpOpts#compiler_options.include_dirs),

@@ -524,8 +524,11 @@ handle_event(#wx{id=?MENU_ID_FONT_SMALLER}, State) ->
 
 handle_event(#wx{id=?MENU_ID_LINE_WRAP}, State) ->
   Bool = wxMenuItem:isChecked(wxMenuBar:findItem(wxFrame:getMenuBar(State#state.frame), ?MENU_ID_LINE_WRAP)),
+  N = if Bool -> 1;
+         true -> 0
+  end,
 	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_line_wrap/2, [Bool]),
-  ide_sys_pref_gen:set_preference(line_wrap, Bool),
+  ide_sys_pref_gen:set_preference(line_wrap, N),
   {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_LN_TOGGLE}, State) ->
