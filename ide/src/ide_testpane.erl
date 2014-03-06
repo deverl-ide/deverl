@@ -81,17 +81,7 @@ add_module_tests(Module) ->
 
 clear() ->  
   List = wx:typeCast(wxWindow:findWindowById(?ID_LIST), wxListCtrl),
-<<<<<<< HEAD
-  % case wx:is_null(List) of
-  %   true -> ok; %% notebook_empty cast sent after test pane is destroyed
-  wxListCtrl:deleteAllItems(List),
-  % end,
-  % io:format("LISTCTRL: ~p~n", [List]),
-  % io:format("IS NULL: ~p~n", [wx:is_null(List)])
-  ok.
-=======
   wxListCtrl:deleteAllItems(List).
->>>>>>> e5eebdfce61d72fca49e0d94e842eb18f02faf56
 
 
 %% =====================================================================
