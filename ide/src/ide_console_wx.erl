@@ -41,7 +41,8 @@
          set_theme/4,
          set_font/1,
          clear/0,
-         paste/1]).
+         paste/1,
+         destroy/0]).
 
 %% Macros
 -define(stc, wxStyledTextCtrl).
@@ -149,7 +150,13 @@ paste(This) ->
   Fn(Fn, Split),
   ok.
 
+%% =====================================================================
+%% @doc
 
+destroy() ->
+  wx_object:call(?MODULE, shutdown).
+  
+  
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
@@ -298,7 +305,9 @@ handle_call({paste, Line}, _From, State=#state{console=Console, input=Cmd, cmd_h
   end,
   {reply, ok, State#state{cmd_history=Hst1, current_cmd=Idx1}};
 handle_call(busy, _From, State=#state{busy=Busy}) ->
-  {reply, Busy, State}.
+  {reply, Busy, State};
+handle_call(shutdown, _From, State) ->
+  {stop, normal, ok, State}.
 
 handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
             State=#state{menu=Menu}) ->

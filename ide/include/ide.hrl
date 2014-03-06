@@ -145,6 +145,7 @@
 -define(MENU_GROUP_NOTEBOOK_KILL_FOCUS, 3).
 -define(MENU_GROUP_NOTEBOOK_SET_FOCUS, 4).
 -define(MENU_GROUP_TEXT, 5).
+-define(MENU_GROUP_ERL, 6).
 
 %% Documents
 -define(DEFAULT_TAB_LABEL, "untitled").

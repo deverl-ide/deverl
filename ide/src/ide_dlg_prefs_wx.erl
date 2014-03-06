@@ -96,6 +96,7 @@ init(Config) ->
   GTc3 = wxXmlResource:xrcctrl(Frame, "path_to_dlzr_tc", wxTextCtrl),
   wxTextCtrl:setValue(GTc3, GenPrefs#general_prefs.path_to_dialyzer),
   
+  %% Update text ctrl after browsing to file
   Browse = fun(Tc) ->
     FileDlg = wxFileDialog:new(Frame, [{style, ?wxFD_FILE_MUST_EXIST}]),
     case wxFileDialog:showModal(FileDlg) of
@@ -129,7 +130,7 @@ init(Config) ->
     end
   }]),
 
-  %% Update paths prefs on kill focus
+  %% Update/set paths (in prefs) on kill focus
   SetPaths = fun(_E, _O) ->
     Prefs0 = ide_sys_pref_gen:get_preference(general_prefs),
     Prefs1 = Prefs0#general_prefs{path_to_erl = wxTextCtrl:getValue(GTc1),
@@ -138,7 +139,17 @@ init(Config) ->
     ide_sys_pref_gen:set_preference(general_prefs, Prefs1)
   end,
   
-  wxTextCtrl:connect(GTc1, kill_focus, [{callback, SetPaths}]),
+  ResetErl = fun(E, O) ->
+    SetPaths(E, O),
+    case whereis(ide_console_port_gen) of
+      undefined -> %% no console currently
+        ide:restart_console(); %% start supervisor
+      _ -> 
+        ide_console_port_gen:close_port() %% Reset the console, supervisor will restart
+    end
+  end,
+  
+  wxTextCtrl:connect(GTc1, kill_focus, [{callback, ResetErl}]),
   wxTextCtrl:connect(GTc2, kill_focus, [{callback, SetPaths}]),
   wxTextCtrl:connect(GTc3, kill_focus, [{callback, SetPaths}]),
   

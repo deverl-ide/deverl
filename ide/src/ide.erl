@@ -24,7 +24,8 @@
          set_title/1,
          display_output_window/1,
          toggle_menu_group/2,
-         toggle_menu_items/2
+         toggle_menu_items/2,
+         restart_console/0
          ]).
 
 %% Server state
@@ -40,7 +41,8 @@
                 splitter_utilities_pos :: integer(),
                 splitter_output_pos :: integer(),
                 splitter_output_active :: wxWindow:wxWindow(),
-                menu_groups :: {integer(), [integer()]}
+                menu_groups :: {integer(), [integer()]},
+                console_sup_pid :: pid()
                 }).
 
 %% Macros
@@ -123,6 +125,13 @@ display_output_window(WinId) ->
 
 
 %% =====================================================================
+%% @doc Restart the console (remove the placeholder).
+
+restart_console() ->
+  wx_object:cast(?MODULE, restart_console).
+  
+
+%% =====================================================================
 %% Callback functions
 %% =====================================================================
 %% @hidden
@@ -175,7 +184,7 @@ init(Options) ->
   LeftWindow = create_left_window(Frame, SplitterSidebar),
 
   %% The bottom pane/utility window
-  {Utilities, TabbedWindow, ActiveLogWindow} = create_utils(SplitterUtilities),
+  {Utilities, TabbedWindow, ActiveLogWindow, ConsoleSup} = create_utils(SplitterUtilities),
 
   wxSplitterWindow:splitVertically(SplitterSidebar, LeftWindow, Workspace,
                     [{sashPosition, UIPrefs#ui_prefs.sash_vert_1}]),
@@ -222,17 +231,28 @@ init(Options) ->
             splitter_utilities=SplitterUtilities,
             splitter_output_active=ActiveLogWindow,
             workspace=Workspace,
-            menu_groups=MenuGroups
+            menu_groups=MenuGroups,
+            console_sup_pid=ConsoleSup
             }}.
 
 %% Deal with trapped exit signals
-%% @hidden
-handle_info({'EXIT',_, shutdown}, State) ->
-  io:format("Got Info 2~n"),
+%% Console supervisor has exited, replace the console window
+handle_info({'EXIT', Pid, shutdown}, State=#state{console_sup_pid=Pid}) ->
+  toggle_menu_group([?MENU_GROUP_ERL], false),
+  Splitter = wx:typeCast(wxWindow:findWindowById(?SPLITTER_OUTPUT), wxSplitterWindow),
+  Window1 = wxSplitterWindow:getWindow1(Splitter),
+  wxSplitterWindow:replaceWindow(Splitter, Window1, 
+    ide_lib_widgets:placeholder(Splitter, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}])),
+  ide_console_wx:destroy(),
+  {noreply, State#state{console_sup_pid=undefined}};
+handle_info({'EXIT', A, shutdown}, State) ->
+  io:format("STATE: ~p~n", [State]),
+  io:format("Got Info 2 ~p~n", [A]),
   {noreply,State};
-handle_info({'EXIT',A, normal}, State) ->
-  io:format("Got Info 3~n~p~n", [A]),
+handle_info({'EXIT', A, normal}, State) ->
+  io:format("Got Info 3 ~p~n", [A]),
   {noreply,State};
+  
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
@@ -241,15 +261,34 @@ handle_info(Msg, State) ->
 handle_call(frame, _From, State) ->
   {reply, State#state.frame, State}.
 
-%% @hidden
+
+handle_cast(restart_console, State) ->
+  Splitter = wx:typeCast(wxWindow:findWindowById(?SPLITTER_OUTPUT), wxSplitterWindow),
+  case ide_console_sup:start_link([]) of
+    {ok, Pid} ->
+      Window1 = wxSplitterWindow:getWindow1(Splitter),
+      wxSplitterWindow:replaceWindow(Splitter, Window1, ide_console_wx:new([{parent, Splitter}])),
+      toggle_menu_group([?MENU_GROUP_ERL], true),
+      {noreply, State#state{console_sup_pid=Pid}};
+    _NotStarted ->
+      {noreply, State}
+  end;
+  
 handle_cast({toggle_menu_group, Groups, Toggle}, State) ->
   Mb = wxFrame:getMenuBar(State#state.frame),
   Tb = wxFrame:getToolBar(State#state.frame),
   wx:foreach(fun(Group) ->
-    MenuIds = proplists:get_value(Group, State#state.menu_groups),
+    MenuIds0 = proplists:get_value(Group, State#state.menu_groups),
+    MenuIds1 = case State#state.console_sup_pid of
+      undefined when Group /= ?MENU_GROUP_ERL -> %% No console present, don't switch on any menu items in group MENU_GROUP_ERL.
+        ErlMenus = proplists:get_value(?MENU_GROUP_ERL, State#state.menu_groups),
+        MenuIds0 -- ErlMenus;
+      _ -> 
+        MenuIds0
+    end,
     lists:map(fun(MenuId) ->
       toggle_menu_item(Mb, Tb, MenuId, Toggle)
-    end, MenuIds)
+    end, MenuIds1)
   end, Groups),
   {noreply, State};
 
@@ -833,16 +872,15 @@ create_utils(ParentA) ->
     _ -> ?wxSP_3DSASH
   end,
   Splitter = wxSplitterWindow:new(Parent, [{id, ?SPLITTER_OUTPUT}, {style, SplitterStyle}]),
-  %%wxSplitterWindow:setSashGravity(Splitter, 0.5),
 
   %% Splitter window 1
   %% Start the port that communicates with the external ERTs
-  Console = case ide_console_sup:start_link([]) of
-    {error, _E} ->
-      ide_lib_widgets:placeholder(Splitter, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
-      %% Disable console menu/toolbar items
-    _Port ->
-      ide_console_wx:new([{parent, Splitter}])
+  {Console, ConsoleSup} = case ide_console_sup:start_link([]) of
+    {ok, Pid} ->
+      {ide_console_wx:new([{parent, Splitter}]), Pid};
+    _NotStarted ->
+      toggle_menu_group([?MENU_GROUP_ERL], false),
+      {ide_lib_widgets:placeholder(Splitter, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]), undefined}
   end,
 
   %% Splitter window 2
@@ -895,7 +933,7 @@ create_utils(ParentA) ->
 
   ide_log_out_wx:message("Application started."),
 
-  {Parent, ok, Log}.
+  {Parent, ok, Log, ConsoleSup}.
 
 
 %% =====================================================================

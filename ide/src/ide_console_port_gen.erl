@@ -62,12 +62,15 @@ eval(Message, Respond) ->
 
 %% =====================================================================
 %% @doc Close the port.
-%% Don't attempt to write/read from the port after this!
-
--spec close_port() -> {pid(), close}.
+%% Will be restarted by the supervisor IF the path to erl is valid.
 
 close_port() ->
-  ?MODULE ! {self(), close}.
+  case whereis(?MODULE) of
+    undefined -> 
+      ok;
+    _Pid ->
+      ?MODULE ! {self(), close}
+  end.
 
 
 %% =====================================================================
