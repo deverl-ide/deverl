@@ -68,18 +68,9 @@ init(Config) ->
   %%
   %% General pref
   %%
-  UpdatePath = fun(Tc) ->
-    FileDlg = wxFileDialog:new(Frame, [{style, ?wxFD_FILE_MUST_EXIST}]),
-    case wxFileDialog:showModal(FileDlg) of
-      ?wxID_CANCEL -> ok;
-      ?wxID_OK ->
-        Path = wxFileDialog:getPath(FileDlg),
-        wxTextCtrl:setValue(Tc, Path)
-    end,
-    wxFileDialog:destroy(FileDlg)
-  end,
-  
   GenPrefs = ide_sys_pref_gen:get_preference(general_prefs),
+  
+  %% Project directory
   ProjDir = wxXmlResource:xrcctrl(Frame, "proj_dir_st", wxStaticText),
   wxStaticText:setLabel(ProjDir, ide_sys_pref_gen:get_preference(project_directory)),
   ProjBtn = wxXmlResource:xrcctrl(Frame, "proj_dir_btn", wxButton),
@@ -96,30 +87,62 @@ init(Config) ->
       end
     end
   }]),
+  
+  %% Set Paths
   GTc1 = wxXmlResource:xrcctrl(Frame, "path_to_erl_tc", wxTextCtrl),
   wxTextCtrl:setValue(GTc1, GenPrefs#general_prefs.path_to_erl),
   GTc2 = wxXmlResource:xrcctrl(Frame, "path_to_erlc_tc", wxTextCtrl),
   wxTextCtrl:setValue(GTc2, GenPrefs#general_prefs.path_to_erlc),
   GTc3 = wxXmlResource:xrcctrl(Frame, "path_to_dlzr_tc", wxTextCtrl),
   wxTextCtrl:setValue(GTc3, GenPrefs#general_prefs.path_to_dialyzer),
+  
+  Browse = fun(Tc) ->
+    FileDlg = wxFileDialog:new(Frame, [{style, ?wxFD_FILE_MUST_EXIST}]),
+    case wxFileDialog:showModal(FileDlg) of
+      ?wxID_CANCEL -> ok;
+      ?wxID_OK ->
+        Path = wxFileDialog:getPath(FileDlg),
+        wxTextCtrl:setValue(Tc, Path)
+    end,
+    wxFileDialog:destroy(FileDlg)
+  end,
+  
+  %% Browse path button handlers
   GBtn1 = wxXmlResource:xrcctrl(Frame, "path_to_erl_btn", wxButton),
   wxButton:connect(GBtn1, command_button_clicked, [{callback,
     fun(_E,_O) ->
-      UpdatePath(GTc1)
+      Browse(GTc1)
     end
   }]),
+  
   GBtn2 = wxXmlResource:xrcctrl(Frame, "path_to_erlc_btn", wxButton),
   wxButton:connect(GBtn2, command_button_clicked, [{callback,
     fun(_E,_O) ->
-      UpdatePath(GTc2)
+      Browse(GTc2)
     end
   }]),
+  
   GBtn3 = wxXmlResource:xrcctrl(Frame, "path_to_dlzr_btn", wxButton),
   wxButton:connect(GBtn3, command_button_clicked, [{callback,
     fun(_E,_O) ->
-      UpdatePath(GTc3)
+      Browse(GTc3)
     end
   }]),
+
+  %% Update paths prefs on kill focus
+  SetPaths = fun(_E, _O) ->
+    Prefs0 = ide_sys_pref_gen:get_preference(general_prefs),
+    Prefs1 = Prefs0#general_prefs{path_to_erl = wxTextCtrl:getValue(GTc1),
+                                  path_to_erlc = wxTextCtrl:getValue(GTc2),
+                                  path_to_dialyzer = wxTextCtrl:getValue(GTc3)},
+    ide_sys_pref_gen:set_preference(general_prefs, Prefs1)
+  end,
+  
+  wxTextCtrl:connect(GTc1, kill_focus, [{callback, SetPaths}]),
+  wxTextCtrl:connect(GTc2, kill_focus, [{callback, SetPaths}]),
+  wxTextCtrl:connect(GTc3, kill_focus, [{callback, SetPaths}]),
+  
+  %% Home env var
   GSt = wxXmlResource:xrcctrl(Frame, "home_env_st", wxStaticText),
   wxStaticText:setLabel(GSt, GenPrefs#general_prefs.home_env_var),
   Btn2 = wxXmlResource:xrcctrl(Frame, "home_env_btn", wxButton),
