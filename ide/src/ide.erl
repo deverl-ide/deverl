@@ -79,7 +79,7 @@ start() ->
   Option :: {debug, list() | atom()} |
             {silent_start, boolean()}.
 start(Options) ->
-	WxObj = wx_object:start({local, ?MODULE}, ?MODULE, Options, [{debug, [log]}]),
+  WxObj = wx_object:start({local, ?MODULE}, ?MODULE, Options, [{debug, [log]}]),
   Pid = wx_object:get_pid(WxObj),
   {ok, Pid}.
 
@@ -90,7 +90,7 @@ start(Options) ->
 -spec set_title(string()) -> ok.
 
 set_title(Title) ->
-	wx_object:cast(?MODULE, {title, Title}).
+  wx_object:cast(?MODULE, {title, Title}).
 
 
 %% =====================================================================
@@ -127,9 +127,9 @@ display_output_window(WinId) ->
 %% =====================================================================
 %% @hidden
 init(Options) ->
-	Wx = wx:new(Options),
-	WxEnv = wx:get_env(),
-	process_flag(trap_exit, true),
+  Wx = wx:new(Options),
+  WxEnv = wx:get_env(),
+  process_flag(trap_exit, true),
 
   %% Initialise XRC
   Xrc = wxXmlResource:get(),
@@ -142,64 +142,64 @@ init(Options) ->
   %% UI saved pref
   UIPrefs = ide_sys_pref_gen:get_preference(ui_prefs),
 
-	Frame = wxFrame:new(Wx, ?wxID_ANY, ?FRAME_TITLE, [{size, UIPrefs#ui_prefs.frame_size}]),
-	wxFrame:connect(Frame, close_window),
-	wxFrame:setMinSize(Frame, {300,200}),
+  Frame = wxFrame:new(Wx, ?wxID_ANY, ?FRAME_TITLE, [{size, UIPrefs#ui_prefs.frame_size}]),
+  wxFrame:connect(Frame, close_window),
+  wxFrame:setMinSize(Frame, {300,200}),
 
-	ide_proj_man:start([{frame, Frame}, {wx_env, WxEnv}]),
+  ide_proj_man:start([{frame, Frame}, {wx_env, WxEnv}]),
 
-	FrameSizer = wxBoxSizer:new(?wxVERTICAL),
-	wxWindow:setSizer(Frame, FrameSizer),
+  FrameSizer = wxBoxSizer:new(?wxVERTICAL),
+  wxWindow:setSizer(Frame, FrameSizer),
 
-	SplitterStyle = case os:type() of
-		{_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
+  SplitterStyle = case os:type() of
+    {_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
     {win32, _} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE bor ?wxBORDER_THEME;
-		_ -> ?wxSP_3DSASH
-	end,
-	SplitterUtilities = wxSplitterWindow:new(Frame, [{id, ?SPLITTER_UTILITIES}, %% Primary splitter
-		{style, SplitterStyle}]),
-	SplitterSidebar = wxSplitterWindow:new(SplitterUtilities, [{id, ?SPLITTER_SIDEBAR},
-		{style, SplitterStyle}]),
-  wxSplitterWindow:setSashGravity(SplitterUtilities, 0.5),
-  wxSplitterWindow:setSashGravity(SplitterSidebar, 0.5),
-	wxSizer:add(FrameSizer, SplitterUtilities, [{flag, ?wxEXPAND}, {proportion, 1}]),
+    _ -> ?wxSP_3DSASH
+  end,
+  SplitterUtilities = wxSplitterWindow:new(Frame, [{id, ?SPLITTER_UTILITIES}, %% Primary splitter
+    {style, SplitterStyle}]),
+  SplitterSidebar = wxSplitterWindow:new(SplitterUtilities, [{id, ?SPLITTER_SIDEBAR},
+    {style, SplitterStyle}]),
+  %%wxSplitterWindow:setSashGravity(SplitterUtilities, 0.5),
+  %%wxSplitterWindow:setSashGravity(SplitterSidebar, 0.5),
+  wxSizer:add(FrameSizer, SplitterUtilities, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
-	%% Status bar
-	StatusBar = ide_sb_wx:start([{parent, Frame}]),
-	%% Menubar
+  %% Status bar
+  StatusBar = ide_sb_wx:start([{parent, Frame}]),
+  %% Menubar
   MenuGroups = ide_menu:create([{parent, Frame}]),
-	wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},{proportion, 0}]),
-	Workspace = create_workspace(SplitterSidebar, Frame),
+  wxSizer:add(FrameSizer, StatusBar, [{flag, ?wxEXPAND},{proportion, 0}]),
+  Workspace = create_workspace(SplitterSidebar, Frame),
 
-	%% The left window
-	LeftWindow = create_left_window(Frame, SplitterSidebar),
+  %% The left window
+  LeftWindow = create_left_window(Frame, SplitterSidebar),
 
-	%% The bottom pane/utility window
-	{Utilities, TabbedWindow, ActiveLogWindow} = create_utils(SplitterUtilities),
+  %% The bottom pane/utility window
+  {Utilities, TabbedWindow, ActiveLogWindow} = create_utils(SplitterUtilities),
 
-	wxSplitterWindow:splitVertically(SplitterSidebar, LeftWindow, Workspace,
-	                  [{sashPosition, UIPrefs#ui_prefs.sash_vert_1}]),
+  wxSplitterWindow:splitVertically(SplitterSidebar, LeftWindow, Workspace,
+                    [{sashPosition, UIPrefs#ui_prefs.sash_vert_1}]),
 
-	wxSplitterWindow:splitHorizontally(SplitterUtilities, SplitterSidebar, Utilities,
+  wxSplitterWindow:splitHorizontally(SplitterUtilities, SplitterSidebar, Utilities,
                   [{sashPosition, UIPrefs#ui_prefs.sash_horiz}]),
 
-	wxSizer:layout(FrameSizer),
-	wxFrame:center(Frame),
+  wxSizer:layout(FrameSizer),
+  wxFrame:center(Frame),
   wxFrame:setSize(Frame, UIPrefs#ui_prefs.frame_size),
-  wxSplitterWindow:setSashPosition(SplitterUtilities, UIPrefs#ui_prefs.sash_horiz),
-  wxSplitterWindow:setSashPosition(SplitterSidebar, UIPrefs#ui_prefs.sash_vert_1),
+  %wxSplitterWindow:setSashPosition(SplitterUtilities, UIPrefs#ui_prefs.sash_horiz),
+  %wxSplitterWindow:setSashPosition(SplitterSidebar, UIPrefs#ui_prefs.sash_vert_1),
 
   wxFrame:show(Frame),
 
-	wxSplitterWindow:setSashGravity(SplitterUtilities, 1.0), % Only the top window grows on resize
-	wxSplitterWindow:setSashGravity(SplitterSidebar, 0.0), % Only the right window grows
+  wxSplitterWindow:setSashGravity(SplitterUtilities, 1.0), % Only the top window grows on resize
+  wxSplitterWindow:setSashGravity(SplitterSidebar, 0.0), % Only the right window grows
 
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
 
   % wxFrame:connect(Frame, size, [{skip, true}]),
 
-	%% Testing accelerator table
+  %% Testing accelerator table
   % AccelTab = wxAcceleratorTable:new(1,
   %   [wxAcceleratorEntry:new([{flags, ?wxACCEL_NORMAL}, {keyCode, ?WXK_SPACE}, {cmd, ?MENU_ID_FONT}])]),
   % wxFrame:setAcceleratorTable(Frame, AccelTab),
@@ -211,7 +211,7 @@ init(Options) ->
                      ?MENU_GROUP_NOTEBOOK_KILL_FOCUS], false),
 
   {Frame, #state{
-						frame=Frame,
+            frame=Frame,
             left_pane=LeftWindow,
             utilities=Utilities,
             util_tabbed=TabbedWindow,
@@ -221,7 +221,7 @@ init(Options) ->
             splitter_sidebar=SplitterSidebar,
             splitter_utilities=SplitterUtilities,
             splitter_output_active=ActiveLogWindow,
-						workspace=Workspace,
+            workspace=Workspace,
             menu_groups=MenuGroups
             }}.
 
@@ -239,7 +239,7 @@ handle_info(Msg, State) ->
 
 %% @hidden
 handle_call(frame, _From, State) ->
-	{reply, State#state.frame, State}.
+  {reply, State#state.frame, State}.
 
 %% @hidden
 handle_cast({toggle_menu_group, Groups, Toggle}, State) ->
@@ -262,11 +262,11 @@ handle_cast({toggle_menu_items, Items, Toggle}, State) ->
   {noreply, State};
 
 handle_cast({title, Title}, State=#state{frame=Frame}) ->
-	Str = case Title of
-		[] -> ?FRAME_TITLE;
-		_ -> Title ++ " - " ++ ?FRAME_TITLE
-	end,
-	wxFrame:setTitle(Frame, Str),
+  Str = case Title of
+    [] -> ?FRAME_TITLE;
+    _ -> Title ++ " - " ++ ?FRAME_TITLE
+  end,
+  wxFrame:setTitle(Frame, Str),
   {noreply, State};
 
 handle_cast({output_display, Id}, State) ->
@@ -510,8 +510,8 @@ handle_event(#wx{id=?MENU_ID_FONT}, State) ->
       ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_font/2, [Font]),
       ok;
     ?wxID_CANCEL ->
-				ok
-	end,
+        ok
+  end,
   {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_FONT_BIGGER}, State) ->
@@ -527,13 +527,13 @@ handle_event(#wx{id=?MENU_ID_LINE_WRAP}, State) ->
   N = if Bool -> 1;
          true -> 0
   end,
-	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_line_wrap/2, [Bool]),
+  ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_line_wrap/2, [Bool]),
   ide_sys_pref_gen:set_preference(line_wrap, N),
   {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_LN_TOGGLE}, State) ->
   Bool = wxMenuItem:isChecked(wxMenuBar:findItem(wxFrame:getMenuBar(State#state.frame), ?MENU_ID_LN_TOGGLE)),
-	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_line_margin_visible/2, [Bool]),
+  ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_line_margin_visible/2, [Bool]),
   ide_sys_pref_gen:set_preference(show_line_no, Bool),
   {noreply, State};
 
@@ -542,13 +542,13 @@ handle_event(#wx{id=Id}, State) when Id =:= ?MENU_ID_INDENT_SPACES orelse Id =:=
     ?MENU_ID_INDENT_SPACES -> false;
     ?MENU_ID_INDENT_TABS -> true
   end,
-	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_use_tabs/2, [Cmd]),
+  ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_use_tabs/2, [Cmd]),
   ide_sys_pref_gen:set_preference(use_tabs, Cmd),
   {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_INDENT_GUIDES}, State) ->
   Bool = wxMenuItem:isChecked(wxMenuBar:findItem(wxFrame:getMenuBar(State#state.frame), ?MENU_ID_INDENT_GUIDES)),
-	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_indent_guides/2, [Bool]),
+  ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_indent_guides/2, [Bool]),
   ide_sys_pref_gen:set_preference(indent_guides, Bool),
   {noreply, State};
 
@@ -597,11 +597,11 @@ handle_event(#wx{id=?MENU_ID_GOTO_LINE}, State) ->
    {noreply, State};
 
 handle_event(#wx{id=Id}, State) when Id =:= ?MENU_ID_UC_SEL orelse Id =:= ?MENU_ID_LC_SEL ->
-	Cmd = case Id of
-		?MENU_ID_UC_SEL -> uppercase;
-		?MENU_ID_LC_SEL -> lowercase
-	end,
-	ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:transform_selection/2, [{transform, Cmd}]),
+  Cmd = case Id of
+    ?MENU_ID_UC_SEL -> uppercase;
+    ?MENU_ID_LC_SEL -> lowercase
+  end,
+  ide_doc_man_wx:apply_to_active_document(fun ide_editor_wx:transform_selection/2, [{transform, Cmd}]),
   {noreply, State};
 
 handle_event(#wx{id=?MENU_ID_STRIP_SPACES}, State) ->
@@ -707,25 +707,25 @@ handle_event(#wx{id=Id0}, State)
   {noreply, State};
 
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_FULLSCREEN=Id},
-						 State=#state{frame=Frame}) ->
-	IsFullScreen = wxFrame:isFullScreen(Frame),
-	wxFrame:showFullScreen(Frame, not IsFullScreen, [{style, ?wxFULLSCREEN_NOBORDER}]),
-	Label = case IsFullScreen of
-		true -> "Enter Fullscreen";
-		false -> "Exit Fullscreen"
-	end,
-	ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, Label ++ "\tCtrl+Alt+F"),
-	{noreply, State};
+             State=#state{frame=Frame}) ->
+  IsFullScreen = wxFrame:isFullScreen(Frame),
+  wxFrame:showFullScreen(Frame, not IsFullScreen, [{style, ?wxFULLSCREEN_NOBORDER}]),
+  Label = case IsFullScreen of
+    true -> "Enter Fullscreen";
+    false -> "Exit Fullscreen"
+  end,
+  ide_menu:update_label(wxFrame:getMenuBar(Frame), Id, Label ++ "\tCtrl+Alt+F"),
+  {noreply, State};
 
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_TEST},
-						 State=#state{splitter_sidebar=V, left_pane=LeftPane, workspace=Ws, splitter_sidebar_pos=VPos}) ->
+             State=#state{splitter_sidebar=V, left_pane=LeftPane, workspace=Ws, splitter_sidebar_pos=VPos}) ->
    wxWindow:freeze(V),
    case wxSplitterWindow:isSplit(V) of
        true -> wxSplitterWindow:unsplit(V,[{toRemove, LeftPane}]);
        false -> wxSplitterWindow:splitVertically(V, LeftPane, Ws, [{sashPosition, VPos}])
    end,
    wxWindow:thaw(V),
-	{noreply, State};
+  {noreply, State};
 
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_OUTPUT},
              State=#state{splitter_output_active=PrevOutput, splitter_output_pos=Pos}) ->
@@ -733,73 +733,73 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_O
   {noreply, State#state{splitter_output_active=CurrOutput}};
 
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_HIDE_UTIL},
-						 State=#state{splitter_utilities=H, splitter_sidebar=V, utilities=Utils, splitter_utilities_pos=HPos}) ->
-	IsShown = wxSplitterWindow:isShown(Utils),
-	case wxSplitterWindow:isSplit(H) of
-		true -> ok;
-		false ->
-			wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}])
-	end,
-	case IsShown of
-		true ->
-			wxSplitterWindow:unsplit(H,[{toRemove, Utils}]);
-		false -> ok
-	end,
-	{noreply, State};
+             State=#state{splitter_utilities=H, splitter_sidebar=V, utilities=Utils, splitter_utilities_pos=HPos}) ->
+  IsShown = wxSplitterWindow:isShown(Utils),
+  case wxSplitterWindow:isSplit(H) of
+    true -> ok;
+    false ->
+      wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}])
+  end,
+  case IsShown of
+    true ->
+      wxSplitterWindow:unsplit(H,[{toRemove, Utils}]);
+    false -> ok
+  end,
+  {noreply, State};
 
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_EDITOR},
-						 State=#state{splitter_utilities=H, splitter_sidebar=V, utilities=Utils, left_pane=LeftPane,
-						 							splitter_utilities_pos=HPos, splitter_sidebar_pos=VPos, workspace=Ws, frame=Frame}) ->
+             State=#state{splitter_utilities=H, splitter_sidebar=V, utilities=Utils, left_pane=LeftPane,
+                          splitter_utilities_pos=HPos, splitter_sidebar_pos=VPos, workspace=Ws, frame=Frame}) ->
   wxFrame:freeze(Frame),
-	Fun = fun(false, false, false) -> %% Restore
-		wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
-		wxSplitterWindow:splitVertically(V, LeftPane, Ws, [{sashPosition, VPos}]);
-	(false, _, true) ->
-		wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
-		maximise;
-	(_,_,_) -> maximise %% Unsplit both, even if already unsplit
-	end,
-	case Fun(wxSplitterWindow:isSplit(H), wxSplitterWindow:isSplit(V), wxSplitterWindow:isShown(Utils)) of
-		maximise ->
-			wxSplitterWindow:unsplit(H,[{toRemove, Utils}]),
-			wxSplitterWindow:unsplit(V,[{toRemove, LeftPane}]);
-		_ -> ok
-	end,
+  Fun = fun(false, false, false) -> %% Restore
+    wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
+    wxSplitterWindow:splitVertically(V, LeftPane, Ws, [{sashPosition, VPos}]);
+  (false, _, true) ->
+    wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]),
+    maximise;
+  (_,_,_) -> maximise %% Unsplit both, even if already unsplit
+  end,
+  case Fun(wxSplitterWindow:isSplit(H), wxSplitterWindow:isSplit(V), wxSplitterWindow:isShown(Utils)) of
+    maximise ->
+      wxSplitterWindow:unsplit(H,[{toRemove, Utils}]),
+      wxSplitterWindow:unsplit(V,[{toRemove, LeftPane}]);
+    _ -> ok
+  end,
   wxFrame:thaw(Frame),
-	{noreply, State};
+  {noreply, State};
 
 handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UTIL},
-						 State=#state{frame=Frame, splitter_utilities=H, splitter_sidebar=V, utilities=Utils,
-						 							splitter_utilities_pos=HPos}) ->
+             State=#state{frame=Frame, splitter_utilities=H, splitter_sidebar=V, utilities=Utils,
+                          splitter_utilities_pos=HPos}) ->
   wxFrame:freeze(Frame),
-	IsSplit = wxSplitterWindow:isSplit(H),
-	IsShown = wxSplitterWindow:isShown(Utils),
-	case IsSplit of
-		false -> wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]);
-		true -> ok
-	end,
-	case IsSplit =:= IsShown of
-		true -> wxSplitterWindow:unsplit(H,[{toRemove, V}]);
-		false -> ok
-	end,
+  IsSplit = wxSplitterWindow:isSplit(H),
+  IsShown = wxSplitterWindow:isShown(Utils),
+  case IsSplit of
+    false -> wxSplitterWindow:splitHorizontally(H, V, Utils, [{sashPosition, HPos}]);
+    true -> ok
+  end,
+  case IsSplit =:= IsShown of
+    true -> wxSplitterWindow:unsplit(H,[{toRemove, V}]);
+    false -> ok
+  end,
   wxFrame:thaw(Frame),
-	{noreply, State};
+  {noreply, State};
 
 %% Sub-menus
 handle_event(#wx{id=Id, userData=ThemeMenu, event=#wxCommand{type=command_menu_selected}},
              State) when (Id >= ?MENU_ID_THEME_LOWEST) and (Id =< ?MENU_ID_THEME_HIGHEST) ->
   {ok, Ckd} = ide_menu:get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
-	ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_theme/3, [wxMenuItem:getLabel(Ckd),
-		ide_sys_pref_gen:get_font(editor_font)]),
+  ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_theme/3, [wxMenuItem:getLabel(Ckd),
+    ide_sys_pref_gen:get_font(editor_font)]),
   ide_sys_pref_gen:set_preference(theme, wxMenuItem:getLabel(Ckd)),
-	{noreply, State};
+  {noreply, State};
 
 handle_event(#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_selected}},
              State) when Id >= ?MENU_ID_TAB_WIDTH_LOWEST,
-						 Id =< ?MENU_ID_TAB_WIDTH_HIGHEST  ->
+             Id =< ?MENU_ID_TAB_WIDTH_HIGHEST  ->
   ide_doc_man_wx:apply_to_all_documents(fun ide_editor_wx:set_tab_width/2, [list_to_integer(wxMenu:getLabel(Menu, Id))]),
   ide_sys_pref_gen:set_preference(tab_width, wxMenu:getLabel(Menu, Id)),
-	{noreply, State};
+  {noreply, State};
 
 
 %% Event catchall for testing
@@ -817,8 +817,8 @@ handle_event(Ev, State) ->
 %% @private
 
 -spec create_utils(Parent) -> {UtilWin, TabWin, OutWin} when
-	Parent :: wxWindow:wxWindow(),
-	UtilWin :: wxPanel:wxPanel(),
+  Parent :: wxWindow:wxWindow(),
+  UtilWin :: wxPanel:wxPanel(),
   TabWin :: ide_tabbed_win_wx:ide_tabbed_win_wx(),
   OutWin :: wxPanel:wxPanel().
 
@@ -828,22 +828,22 @@ create_utils(ParentA) ->
   wxSizer:addSpacer(Sz, 6),
   wxPanel:setSizer(Parent, Sz),
 
- 	SplitterStyle = case os:type() of
- 		{_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
- 		_ -> ?wxSP_3DSASH
- 	end,
-	Splitter = wxSplitterWindow:new(Parent, [{id, ?SPLITTER_OUTPUT}, {style, SplitterStyle}]),
-  wxSplitterWindow:setSashGravity(Splitter, 0.5),
+  SplitterStyle = case os:type() of
+    {_, darwin} -> ?wxSP_3DSASH bor ?wxSP_LIVE_UPDATE;
+    _ -> ?wxSP_3DSASH
+  end,
+  Splitter = wxSplitterWindow:new(Parent, [{id, ?SPLITTER_OUTPUT}, {style, SplitterStyle}]),
+  %%wxSplitterWindow:setSashGravity(Splitter, 0.5),
 
   %% Splitter window 1
-	%% Start the port that communicates with the external ERTs
-	Console = case ide_console_sup:start_link([]) of
-		{error, _E} ->
-			ide_lib_widgets:placeholder(Splitter, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
-			%% Disable console menu/toolbar items
-		_Port ->
-			ide_console_wx:new([{parent, Splitter}])
-	end,
+  %% Start the port that communicates with the external ERTs
+  Console = case ide_console_sup:start_link([]) of
+    {error, _E} ->
+      ide_lib_widgets:placeholder(Splitter, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]);
+      %% Disable console menu/toolbar items
+    _Port ->
+      ide_console_wx:new([{parent, Splitter}])
+  end,
 
   %% Splitter window 2
   CreateWindow = fun(P, WindowModule, Id) ->
@@ -895,7 +895,7 @@ create_utils(ParentA) ->
 
   ide_log_out_wx:message("Application started."),
 
-	{Parent, ok, Log}.
+  {Parent, ok, Log}.
 
 
 %% =====================================================================
@@ -904,25 +904,25 @@ create_utils(ParentA) ->
 -spec create_left_window(wxFrame:wxFrame(), wxWindow:wxWindow()) -> ide_tabbed_win_img_wx:ide_tabbed_win_img_wx().
 
 create_left_window(Frame, Parent) ->
-	ImgList = wxImageList:new(16,16),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("books-stack.png")))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("clipboard-task.png")))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("function.png")))),
+  ImgList = wxImageList:new(16,16),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("books-stack.png")))),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("clipboard-task.png")))),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new(ide_lib_widgets:rc_dir("function.png")))),
 
-	Toolbook = ide_tabbed_win_img_wx:new([{parent, Parent}]),
-	ide_tabbed_win_img_wx:assign_image_list(Toolbook, ImgList),
+  Toolbook = ide_tabbed_win_img_wx:new([{parent, Parent}]),
+  ide_tabbed_win_img_wx:assign_image_list(Toolbook, ImgList),
 
-	ProjectTrees = ide_proj_tree_wx:start([{parent, Toolbook}, {frame, Frame}]),
-	ide_tabbed_win_img_wx:add_page(Toolbook, ProjectTrees, "Browser", [{imageId, 0}]),
+  ProjectTrees = ide_proj_tree_wx:start([{parent, Toolbook}, {frame, Frame}]),
+  ide_tabbed_win_img_wx:add_page(Toolbook, ProjectTrees, "Browser", [{imageId, 0}]),
 
   TestPanel = ide_testpane:new([{parent, Toolbook}]),
-	ide_tabbed_win_img_wx:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
+  ide_tabbed_win_img_wx:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
 
   % FunctionsPanel = ide_sl_wx:start([{parent, Toolbook}]),
   % ide_tabbed_win_img_wx:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
 
-	ide_tabbed_win_img_wx:set_selection(Toolbook, 1), %% Default to projects
-	Toolbook.
+  ide_tabbed_win_img_wx:set_selection(Toolbook, 1), %% Default to projects
+  Toolbook.
 
 
 %% =====================================================================
@@ -931,7 +931,7 @@ create_left_window(Frame, Parent) ->
 -spec create_workspace(wxWindow:wxWindow(), wxWindow:wxWindow()) -> wx_object:wx_object().
 
 create_workspace(Parent, Frame) ->
-	ide_doc_man_wx:start([{parent, Parent}, {frame, Frame}]).
+  ide_doc_man_wx:start([{parent, Parent}, {frame, Frame}]).
 
 
 %% =====================================================================
