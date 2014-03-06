@@ -18,7 +18,7 @@
 -export([start/1, start/2]).
 
 %% Spawned process
--export([compile/3]).
+-export([compile/4]).
 
 
 %% =====================================================================
@@ -49,7 +49,7 @@ start(Cwd)->
           | all_errors}.            %% Convert warninf to errors
 
 start(Cwd, Config)->
-  spawn(?MODULE, compile, [self(), Cwd, Config]).
+  spawn(?MODULE, compile, [self(), Cwd, Config, wx:get_env()]).
 
 
 %% =====================================================================
@@ -61,9 +61,9 @@ start(Cwd, Config)->
 %% @private
 %% @see start/2
 
--spec compile(pid(), path(), list()) -> {pid(), 'ok' | 'error'}.
+-spec compile(pid(), path(), list(), wx:wx_env()) -> {pid(), 'ok' | 'error'}.
 
-compile(From, Path, Config) ->
+compile(From, Path, Config, WXE) ->
   CFlags = fun({cflag, supress_warnings}, Acc) -> ["-W0"|Acc];
            ({cflag, verbose}, Acc) -> ["-v"|Acc];
            ({cflag, smp}, Acc) -> ["-smp"|Acc];
@@ -101,14 +101,26 @@ compile(From, Path, Config) ->
   #general_prefs{path_to_erlc=ErlC} = ide_sys_pref_gen:get_preference(general_prefs),
 
   ide_stdout_wx:clear(),
-  open_port({spawn_executable, ErlC}, [use_stdio,
+  
+  %% Attempt to start the compiler port,
+  %% Inform the user if there is an error
+  try
+    open_port({spawn_executable, ErlC}, [use_stdio,
                                          exit_status,
                                          {cd, Cwd},
                                          {args, lists:append(Flags, Args)}]),
+    ide_stdout_wx:append_header("Compiler Output"),
+    loop(From, filename:basename(Path))
+  catch
+    error:_ ->
+      wx:set_env(WXE),
+      ide_stdout_wx:append("Couldn't start compiler.\nCheck the path to erlc is correct in Preferences -> General -> Path to erlc."),
+      ide_log_out_wx:error("Compilation failed: Couldn't start compiler."),
+      ide_lib_dlg_wx:message_quick(wx:null(), "Couldn't start the compiler.", "Check your path configuration in Preferences -> General"),
+      From ! {error, could_not_start} %% Inform the caller we couldn't continue
+  end.
                                          
-  % ide_stdout_wx:append("========================= Compiler Output ========================\n"),
-  ide_stdout_wx:append_header("Compiler Output"),
-  loop(From, filename:basename(Path)).
+  
 
 
 %% =====================================================================

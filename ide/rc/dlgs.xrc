@@ -1439,7 +1439,6 @@
 									<border>0</border>
 									<object class="wxPanel" name="desc_1">
 										<style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
-										<size>-1,100</size>
 										<bg>#ffffff</bg>
 										<fg>#000000</fg>
 										<object class="wxBoxSizer">
