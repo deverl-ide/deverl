@@ -80,7 +80,6 @@ init(Config) ->
   end,
   
   GenPrefs = ide_sys_pref_gen:get_preference(general_prefs),
-  Pref0 = wxXmlResource:xrcctrl(Frame, "general", wxPanel),
   ProjDir = wxXmlResource:xrcctrl(Frame, "proj_dir_st", wxStaticText),
   wxStaticText:setLabel(ProjDir, ide_sys_pref_gen:get_preference(project_directory)),
   ProjBtn = wxXmlResource:xrcctrl(Frame, "proj_dir_btn", wxButton),
@@ -142,7 +141,7 @@ init(Config) ->
   
   %%
   %% Console pref
-  %%
+  %%  
   F0 = ide_sys_pref_gen:get_font(console_font),
   FStr0 = wxXmlResource:xrcctrl(Frame, "console_font_st", wxStaticText),
   wxStaticText:setLabel(FStr0, get_font_string(F0)),
@@ -294,6 +293,10 @@ init(Config) ->
   wxFrame:centre(Frame),
   wxFrame:fit(Frame),
   wxFrame:show(Frame),  
+  
+  %% Active pref
+  Pref0 = wxXmlResource:xrcctrl(Frame, "console", wxPanel),
+  
   {Frame, #state{frame=Frame, cur_pref=Pref0}}.
 
 

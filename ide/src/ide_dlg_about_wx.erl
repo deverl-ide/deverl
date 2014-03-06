@@ -90,11 +90,7 @@ about_html() ->
 "
 <html>
   <body valign=\"center\">
-  	<font size=\"50\" color=\"#39c3f5\"><p align=\"center\">[e]</p></font>
-    <font size=\"2\" color=\"gray\">Version 0.8.</font>
-    
-    <p align=\"center\">An simple IDE dedicated to learning erlang.</p>
-    
+        
     <div align=\"center\">
       <p><strong>Developers:</strong></p>
       <p>Tom Richmond (tr201@kent.ac.uk)<br \>
@@ -105,6 +101,13 @@ about_html() ->
       <p><strong>Website:</strong></p>
       <p>Hosted at <a href=\"https://github.com/tomrichmond/erlangIDE\">GitHub</a></p>
     <div>
+    
+    <div align=\"center\">
+      <p><strong>Attibutions</strong></p>
+      <p>Some icons adapted from Fugue by <a href=\"http://p.yusukekamiyamane.com/\">Yusuke Kamiyamane</a>. Licensed under a Creative Commons Attribution 3.0 License.</p>
+    <div>
+    
+    
   </body>
 </html>
 ".
