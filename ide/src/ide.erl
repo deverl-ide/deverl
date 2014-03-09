@@ -112,8 +112,8 @@ toggle_menu_items(Items, Toggle) ->
 
 
 %% =====================================================================
-%% @doc Show the window identified by WinId in the output window, hiding the
-%% window currently displayed.
+%% @doc Show the window identified by WinId in the output window, hiding 
+%%      the window currently displayed.
 %% ?WINDOW_LOG or ?WINDOW_OUTPUT
 
 -spec display_output_window(integer()) -> ok.
