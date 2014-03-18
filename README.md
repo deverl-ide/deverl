@@ -2,6 +2,7 @@ Deverl
 ======
 
 An Erlang IDE dedicated to learning erlang, written in Erlang.
+Released under the GNU general public license version 3.
 
 ### Requirements
 
