@@ -2,6 +2,7 @@
 %% @author Tom Richmond <tr201@kent.ac.uk>
 %% @author Mike Quested <mdq3@kent.ac.uk>
 %% @copyright 2014 Tom Richmond, Mike Quested
+%%
 %% @version 1
 %% @doc Starts an instance of the IDE. Builds all wx components.
 %% @end
@@ -114,8 +115,8 @@ toggle_menu_items(Items, Toggle) ->
 
 
 %% =====================================================================
-%% @doc Show the window identified by WinId in the output window, hiding the
-%% window currently displayed.
+%% @doc Show the window identified by WinId in the output window, hiding 
+%%      the window currently displayed.
 %% ?WINDOW_LOG or ?WINDOW_OUTPUT
 
 -spec display_output_window(integer()) -> ok.
