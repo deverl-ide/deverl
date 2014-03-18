@@ -52,7 +52,7 @@
 -define(SPLITTER_SIDEBAR, 100).
 -define(SPLITTER_UTILITIES, 101).
 -define(SPLITTER_OUTPUT, 102).
--define(FRAME_TITLE, "Erlang IDE").
+-define(FRAME_TITLE, "Deverl").
 -define(BUTTON_Hdeverl_OUTPUT, 0).
 -define(ID_TOGGLE_LOG, 1).
 -define(ID_TOGGLE_OUTPUT, 2).
@@ -149,7 +149,7 @@ init(Options) ->
   %% Load modules that should be started by OTP Application and not here
   deverl_sys_pref_gen:start([{wx_env, WxEnv}]),
 
-  %% UI saved pref
+  %% Saved UI prefs
   UIPrefs = deverl_sys_pref_gen:get_preference(ui_prefs),
 
   Frame = wxFrame:new(Wx, ?wxID_ANY, ?FRAME_TITLE, [{size, UIPrefs#ui_prefs.frame_size}]),
@@ -170,8 +170,7 @@ init(Options) ->
     {style, SplitterStyle}]),
   SplitterSidebar = wxSplitterWindow:new(SplitterUtilities, [{id, ?SPLITTER_SIDEBAR},
     {style, SplitterStyle}]),
-  %%wxSplitterWindow:setSashGravity(SplitterUtilities, 0.5),
-  %%wxSplitterWindow:setSashGravity(SplitterSidebar, 0.5),
+
   wxSizer:add(FrameSizer, SplitterUtilities, [{flag, ?wxEXPAND}, {proportion, 1}]),
 
   %% Status bar
@@ -196,9 +195,6 @@ init(Options) ->
   wxSizer:layout(FrameSizer),
   wxFrame:center(Frame),
   wxFrame:setSize(Frame, UIPrefs#ui_prefs.frame_size),
-  %wxSplitterWindow:setSashPosition(SplitterUtilities, UIPrefs#ui_prefs.sash_horiz),
-  %wxSplitterWindow:setSashPosition(SplitterSidebar, UIPrefs#ui_prefs.sash_vert_1),
-
   wxFrame:show(Frame),
 
   wxSplitterWindow:setSashGravity(SplitterUtilities, 1.0), % Only the top window grows on resize
@@ -206,13 +202,6 @@ init(Options) ->
 
   wxSplitterWindow:connect(Frame, command_splitter_sash_pos_changed),
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
-
-  % wxFrame:connect(Frame, size, [{skip, true}]),
-
-  %% Testing accelerator table
-  % AccelTab = wxAcceleratorTable:new(1,
-  %   [wxAcceleratorEntry:new([{flags, ?wxACCEL_NORMAL}, {keyCode, ?WXK_SPACE}, {cmd, ?MENU_ID_FONT}])]),
-  % wxFrame:setAcceleratorTable(Frame, AccelTab),
 
   %% Toggle menu defaults
   toggle_menu_group([?MENU_GROUP_NOTEBOOK_EMPTY,

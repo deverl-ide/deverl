@@ -83,7 +83,8 @@ build_plt(Parent, WxEnv) ->
   receive
     {_From, ok} ->
       wxDialog:destroy(Dlg);
-    {_From, error} ->
+    {_From, {error, _Msg}} ->
+      io:format("WWWWWWWW~n"),
       wxDialog:destroy(Dlg)
   end.
   %% Re-enable here

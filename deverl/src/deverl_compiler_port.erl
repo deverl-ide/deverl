@@ -115,7 +115,7 @@ compile(From, Path, Config, WXE) ->
     error:_ ->
       wx:set_env(WXE),
       deverl_stdout_wx:append("Couldn't start compiler.\nCheck the path to erlc is correct in Preferences -> General -> Path to erlc."),
-      deverl_log_out_wx:error("Compilation failed: Couldn't start compiler."),
+      deverl_log_out_wx:error("Compilation failed: Couldn't start compiler, see output.", [{hotspot, "output"}]),
       deverl_lib_dlg_wx:message_quick(wx:null(), "Couldn't start the compiler.", "Check your path configuration in Preferences -> General"),
       From ! {error, could_not_start} %% Inform the caller we couldn't continue
   end.

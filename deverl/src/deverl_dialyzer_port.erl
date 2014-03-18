@@ -36,13 +36,19 @@ run(From, Config) ->
   
   #general_prefs{path_to_dialyzer=Dlzr} = deverl_sys_pref_gen:get_preference(general_prefs),
   
-  open_port({spawn_executable, Dlzr}, [use_stdio,
-                                             exit_status,
-                                             {args, Flags}]),
-                                             
-  deverl_stdout_wx:append("========================= Dialyzer Output ========================\n"),  
-  loop(From).
-
+  %% Attempt to open the port
+  try
+    open_port({spawn_executable, Dlzr}, [use_stdio,
+                                         exit_status,
+                                         {args, Flags}]),                                          
+    deverl_stdout_wx:append("========================= Dialyzer Output ========================\n"),  
+    loop(From)
+  catch
+    error:_ ->
+      deverl_stdout_wx:append("Couldn't start Dialyzer.\nCheck the path to Dialyzer is correct in Preferences -> General -> Path to Dialyzer."),
+      deverl_log_out_wx:error("Error: Couldn't start Dialyzer, see output.", [{hotspot, "output"}]),
+      From ! {self(),{ error, could_not_start}} %% Inform the caller we couldn't continue
+  end.
 
 %% =====================================================================
 %% Internal functions
@@ -62,5 +68,5 @@ loop(From) ->
       From ! {self(), ok};
     {_Port, {exit_status, _}} ->
       deverl_log_out_wx:error("ERROR: Dialyzer failed. See output.", [{hotspot, "output"}]),
-      From ! {self(), error}
+      From ! {self(), {error, runtime_error}}
   end.
