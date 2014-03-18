@@ -16,7 +16,7 @@ PATH="$(pwd)":$PATH ; export PATH
 
 **Building erlang**
 
-Download erlang R17 (for R16 see below)
+Download Erlang OTP (minimum version R17rc2)
 <pre><code>cd otp_src_R17XX
 otpbuild autoconf (only required when downloading non-release sources)
 ./configure --enable-darwin-64bit
@@ -26,14 +26,18 @@ make install (optional, will install to default directory [usually /usr/local])
 
 **R16 Releases**
 
-These is a bug in erlang releases prior to R17 which crashes the wx app. If you're using R16 then you will need to perform the following fix:
+A bug in the Erlang wx-binding causes the Erlang Runtime System to crash.
+
+If you're using R16 then you will need to perform the following fix:
 Delete the line:
 
 **Disconnect andalso (catch wxEvtHandler:disconnect_impl(CbH,O)),**
 
 in wxe_server (otp_src_R16XX/lib/wx/src).
 
-Previous pre-built binaries are available from [Erlang Solutions](https://www.erlang-solutions.com/downloads/), but currently they include an old version of wxWidgets-2.8 in the 32-bit version, and disable wx completely in the 64-bit version.
+**Pre-built Binaries**
+
+Previous pre-built binaries are available from [Erlang Solutions](https://www.erlang-solutions.com/downloads/), but currently they include an old version of wxWidgets (2.8) in the 32-bit version, and disable wx completely in the 64-bit version. 
 
 
 ###LINUX
