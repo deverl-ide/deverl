@@ -41,7 +41,7 @@ run(From, Config) ->
     open_port({spawn_executable, Dlzr}, [use_stdio,
                                          exit_status,
                                          {args, Flags}]),                                          
-    deverl_stdout_wx:append("========================= Dialyzer Output ========================\n"),  
+    deverl_stdout_wx:append_header("Dialyzer Output"),
     loop(From)
   catch
     error:_ ->
@@ -65,8 +65,10 @@ loop(From) ->
       loop(From);
     {_Port, {exit_status, 0}} ->
       deverl_log_out_wx:message("Dialyzer finished."),
+      deverl_stdout_wx:append_footer(),
       From ! {self(), ok};
     {_Port, {exit_status, _}} ->
       deverl_log_out_wx:error("ERROR: Dialyzer failed. See output.", [{hotspot, "output"}]),
+      deverl_stdout_wx:append_footer(),
       From ! {self(), {error, runtime_error}}
   end.
