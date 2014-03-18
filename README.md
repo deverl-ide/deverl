@@ -39,4 +39,6 @@ For detailed installation instructions for all platforms read [INSTALL](https://
 
 To view/report bugs viits our [trac page](http://www.tgrsvr.co.uk/trac "trac").
 
-<div align="center"><a href="https://github.com/tomrichmond/erlangIDE"><img src="http://i.imgur.com/ckSte1h.png" alt="Erlang IDE" /></a></div>
+<div align="center">
+	<img src="https://raw.github.com/deverl-ide/deverl/master/misc/linux_screenshot.png" alt="Erlang IDE" />
+</div>
