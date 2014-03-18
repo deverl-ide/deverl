@@ -27,7 +27,7 @@ For detailed installation instructions for all platforms read [INSTALL](https://
         erl -pa ebin -s ide start
  or, from the Erlang shell in the root diectory of Deverl:
 
-        ide:start().
+        deverl:start().
 
 
 ### Folders
