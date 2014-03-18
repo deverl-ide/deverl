@@ -32,8 +32,9 @@ For detailed installation instructions for all platforms read [INSTALL](https://
 
 ### Folders
 
-	/doc   - Project documentation.
-	/ide   - The main project directory for source code and distribution.
+	/deverl   - The main project directory for source code and distribution.
+	/misc     - Other files not related to the distribution.
+
 
 ### Bug/Issues
 
