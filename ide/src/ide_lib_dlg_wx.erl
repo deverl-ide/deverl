@@ -80,7 +80,7 @@ message_quick(Parent, Caption, Msg) ->
   Id :: ?wxID_OK | ?wxID_YES | ?wxID_SAVE | ?wxID_APPLY | ?wxID_NO | ?wxID_CANCEL | ?wxID_HELP | ?wxID_CONTEXT_HELP.
   
 message(Parent, Options) ->
-    
+      
   %% fold over the buttons, ensure they're valid
   Vld = fun(?wxID_OK, Acc) -> [?wxID_OK | Acc ];
            (?wxID_YES, Acc) -> [?wxID_YES | Acc ];

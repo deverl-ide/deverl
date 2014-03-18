@@ -51,17 +51,20 @@ make_project() ->
 
 -spec make_project(boolean()) -> {ok, project_id(), string()} | Error when
   Error :: {error, compile} |
-           {error, not_saved}.
+           {error, not_saved} |
+           {error, could_not_start}.
 
 make_project(PrintMsg) ->
   case ide_doc_man_wx:save_active_project() of
     ok ->
       ProjectId = ide_proj_man:get_active_project(),
-      Path = ide_proj_man:get_root(ProjectId),
+      Path = ide_proj_man:get_root(ProjectId),  
       ide_compiler_port:start(Path),
-      ide:display_output_window(?WINDOW_OUTPUT),
       receive
+        {error, could_not_start} ->
+          {error, could_not_start};
         {_From, ok} ->
+          ide:display_output_window(?WINDOW_OUTPUT),
           ide_proj_tree_wx:set_has_children(Path ++ "/ebin"),
           case PrintMsg of
             true ->
@@ -71,6 +74,7 @@ make_project(PrintMsg) ->
           load_files(filelib:wildcard(Path ++ "/src/*")),
           {ok, ProjectId, Path};
         {_From, error} ->
+          ide:display_output_window(?WINDOW_OUTPUT),
           {error, compile}
       end;
     cancelled ->
@@ -99,25 +103,27 @@ run_project(Parent) ->
 %% =====================================================================
 %% @doc
 
--spec compile_file(string()) -> ok.
+-spec compile_file(string()) -> ok | {error, could_not_start} | {error, failed}.
 
 compile_file(Path) ->
   %% Remember to send the output directory to load_file/1 if the flag is set
   %% for the compiler (-o).
   ide_compiler_port:start(Path, [file]),
-  receive
-    {_From, ok} ->
-      case ide_proj_man:is_known_project(Path) of
-        {true, P0} ->
-          P1 = filename:join([P0, "ebin", filename:basename(Path)]),
-          ide_proj_tree_wx:set_has_children(filename:dirname(P1)),
-          load_file(P1, []);
-        _ ->
-          load_file(Path, [])
-      end;
-    {_From, error} ->
-      {error, failed}
-  end.
+    receive
+      {error, could_not_start} -> 
+        {error, could_not_start};
+      {_From, ok} ->
+        case ide_proj_man:is_known_project(Path) of
+          {true, P0} ->
+            P1 = filename:join([P0, "ebin", filename:basename(Path)]),
+            ide_proj_tree_wx:set_has_children(filename:dirname(P1)),
+            load_file(P1, []);
+          _ ->
+            load_file(Path, [])
+        end;
+      {_From, error} ->
+        {error, failed}
+    end.
 
 
 %% =====================================================================

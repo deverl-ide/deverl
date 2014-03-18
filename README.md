@@ -1,24 +1,44 @@
-# Erlang IDE
+Deverl
+======
 
-An tool designed with learners in mind.
+An Erlang IDE dedicated to learning erlang, written in Erlang.
 
-### Installation
+Released under the GNU general public license version 3.
 
-1. Install [wxWidgets](http://www.wxwidgets.org/downloads/ "wxWidgets").
-2. Install the latest [erlang release](http://www.erlang.org/download.html "erlang release").
-3. `git clone` this repository
-4. `cd erlangIDE/ide`
-5. Type `erl -pa ebin -s ide start` at the unix command prompt, or start the erlang shell and run:
-6. `ide:start().`
+### Requirements
+
+Deverl requires a working installation of Erlang OTP which includes the wx application.
+For detailed installation instructions for all platforms read [INSTALL](https://raw.github.com/deverl-ide/deverl/master/INSTALL.md).
+
+### Starting Deverl
+
+1. Install Erlang OTP and wxWidgets as described in Requirements.
+2. Clone this repository:
+         
+        git clone https://github.com/deverl-ide/deverl.git
+3. Change directory:
+
+        cd deverl/ide
+4. Compile:
+
+        erl -make
+5. Start Deverl, at the unix command prompt type:
+
+        erl -pa ebin -s ide start
+ or, from the Erlang shell in the root diectory of Deverl:
+
+        ide:start().
 
 
 ### Folders
 
-	/doc   - All documentation pertaining to the project.
+	/doc   - Project documentation.
 	/ide   - The main project directory for source code and distribution.
 
 ### Bug/Issues
 
 To view/report bugs viits our [trac page](http://www.tgrsvr.co.uk/trac "trac").
 
-<div align="center"><a href="https://github.com/tomrichmond/erlangIDE"><img src="http://i.imgur.com/ckSte1h.png" alt="Erlang IDE" /></a></div>
+<div align="center">
+	<img src="https://raw.github.com/deverl-ide/deverl/master/misc/linux_screenshot.png" alt="Erlang IDE" />
+</div>
