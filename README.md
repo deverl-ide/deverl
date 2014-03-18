@@ -27,13 +27,14 @@ For detailed installation instructions for all platforms read [INSTALL](https://
         erl -pa ebin -s ide start
  or, from the Erlang shell in the root diectory of Deverl:
 
-        ide:start().
+        deverl:start().
 
 
 ### Folders
 
-	/doc   - Project documentation.
-	/ide   - The main project directory for source code and distribution.
+	/deverl   - The main project directory for source code and distribution.
+	/misc     - Other files not related to the distribution.
+
 
 ### Bug/Issues
 
