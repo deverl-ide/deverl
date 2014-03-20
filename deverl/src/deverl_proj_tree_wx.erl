@@ -1,9 +1,22 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
-%% @doc
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Manages the tree ctrl used for displaying the file tree.
 %% @end
 %% =====================================================================
 
@@ -138,7 +151,7 @@ update_client_data(OldPath, NewPath) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
 	Frame = proplists:get_value(frame, Config),
@@ -198,11 +211,11 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_menu, []),
 
 	{Panel, #state{frame=Frame, panel=Panel, tree=Tree, menu=Menu}}.
-
+%% @hidden
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
-
+%% @hidden
 handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
   wxPanel:freeze(Tree),
   Root = get_projects_root(Tree),
@@ -244,7 +257,7 @@ handle_cast({set_has_children, Path}, State=#state{tree=Tree}) ->
   wxTreeCtrl:setItemHasChildren(Tree, get_item_from_path(Tree, get_all_items(Tree), Path)),
   {noreply, State}.
 
-
+%% @hidden
 handle_call(tree, _From, State) ->
   {reply,State#state.tree,State};
 handle_call({remove_standalone, Path}, _From, State=#state{tree=Tree}) ->
@@ -253,7 +266,7 @@ handle_call({remove_standalone, Path}, _From, State=#state{tree=Tree}) ->
   alternate_background_of_children(Tree, get_standalone_root(Tree)),
   insert_placeholder(Tree, get_standalone_root(Tree), ?HEADER_FILES_EMPTY),
   {reply, ok, State}.
-
+%% @hidden
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=Item}}, State) ->
   wxTreeCtrl:freeze(Tree),
   case is_selectable(Tree, Item) of
@@ -345,7 +358,7 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
     ?ID_CLEAR_EBIN -> ok
   end,
 	{noreply, State}.
-
+%% @hidden
 handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changing}}, Event, _State) ->
   Item = wxTreeEvent:getItem(Event),
   case is_selectable(Tree, Item) of
@@ -354,10 +367,10 @@ handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changing}}, 
     false ->
       wxTreeEvent:veto(Event)
   end.
-
+%% @hidden
 code_change(_, _, State) ->
 	{ok, State}.
-
+%% @hidden
 terminate(_Reason, #state{panel=Panel}) ->
 	wxPanel:destroy(Panel).
 
@@ -689,7 +702,7 @@ is_standalone_root(Tree, Item) ->
 
 %% =====================================================================
 %% @doc Get the root (header) item for projects.
-%% @equiv get_header(Tree, ?HEADER_PROJECTS).
+%% @equiv get_header(Tree, '?HEADER_PROJECTS')
 
 -spec get_projects_root(wxTreeCtrl:wxTreeCtrl()) -> integer().
 
@@ -699,7 +712,7 @@ get_projects_root(Tree) ->
 
 %% =====================================================================
 %% @doc Get the root (header) item for standalone files.
-%% @equiv get_header(Tree, ?HEADER_FILES).
+%% @equiv get_header(Tree, '?HEADER_FILES')
 
 -spec get_standalone_root(wxTreeCtrl:wxTreeCtrl()) -> integer().
 

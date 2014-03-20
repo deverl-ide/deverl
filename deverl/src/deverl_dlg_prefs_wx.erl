@@ -1,9 +1,22 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
-%% @doc 
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Displays the XRC based <em>Preferences</em> dialog.
 %% @end
 %% =====================================================================
   
@@ -50,7 +63,7 @@ start(Config) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-  
+%% @hidden
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Xrc = wxXmlResource:get(),
@@ -333,18 +346,19 @@ init(Config) ->
   
   {Frame, #state{frame=Frame, cur_pref=Pref0}}.
 
-
+%% @hidden
 handle_info(Msg, State) ->
   {noreply,State}.
-    
+%% @hidden  
 handle_call(_Msg, _From, State) ->
   {reply, ok, State}.
-    
+%% @hidden
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
 
 %% Swap pref panels
+%% @hidden
 handle_event(#wx{event=#wxCommand{type=command_menu_selected}, userData=UD}, 
              State=#state{frame=Frame, cur_pref=Pref0}) ->
   Pref1 = wxXmlResource:xrcctrl(Frame, atom_to_list(UD), wxPanel),
@@ -357,10 +371,10 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected}, userData=UD},
 handle_event(Ev=#wx{}, State) ->
   io:format("Prefs event catchall: ~p~n", [Ev]),
   {noreply, State}.
-    
+%% @hidden   
 code_change(_, _, State) ->
   {stop, not_yet_implemented, State}.
-
+%% @hidden
 terminate(_Reason, #state{frame=Frame}) ->
   wxFrame:destroy(Frame).
     

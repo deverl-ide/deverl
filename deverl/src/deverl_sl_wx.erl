@@ -1,7 +1,21 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @version
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
 %% @doc Display the symbol list from the editor.
 %% @end
 %% =====================================================================
@@ -24,7 +38,7 @@
 
 -export([
 	start/1,
-	set/1
+	set/2
 	]).
 
 -record(state, {panel,
@@ -54,19 +68,14 @@ start(Config) ->
 %% =====================================================================
 %% @doc
 
-set(Items) ->
-	Ref = deverl_doc_man_wx:get_active_document_ref(),
-	ListCtrl = wx_object:call(?MODULE, {list, Ref}),
-	wxListCtrl:deleteAllItems(ListCtrl),
-	% insert_items(ListCtrl, Items),
-	set_acc(ListCtrl, Items),
-	ok.
+set(Items, EditorRef) ->
+	wx_object:cast(?MODULE, {set, Items, EditorRef}).
 
 
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
 	EditorPid = proplists:get_value(editor, Config),
@@ -90,36 +99,7 @@ init(Config) ->
 	{W,_H} = wxListCtrl:getSize(List),
 	wxListCtrl:setColumnWidth(List, 0, W),
 
-	%% Insert tests
-	% Insert =
-	% fun({Name, Ln}) ->
-	% 	Index = wxListCtrl:insertItem(List, 0, Name),
-	% 	wxListCtrl:setItemData(List, Index, Ln)
-	% end,
-	% L = [
-	% {"goggle",2},{"record2",5},{"food",20},{"func2",30},
-	% {"record3",32},{"record4",55},{"func3",60},{"func4",70},
-	% {"record5",72},{"more",75},{"func5",80},{"func6",90},
-	% {"record6",92},{"record8",95},{"func7",100},{"func8",130},
-	% {"raaa",132},{"boob",135},{"nipp",140},{"bottom",143},
-	% {"fool",152},{"record6",155},{"func5",160},{"func6",180},
-	% {"record6",192},{"trap",195},{"func7",200},{"mong",230}
-	% ],
-	% lists:foreach(Insert, L),
-
-	%% Background tests
-	%   Fun =
-	% fun(Item) ->
-	% 	case Item rem 2 of
-	% 	    0 ->
-	% 				wxListCtrl:setItemBackgroundColour(List, Item, ?ROW_BG_EVEN);
-	% 	    _ ->
-	% 		 		wxListCtrl:setItemBackgroundColour(List, Item, ?ROW_BG_ODD)
-	% 	end
-	% end,
-	% wx:foreach(Fun, lists:seq(0,length(L)-1)),
-
-	wxListCtrl:connect(List, command_list_item_selected, []),
+	wxListCtrl:connect(List, command_list_item_activated, []),
 
 	wxPanel:setSizer(Panel, Sz),
 
@@ -129,7 +109,7 @@ init(Config) ->
 
 %% =====================================================================
 %% @doc OTP behaviour callbacks
-
+%% @hidden
 %% Window close event
 handle_event(#wx{event=#wxClose{}}, State) ->
   {stop, normal, State};
@@ -140,7 +120,7 @@ handle_event(#wx{event=#wxKey{type=key_down, keyCode=Kc, controlDown=Ctrl}}, Sta
 	{noreply, State};
 
 handle_event(#wx{event=#wxKey{type=key_down, keyCode=?WXK_DOWN}},
-	State=#state{list=ListCtrl, textctrl=Search, start=Start, search_str=Str}) ->
+	           State=#state{list=ListCtrl, textctrl=Search, start=Start, search_str=Str}) ->
 	Item = find_item(ListCtrl, Str, Start),
 	select_item(ListCtrl, Item),
 	wxTextCtrl:setValue(Search, wxListCtrl:getItemText(ListCtrl, Item)),
@@ -148,7 +128,7 @@ handle_event(#wx{event=#wxKey{type=key_down, keyCode=?WXK_DOWN}},
 	{noreply, State#state{start=Item+1}};
 
 handle_event(#wx{event=#wxKey{type=key_down}},
-	State=#state{list=ListCtrl, textctrl=Search, start=Start}) ->
+	           State=#state{list=ListCtrl, textctrl=Search, start=Start}) ->
 	Str = wxTextCtrl:getValue(Search),
 	StartIndex = case find_item(ListCtrl, Str, Start) of
 		-1 -> -1;
@@ -159,17 +139,15 @@ handle_event(#wx{event=#wxKey{type=key_down}},
 	end,
 	{noreply, State#state{start=StartIndex, search_str=Str}};
 
-handle_event(#wx{event=#wxCommand{type=command_text_enter, cmdString=_Str}},
-	State=#state{textctrl=_Search, list=_ListBox, editor_pid=_Ed}) ->
-	% send_to_editor(Str, Ed),
-  % io:format("Symbol: ~p Line: ~p~n", [Str, undefined]),
+handle_event(#wx{event=#wxCommand{type=command_text_enter, cmdString=Str}},
+             State=#state{editor_pid=Ed}) ->
+  send_to_editor(Str, Ed),
 	{noreply, State};
 
-handle_event(#wx{event=#wxList{type=command_list_item_selected, itemIndex=_Item}},
-	State=#state{list=_ListCtrl, editor_pid=_Ed}) ->
-	% send_to_editor(Str, Ed),
-  % io:format("List selected: ~p~n", [Item]),
-  % io:format("Symbol: ~p Line: ~p~n", [wxListCtrl:getItemText(ListCtrl, Item), wxListCtrl:getItemData(ListCtrl, Item)]),
+handle_event(#wx{event=#wxList{type=command_list_item_activated, itemIndex=Item}},
+	           State=#state{list=ListCtrl, editor_pid=Ed}) ->
+  Str =  wxListCtrl:getItemText(ListCtrl, Item),
+  send_to_editor(Str, Ed),
 	{noreply, State};
 
 handle_event(#wx{event=#wxFocus{type=set_focus}}, State) ->
@@ -183,25 +161,29 @@ handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->
 handle_event(Ev, State) ->
   io:format("Got Event ~p~n",[Ev]),
   {noreply,State}.
-
+%% @hidden
 handle_info(Msg, State) ->
   io:format( "Got Info ~p~n",[Msg]),
   {noreply,State}.
-
-handle_call({list,AssocEditor}, _From, State=#state{list=List}) ->
-  {reply,List,State#state{editor_pid=AssocEditor}};
-
+%% @hidden
 handle_call(Msg, _From, State) ->
   io:format("Got Call ~p~n",[Msg]),
   {reply,ok,State}.
+%% @hidden
+handle_cast({set, Symbols, Editor}, State) ->  
+	wxListCtrl:deleteAllItems(State#state.list),
+  % Set = sets:from_list(Symbols), %% To remove dups
+  % lists:usort(List). %% Removes dup and sorts
+  insert_items(State#state.list, lists:reverse(sets:to_list(Set))),
+  {noreply,State#state{editor_pid=Editor}};
 
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
-
+%% @hidden
 code_change(_, _, State) ->
   {stop, ignore, State}.
-
+%% @hidden
 terminate(_Reason, #state{panel=Panel}) ->
   wxPanel:destroy(Panel),
   ok.
@@ -251,7 +233,7 @@ insert_items(ListCtrl, Items) ->
 %% @doc
 
 send_to_editor(Str, Editor) ->
-	deverl_editor_wx:fn_list(Editor, Str),
+	deverl_editor_wx:go_to_symbol(Editor, Str),
 	ok.
 
 

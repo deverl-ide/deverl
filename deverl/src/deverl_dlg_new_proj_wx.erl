@@ -1,9 +1,22 @@
 %% =====================================================================
-%% @author Tom Richmond
-%% @copyright
-%% @title
-%% @version
-%% @doc Display the New Project dialog.
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Displays the XRC based <em>New Project</em> dialog.
 %% Uses default CANCEL/close_window handlers.
 %% @end
 %% =====================================================================
@@ -50,7 +63,7 @@ get_path(This) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init(Parent) ->
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
@@ -86,7 +99,7 @@ init(Parent) ->
                },
 
   {Dlg, State}.
-    
+%% @hidden
 handle_event(#wx{id=?wxID_OK, event=#wxCommand{}}, 
              State=#state{dlg=Dlg, name_tc=Tc0, path_tc=Tc1}) ->
   N = wxTextCtrl:getValue(Tc0), 
@@ -172,21 +185,21 @@ handle_event(#wx{event=#wxCommand{cmdString=Str}, userData=name},
 	wxButton:enable(wxXmlResource:xrcctrl(Dlg, "wxID_OK", wxButton), [{enable, Valid}]),
   % display_message(Desc, Valid),
   {noreply, State}.
-  
+%% @hidden  
 handle_info(_Msg, State) ->
   {noreply,State}.
-
+%% @hidden
 handle_call(path, _From, State) ->
   {reply, State#state.path_input, State};   
 handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State}.
-
+%% @hidden
 handle_cast(_Msg, State) ->
   {noreply,State}.
-
+%% @hidden
 code_change(_, _, State) ->
   {stop, ignore, State}.
-
+%% @hidden
 terminate(_Reason, State) ->
   % io:format("Terminating dialog~n"),
   wxDialog:destroy(State#state.dlg), %% segfault OSX wx3.0 erlR16B03

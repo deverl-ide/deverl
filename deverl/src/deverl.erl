@@ -1,10 +1,22 @@
 %% =====================================================================
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
 %% @author Tom Richmond <tr201@kent.ac.uk>
 %% @author Mike Quested <mdq3@kent.ac.uk>
-%% @copyright 2014 Tom Richmond, Mike Quested
+%% @copyright Tom Richmond, Mike Quested 2014
 %%
-%% @version 1
-%% @doc Starts an instance of the IDE. Builds all wx components.
+%% @doc Starts <em>Deverl</em>.
 %% @end
 %% =====================================================================
 
@@ -227,6 +239,7 @@ init(Options) ->
 
 %% Deal with trapped exit signals
 %% Console supervisor has exited, replace the console window
+%% @hidden
 handle_info({'EXIT', Pid, shutdown}, State=#state{console_sup_pid=Pid}) ->
   toggle_menu_group([?MENU_GROUP_ERL], false),
   Splitter = wx:typeCast(wxWindow:findWindowById(?SPLITTER_OUTPUT), wxSplitterWindow),
@@ -242,7 +255,7 @@ handle_info({'EXIT', A, shutdown}, State) ->
 handle_info({'EXIT', A, normal}, State) ->
   io:format("Got Info 3 ~p~n", [A]),
   {noreply,State};
-  
+%% @hidden  
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
@@ -251,7 +264,7 @@ handle_info(Msg, State) ->
 handle_call(frame, _From, State) ->
   {reply, State#state.frame, State}.
 
-
+%% @hidden
 handle_cast(restart_console, State) ->
   Splitter = wx:typeCast(wxWindow:findWindowById(?SPLITTER_OUTPUT), wxSplitterWindow),
   case deverl_console_sup:start_link([]) of
@@ -318,7 +331,7 @@ terminate(_Reason, #state{frame=Frame}) ->
 %% Event handlers
 %%
 %% =====================================================================
-
+%% @hidden
 %% Window close event
 handle_event(#wx{event=#wxClose{}}, State) ->
   case deverl_doc_man_wx:close_all() of
@@ -937,17 +950,17 @@ create_left_window(Frame, Parent) ->
   wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("clipboard-task.png")))),
   wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("function.png")))),
 
-  Toolbook = deverl_tabbed_win_img_wx:new([{parent, Parent}]),
+  Toolbook = deverl_tabbed_win_img_wx:start([{parent, Parent}]),
   deverl_tabbed_win_img_wx:assign_image_list(Toolbook, ImgList),
 
   ProjectTrees = deverl_proj_tree_wx:start([{parent, Toolbook}, {frame, Frame}]),
   deverl_tabbed_win_img_wx:add_page(Toolbook, ProjectTrees, "Browser", [{imageId, 0}]),
 
-  TestPanel = deverl_testpane:new([{parent, Toolbook}]),
+  TestPanel = deverl_testpane:start([{parent, Toolbook}]),
   deverl_tabbed_win_img_wx:add_page(Toolbook, TestPanel, " Tests ", [{imageId, 1}]),
 
-  % FunctionsPanel = deverl_sl_wx:start([{parent, Toolbook}]),
-  % deverl_tabbed_win_img_wx:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
+  FunctionsPanel = deverl_sl_wx:start([{parent, Toolbook}]),
+  deverl_tabbed_win_img_wx:add_page(Toolbook, FunctionsPanel, "Functions", [{imageId, 2}]),
 
   deverl_tabbed_win_img_wx:set_selection(Toolbook, 1), %% Default to projects
   Toolbook.

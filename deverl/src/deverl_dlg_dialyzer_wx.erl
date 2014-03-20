@@ -1,9 +1,22 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
-%% @doc
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Displays the XRC based dialyzer dialog.
 %% @end
 %% =====================================================================
 
@@ -54,7 +67,7 @@ destroy(This) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init({Parent, Config}) ->   
   ProjsSrc = proplists:get_value(projects, Config),
   StdlnSrc = proplists:get_value(standalone, Config),
@@ -113,7 +126,7 @@ init({Parent, Config}) ->
   
 	{Dlg, State}.
 
-
+%% @hidden
 handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}}, State) ->
   io:format("thing"),
   Listbox1 = wxXmlResource:xrcctrl(State#state.dlg, "listbox1", wxListBox),
@@ -165,23 +178,22 @@ handle_event(#wx{event=#wxCommand{type=command_listbox_selected}, userData=0}, S
 handle_event(#wx{event=#wxCommand{type=command_listbox_selected}, userData=1}, State) ->
   wxWindow:enable(wxXmlResource:xrcctrl(State#state.dlg, "move_left", wxButton)),
   {noreply, State}.
-
+%% @hidden
 handle_info(_Msg, State) ->
   {noreply,State}.
-
+%% @hidden
 handle_call(files, _From, State) ->
   {reply, State#state.files, State};
 handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State}.
-
+%% @hidden
 handle_cast(_, State) ->
   {noreply,State}.
-
+%% @hidden
 code_change(_, _, State) ->
   {stop, ignore, State}.
-
+%% @hidden
 terminate(_Reason, _State) ->
-  % wxDialog:destroy(State#state.dlg),  %% segfault OSX wx3.0 erlR16B03 (see xrc sample directory)
 	ok.
 
 

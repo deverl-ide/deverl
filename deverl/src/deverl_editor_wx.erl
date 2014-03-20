@@ -1,8 +1,21 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
 %% @doc This module creates a code editor instance.
 %% @end
 %% =====================================================================
@@ -54,7 +67,8 @@
 	transform_lc_selection/1,
 	transform_selection/2,
   strip_trailing_whitespace/1,
-	fn_list/2,
+	go_to_symbol/2,
+  update_symbols/1,
 	link_poller/2,
 	empty_undo_buffer/1,
   get_stc/1,
@@ -95,8 +109,6 @@
                 main_sz,
                 stc                 :: ?stc:?stc(),
 								dirty :: boolean(),
-								deverl_sl_wx,
-								test_list,
 								indent,
                 search,
                 find
@@ -171,7 +183,7 @@ find(EditorPid, Str) ->
 	io:format("Pos: ~p~n", [position_to_x_y(TextCtrl, Pos)]).
 
 %% =====================================================================
-%% @doc Search/replace with next/prev
+%% Search/replace with next/prev
 
 % find(EditorPid, Str) ->
 %   TextCtrl = wx_object:call(EditorPid, stc),
@@ -399,16 +411,20 @@ strip_trailing_whitespace(EditorPid) ->
 %% =====================================================================
 %% @doc
 
-fn_list(EditorPid, _Str) ->
-	get_focus(wx_object:call(EditorPid, stc)),
-	ok.
-
+go_to_symbol(This, Str) ->
+  wx_object:cast(This, {go_to_symbol, Str}).
 
 %% =====================================================================
 %% @doc
 
-link_poller(Pid, Path) ->
-	wx_object:cast(Pid, {link_poller, Path}).
+update_symbols(This) ->
+  wx_object:cast(This, parse_functions).
+
+%% =====================================================================
+%% @doc
+
+link_poller(This, Path) ->
+	wx_object:cast(This, {link_poller, Path}).
 
 
 %% =====================================================================
@@ -428,7 +444,7 @@ select_all(This) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init(Config) ->
   Parent = proplists:get_value(parent, Config),
   Font = proplists:get_value(font, Config),
@@ -516,11 +532,11 @@ init(Config) ->
                  stc=Editor,
                  search=SearchRec,
                  main_sz=Sizer}}.
-
+%% @hidden
 handle_info(Msg, State) ->
   io:format("Got Info(Editor) ~p~n",[Msg]),
   {noreply,State}.
-
+%% @hidden
 handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State};
 handle_call(is_dirty, _From, State=#state{dirty=Mod}) ->
@@ -539,7 +555,20 @@ handle_call(select_all, _From, State) ->
 handle_call(Msg, _From, State) ->
   io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
   {reply,State,State}.
-
+%% @hidden
+handle_cast(parse_functions, State) ->
+  parse_functions(State#state.stc),
+  {noreply,State};
+handle_cast({go_to_symbol, Symbol}, State) ->
+  Text = ?stc:getText(State#state.stc),
+  Regex = "^"++Symbol++"\\(",
+  case re:run(Text, "^"++Symbol++"\\(", [unicode, multiline]) of
+    {match,[{Start,Length}]} ->
+      ?stc:gotoPos(State#state.stc, Start),
+      wxWindow:setFocusFromKbd(State#state.stc);
+    true -> ok
+  end,
+  {noreply,State};
 handle_cast({link_poller, Path}, State) ->
 	deverl_file_poll_sup:start_link([{editor_pid, self()}, {path, Path}]),
   {noreply,State};
@@ -562,7 +591,6 @@ handle_cast({goto_pos, {Line, Col}, Flash}, State=#state{stc=Stc}) ->
 handle_cast(ref, State=#state{stc=Editor}) ->
 	update_sb_line(Editor),
 	update_line_margin(Editor),
-  % parse_functions(Editor),
   {noreply,State};
 handle_cast(show_search, State=#state{main_sz=Sz, search=#search{tc=Tc}}) ->
   wxSizer:show(Sz, 1),
@@ -577,7 +605,7 @@ handle_cast(enable_menus, State) ->
 %% =====================================================================
 %% Sync events
 %% =====================================================================
-
+%% @hidden
 handle_sync_event(#wx{event=#wxStyledText{type=stc_charadded, key=Key}}, Event,
 									#state{stc=Editor}) when Key =:= ?WXK_RETURN orelse
                                                  Key =:= ?WXK_NUMPAD_ENTER orelse
@@ -643,7 +671,7 @@ handle_sync_event(#wx{event=#wxKey{type=char}}, Event,
 %% =====================================================================
 %% Document events
 %% =====================================================================
-
+%% @hidden
 handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position=Pos, margin=Margin}=_E},
              State=#state{stc=Editor}) ->
   Ln = ?stc:lineFromPosition(Editor, Pos),
@@ -755,15 +783,16 @@ handle_event(#wx{event=#wxStyledText{type=stc_updateui}},State=#state{stc=Editor
       update_sb_selection(Editor)
   end,
   update_line_margin(Editor),
+  parse_functions(Editor),
   {noreply, State};
 
 handle_event(E,State) ->
   io:format("Unhandled event in editor: ~p~n", [E]),
   {noreply, State}.
-
+%% @hidden
 code_change(_, _, State) ->
   {ok, State}.
-
+%% @hidden
 terminate(_Reason, #state{parent_panel=Panel}) ->
   wxPanel:destroy(Panel).
 
@@ -1070,15 +1099,6 @@ indent_line(Editor, Cmd) ->
 %% @doc
 %% @private
 
-% lines(Editor, {Start, End}) ->
-%   lists:seq(?stc:lineFromPosition(Editor, Start),
-%     ?stc:lineFromPosition(Editor, End)).
-
-
-%% =====================================================================
-%% @doc
-%% @private
-
 count_selected_lines(Editor) ->
 	{N, M} = ?stc:getSelection(Editor),
 	Start = ?stc:lineFromPosition(Editor, N),
@@ -1175,13 +1195,12 @@ correct_caret(Editor, Pos) ->
 
 parse_functions(Editor) ->
 	Input = ?stc:getText(Editor),
-	Regex = "^\\s*((?:[a-z]+[a-zA-Z\\d_@]*))(?:\\(.*\\))",
-	_Result = case re:run(Input, Regex, [unicode, global, multiline, {capture, all_but_first, list}]) of
+	Regex = "^((?:[a-z]+[a-zA-Z\\d_@]*))(?:\\(.*\\))",
+	Result = case re:run(Input, Regex, [unicode, global, multiline, {capture, all_but_first, list}]) of
 		nomatch -> false, [];
 		{_,Captured} -> Captured
 	end,
-	% deverl_sl_wx:set(Result),
-	ok.
+  deverl_sl_wx:set(Result, self()).
 
 
 %% =====================================================================
@@ -1206,7 +1225,8 @@ flash_current_line(Editor, Colour, Interval, N) ->
 %% @doc
 
 get_focus(This) ->
-	?stc:setFocus(This).
+	?stc:setFocus(This),
+  wx_object:cast(This, parse_functions).
 
 
 %% =====================================================================
@@ -1255,12 +1275,11 @@ replace_all(Editor, Str, RepStr, Start, End) ->
     Pos ->
       ?stc:replaceTarget(Editor, RepStr),
 			replace_all(Editor, Str, RepStr, Pos+length(Str), End)
-      % Boob
   end.
 
 
 %% =====================================================================
-%% @doc Replace all occurrences of Str within the range Start -> End.
+%% Replace all occurrences of Str within the range Start -> End.
 
 % replace(EditorPid, Str, Start, End) ->
 %   Editor = wx_object:call(EditorPid, stc),

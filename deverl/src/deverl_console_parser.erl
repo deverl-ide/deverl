@@ -1,9 +1,23 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
-%% @doc
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Prepares user input for passing to the console port. Prepares
+%% responses from the port for display to the user.
 %% @end
 %% =====================================================================
 
@@ -20,7 +34,7 @@
 %% =====================================================================
 
 %% =====================================================================
-%% @doc Close the selected editor
+%% @doc Start an instance of the parser. 
 
 -spec start() -> {ok, pid()}.
 
@@ -31,7 +45,7 @@ start()->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Prepares user input for sending to the console port, and sends it.
 
 -spec parse_input(string()) -> ok.
 
@@ -41,7 +55,8 @@ parse_input(Message) ->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Formats the response from the port, before sending it to the
+%% console.
 
 -spec parse_response(string()) -> {data, string()}.
 

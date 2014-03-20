@@ -1,9 +1,23 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
-%% @doc A textctrl used to display the compiler output.
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc A textctrl used to display the compiler/dialyzer output.
+%% This is used to replicate standard out.
 %% @end
 %% =====================================================================
 
@@ -109,7 +123,7 @@ clear() ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
 	Panel = wxPanel:new(Parent),
@@ -132,27 +146,27 @@ init(Config) ->
   wxSizer:layout(MainSizer),
 
   {Panel, State}.
-
+%% @hidden
 handle_info(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply, State}.
-
+%% @hidden
 handle_cast(clear, State=#state{output=Output}) ->
   wxTextCtrl:setValue(Output, ""), %% keeps the default style
   {noreply, State};
 handle_cast(Msg, State=#state{output=Output}) ->
   wxTextCtrl:appendText(Output, Msg),
   {noreply, State}.
-
+%% @hidden
 handle_call(Msg, _From, State) ->
   io:format("Got Call ~p~n",[Msg]),
   {reply,ok, State}.
-
+%% @hidden
 handle_event(#wx{}, State) ->
 	{noreply, State}.
-
+%% @hidden
 code_change(_, _, State) ->
 	{stop, not_yet_implemented, State}.
-
+%% @hidden
 terminate(_Reason, #state{win=Frame}) ->
 	wxPanel:destroy(Frame).

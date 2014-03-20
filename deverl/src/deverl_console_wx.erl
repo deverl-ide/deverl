@@ -1,11 +1,23 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
 %% @doc This module initalises the console, which is currently
 %% implemented as a wxStyledTextCtrl.
-%% @end
 %% In the current implementation we manage the prompt ourselves
 %% (deverl_console_parser strips the prompt returned from the port), so that
 %% we can write to the console anywhere we like without having to
@@ -15,6 +27,7 @@
 %% written to the console). The optimal solution would be to use the
 %% erl_parse/erl_eval/erl_scan APIs in the same way that shell.erl does
 %% from std lib. We may well use that approach in the future.
+%% @end
 %% =====================================================================
 
 -module(deverl_console_wx).
@@ -151,7 +164,7 @@ paste(This) ->
   ok.
 
 %% =====================================================================
-%% @doc
+%% @doc Destroy.
 
 destroy() ->
   wx_object:call(?MODULE, shutdown).
@@ -160,7 +173,7 @@ destroy() ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
 	Panel = wxPanel:new(Parent, [{winid, ?WINDOW_CONSOLE}]),
@@ -200,7 +213,7 @@ init(Config) ->
   ?stc:connect(Console, stc_updateui),
 
   %% Add initial text
-  InitText = ?CONSOLE_HEADER ?PROMPT,
+  InitText = ?CONSOLE_HEADER ++ ?PROMPT,
   ?stc:setText(Console, InitText),
   ?stc:startStyling(Console, 0, 31),
   ?stc:setStyling(Console, length(InitText) - 1, ?STYLE_PROMPT),
@@ -225,11 +238,11 @@ init(Config) ->
                busy=false},
 
   {Panel, State}.
-
+%% @hidden
 handle_info(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
-
+%% @hidden
 handle_cast({set_theme, Fg, Bg, MrkrBg, _ErrFg}, State=#state{console=Console}) ->
   SetColour = fun(StyleId) ->
     ?stc:styleSetBackground(Console, StyleId, Bg),
@@ -293,7 +306,7 @@ handle_cast(eval, State=#state{console=Console, input=Cmd, cmd_history=Hst0, cur
     Upt -> Upt
   end,
   {noreply, State#state{cmd_history=Hst1, current_cmd=Idx1}}.
-
+%% @hidden
 handle_call({update_cmd_index, Index}, _From, State) ->
   {reply, ok, State#state{current_cmd=Index}};
 handle_call({paste, Line}, _From, State=#state{console=Console, input=Cmd, cmd_history=Hst0, current_cmd=Idx0}) ->
@@ -308,7 +321,7 @@ handle_call(busy, _From, State=#state{busy=Busy}) ->
   {reply, Busy, State};
 handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State}.
-
+%% @hidden
 handle_event(#wx{obj=Console, event=#wxMouse{type=right_up}},
             State=#state{menu=Menu}) ->
   wxWindow:popupMenu(Console, Menu),
@@ -350,10 +363,10 @@ handle_event(#wx{event=#wxStyledText{type=stc_updateui}},State=#state{console=Co
       deverl:toggle_menu_items([?wxID_COPY], true)
   end,
   {noreply, State}.
-
+%% @hidden
 code_change(_, _, State) ->
 	{ok, State}.
-
+%% @hidden
 terminate(_Reason, #state{win=Frame}) ->
 	wxPanel:destroy(Frame).
 

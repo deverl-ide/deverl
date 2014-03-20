@@ -1,3 +1,25 @@
+%% =====================================================================
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Parses XML theme (loaded from disk).
+%% @end
+%% =====================================================================
+
 -module(deverl_editor_theme).
 
 -export([get_theme_names/0,
@@ -113,9 +135,9 @@ get_theme_dir() ->
   
   
 %% =====================================================================
-%% @doc Alternative SAX parser. Marvelous documentation on this.
+%% Alternative SAX parser. Marvelous documentation on this.
 %% It may well be faster than the current DOM implemenation, however.
-%% @private
+%
 % sax_print() ->  
 %   xmerl_sax_console_parser:file("../priv/themes/Text.theme", 
 %   [{event_fun, fun(Event, _Location, _State) ->

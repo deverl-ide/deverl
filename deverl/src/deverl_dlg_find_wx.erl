@@ -1,3 +1,25 @@
+%% =====================================================================
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Displays the XRC based find/replace dialog.
+%% @end
+%% =====================================================================
+
 -module(deverl_dlg_find_wx).
 
 -include_lib("wx/include/wx.hrl").
@@ -56,7 +78,7 @@ show(This) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init(Config) ->
   wx:batch(fun() -> do_init(Config) end).
 
@@ -153,9 +175,9 @@ init_data(Parent, Data) ->
  
 %% =====================================================================
 %% @doc OTP behaviour callbacks
+%% @hidden
 handle_event(#wx{event=#wxClose{}}, State) ->
   {stop, normal, State};
-  
 handle_event(#wx{event=#wxKey{type=key_down, keyCode=27}}, State) ->
   {stop, shutdown, State};
   
@@ -207,11 +229,11 @@ handle_event(Ev, State=#state{}) ->
   io:format("Got Event (deverl_dlg_find_wx) ~p~n",[Ev]),
   {noreply,State}.
 
-
+%% @hidden
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
-
+%% @hidden
 handle_call(shutdown, _From, State=#state{frame=Dialog}) ->
   wxWindow:destroy(Dialog),
   {stop, normal, ok, State};
@@ -225,14 +247,14 @@ handle_call(to_focus, _From, State=#state{to_focus=ToFocus}) ->
 handle_call(Msg, _From, State) ->
   io:format("Got Call ~p~n",[Msg]),
   {reply,ok,State}.
-
+%% @hidden
 handle_cast(Msg, State) ->
   io:format("Got cast ~p~n",[Msg]),
   {noreply,State}.
-
+%% @hidden
 code_change(_, _, State) ->
   {ok, State}.
-
+%% @hidden
 terminate(_Reason, #state{frame=Dialog}) ->
   erlang:unregister(?MODULE),
   wxDialog:destroy(Dialog).

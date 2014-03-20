@@ -1,10 +1,32 @@
+%% =====================================================================
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Manages the Eunit testing display.
+%% @end
+%% =====================================================================
+
 -module(deverl_testpane).
 
 -include_lib("wx/include/wx.hrl").
 -include("deverl.hrl").
 
 -export([
-  new/1,
+  start/1,
   add_module_tests/1,
   show_test_results/2,
   clear/0
@@ -26,7 +48,7 @@
 %% =====================================================================
 %% @doc
 
-new(Config) ->
+start(Config) ->
   Parent = proplists:get_value(parent, Config),
   Panel = wxPanel:new(Parent),
   List = wxListCtrl:new(Panel, [{winid, ?ID_LIST}, {style, ?wxLC_REPORT bor ?wxLC_NO_HEADER bor ?wxLC_SINGLE_SEL bor ?wxBORDER_NONE}]),

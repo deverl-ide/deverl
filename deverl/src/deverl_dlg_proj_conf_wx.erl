@@ -1,11 +1,23 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
-%% @doc The project configuration dialog.
-%% This converts the build configuration into string for displaying 
-%% to the user. They are converted back when retrieved from the dialog.
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Displays the XRC based <em>Project Configuration</em> dialog.
+%% Uses default CANCEL/close_window handlers.
 %% @end
 %% =====================================================================
 
@@ -64,7 +76,7 @@ close(This) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init(Parent) ->
   wx:batch(fun() -> do_init(Parent) end).
 
@@ -199,7 +211,7 @@ do_init(Parent) ->
     
 %% =====================================================================
 %% @doc OTP behaviour callbacks
-
+%% @hidden
 handle_event(#wx{event=#wxClose{}}, State) ->
   {stop, normal, State};
 handle_event(#wx{id=Id, event=#wxFocus{type=set_focus}}, 
@@ -229,11 +241,11 @@ handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}}
 handle_event(#wx{id=?wxID_OK, event=#wxCommand{type=command_button_clicked}}, 
              State) ->
   {noreply, State}.
-	
+%% @hidden	
 handle_info(Msg, State) ->
   io:format( "Got Info ~p~nMsg:~p",[State, Msg]),
   {noreply,State}.
-
+%% @hidden
 handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State};
   
@@ -246,13 +258,13 @@ handle_call(build_config, _From, State=#state{module=Module, function=Function, 
       Config ++ [{args, Args}]
   end,
   {reply, Result, State}.
-  
+%% @hidden  
 handle_cast(_, State) ->
   {noreply,State}.
-
+%% @hidden
 code_change(_, _, State) ->
   {stop, ignore, State}.
-
+%% @hidden
 terminate(_Reason, #state{dialog=Dialog}) ->
 	wxDialog:endModal(Dialog, ?wxID_CANCEL),
 	wxDialog:destroy(Dialog),

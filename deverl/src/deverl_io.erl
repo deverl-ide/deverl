@@ -1,11 +1,25 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title deverl_io.erl
-%% @version
-%% @doc This module manages file i/o.
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Manages file i/o.
 %% @end
 %% =====================================================================
+
 
 -module(deverl_io).
 
@@ -293,9 +307,6 @@ del_all_files([Dir | T], EmptyDirs) ->
   
 %% =====================================================================
 %% @doc Create directory Dir.
-%% @throws an error :: string()
-
-% -spec create_dir(string()) -> ok | no_return().
 
 create_dir(Dir) ->
 	case file:make_dir(Dir) of
@@ -351,7 +362,6 @@ format_error_msg(_Posix, Path) -> "An error occured.".
 %% @doc
 
 copy_from_template(_File, undefined) -> ok;
-copy_from_template(_File, header) -> ok;
 copy_from_template(_File, plain_text) -> ok;
 copy_from_template(File, Type) -> 
   Dir = deverl_lib_widgets:rc_dir(filename:join("templates", atom_to_list(Type) ++ ".txt")),

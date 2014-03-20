@@ -1,8 +1,21 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
 %% @doc This module initalises and manages the port for the console.
 %% @end
 %% =====================================================================
@@ -37,7 +50,7 @@
 %% =====================================================================
 
 %% =====================================================================
-%% @doc
+%% @doc Starts a console_port.
 
 -spec start() -> {ok, pid()} | ignore | {error,Error} when
   Error :: {already_started, pid()} | term().
@@ -47,12 +60,18 @@ start()->
 
 
 %% =====================================================================
-%% @doc
+%% @doc Evaluate the string in the console port.
+%% @equiv eval(string(), true)
 
 -spec eval(string()) -> ok.
 
 eval(Message) ->
 	eval(Message, true).
+  
+  
+%% =====================================================================
+%% @doc Evaluate the string in the console port.
+%% @see eval/1
 
 -spec eval(string(), boolean()) -> ok.
 
@@ -126,8 +145,7 @@ terminate(_Reason, _State) ->
 
 %% =====================================================================
 %% @doc Open the port.
-%% @throws
-%% @private
+%% @throws atom()
 
 -spec open(path(), Options) -> port() | no_return() when
   Options :: list().

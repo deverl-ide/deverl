@@ -1,9 +1,22 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version 0.15
-%% @doc This module manages open documents.
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Manage documents.
 %% @end
 %% =====================================================================
 
@@ -93,7 +106,6 @@ new_document(Parent) ->
                       deverl_dlg_new_file_wx:get_type(Dlg))
   end,
   deverl_dlg_new_file_wx:destroy(Dlg).
-  % wxDialog:destroy(Dlg).
 
 %% =====================================================================
 %% @doc Insert a document into the workspace.
@@ -295,7 +307,7 @@ delete_document(Path) ->
 %% =====================================================================
 %% Callbacks
 %% =====================================================================
-
+%% @hidden
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
   Frame = proplists:get_value(frame, Config),
@@ -333,11 +345,11 @@ init(Config) ->
                  frame=Frame},
 
   {Panel, State}.
-
+%% @hidden
 handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
-
+%% @hidden
 handle_cast({set_sel, Direction}, State=#state{notebook=Nb}) ->
   Cur = wxAuiNotebook:getSelection(Nb),
   N = wxAuiNotebook:getPageCount(Nb),
@@ -388,7 +400,7 @@ handle_cast({create_doc, Path, ProjectId},
 			wxAuiNotebook:setSelection(Nb, doc_id_to_page_id(Nb, DocId, PageToDocId)),    
 			{noreply, State}
   end.
-
+%% @hidden
 handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State};
   
@@ -522,7 +534,7 @@ handle_call({delete, Path}, _From, State=#state{notebook=Nb, doc_records=DocReco
       {V, {DocRecords1, P2d1}}
   end,
   {reply, R, State#state{doc_records=DocRecs2, page_to_doc_id=P2d2}}.
-  
+%% @hidden  
 %% Close event
 handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) ->
   wxNotifyEvent:veto(Event),
@@ -531,7 +543,7 @@ handle_sync_event(#wx{}, Event, #state{notebook=Nb, page_to_doc_id=PageToDoc}) -
   spawn(fun() -> wx:set_env(Env), close_documents([DocId]) end),
   wxEvent:skip(Event),
 	ok.
-
+%% @hidden
 handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed, selection=Idx}},
              State=#state{notebook=Nb, page_to_doc_id=PageToDoc, doc_records=DocRecords}) ->
   case wxAuiNotebook:getPageCount(Nb) of
@@ -542,14 +554,15 @@ handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed, sel
       deverl_proj_man:set_active_project(DocRec#document.project_id),
       Ebin = list_to_atom(filename:basename(filename:rootname(wxAuiNotebook:getPageText(Nb, Idx)))),
       deverl_testpane:add_module_tests(Ebin),
+      deverl_editor_wx:update_symbols(DocRec#document.editor),
       %% set focus to editor
       wxWindow:setFocus(wxAuiNotebook:getPage(Nb, Idx))
   end,
   {noreply, State}.
-
+%% @hidden
 code_change(_, _, State) ->
 	{ok, State}.
-
+%% @hidden
 terminate(_Reason, #state{}) ->
 	ok.
 

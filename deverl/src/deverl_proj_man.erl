@@ -1,9 +1,22 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
-%% @doc
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Manages projects.
 %% The project_id() should be the only term that is passed to other
 %% modules. Any data relating to that project id should be retrieved
 %% from this module by passing in the project id.
@@ -32,8 +45,6 @@
          open_project/1,
          get_project/1,
          close_active_project/0,
-         %close_project/1,
-				 %open_file/3,
 				 get_open_projects/0,
 				 get_active_project/0,
 				 set_active_project/1,
@@ -167,27 +178,6 @@ close_active_project() ->
     ok ->
       wx_object:call(?MODULE, close_project)
   end.
-
-
-%% =====================================================================
-%% @doc Close an open project.
-%% This will close any files belonging to the project, and remove the
-%% tree from the project tree.
-
-% close_project(ProjectId) ->
-%   %% Check open files, save/close
-%   wx_object:call(?MODULE, {close_project, ProjectId}).
-
-
-%% =====================================================================
-%% @doc Open an project file..
-%
-%-spec open_file(path(), Contents, project_id()) -> ok.
-%
-%open_file(Path, Contents, ProjectId) ->
-%	deverl_doc_man_wx:new_document_from_existing(Path, Contents, [{project_id, ProjectId}]),
-%	gen_server:call(?MODULE, {add_open_project, ProjectId, Path}),
-%	ok.
 
 
 %% =====================================================================

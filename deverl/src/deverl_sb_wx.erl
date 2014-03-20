@@ -1,8 +1,21 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
 %% @doc This module is builds and provides functions for updating the
 %% status bar. It is implemented as a wxPanel to provide more
 %% flexibility than is currently offered by the built in wxStatusBar.
@@ -68,7 +81,7 @@ set_text({field, Field}, Label) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init(Config) ->
 	Parent = proplists:get_value(parent, Config),
 
@@ -98,29 +111,29 @@ init(Config) ->
 	wxSizer:layout(SbSizer),
 	Fields = [{line, Line}, {selection, Selection}, {help, Help}],
 	{Sb, #state{parent=Parent, sb=Sb, fields=Fields}}.
-
+%% @hidden
 handle_info(Msg, State) ->
 	io:format("Got Info ~p~n",[Msg]),
 	{noreply,State}.
-
+%% @hidden
 handle_cast({settext, {Field,Label}}, State=#state{fields=Fields, sb=Sb}) ->
 	T = proplists:get_value(Field, Fields),
 	set_label(T, Label),
 	wxSizer:layout(wxPanel:getSizer(Sb)),
   {noreply,State}.
-
+%% @hidden
 handle_call(fields, _From, State) ->
   {reply, State#state.fields, State};
 handle_call(shutdown, _From, State) ->
   ok,
   {reply,{error, nyi}, State}.
-
+%% @hidden
 handle_event(_Event, State) ->
 	{noreply, State}.
-
+%% @hidden
 code_change(_, _, State) ->
   {ok, State}.
-
+%% @hidden
 terminate(_Reason, #state{sb=Sb}) ->
 	wxPanel:destroy(Sb).
 

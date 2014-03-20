@@ -1,9 +1,24 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
-%% @doc
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc A process responsible for loading saved preferences from disk
+%% into an ETS table, performing lookups on the table for other
+%% processes, and saving any changes to disk.
 %% @end
 %% =====================================================================
 
@@ -102,7 +117,7 @@ set_font(Name, Font) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init(Config) ->
   wx:set_env(proplists:get_value(wx_env, Config)),
   Table = case filelib:is_file(get_pref_file()) of
@@ -113,24 +128,24 @@ init(Config) ->
   end,
   initialise_prefs(Table),
 	{ok, #state{prefs_table=Table}}.
-
+%% @hidden
 handle_info(_, State) ->
 	{noreply, State}.
-
+%% @hidden
 handle_call(Key, _From, State=#state{prefs_table=Table}) ->
 	{reply, ets:lookup_element(Table, Key, 2), State}.
-
+%% @hidden
 handle_cast({Key, Value}, State=#state{prefs_table=Table}) ->
   ets:update_element(Table, Key, {2, Value}),
   write_dets(Table),
 	{noreply, State}.
-
+%% @hidden
 handle_event(_, State) ->
 	{noreply, State}.
-
+%% @hidden
 code_change(_, _, State) ->
 	{ok, State}.
-
+%% @hidden
 terminate(_Reason, _) ->
   ok.
 
@@ -290,12 +305,6 @@ ensure_proj_dir(DefaultDir) ->
       ok
   end.
   
-  
-%% =====================================================================
-%% @doc
-
-
-
 
 %% =====================================================================
 %% @doc Load the preferences from disk and transfer to ETS table.

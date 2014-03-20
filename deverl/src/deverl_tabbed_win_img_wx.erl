@@ -1,11 +1,26 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
-%% @doc
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc This module manages several sub-windows, displaying each in a
+%% separate tab with an accompanying icon.
 %% @end
 %% =====================================================================
+
 
 -module(deverl_tabbed_win_img_wx).
 
@@ -20,7 +35,7 @@
 
 %% API
 -export([
-	new/1,
+	start/1,
 	add_page/4,
 	assign_image_list/2,
 	set_selection/2
@@ -42,7 +57,7 @@
 %% =====================================================================
 %% @doc
 
-new(Config) ->
+start(Config) ->
 	wx_object:start_link(?MODULE, Config, []).
 
 
@@ -70,7 +85,7 @@ set_selection(This, Index) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init(Options) ->
 	Parent = proplists:get_value(parent, Options),
 
@@ -96,15 +111,15 @@ init(Options) ->
 
   {MainPanel, State}.
 
-
+%% @hidden
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
   {noreply,State}.
-
+%% @hidden
 handle_call(Msg, _From, State) ->
   io:format("Got Call ~p~n",[Msg]),
   {reply,ok,State}.
-
+%% @hidden
 handle_cast({add_page, {Page, Text, Options}},
 						State=#state{tabs={TabPanel, TabSz}, content={Content, ContentSz}, pages=Pages}) ->
 	{Button, Label} = create_button(TabPanel, TabSz, Text, Options),
@@ -136,6 +151,7 @@ handle_cast(Msg, State) ->
 %% =====================================================================
 %% Callback Sync event handling
 %% =====================================================================
+%% @hidden
 %% Sync events i.e. from callbacks must return ok, it can not return a new state.
 %% Do the redrawing here.
 handle_sync_event(#wx{obj=Btn, userData={Label, Options}, event=#wxPaint{}}, _,
@@ -147,7 +163,7 @@ handle_sync_event(#wx{obj=Btn, userData={Label, Options}, event=#wxPaint{}}, _,
 		_ -> draw(Btn, Label, ImageList, wxPaintDC, Bg, Options)
 	end,
 	ok.
-
+%% @hidden
 handle_event(#wx{obj=Btn, event=#wxMouse{type=left_down}},
 						 State=#state{pages=Pages, active_btn=ActiveBtn, tabs={Tabs, _}, content={Cont,_}}) ->
 	change_selection(ActiveBtn, Btn, Pages, Tabs, Cont),
@@ -162,10 +178,10 @@ handle_event(#wx{id=Id},State) ->
 	  _ ->
 	    {noreply, State}
   end.
-
+%% @hidden
 code_change(_, _, State) ->
     {stop, not_yet_implemented, State}.
-
+%% @hidden
 terminate(_Reason, _State) ->
     wx:destroy().
 

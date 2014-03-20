@@ -3,14 +3,13 @@
 %% @copyright
 %% @version
 %% @doc
-%% @end
 %% =====================================================================
 
--module().
+-module(). %% module name must match filename
 
 -include_lib("eunit/include/eunit.hrl").
 
--export([]).
+-export([]). %% a list of exported function names
 
 
 %% =====================================================================

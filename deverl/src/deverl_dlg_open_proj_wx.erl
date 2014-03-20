@@ -1,9 +1,23 @@
 %% =====================================================================
-%% @author
-%% @copyright
-%% @title
-%% @version
-%% @doc The open project dlg.
+%% This program is free software: you can redistribute it and/or modify
+%% it under the terms of the GNU General Public License as published by
+%% the Free Software Foundation, either version 3 of the License, or
+%% (at your option) any later version.
+%% 
+%% This program is distributed in the hope that it will be useful,
+%% but WITHOUT ANY WARRANTY; without even the implied warranty of
+%% MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+%% GNU General Public License for more details.
+%% 
+%% You should have received a copy of the GNU General Public License
+%% along with this program.  If not, see <http://www.gnu.org/licenses/>.
+%%
+%% @author Tom Richmond <tr201@kent.ac.uk>
+%% @author Mike Quested <mdq3@kent.ac.uk>
+%% @copyright Tom Richmond, Mike Quested 2014
+%%
+%% @doc Displays the XRC based <em>Open Project</em> dialog.
+%% Uses default CANCEL/close_window handlers.
 %% @end
 %% =====================================================================
 
@@ -51,7 +65,7 @@ destroy(This) ->
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
-
+%% @hidden
 init({Parent, Projects}) ->    
   Xrc = wxXmlResource:get(),
   Dlg = wxDialog:new(),
@@ -83,7 +97,7 @@ init({Parent, Projects}) ->
     
 	{Dlg, State}.
 
-
+%% @hidden
 handle_event(#wx{obj=ListCtrl, event=#wxList{type=command_list_item_selected, itemIndex=Idx}}, 
              State=#state{dlg=Dlg}) ->
   wxWindow:enable(wxWindow:findWindow(Dlg, ?wxID_OK)),
@@ -98,24 +112,22 @@ handle_event(#wx{event=#wxSize{size={Width0,_}}}, State = #state{list_ctrl=ListC
   Width1 = wxListCtrl:getColumnWidth(ListCtrl, 0) + wxListCtrl:getColumnWidth(ListCtrl, 1),
   wxListCtrl:setColumnWidth(ListCtrl, 2, Width0 + Width1),
   {noreply, State}.
-
+%% @hidden
 handle_info(_Msg, State) ->
   {noreply,State}.
-
+%% @hidden
 handle_call(path, _From, State) ->
   {reply, State#state.path, State};
 handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State}.
-
+%% @hidden
 handle_cast(_, State) ->
   {noreply,State}.
-
+%% @hidden
 code_change(_, _, State) ->
   {stop, ignore, State}.
-
+%% @hidden
 terminate(_Reason, State) ->
-  %% manual disconnect prevents segfault: OSX wx3.0 erlR16B03 (see xrc sample directory)
-  % wxDialog:disconnect(State#state.list_ctrl),
   wxDialog:destroy(State#state.dlg),
 	ok.
 	
