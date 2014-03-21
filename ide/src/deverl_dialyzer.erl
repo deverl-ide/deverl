@@ -3,7 +3,7 @@
 %% @author Mike Quested <mdq3@kent.ac.uk>
 %% @copyright 2014 Tom Richmond, Mike Quested
 %% @version 1
-%% @doc Starts an instance of the IDE. Builds all wx components.
+%% @doc 
 %% @end
 %% =====================================================================
 

@@ -1,4 +1,4 @@
-%% Create the data to send the the deverl_dlg_find_wx when started.
+%% Create the data to send the deverl_dlg_find_wx when started.
 
 -module(deverl_dlg_data_find_wx).
 
