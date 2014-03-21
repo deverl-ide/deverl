@@ -14,15 +14,8 @@
 %%
 %% @author Tom Richmond <tr201@kent.ac.uk>
 %% @author Mike Quested <mdq3@kent.ac.uk>
-<<<<<<< HEAD:ide/src/deverl_dialyzer.erl
-%% @copyright 2014 Tom Richmond, Mike Quested
-%% @version 1
-%% @doc 
-=======
 %% @copyright Tom Richmond, Mike Quested 2014
-%%
 %% @doc A library of functions for managing Dialyzer.
->>>>>>> a69311b56b1515861503cf6ce4768a4c43439726:deverl/src/deverl_dialyzer.erl
 %% @end
 %% =====================================================================
 

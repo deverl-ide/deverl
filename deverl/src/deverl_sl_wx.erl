@@ -172,7 +172,7 @@ handle_call(Msg, _From, State) ->
 %% @hidden
 handle_cast({set, Symbols, Editor}, State) ->  
 	wxListCtrl:deleteAllItems(State#state.list),
-  % Set = sets:from_list(Symbols), %% To remove dups
+  Set = sets:from_list(Symbols), %% To remove dups
   % lists:usort(List). %% Removes dup and sorts
   insert_items(State#state.list, lists:reverse(sets:to_list(Set))),
   {noreply,State#state{editor_pid=Editor}};

@@ -145,15 +145,9 @@ get_theme_dir() ->
 %% =====================================================================
 %% Alternative SAX parser. Marvelous documentation on this.
 %% It may well be faster than the current DOM implemenation, however.
-<<<<<<< HEAD:ide/src/deverl_editor_theme.erl
 %% @private
 % sax_print() ->
 %   xmerl_sax_console_parser:file("../priv/themes/Text.theme",
-=======
-%
-% sax_print() ->  
-%   xmerl_sax_console_parser:file("../priv/themes/Text.theme", 
->>>>>>> a69311b56b1515861503cf6ce4768a4c43439726:deverl/src/deverl_editor_theme.erl
 %   [{event_fun, fun(Event, _Location, _State) ->
 %                  io:format("~p~n", [Event])
 %                end}]).

@@ -14,15 +14,8 @@
 %%
 %% @author Tom Richmond <tr201@kent.ac.uk>
 %% @author Mike Quested <mdq3@kent.ac.uk>
-<<<<<<< HEAD:ide/src/deverl.erl
-%% @copyright 2014 Tom Richmond, Mike Quested
-%% @version 1
-%% @doc Starts an instance of the IDE. Builds all wx components.
-=======
 %% @copyright Tom Richmond, Mike Quested 2014
-%%
 %% @doc Starts <em>Deverl</em>.
->>>>>>> a69311b56b1515861503cf6ce4768a4c43439726:deverl/src/deverl.erl
 %% @end
 %% =====================================================================
 

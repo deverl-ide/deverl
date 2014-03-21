@@ -1,6 +1,3 @@
-<<<<<<< HEAD:ide/src/deverl_dlg_data_find_wx.erl
-%% Create the data to send the deverl_dlg_find_wx when started.
-=======
 %% =====================================================================
 %% This program is free software: you can redistribute it and/or modify
 %% it under the terms of the GNU General Public License as published by
@@ -23,7 +20,6 @@
 %% @end
 %% =====================================================================
 
->>>>>>> a69311b56b1515861503cf6ce4768a4c43439726:deverl/src/deverl_dlg_data_find_wx.erl
 
 -module(deverl_dlg_data_find_wx).
 
