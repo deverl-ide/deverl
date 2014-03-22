@@ -38,7 +38,7 @@ For detailed installation instructions for all platforms read [INSTALL](https://
 
 ### Bug/Issues
 
-To view/report bugs viits our [trac page](http://www.tgrsvr.co.uk/trac "trac").
+To view/report issues ~~viit our [trac page](http://www.tgrsvr.co.uk/trac "trac")~~ please use our GitHub issue tracker.
 
 <div align="center">
 	<img src="https://raw.github.com/deverl-ide/deverl/master/misc/linux_screenshot.png" alt="Erlang IDE" />
