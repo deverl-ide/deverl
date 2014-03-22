@@ -287,6 +287,8 @@ init({Parent, Projects, ActiveProject}) ->
   wxButton:connect(BackBtn, command_button_clicked, [{callback, Swap}, {userData, show_panel_1}]),
   wxButton:connect(NextBtn, command_button_clicked, [{callback, Swap}, {userData, show_panel_2}]),
   
+  %% Set the description to the selected module
+  set_module_description(Dlg),
 
   %% Overide OK handler, normal event
   wxButton:connect(Dlg, command_button_clicked, [{id, ?wxID_OK}]),
@@ -347,13 +349,7 @@ handle_event(#wx{obj=FileTypeList, userData=0, event=#wxCommand{type=command_lis
   ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
   case wxListBox:getStringSelection(FileTypeList) of
     "Erlang" ->
-      case wxListBox:getSelection(ModuleTypeList) of
-        -1 ->
-          set_description(Dlg, "Create a new file.");
-        _ ->
-          {_Type, _Ext, Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
-          set_description(Dlg, Desc)
-      end;
+      set_module_description(Dlg);
     "Plain Text" ->
       set_description(Dlg, "A plain text file. Can be used to make notes and readme files.")
   end,
@@ -388,6 +384,16 @@ update_path(Dlg, Filename) ->
   set_path_text(Dlg, ProjPathTc, ProjPath, Filename).
 
 
+%% =====================================================================
+%% @doc Set the description from the module list as the description.
+
+set_module_description(Dlg) ->
+  ListBox = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
+  {_Type, _Ext, Desc} = wxListBox:getClientData(ListBox, wxListBox:getSelection(ListBox)),
+  set_description(Dlg, Desc),
+  ok.
+  
+  
 %% =====================================================================
 %% @doc Set the description box based on the list item selected.
 
@@ -462,14 +468,20 @@ get_file_extension(Dlg) ->
 
 check_if_finished(Dlg, Filename, Desc) ->
   Finish = wxXmlResource:xrcctrl(Dlg, "wxID_OK", wxButton),
+  Back = wxXmlResource:xrcctrl(Dlg, "back_btn", wxButton),
   case length(Filename) of
     0 ->
+      set_module_description(Dlg),
+      swap_desc_icons(Dlg, show_info_icn),
+      wxWindow:enable(Back),
       wxWindow:disable(Finish);
-    _ ->
+    _ ->    
       case validate_name(Dlg, Filename, Desc) of
         true ->
+          wxWindow:enable(Back),
           wxWindow:enable(Finish);
         false ->
+          wxWindow:disable(Back),
           wxWindow:disable(Finish)
       end
   end.
@@ -478,12 +490,16 @@ check_if_finished(Dlg, Filename, Desc) ->
 %% =====================================================================
 %% @doc Validate the input Name.
 
-validate_name(Dlg, [], _) -> false;
 validate_name(Dlg, Str, Desc) ->
 	case validate_name(Str) of
 		nomatch ->
+      ErrBmp = wxXmlResource:xrcctrl(Dlg, "img_error", wxStaticBitmap),
+      case wxWindow:isShown(ErrBmp) of
+        false -> ok;
+        _ ->
+          set_module_description(Dlg)
+      end,
       swap_desc_icons(Dlg, show_info_icn),
-      set_description(Dlg, "Create a new file."),
 			true;
 		{match, [{Pos,_}]} ->
       swap_desc_icons(Dlg, show_error_icn),
