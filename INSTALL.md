@@ -24,17 +24,6 @@ make
 make install (optional, will install to default directory [usually /usr/local])
 </code></pre>
 
-**R16 Releases**
-
-A bug in the Erlang wx-binding causes the Erlang Runtime System to crash.
-
-If you're using R16 then you will need to perform the following fix:
-Delete the line:
-
-**Disconnect andalso (catch wxEvtHandler:disconnect_impl(CbH,O)),**
-
-in wxe_server (otp_src_R16XX/lib/wx/src).
-
 **Pre-built Binaries**
 
 Previous pre-built binaries are available from [Erlang Solutions](https://www.erlang-solutions.com/downloads/), but currently they include an old version of wxWidgets (2.8) in the 32-bit version, and disable wx completely in the 64-bit version. 
@@ -48,13 +37,8 @@ Open terminal, type:
 
 `sudo apt-get install build-essential libwxgtk3.0-dev freeglut3-dev libncurses5-dev`
 
-to install necessary packages, then download and extract the latest erlang release from [here](http://www.erlang.org/download.html here).
+to install necessary packages, then [build Erlang](#build-erlang).
 
-Now type:
-<pre><code>cd otp_src_xxx
-./configure
-make
-</code></pre>
 
 **Ubuntu 13**
 
@@ -71,13 +55,20 @@ make
 PATH="$(pwd)":$PATH ; export PATH
 </code></pre>
 
-to install necessary packages, then download and extract the latest erlang release from [here](http://www.erlang.org/download.html here).
+to install necessary packages, then continue to [build Erlang](#build-erlang).
+
+#### Build Erlang
+
+**NOTE** You must use at least Erlang R17 due to a bug in the wx application in previous versions. 
+
+Download and extract the latest erlang release from [here](http://www.erlang.org/download.html), or clone the [erlang repository](https://github.com/erlang/otp).
 
 Now type:
 
 <pre><code>cd otp_src_xxx
 ./configure
 make
+make install (optional, will install to default directory [usually /usr/local])
 </pre></code>
 
 
