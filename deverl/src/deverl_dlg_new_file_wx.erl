@@ -169,6 +169,7 @@ init({Parent, Projects, ActiveProject}) ->
   FileTypeList = wxXmlResource:xrcctrl(Dlg, "file_type_lb", wxListBox),
   wxListBox:insertItems(FileTypeList, ?FILE_TYPES, 0),
   wxListBox:setSelection(FileTypeList, 0),
+  wxListBox:setFirstItem(FileTypeList, 0),
 
   %% Add module types
   ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
@@ -178,6 +179,8 @@ init({Parent, Projects, ActiveProject}) ->
   end,
   lists:foreach(InsertMod, ?MODULE_TYPES),
   wxListBox:setSelection(ModuleTypeList, 0),
+  wxListBox:setFirstItem(ModuleTypeList, 0),
+  
 
   UpdatePath = fun(Filename) ->
     ProjPath = case wxChoice:getString(ProjectChoice, wxChoice:getSelection(ProjectChoice)) of
@@ -340,23 +343,27 @@ handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}},
   wxDialog:endModal(Dlg, Id),
   {noreply, State1};
 
-handle_event(#wx{userData=0, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
-  FileTypeList = wxXmlResource:xrcctrl(Dlg, "file_type_lb", wxListBox),
+handle_event(#wx{obj=FileTypeList, userData=0, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
+  ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
   case wxListBox:getStringSelection(FileTypeList) of
     "Erlang" ->
-      set_description(Dlg);
+      case wxListBox:getSelection(ModuleTypeList) of
+        -1 ->
+          set_description(Dlg, "Create a new file.");
+        _ ->
+          {_Type, _Ext, Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
+          set_description(Dlg, Desc)
+      end;
     "Plain Text" ->
-      Ctrl = wxXmlResource:xrcctrl(Dlg, "desc_string", wxStaticText),
-      wxStaticText:setLabel(Ctrl, "A plain text file. Can be used to make notes and readme files."),
-      wxStaticText:wrap(Ctrl, 400)
+      set_description(Dlg, "A plain text file. Can be used to make notes and readme files.")
   end,
-  ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
   FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),
   wxListBox:enable(ModuleTypeList, [{enable, not wxListBox:isEnabled(ModuleTypeList)}]),
   update_path(Dlg, wxTextCtrl:getValue(FileNameTc)),
   {noreply, State};
-handle_event(#wx{userData=1, event=#wxCommand{type=command_listbox_selected}}, State=#state{dlg=Dlg}) ->
-  set_description(Dlg),
+handle_event(#wx{obj=ListBox, userData=1, event=#wxCommand{type=command_listbox_selected, commandInt=Item}}, State=#state{dlg=Dlg}) ->
+  {_Type, _Ext, Desc} = wxListBox:getClientData(ListBox, Item),
+  set_description(Dlg, Desc),
   FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),
   update_path(Dlg, wxTextCtrl:getValue(FileNameTc)),
   {noreply, State}.
@@ -384,9 +391,7 @@ update_path(Dlg, Filename) ->
 %% =====================================================================
 %% @doc Set the description box based on the list item selected.
 
-set_description(Dlg) ->
-  ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
-  {_Type, _Ext, Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
+set_description(Dlg, Desc) ->
   Ctrl = wxXmlResource:xrcctrl(Dlg, "desc_string", wxStaticText),
   wxStaticText:setLabel(Ctrl, Desc),
   {W, _H} = wxWindow:getSize(wxWindow:getParent(Ctrl)),
@@ -461,7 +466,7 @@ check_if_finished(Dlg, Filename, Desc) ->
     0 ->
       wxWindow:disable(Finish);
     _ ->
-      case validate_name(Filename, Desc) of
+      case validate_name(Dlg, Filename, Desc) of
         true ->
           wxWindow:enable(Finish);
         false ->
@@ -473,19 +478,41 @@ check_if_finished(Dlg, Filename, Desc) ->
 %% =====================================================================
 %% @doc Validate the input Name.
 
--spec validate_name(string(), wxPanel:wxPanel()) -> boolean().
-
-validate_name([], _) -> false;
-validate_name(Str, Desc) ->
+validate_name(Dlg, [], _) -> false;
+validate_name(Dlg, Str, Desc) ->
 	case validate_name(Str) of
 		nomatch ->
-      % insert_desc(Desc, "Create a new file."),
+      swap_desc_icons(Dlg, show_info_icn),
+      set_description(Dlg, "Create a new file."),
 			true;
 		{match, [{Pos,_}]} ->
-      % Bitmap = wxBitmap:new(wxImage:new("../icons/prohibition.png")),
-      % insert_desc(Desc, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename.", [{bitmap, Bitmap}]),
+      swap_desc_icons(Dlg, show_error_icn),
+      set_description(Dlg, "Illegal character \"" ++ [lists:nth(Pos + 1, Str)] ++ "\" in filename."),
 			false
 	end.
+  
+  
+%% =====================================================================
+%% @doc
+  
+swap_desc_icons(Dlg, ToShow) ->
+  InfoBmp = wxXmlResource:xrcctrl(Dlg, "img_info", wxStaticBitmap),
+  ErrBmp = wxXmlResource:xrcctrl(Dlg, "img_error", wxStaticBitmap),
+  case ToShow of
+    show_info_icn ->
+      wxWindow:hide(ErrBmp),
+      wxWindow:show(InfoBmp);
+    show_error_icn ->
+      wxWindow:hide(InfoBmp),
+      wxWindow:show(ErrBmp)
+  end,
+  IcnSz = wxWindow:getSizer(wxWindow:getParent(InfoBmp)),
+  wxSizer:layout(IcnSz),
+  ok.
+
+
+%% =====================================================================
+%% @doc Validate the input string.
 
 -spec validate_name(string()) -> {match, {integer, integer}} | nomatch.
 
