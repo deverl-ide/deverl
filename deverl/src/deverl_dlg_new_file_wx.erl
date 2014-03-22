@@ -55,7 +55,7 @@
                                       "other systems."},
                        {gen_server, "OTP Gen Server",
                                     ".erl",
-                                    "A behaviour module for implementing the server of a client-server relationship."},
+                                    "A behaviour module for implementing a client-server relationship."},
                        {supervisor, "OTP Supervisor",
                                     ".erl",
                                     "OTP supervisor behaviour. A supervisor is responsible for monitoring child "
@@ -193,7 +193,7 @@ init({Parent, Projects, ActiveProject}) ->
   FileNameTc = wxXmlResource:xrcctrl(Dlg, "filename_tc", wxTextCtrl),
   CB = fun(_E,_O) ->
     Filename = wxTextCtrl:getValue(FileNameTc),
-    check_if_finished(Dlg, Filename, wxXmlResource:xrcctrl(Dlg, "info_string", wxStaticText)),
+    check_if_finished(Dlg, Filename, wxXmlResource:xrcctrl(Dlg, "desc_string", wxStaticText)),
     UpdatePath(wxTextCtrl:getValue(FileNameTc))
   end,
   wxTextCtrl:connect(FileNameTc, command_text_updated, [{callback, CB}]),
@@ -256,18 +256,34 @@ init({Parent, Projects, ActiveProject}) ->
   wxButton:connect(BrowseBtn, command_button_clicked, [{callback, Browse}]),
 
   %% Back/next buttons
-  NextBtn1 = wxXmlResource:xrcctrl(Dlg, "next_btn", wxButton),
-  BackBtn2 = wxXmlResource:xrcctrl(Dlg, "back_btn2", wxButton),
+  NextBtn = wxXmlResource:xrcctrl(Dlg, "next_btn", wxButton),
+  BackBtn = wxXmlResource:xrcctrl(Dlg, "back_btn", wxButton),
 
-  Panel1 = wxXmlResource:xrcctrl(Dlg, "panel_1", wxPanel),
-  Panel2 = wxXmlResource:xrcctrl(Dlg, "panel_2", wxPanel),
-  Swap = fun(#wx{userData={Show, Hide}}, _O) ->
-    wxPanel:hide(Hide),
-    wxPanel:show(Show)
+  %% Get swapped panels
+  Panel1 = wxXmlResource:xrcctrl(Dlg, "swap_1", wxPanel),
+  Panel2 = wxXmlResource:xrcctrl(Dlg, "swap_2", wxPanel),
+  SwapCtnr = wxXmlResource:xrcctrl(Dlg, "swap_cont", wxPanel),
+  SwapSz = wxWindow:getSizer(SwapCtnr),
+
+  Swap = 
+  fun(#wx{userData=show_panel_1}, _O) ->
+    %% Swap ctrls
+    Bool1 = wxSizer:hide(SwapSz, Panel2),
+    Bool2 = wxSizer:show(SwapSz, Panel1),
+    wxWindow:enable(NextBtn),
+    wxWindow:disable(BackBtn);
+  (#wx{userData=show_panel_2}, _O) ->
+    %% Swap ctrls
+    Bool1 = wxSizer:hide(SwapSz, Panel1),
+    Bool2 = wxSizer:show(SwapSz, Panel2),
+    wxWindow:enable(BackBtn),
+    wxWindow:disable(NextBtn),
+    wxSizer:layout(SwapSz)
   end,
-
-  wxButton:connect(BackBtn2, command_button_clicked, [{callback, Swap}, {userData, {Panel1, Panel2}}]),
-  wxButton:connect(NextBtn1, command_button_clicked, [{callback, Swap}, {userData, {Panel2, Panel1}}]),
+  
+  wxButton:connect(BackBtn, command_button_clicked, [{callback, Swap}, {userData, show_panel_1}]),
+  wxButton:connect(NextBtn, command_button_clicked, [{callback, Swap}, {userData, show_panel_2}]),
+  
 
   %% Overide OK handler, normal event
   wxButton:connect(Dlg, command_button_clicked, [{id, ?wxID_OK}]),
@@ -276,6 +292,7 @@ init({Parent, Projects, ActiveProject}) ->
     dlg=Dlg
   },
   {Dlg, State}.
+  
 %% @hidden
 handle_cast(_Msg, State) ->
   {noreply, State}.
@@ -329,7 +346,7 @@ handle_event(#wx{userData=0, event=#wxCommand{type=command_listbox_selected}}, S
     "Erlang" ->
       set_description(Dlg);
     "Plain Text" ->
-      Ctrl = wxXmlResource:xrcctrl(Dlg, "info_string", wxStaticText),
+      Ctrl = wxXmlResource:xrcctrl(Dlg, "desc_string", wxStaticText),
       wxStaticText:setLabel(Ctrl, "A plain text file. Can be used to make notes and readme files."),
       wxStaticText:wrap(Ctrl, 400)
   end,
@@ -370,9 +387,10 @@ update_path(Dlg, Filename) ->
 set_description(Dlg) ->
   ModuleTypeList = wxXmlResource:xrcctrl(Dlg, "mod_type_lb", wxListBox),
   {_Type, _Ext, Desc} = wxListBox:getClientData(ModuleTypeList, wxListBox:getSelection(ModuleTypeList)),
-  Ctrl = wxXmlResource:xrcctrl(Dlg, "info_string", wxStaticText),
+  Ctrl = wxXmlResource:xrcctrl(Dlg, "desc_string", wxStaticText),
   wxStaticText:setLabel(Ctrl, Desc),
-  wxStaticText:wrap(Ctrl, 400).
+  {W, _H} = wxWindow:getSize(wxWindow:getParent(Ctrl)),
+  wxStaticText:wrap(Ctrl, W).
 
 
 %% =====================================================================

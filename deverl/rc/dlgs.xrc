@@ -6,7 +6,6 @@
 		<title>New Project</title>
 		<centered>1</centered>
 		<object class="wxBoxSizer">
-			<minsize>500,-1</minsize>
 			<orient>wxHORIZONTAL</orient>
 			<object class="spacer">
 				<option>0</option>
@@ -1255,12 +1254,11 @@
 			<orient>wxHORIZONTAL</orient>
 			<object class="sizeritem">
 				<option>1</option>
-				<flag>wxEXPAND|wxALL</flag>
+				<flag>wxEXPAND</flag>
 				<border>5</border>
 				<object class="wxPanel" name="panel_1">
 					<style>wxTAB_TRAVERSAL</style>
 					<object class="wxBoxSizer">
-						<minsize>500,600</minsize>
 						<orient>wxHORIZONTAL</orient>
 						<object class="spacer">
 							<option>0</option>
@@ -1310,86 +1308,195 @@
 									<size>0,20</size>
 								</object>
 								<object class="sizeritem">
-									<option>0</option>
+									<option>3</option>
 									<flag>wxEXPAND</flag>
 									<border>5</border>
-									<object class="wxBoxSizer">
-										<orient>wxHORIZONTAL</orient>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<object class="wxStaticText" name="m_staticText54">
-												<label>Project:</label>
-												<wrap>-1</wrap>
+									<object class="wxPanel" name="swap_cont">
+										<style>wxTAB_TRAVERSAL</style>
+										<object class="wxBoxSizer">
+											<orient>wxVERTICAL</orient>
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxEXPAND</flag>
+												<border>5</border>
+												<object class="wxPanel" name="swap_1">
+													<style>wxTAB_TRAVERSAL</style>
+													<object class="wxBoxSizer">
+														<orient>wxVERTICAL</orient>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxEXPAND</flag>
+															<border>5</border>
+															<object class="wxBoxSizer">
+																<orient>wxHORIZONTAL</orient>
+																<object class="sizeritem">
+																	<option>0</option>
+																	<flag>wxALIGN_CENTER_VERTICAL</flag>
+																	<border>5</border>
+																	<object class="wxStaticText" name="m_staticText54">
+																		<label>Project:</label>
+																		<wrap>-1</wrap>
+																	</object>
+																</object>
+																<object class="spacer">
+																	<option>0</option>
+																	<flag></flag>
+																	<border>5</border>
+																	<size>20,0</size>
+																</object>
+																<object class="sizeritem">
+																	<option>1</option>
+																	<flag></flag>
+																	<border>5</border>
+																	<object class="wxChoice" name="proj_choice">
+																		<selection>0</selection>
+																		<content />
+																	</object>
+																</object>
+															</object>
+														</object>
+														<object class="spacer">
+															<option>0</option>
+															<flag>wxALIGN_CENTER_HORIZONTAL</flag>
+															<border>0</border>
+															<size>0,20</size>
+														</object>
+														<object class="sizeritem">
+															<option>2</option>
+															<flag>wxEXPAND</flag>
+															<border>5</border>
+															<object class="wxFlexGridSizer">
+																<rows>2</rows>
+																<cols>2</cols>
+																<vgap>5</vgap>
+																<hgap>20</hgap>
+																<growablecols>0,1</growablecols>
+																<growablerows>1</growablerows>
+																<object class="sizeritem">
+																	<option>0</option>
+																	<flag></flag>
+																	<border>5</border>
+																	<object class="wxStaticText" name="m_staticText55">
+																		<label>File Type:</label>
+																		<wrap>-1</wrap>
+																	</object>
+																</object>
+																<object class="sizeritem">
+																	<option>0</option>
+																	<flag></flag>
+																	<border>5</border>
+																	<object class="wxStaticText" name="m_staticText56">
+																		<label>Module Type:</label>
+																		<wrap>-1</wrap>
+																	</object>
+																</object>
+																<object class="sizeritem">
+																	<option>1</option>
+																	<flag>wxEXPAND</flag>
+																	<border>5</border>
+																	<object class="wxListBox" name="file_type_lb">
+																		<content />
+																	</object>
+																</object>
+																<object class="sizeritem">
+																	<option>1</option>
+																	<flag>wxEXPAND</flag>
+																	<border>5</border>
+																	<object class="wxListBox" name="mod_type_lb">
+																		<content />
+																	</object>
+																</object>
+															</object>
+														</object>
+													</object>
+												</object>
 											</object>
-										</object>
-										<object class="spacer">
-											<option>0</option>
-											<flag></flag>
-											<border>5</border>
-											<size>20,0</size>
-										</object>
-										<object class="sizeritem">
-											<option>1</option>
-											<flag></flag>
-											<border>5</border>
-											<object class="wxChoice" name="proj_choice">
-												<selection>0</selection>
-												<content />
-											</object>
-										</object>
-									</object>
-								</object>
-								<object class="spacer">
-									<option>0</option>
-									<flag>wxALIGN_CENTER_HORIZONTAL</flag>
-									<border>0</border>
-									<size>0,20</size>
-								</object>
-								<object class="sizeritem">
-									<option>2</option>
-									<flag>wxEXPAND</flag>
-									<border>5</border>
-									<object class="wxFlexGridSizer">
-										<rows>2</rows>
-										<cols>2</cols>
-										<vgap>5</vgap>
-										<hgap>20</hgap>
-										<growablecols>0,1</growablecols>
-										<growablerows>1</growablerows>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag></flag>
-											<border>5</border>
-											<object class="wxStaticText" name="m_staticText55">
-												<label>File Type:</label>
-												<wrap>-1</wrap>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag></flag>
-											<border>5</border>
-											<object class="wxStaticText" name="m_staticText56">
-												<label>Module Type:</label>
-												<wrap>-1</wrap>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
-											<border>5</border>
-											<object class="wxListBox" name="file_type_lb">
-												<content />
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
-											<border>5</border>
-											<object class="wxListBox" name="mod_type_lb">
-												<content />
+											<object class="sizeritem">
+												<option>1</option>
+												<flag>wxEXPAND</flag>
+												<border>5</border>
+												<object class="wxPanel" name="swap_2">
+													<style>wxTAB_TRAVERSAL</style>
+													<hidden>1</hidden>
+													<object class="wxFlexGridSizer">
+														<rows>4</rows>
+														<cols>2</cols>
+														<vgap>15</vgap>
+														<hgap>10</hgap>
+														<growablecols>1</growablecols>
+														<growablerows></growablerows>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALIGN_CENTER_VERTICAL|wxBOTTOM</flag>
+															<border>5</border>
+															<object class="wxStaticText" name="m_staticText751">
+																<label>Project Name:</label>
+																<wrap>-1</wrap>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>1</option>
+															<flag>wxALIGN_CENTER_VERTICAL|wxBOTTOM</flag>
+															<border>5</border>
+															<object class="wxStaticText" name="proj_name_st">
+																<label>MyLabel</label>
+																<wrap>-1</wrap>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<object class="wxStaticText" name="m_staticText771">
+																<label>File Name:</label>
+																<wrap>-1</wrap>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>1</option>
+															<flag>wxEXPAND</flag>
+															<border>5</border>
+															<object class="wxTextCtrl" name="filename_tc">
+																<value></value>
+																<maxlength>0</maxlength>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALIGN_CENTER_VERTICAL</flag>
+															<border>5</border>
+															<object class="wxStaticText" name="m_staticText781">
+																<label>Path:</label>
+																<wrap>-1</wrap>
+															</object>
+														</object>
+														<object class="sizeritem">
+															<option>1</option>
+															<flag>wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
+															<border>5</border>
+															<object class="wxTextCtrl" name="path_tc">
+																<enabled>0</enabled>
+																<value></value>
+																<maxlength>0</maxlength>
+															</object>
+														</object>
+														<object class="spacer">
+															<option>1</option>
+															<flag>wxEXPAND</flag>
+															<border>5</border>
+															<size>0,0</size>
+														</object>
+														<object class="sizeritem">
+															<option>0</option>
+															<flag>wxALIGN_RIGHT</flag>
+															<border>5</border>
+															<object class="wxButton" name="browse_btn">
+																<label>Browse..</label>
+																<default>0</default>
+															</object>
+														</object>
+													</object>
+												</object>
 											</object>
 										</object>
 									</object>
@@ -1430,8 +1537,8 @@
 									<size>0,5</size>
 								</object>
 								<object class="sizeritem">
-									<option>1</option>
-									<flag>wxALIGN_BOTTOM|wxEXPAND</flag>
+									<option>2</option>
+									<flag>wxEXPAND</flag>
 									<border>0</border>
 									<object class="wxPanel" name="desc_1">
 										<style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
@@ -1440,14 +1547,14 @@
 										<object class="wxBoxSizer">
 											<orient>wxVERTICAL</orient>
 											<object class="sizeritem">
-												<option>0</option>
-												<flag>wxEXPAND</flag>
-												<border>0</border>
+												<option>1</option>
+												<flag>wxALIGN_TOP|wxEXPAND</flag>
+												<border>10</border>
 												<object class="wxBoxSizer">
 													<orient>wxHORIZONTAL</orient>
 													<object class="sizeritem">
 														<option>0</option>
-														<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+														<flag>wxALIGN_TOP|wxALL</flag>
 														<border>10</border>
 														<object class="wxStaticBitmap" name="img_info">
 															<bitmap>information.png</bitmap>
@@ -1455,7 +1562,7 @@
 													</object>
 													<object class="sizeritem">
 														<option>0</option>
-														<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
+														<flag>wxALIGN_TOP|wxALL</flag>
 														<border>10</border>
 														<object class="wxStaticBitmap" name="img_error">
 															<hidden>1</hidden>
@@ -1464,17 +1571,28 @@
 													</object>
 													<object class="sizeritem">
 														<option>1</option>
-														<flag>wxALIGN_CENTER_VERTICAL</flag>
-														<border>0</border>
-														<object class="wxStaticText" name="info_string">
-															<label>Create a new project.</label>
-															<wrap>300</wrap>
+														<flag>wxBOTTOM|wxEXPAND|wxRIGHT|wxTOP</flag>
+														<border>10</border>
+														<object class="wxPanel" name="desc_string_panel">
+															<style>wxTAB_TRAVERSAL</style>
+															<object class="wxBoxSizer">
+																<orient>wxVERTICAL</orient>
+																<object class="sizeritem">
+																	<option>1</option>
+																	<flag>wxALIGN_CENTER_VERTICAL</flag>
+																	<border>0</border>
+																	<object class="wxStaticText" name="desc_string">
+																		<label>Create a new project.</label>
+																		<wrap>300</wrap>
+																	</object>
+																</object>
+															</object>
 														</object>
 													</object>
 												</object>
 											</object>
 											<object class="spacer">
-												<option>1</option>
+												<option>0</option>
 												<flag>wxEXPAND</flag>
 												<border>5</border>
 												<size>0,0</size>
@@ -1504,8 +1622,8 @@
 								</object>
 								<object class="sizeritem">
 									<option>0</option>
-									<flag>wxBOTTOM|wxEXPAND</flag>
-									<border>0</border>
+									<flag></flag>
+									<border>5</border>
 									<object class="wxBoxSizer">
 										<orient>wxHORIZONTAL</orient>
 										<object class="spacer">
@@ -1529,336 +1647,6 @@
 											<flag>wxALL</flag>
 											<border>5</border>
 											<object class="wxButton" name="next_btn">
-												<label>Next</label>
-												<default>0</default>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
-											<border>5</border>
-											<object class="wxButton" name="finish_btn">
-												<enabled>0</enabled>
-												<label>Finish</label>
-												<default>0</default>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
-											<border>5</border>
-											<object class="wxButton" name="wxID_CANCEL">
-												<label>Cancel</label>
-												<default>0</default>
-											</object>
-										</object>
-									</object>
-								</object>
-								<object class="spacer">
-									<option>0</option>
-									<flag>wxALIGN_CENTER_HORIZONTAL</flag>
-									<border>0</border>
-									<size>0,20</size>
-								</object>
-							</object>
-						</object>
-						<object class="spacer">
-							<option>0</option>
-							<flag>wxALIGN_CENTER_HORIZONTAL</flag>
-							<border>0</border>
-							<size>20,0</size>
-						</object>
-					</object>
-				</object>
-			</object>
-			<object class="sizeritem">
-				<option>1</option>
-				<flag>wxALL|wxEXPAND</flag>
-				<border>5</border>
-				<object class="wxPanel" name="panel_2">
-					<style>wxTAB_TRAVERSAL</style>
-					<hidden>1</hidden>
-					<object class="wxBoxSizer">
-						<minsize>500,600</minsize>
-						<orient>wxHORIZONTAL</orient>
-						<object class="spacer">
-							<option>0</option>
-							<flag>wxALIGN_CENTER_VERTICAL</flag>
-							<border>0</border>
-							<size>20,0</size>
-						</object>
-						<object class="sizeritem">
-							<option>1</option>
-							<flag>wxALIGN_BOTTOM|wxEXPAND</flag>
-							<border>0</border>
-							<object class="wxBoxSizer">
-								<orient>wxVERTICAL</orient>
-								<object class="spacer">
-									<option>0</option>
-									<flag>wxALIGN_CENTER_HORIZONTAL</flag>
-									<border>0</border>
-									<size>0,40</size>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALIGN_LEFT</flag>
-									<border>0</border>
-									<object class="wxStaticText" name="wxID_STATIC11">
-										<label>New File</label>
-										<wrap>-1</wrap>
-									</object>
-								</object>
-								<object class="spacer">
-									<option>0</option>
-									<flag>wxALIGN_CENTER_HORIZONTAL</flag>
-									<border>0</border>
-									<size>0,5</size>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxEXPAND</flag>
-									<border>0</border>
-									<object class="wxStaticLine" name="wxID_STATIC21">
-										<style>wxLI_HORIZONTAL</style>
-									</object>
-								</object>
-								<object class="spacer">
-									<option>0</option>
-									<flag>wxALIGN_CENTER_HORIZONTAL</flag>
-									<border>0</border>
-									<size>0,20</size>
-								</object>
-								<object class="sizeritem">
-									<option>2</option>
-									<flag>wxEXPAND</flag>
-									<border>5</border>
-									<object class="wxFlexGridSizer">
-										<rows>3</rows>
-										<cols>3</cols>
-										<vgap>10</vgap>
-										<hgap>20</hgap>
-										<growablecols>1</growablecols>
-										<growablerows></growablerows>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<object class="wxStaticText" name="m_staticText75">
-												<label>Project Name:</label>
-												<wrap>-1</wrap>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<object class="wxStaticText" name="proj_name_st">
-												<label>MyLabel</label>
-												<wrap>-1</wrap>
-											</object>
-										</object>
-										<object class="spacer">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
-											<border>5</border>
-											<size>0,0</size>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<object class="wxStaticText" name="m_staticText77">
-												<label>File Name:</label>
-												<wrap>-1</wrap>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxEXPAND</flag>
-											<border>5</border>
-											<object class="wxTextCtrl" name="filename_tc">
-												<value></value>
-												<maxlength>0</maxlength>
-											</object>
-										</object>
-										<object class="spacer">
-											<option>1</option>
-											<flag>wxEXPAND</flag>
-											<border>5</border>
-											<size>0,0</size>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALIGN_CENTER_VERTICAL</flag>
-											<border>5</border>
-											<object class="wxStaticText" name="m_staticText78">
-												<label>Path:</label>
-												<wrap>-1</wrap>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALIGN_CENTER_VERTICAL|wxEXPAND</flag>
-											<border>5</border>
-											<object class="wxTextCtrl" name="path_tc">
-												<enabled>0</enabled>
-												<value></value>
-												<maxlength>0</maxlength>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag></flag>
-											<border>5</border>
-											<object class="wxButton" name="browse_btn">
-												<label>Browse..</label>
-												<default>0</default>
-											</object>
-										</object>
-									</object>
-								</object>
-								<object class="spacer">
-									<option>0</option>
-									<flag>wxALIGN_CENTER_HORIZONTAL</flag>
-									<border>0</border>
-									<size>0,20</size>
-								</object>
-								<object class="spacer">
-									<option>0</option>
-									<flag></flag>
-									<border>5</border>
-									<size>0,20</size>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxEXPAND</flag>
-									<border>0</border>
-									<object class="wxStaticLine" name="wxID_STATIC51">
-										<style>wxLI_HORIZONTAL</style>
-									</object>
-								</object>
-								<object class="spacer">
-									<option>0</option>
-									<flag>wxALIGN_CENTER_HORIZONTAL</flag>
-									<border>0</border>
-									<size>0,20</size>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALIGN_LEFT</flag>
-									<border>0</border>
-									<object class="wxStaticText" name="wxID_STATIC61">
-										<label>Description</label>
-										<wrap>0</wrap>
-									</object>
-								</object>
-								<object class="spacer">
-									<option>0</option>
-									<flag>wxALIGN_CENTER_HORIZONTAL</flag>
-									<border>0</border>
-									<size>0,5</size>
-								</object>
-								<object class="sizeritem">
-									<option>1</option>
-									<flag>wxALIGN_BOTTOM|wxEXPAND</flag>
-									<border>0</border>
-									<object class="wxPanel" name="desc1">
-										<style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
-										<size>-1,100</size>
-										<bg>#ffffff</bg>
-										<fg>#000000</fg>
-										<object class="wxBoxSizer">
-											<orient>wxVERTICAL</orient>
-											<object class="sizeritem">
-												<option>0</option>
-												<flag></flag>
-												<border>0</border>
-												<object class="wxBoxSizer">
-													<orient>wxHORIZONTAL</orient>
-													<object class="sizeritem">
-														<option>0</option>
-														<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
-														<border>10</border>
-														<object class="wxStaticBitmap" name="img_info1">
-															<bitmap>information.png</bitmap>
-														</object>
-													</object>
-													<object class="sizeritem">
-														<option>0</option>
-														<flag>wxALIGN_CENTER_VERTICAL|wxALL</flag>
-														<border>10</border>
-														<object class="wxStaticBitmap" name="img_error1">
-															<hidden>1</hidden>
-															<bitmap>prohibition.png</bitmap>
-														</object>
-													</object>
-													<object class="sizeritem">
-														<option>1</option>
-														<flag>wxALIGN_CENTER_VERTICAL</flag>
-														<border>0</border>
-														<object class="wxStaticText" name="info_string1">
-															<label>Create a new project.</label>
-															<wrap>-1</wrap>
-														</object>
-													</object>
-												</object>
-											</object>
-											<object class="spacer">
-												<option>1</option>
-												<flag>wxEXPAND</flag>
-												<border>5</border>
-												<size>0,0</size>
-											</object>
-										</object>
-									</object>
-								</object>
-								<object class="spacer">
-									<option>0</option>
-									<flag>wxALIGN_CENTER_HORIZONTAL</flag>
-									<border>0</border>
-									<size>0,40</size>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxEXPAND</flag>
-									<border>0</border>
-									<object class="wxStaticLine" name="wxID_STATIC3">
-										<style>wxLI_HORIZONTAL</style>
-									</object>
-								</object>
-								<object class="spacer">
-									<option>0</option>
-									<flag>wxALIGN_CENTER_HORIZONTAL</flag>
-									<border>0</border>
-									<size>0,20</size>
-								</object>
-								<object class="sizeritem">
-									<option>0</option>
-									<flag>wxALIGN_BOTTOM|wxEXPAND</flag>
-									<border>0</border>
-									<object class="wxBoxSizer">
-										<orient>wxHORIZONTAL</orient>
-										<object class="spacer">
-											<option>1</option>
-											<flag>wxALIGN_CENTER_VERTICAL</flag>
-											<border>0</border>
-											<size>5,0</size>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALL</flag>
-											<border>5</border>
-											<object class="wxButton" name="back_btn2">
-												<label>Back</label>
-												<default>0</default>
-											</object>
-										</object>
-										<object class="sizeritem">
-											<option>0</option>
-											<flag>wxALL</flag>
-											<border>5</border>
-											<object class="wxButton" name="next_btn2">
-												<enabled>0</enabled>
 												<label>Next</label>
 												<default>0</default>
 											</object>
@@ -2551,7 +2339,6 @@
 				<object class="wxPanel" name="console">
 					<style>wxTAB_TRAVERSAL</style>
 					<object class="wxBoxSizer">
-						<minsize>500,-1</minsize>
 						<orient>wxVERTICAL</orient>
 						<object class="sizeritem">
 							<option>0</option>
