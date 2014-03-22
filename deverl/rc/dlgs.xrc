@@ -1308,12 +1308,13 @@
 									<size>0,20</size>
 								</object>
 								<object class="sizeritem">
-									<option>3</option>
+									<option>1</option>
 									<flag>wxEXPAND</flag>
 									<border>5</border>
 									<object class="wxPanel" name="swap_cont">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxBoxSizer">
+											<minsize>-1,160</minsize>
 											<orient>wxVERTICAL</orient>
 											<object class="sizeritem">
 												<option>1</option>
@@ -1537,14 +1538,14 @@
 									<size>0,5</size>
 								</object>
 								<object class="sizeritem">
-									<option>2</option>
+									<option>0</option>
 									<flag>wxEXPAND</flag>
 									<border>0</border>
 									<object class="wxPanel" name="desc_1">
-										<style>wxSUNKEN_BORDER|wxTAB_TRAVERSAL</style>
 										<bg>#ffffff</bg>
 										<fg>#000000</fg>
 										<object class="wxBoxSizer">
+											<minsize>-1,110</minsize>
 											<orient>wxVERTICAL</orient>
 											<object class="sizeritem">
 												<option>1</option>
@@ -1575,6 +1576,7 @@
 														<border>10</border>
 														<object class="wxPanel" name="desc_string_panel">
 															<style>wxTAB_TRAVERSAL</style>
+															<bg>#ffffff</bg>
 															<object class="wxBoxSizer">
 																<orient>wxVERTICAL</orient>
 																<object class="sizeritem">
@@ -2655,3 +2657,4 @@
 		</object>
 	</object>
 </resource>
+
