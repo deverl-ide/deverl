@@ -1,0 +1,23 @@
+%% =====================================================================
+%% @author
+%% @copyright
+%% @version
+%% @doc
+%% =====================================================================
+
+%% A header file contains any common definitions to be included by .erl files.
+%% Any valid Erlang code can be added.
+
+%% MACROS
+% -define(REPLACE_ALL, 5).
+%
+%% RECORDS
+% -record(font, {size,
+%                facename,
+%                family,
+%                style,
+%                weight
+%                }).
+%
+%% TYPES
+% -type path() :: string().
