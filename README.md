@@ -18,13 +18,13 @@ For detailed installation instructions for all platforms read [INSTALL](https://
         git clone https://github.com/deverl-ide/deverl.git
 3. Change directory:
 
-        cd deverl/ide
+        cd deverl/deverl
 4. Compile:
 
         erl -make
 5. Start Deverl, at the unix command prompt type:
 
-        erl -pa ebin -s ide start
+        erl -pa ebin -s deverl start
  or, from the Erlang shell in the root diectory of Deverl:
 
         deverl:start().
@@ -38,7 +38,7 @@ For detailed installation instructions for all platforms read [INSTALL](https://
 
 ### Bug/Issues
 
-To view/report bugs viits our [trac page](http://www.tgrsvr.co.uk/trac "trac").
+To view/report issues ~~viit our [trac page](http://www.tgrsvr.co.uk/trac "trac")~~ please use our GitHub issue tracker.
 
 <div align="center">
 	<img src="https://raw.github.com/deverl-ide/deverl/master/misc/linux_screenshot.png" alt="Erlang IDE" />
