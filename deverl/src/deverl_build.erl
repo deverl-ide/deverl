@@ -192,7 +192,7 @@ build_project(Parent, ProjectId) ->
         execute_function(ParsedConfig)
       catch
         error:_ ->
-          error("ERROR")
+          error("Error parsing build config.")
       end
   end.
 

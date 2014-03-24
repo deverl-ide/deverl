@@ -128,8 +128,7 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 %% @hidden
 terminate(_Reason, State) ->
-  wxDialog:destroy(State#state.dlg),
-	ok.
+  wxDialog:destroy(State#state.dlg).
 	
 
 %% =====================================================================
