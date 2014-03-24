@@ -201,7 +201,6 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 %% @hidden
 terminate(_Reason, State) ->
-  % io:format("Terminating dialog~n"),
   wxDialog:destroy(State#state.dlg), %% segfault OSX wx3.0 erlR16B03
   ok.
 

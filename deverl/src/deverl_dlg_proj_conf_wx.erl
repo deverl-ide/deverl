@@ -34,7 +34,7 @@
 -export([start/1,
          % set_focus/1,
          get_build_config/1, 
-         close/1]).
+         destroy/1]).
 			
 %% inherited functions
 -export([show/1, showModal/1]).
@@ -62,14 +62,11 @@
 
 start(Parent) ->
   wx_object:start(?MODULE, Parent, []).
-
-% set_focus(This) ->
-%   wx_object:cast(This, setfocus).
 	
 get_build_config(This) ->
 	wx_object:call(This, build_config).
 	
-close(This) ->
+destroy(This) ->
 	wx_object:call(This, shutdown).
 	
 	
@@ -78,6 +75,13 @@ close(This) ->
 %% =====================================================================
 %% @hidden
 init(Parent) ->
+  % Xrc = wxXmlResource:get(),
+  % Dlg = wxDialog:new(),
+  % deverl_lib_dlg_wx:win_variant(Dlg),
+  % 
+  % %% Load XRC (Assumes all XRC handlers init previously)
+  % wxXmlResource:loadDialog(Xrc, Dlg, Parent, "project_config"),
+  
   wx:batch(fun() -> do_init(Parent) end).
 
 do_init(Parent) ->
@@ -131,7 +135,8 @@ do_init(Parent) ->
     {value, State#state.module}]),
   Connect(ModuleInput),
   wxSizer:add(FlexGridSizer, ModuleInput, [{proportion, 1}, {flag, ?wxEXPAND}]),
-  wxSizer:add(FlexGridSizer, wxButton:new(Dialog, ?wxID_ANY, [{label, "Browse..."}]), [{proportion, 0}]),
+  Browse = wxButton:new(Dialog, ?wxID_ANY, [{label, "Browse..."}]),
+  wxSizer:add(FlexGridSizer, Browse, [{proportion, 0}]),
  
   wxSizer:add(FlexGridSizer, wxStaticText:new(Dialog, ?wxID_ANY, "Main Function:"), []),
   FunctionInput = wxTextCtrl:new(Dialog, ?INPUT_FUNCTION, 
@@ -181,7 +186,7 @@ do_init(Parent) ->
 	wxSizer:addSpacer(ButtonSz, 10),  
 	Open = wxButton:new(Dialog, ?wxID_OK, [{label, "Set"}]),
   wxSizer:add(ButtonSz, Open, [{proportion, 0}]),
-  % wxButton:disable(Open), %% Un comment when input validation is complete
+  % wxButton:disable(Open), %% Uncomment when input validation is complete
 	wxSizer:add(VertSizer, ButtonSz, [{flag, ?wxEXPAND}, {proportion, 0}]),   
 	wxSizer:addSpacer(VertSizer, 20),
   
@@ -191,8 +196,7 @@ do_init(Parent) ->
   wxDialog:fit(Dialog),
   wxDialog:centre(Dialog),
 		
-  wxDialog:connect(Dialog, close_window),
-	wxDialog:connect(Dialog, command_button_clicked, [{skip, true}]),
+  wxDialog:connect(Browse, command_button_clicked, [{skip, true}]),
   
 	%% Setup the image list
 	ImageList = wxImageList:new(24,24),
@@ -212,8 +216,6 @@ do_init(Parent) ->
 %% =====================================================================
 %% @doc OTP behaviour callbacks
 %% @hidden
-handle_event(#wx{event=#wxClose{}}, State) ->
-  {stop, normal, State};
 handle_event(#wx{id=Id, event=#wxFocus{type=set_focus}}, 
              State=#state{desc=Desc, image_list=ImageList}) ->
   HelpStr = case Id of
@@ -234,21 +236,13 @@ handle_event(#wx{id=?INPUT_FUNCTION, event=#wxCommand{type=command_text_updated,
   {noreply, State#state{function=Input}};  
 handle_event(#wx{id=?INPUT_ARGS, event=#wxCommand{type=command_text_updated, cmdString=Input}}, 
              State) ->
-  {noreply, State#state{args=Input}};
-handle_event(#wx{id=?wxID_CANCEL, event=#wxCommand{type=command_button_clicked}}, 
-             State) ->
-  {stop, normal, State};
-handle_event(#wx{id=?wxID_OK, event=#wxCommand{type=command_button_clicked}}, 
-             State) ->
-  {noreply, State}.
-%% @hidden	
+  {noreply, State#state{args=Input}}.
 handle_info(Msg, State) ->
   io:format( "Got Info ~p~nMsg:~p",[State, Msg]),
   {noreply,State}.
 %% @hidden
 handle_call(shutdown, _From, State) ->
   {stop, normal, ok, State};
-  
 handle_call(build_config, _From, State=#state{module=Module, function=Function, args=Args}) ->
   Config = [{module, Module}, {function, Function}],
   Result = case Args of
@@ -266,9 +260,7 @@ code_change(_, _, State) ->
   {stop, ignore, State}.
 %% @hidden
 terminate(_Reason, #state{dialog=Dialog}) ->
-	wxDialog:endModal(Dialog, ?wxID_CANCEL),
-	wxDialog:destroy(Dialog),
-	ok.
+	wxDialog:destroy(Dialog).
 	
 
 %% =====================================================================

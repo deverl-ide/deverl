@@ -254,9 +254,9 @@ set_project_configuration(Parent) ->
       cancelled;
     ?wxID_OK ->
       Config = deverl_dlg_proj_conf_wx:get_build_config(Dialog),
-      deverl_dlg_proj_conf_wx:close(Dialog),
       wx_object:call(?MODULE, {set_project_configuration, Config})
-  end.
+  end,
+  deverl_dlg_proj_conf_wx:destroy(Dialog).
 
 
 %% =====================================================================
