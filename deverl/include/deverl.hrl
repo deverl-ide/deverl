@@ -34,6 +34,16 @@
                    sash_horiz,
                    sash_vert_1,
                    sash_vert_2}).
+                   
+%% An indiviudal style (from a theme).
+-record(style, {
+    id,
+    fg_colour,
+    bg_colour,
+    font_name,
+    font_style,
+    font_size
+  }).
 
 
 %% Global constants
@@ -122,21 +132,20 @@
 -define(MENU_ID_ADD_TO_PLT,        6056).
 -define(MENU_ID_PLT_INFO,          6057).
 -define(MENU_ID_DIAL_WARN,         6058).
-
-% -define(MENU_ID_ADD_TO_PLT,        6057).
-% -define(MENU_ID_ADD_TO_PLT,        6057).
-% -define(MENU_ID_ADD_TO_PLT,        6057).
-% -define(MENU_ID_ADD_TO_PLT,        6057).
-
+-define(MENU_ID_IMPORT_THEME,      6059).
+-define(MENU_ID_LANG_SELECT,       6060).
+% max menu id 
 -define(MENU_ID_HIGHEST,					 6999).
 
 %% Sub-menus
-%% Reserved range for theme sub-menu
-%% MENU_ID_THEME_LOWEST -> MENU_ID_THEME_HIGHEST
+%% Reserved range for sub-menus
 -define(MENU_ID_THEME_LOWEST,			 7000).
--define(MENU_ID_THEME_HIGHEST,		 7200).     
+-define(MENU_ID_THEME_HIGHEST,		 7050).
 
--define(MENU_ID_TAB_WIDTH_LOWEST,	 7201).
+-define(MENU_ID_LANG_LOWEST,			 7100).
+-define(MENU_ID_LANG_HIGHEST,		   7150).    
+
+-define(MENU_ID_TAB_WIDTH_LOWEST,	 7200).
 -define(MENU_ID_TAB_WIDTH_HIGHEST, 7210).
 
 %% Menu groups (Bit flags/fields)
@@ -146,6 +155,8 @@
 -define(MENU_GROUP_NOTEBOOK_SET_FOCUS, 4).
 -define(MENU_GROUP_TEXT, 5).
 -define(MENU_GROUP_ERL, 6).
+
+%% END OF MENU ID's
 
 %% Documents
 -define(DEFAULT_TAB_LABEL, "untitled").

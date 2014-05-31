@@ -307,7 +307,7 @@ handle_call({new_project, Path}, _From, State=#state{projects=Projects}) ->
     	Id = generate_id(),
     	Record = {Id, #project{root=Path, open_files=[]}},
       deverl_proj_tree_wx:add_project(Id, Path),
-      deverl:toggle_menu_group([?MENU_GROUP_PROJECTS_EMPTY], true),
+      deverl:enable_menu_item_group([?MENU_GROUP_PROJECTS_EMPTY], true),
       code:add_path(filename:join(Path, "ebin")),
       {reply, Id, State#state{projects=[Record | Projects]}}
   end;
@@ -354,7 +354,7 @@ handle_call(close_project, _From, State=#state{frame=Frame, active_project=Activ
   deverl_proj_tree_wx:remove_project(ActiveProject),
   update_ui(Frame, undefined),
   ProjectsList = proplists:delete(ActiveProject, Projects),
-  deverl:toggle_menu_group([?MENU_GROUP_PROJECTS_EMPTY], false),
+  deverl:enable_menu_item_group([?MENU_GROUP_PROJECTS_EMPTY], false),
   {reply, ok, State#state{active_project=undefined, projects=ProjectsList}};
 
 handle_call({set_project_configuration, Config}, _From,
@@ -373,10 +373,10 @@ handle_call({set_project_configuration, Config}, _From,
 handle_cast({active_project, ProjectId}, State=#state{frame=Frame, projects=Projects}) ->
   case ProjectId of
     undefined ->
-      deverl:toggle_menu_group([?MENU_GROUP_PROJECTS_EMPTY], false),
+      deverl:enable_menu_item_group([?MENU_GROUP_PROJECTS_EMPTY], false),
       update_ui(Frame, undefined);
     _ ->
-      deverl:toggle_menu_group([?MENU_GROUP_PROJECTS_EMPTY], true),
+      deverl:enable_menu_item_group([?MENU_GROUP_PROJECTS_EMPTY], true),
       update_ui(Frame, proplists:get_value(ProjectId, Projects))
   end,
   {noreply,State#state{active_project=ProjectId}}.
@@ -473,16 +473,16 @@ load_build_config(Path) ->
   Fh = filename:join([Path, ".build_config"]),
   case file:consult(Fh) of
     {error, {_Line, _Mod, _Term}} -> %% The file is badly formatted
-      io:format("BUILD CONFIG BADLY FORMATTED~n"),
+      % io:format("BUILD CONFIG BADLY FORMATTED~n"),
       undefined;
     {error, enoent} -> %% Does not exist
-      io:format("BUILD CONFIG NOT EXISTS~n"),
+      % io:format("BUILD CONFIG NOT EXISTS~n"),
       undefined;
     {error, E} -> %% Other i/o error
       %% Notify user of i/o error
-      io:format("ERROR: ~p~n", [E]),
+      % io:format("ERROR: ~p~n", [E]),
       undefined;
     {ok, [Terms]} ->
-      io:format("TERMS: ~p~n", [Terms]),
+      % io:format("TERMS: ~p~n", [Terms]),
       Terms
   end.

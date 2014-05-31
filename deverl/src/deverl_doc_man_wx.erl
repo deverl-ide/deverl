@@ -365,7 +365,7 @@ handle_cast(notebook_empty, State=#state{notebook=Nb, sizer=Sz}) ->
   case wxAuiNotebook:getPageCount(Nb) of
     0 -> %% Called when the last document is closed
       deverl_testpane:clear(),
-      deverl:toggle_menu_group([?MENU_GROUP_NOTEBOOK_EMPTY], false),
+      deverl:enable_menu_item_group([?MENU_GROUP_NOTEBOOK_EMPTY], false),
       show_placeholder(Sz),
       deverl:set_title([]);
     _ -> ok
@@ -376,8 +376,10 @@ handle_cast({create_doc, Path, ProjectId},
 	case is_already_open(Path, DocRecords) of
 		false ->
 			ensure_notebook_visible(Nb, Sz),
-      Font = deverl_sys_pref_gen:get_font(editor_font),
-		  Editor = deverl_editor_wx:start([{parent, Nb}, {font, Font}]),
+      % start an editor with current prefs
+		  Editor = deverl_editor_wx:start([
+        {parent, Nb},
+        {filename, filename:basename(Path)}]),
 		  wxAuiNotebook:addPage(Nb, Editor, filename:basename(Path), [{select, true}]),
 		  DocId = generate_id(),
 		  Document = #document{path=Path, editor=Editor, project_id=ProjectId},
@@ -554,8 +556,8 @@ handle_event(#wx{event=#wxAuiNotebook{type=command_auinotebook_page_changed, sel
       deverl_proj_man:set_active_project(DocRec#document.project_id),
       Ebin = list_to_atom(filename:basename(filename:rootname(wxAuiNotebook:getPageText(Nb, Idx)))),
       deverl_testpane:add_module_tests(Ebin),
-      deverl_editor_wx:update_symbols(DocRec#document.editor),
-      %% set focus to editor
+      deverl_editor_wx:set_focus(DocRec#document.editor),
+      %% set focus to editor tab
       wxWindow:setFocus(wxAuiNotebook:getPage(Nb, Idx))
   end,
   {noreply, State}.
@@ -834,7 +836,7 @@ ensure_notebook_visible(Notebook, Sz) ->
 	case wxWindow:isShown(Notebook) of
 		false ->
       %% enable menu items
-      deverl:toggle_menu_group([?MENU_GROUP_NOTEBOOK_EMPTY], true),
+      deverl:enable_menu_item_group([?MENU_GROUP_NOTEBOOK_EMPTY], true),
 			show_notebook(Sz);
 		true ->
       ok

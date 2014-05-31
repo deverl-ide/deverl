@@ -347,20 +347,20 @@ handle_event(#wx{id=?wxID_PASTE, event=#wxCommand{type=command_menu_selected}},
   {noreply, State};
 handle_event(#wx{event=#wxFocus{type=set_focus}}, State) ->
   %% Enable undo/redo
-  deverl:toggle_menu_items([?wxID_COPY, ?wxID_PASTE, ?wxID_SELECTALL], true),
+  deverl:enable_menu_items([?wxID_COPY, ?wxID_PASTE, ?wxID_SELECTALL], true),
   {noreply, State};
 
 handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->
   %% Disable undo
-  deverl:toggle_menu_items([?wxID_COPY, ?wxID_PASTE, ?wxID_SELECTALL], false),
+  deverl:enable_menu_items([?wxID_COPY, ?wxID_PASTE, ?wxID_SELECTALL], false),
   {noreply, State};
   
 handle_event(#wx{event=#wxStyledText{type=stc_updateui}},State=#state{console=Console}) ->
   case ?stc:getSelection(Console) of
     {N,N} -> 
-      deverl:toggle_menu_items([?wxID_COPY], false);
+      deverl:enable_menu_items([?wxID_COPY], false);
     _ -> 
-      deverl:toggle_menu_items([?wxID_COPY], true)
+      deverl:enable_menu_items([?wxID_COPY], true)
   end,
   {noreply, State}.
 %% @hidden

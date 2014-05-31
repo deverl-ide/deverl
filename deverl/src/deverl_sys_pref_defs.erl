@@ -65,7 +65,7 @@ get_defaults() ->
     {projects, []},
   
     %% Editor prefs
-    {theme, "Putty"},
+    {theme, "2mrw"},
     {editor_font, DefaultFont},
     {show_line_no, true},
     {line_wrap, 1},

@@ -43,14 +43,17 @@
 	is_dirty/1,
   set_savepoint/1,
   get_text/1,
-  selected/1,
+  set_focus/1,
   find/2,
   find_all/2,
   replace_all/3,
 	set_text/2,
   quick_find/1,
-	set_theme/3,
+  
+	set_theme/2, %TODO single function for this group
 	set_font/2,
+  set_lang/2,
+  
 	set_tab_width/2,
 	set_use_tabs/2,
 	set_indent_guides/2,
@@ -68,12 +71,12 @@
 	transform_selection/2,
   strip_trailing_whitespace/1,
 	go_to_symbol/2,
-  update_symbols/1,
 	link_poller/2,
 	empty_undo_buffer/1,
   get_stc/1,
   destroy/1,
-  select_all/1
+  select_all/1,
+  get_supported_langs/0
 	]).
 
 %% Macros
@@ -99,19 +102,17 @@
 -define(wxSTC_ERLANG_MODULES_ATT, 24).
 -endif.
 
-%% Types
--export_type([editor/0]).
--type editor() :: wx:wx_object().
--type erlangEditor() :: wxWindow:wxWindow().
 
 %% Server state
--record(state, {parent_panel        :: erlangEditor(),
+-record(state, {parent_panel,
                 main_sz,
-                stc                 :: ?stc:?stc(),
+                stc,
 								dirty :: boolean(),
 								indent,
                 search,
-                find
+                find,
+                filename,
+                lang
                }).
 
 -record(search, {tc :: wxTextCtrl:wxTextCtrl(),
@@ -123,6 +124,28 @@
 -record(find, {found,
                last_pos,
                length}).
+  
+
+-record(lang_info, {name,
+                    filetypes,
+                    lexer,
+                    words}).
+                    
+% too add support for a new language add a lang_info record to this list                  
+-define(langs,
+  % Erlang
+  [#lang_info{name="Erlang",
+    filetypes="*.erl;*.hrl;*.yrl;*.xrl",
+    lexer=?wxSTC_LEX_ERLANG,
+    words="after and andalso band begin bnot bor bsl bsr bxor case catch cond div end fun if let not of or orelse receive rem try when xor"},
+  % XML
+  #lang_info{name="XML",
+    filetypes="*.xml",
+    lexer=?wxSTC_LEX_XML},
+  % Default (keep last)
+  #lang_info{name="Default",
+    filetypes="*.*",
+    lexer=?wxSTC_LEX_NULL}]).         
 
 
 %% =====================================================================
@@ -135,49 +158,41 @@ get_stc(This) ->
 destroy(This) ->
   wx_object:call(This, shutdown).
 
-
 %% =====================================================================
 %% @doc Start a new editor process
-
 start(Config) ->
   wx_object:start(?MODULE, Config, []).
 
 
 %% =====================================================================
 %% @doc Get the status of the document
-
 is_dirty(This) ->
   wx_object:call(This, is_dirty).
 
 
 %% =====================================================================
 %% @doc Add a savepoint: update the document state to unmodified
-
 set_savepoint(This) ->
 	?stc:setSavePoint(wx_object:call(This, stc)).
 
 
 %% =====================================================================
 %% @doc Get the text from the editor
-
-get_text(EditorPid) ->
-  wx_object:call(EditorPid, text_content).
+get_text(This) ->
+  wx_object:call(This, text_content).
 
 
 %% =====================================================================
 %% @doc Notify the editor it has been selected
-
-selected(EditorPid) ->
-	Editor = wx_object:call(EditorPid, stc),
-	update_sb_line(Editor).
+set_focus(This) ->
+	wx_object:cast(This, set_focus).
 
 
 %% =====================================================================
 %% Find and replace
 %% =====================================================================
-
-find(EditorPid, Str) ->
-  TextCtrl = wx_object:call(EditorPid, stc),
+find(This, Str) ->
+  TextCtrl = wx_object:call(This, stc),
   Pos = ?stc:findText(TextCtrl, 0,
 		?stc:getLength(TextCtrl), Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]),
 	io:format("Pos: ~p~n", [position_to_x_y(TextCtrl, Pos)]).
@@ -196,7 +211,6 @@ find(EditorPid, Str) ->
 
 %% =====================================================================
 %% @doc Find all occurrences of Str.
-
 find_all(EditorPid, Str) ->
   Editor = wx_object:call(EditorPid, stc),
   find(Editor, Str, 0, ?stc:getLength(Editor)).
@@ -204,7 +218,6 @@ find_all(EditorPid, Str) ->
 
 %% =====================================================================
 %% @doc Replace all occurrences of str with RepStr.
-
 replace_all(EditorPid, Str, RepStr) ->
     Editor = wx_object:call(EditorPid, stc),
     replace_all(Editor, Str, RepStr, 0, ?stc:getLength(Editor)).
@@ -212,7 +225,6 @@ replace_all(EditorPid, Str, RepStr) ->
 
 %% =====================================================================
 %% @doc Set the text.
-
 set_text(This, Text) ->
 	Editor = wx_object:call(This, stc),
 	?stc:setText(Editor, Text),
@@ -221,7 +233,6 @@ set_text(This, Text) ->
 
 %% =====================================================================
 %% @doc Display the intergrated search bar.
-
 quick_find(This) ->
   wx_object:cast(This, show_search).
 
@@ -232,61 +243,55 @@ quick_find(This) ->
 
 %% =====================================================================
 %% @doc Change the theme of the editor.
-
-set_theme(Editor, Theme, Font) ->
-	case deverl_editor_theme:load_theme(Theme) of
-		{error, load_theme} -> ok;
-		NewTheme -> setup_theme(wx_object:call(Editor, stc), NewTheme, Font)
-	end,
-	ok.
-
-
+set_theme(This, Theme) ->
+	wx_object:cast(This, {set_theme, Theme}).
 %% =====================================================================
 %% @doc Update the font used in the editor
+set_font(This, Font) ->
+  wx_object:cast(This, {set_prefs, Font}).
+%% =====================================================================
+%% @doc Update the lexer lang used
+set_lang(This, Lang) ->
+  wx_object:cast(This, {set_lang, Lang}).
 
-set_font(EditorPid, Font) ->
-  Editor = wx_object:call(EditorPid, stc),
-  set_font_style(Editor, Font).
+%% =====================================================================
+%% @doc
+
+set_tab_width(This, Width) ->
+	?stc:setTabWidth(wx_object:call(This, stc), Width).
 
 
 %% =====================================================================
 %% @doc
 
-set_tab_width(EditorPid, Width) ->
-	?stc:setTabWidth(wx_object:call(EditorPid, stc), Width).
+set_use_tabs(This, Bool) ->
+	?stc:setUseTabs(wx_object:call(This, stc), Bool).
 
 
 %% =====================================================================
 %% @doc
 
-set_use_tabs(EditorPid, Bool) ->
-	?stc:setUseTabs(wx_object:call(EditorPid, stc), Bool).
-
-
-%% =====================================================================
-%% @doc
-
-set_indent_guides(EditorPid, Bool) ->
-	?stc:setIndentationGuides(wx_object:call(EditorPid, stc), Bool),
+set_indent_guides(This, Bool) ->
+	?stc:setIndentationGuides(wx_object:call(This, stc), Bool),
 	ok.
 
 
 %% =====================================================================
 %% @doc
 
-set_line_wrap(EditorPid, Bool) ->
+set_line_wrap(This, Bool) ->
 	Result = case Bool of
 		true -> 1;
 		_ -> 0
 	end,
-	?stc:setWrapMode(wx_object:call(EditorPid, stc), Result).
+	?stc:setWrapMode(wx_object:call(This, stc), Result).
 
 
 %% =====================================================================
 %% @doc
 
-set_line_margin_visible(EditorPid, Bool) ->
-	Editor = wx_object:call(EditorPid, stc),
+set_line_margin_visible(This, Bool) ->
+	Editor = wx_object:call(This, stc),
 	case Bool of
 		true ->
       set_linenumber_default(Editor, deverl_sys_pref_gen:get_font(editor_font));
@@ -413,12 +418,7 @@ strip_trailing_whitespace(EditorPid) ->
 
 go_to_symbol(This, Str) ->
   wx_object:cast(This, {go_to_symbol, Str}).
-
-%% =====================================================================
-%% @doc
-
-update_symbols(This) ->
-  wx_object:cast(This, parse_functions).
+  
 
 %% =====================================================================
 %% @doc
@@ -433,39 +433,41 @@ link_poller(This, Path) ->
 empty_undo_buffer(This) ->
 	?stc:emptyUndoBuffer(wx_object:call(This, stc)).
 
-
 %% =====================================================================
 %% @doc Select all has to toggle some menu items.
 
 select_all(This) ->
   wx_object:call(This, select_all).
 
-
 %% =====================================================================
 %% Callback functions
 %% =====================================================================
 %% @hidden
-init(Config) ->
+init(Config) ->  
   Parent = proplists:get_value(parent, Config),
-  Font = proplists:get_value(font, Config),
   Panel = wxPanel:new(Parent),
   Editor = ?stc:new(Panel, [{id, ?WINDOW_EDITOR}]),
   {Search, SearchRec} = quickfind_bar(Panel),
+  
+  % determine language (from defintions at top - if extension not recognised then default lexer NULL is used)
+  Filename = proplists:get_value(filename, Config),
+  PrefInfo = resolve_prefs(Filename),
+  % init prefs
+  Font = deverl_sys_pref_gen:get_font(editor_font),
+  init_prefs(Editor, PrefInfo, deverl_sys_pref_gen:get_preference(theme), Font),
 
 	%% Immutable editor styles
-  ?stc:setLexer(Editor, ?wxSTC_LEX_ERLANG), %% This lexer needs a lot of work, e.g. better folding support, proper display of ctrl chars etc.
-	?stc:setKeyWords(Editor, 0, keywords()),
   ?stc:setSelectionMode(Editor, ?wxSTC_SEL_LINES),
-	?stc:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text
+  ?stc:setMargins(Editor, ?LEFT_MARGIN_WIDTH, ?RIGHT_MARGIN_WIDTH), %% Left and right of text
   ?stc:setMarginType(Editor, 0, ?wxSTC_MARGIN_NUMBER),
-	?stc:setMarginWidth(Editor, 1, 10),
-	?stc:setMarginType(Editor, 1, ?wxSTC_MARGIN_SYMBOL),
-	?stc:setMarginMask(Editor, 1, (bnot ?wxSTC_MASK_FOLDERS) - 4),
-
-	%% Folding
+  ?stc:setMarginWidth(Editor, 1, 10),
+  ?stc:setMarginType(Editor, 1, ?wxSTC_MARGIN_SYMBOL),
+  ?stc:setMarginMask(Editor, 1, (bnot ?wxSTC_MASK_FOLDERS) - 4),
+  
+  %% Folding
   ?stc:setMarginType(Editor, 2, ?wxSTC_MARGIN_SYMBOL),
   ?stc:setMarginWidth(Editor, 2, 9),
-	?stc:setMarginMask(Editor, 2, ?wxSTC_MASK_FOLDERS),
+  ?stc:setMarginMask(Editor, 2, ?wxSTC_MASK_FOLDERS),
   ?stc:setMarginSensitive(Editor, 2, true), %% Makes margin sensitive to mouse clicks
   ?stc:setProperty(Editor, "fold", "1"),
   ?stc:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDER, ?wxSTC_MARK_BOXPLUS,[]),
@@ -475,26 +477,21 @@ init(Config) ->
   ?stc:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDEROPENMID, ?wxSTC_MARK_BOXMINUSCONNECTED,[]),
   ?stc:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDERMIDTAIL, ?wxSTC_MARK_TCORNER,[]),
   ?stc:markerDefine(Editor, ?wxSTC_MARKNUM_FOLDERTAIL, ?wxSTC_MARK_LCORNER,[]),
-
-	%% Indicators
+  
+  %% Indicators
   ?stc:indicatorSetStyle(Editor,0,?wxSTC_INDIC_ROUNDBOX),
   ?stc:indicatorSetForeground(Editor, 0, {255,255,0,255}),
   ?stc:indicatorSetStyle(Editor,1,?wxSTC_INDIC_BOX),
   ?stc:indicatorSetStyle(Editor,2,?wxSTC_INDIC_PLAIN), %% underline
 
-	case deverl_editor_theme:load_theme(deverl_sys_pref_gen:get_preference(theme)) of
-		{error, load_theme} -> ok; %% Default STC settings
-		Theme -> setup_theme(Editor, Theme, Font)
-	end,
+  %% Indentation
+  ?stc:setTabWidth(Editor,
+  list_to_integer(deverl_sys_pref_gen:get_preference(tab_width))),
+  ?stc:setUseTabs(Editor, deverl_sys_pref_gen:get_preference(use_tabs)),
+  ?stc:setIndentationGuides(Editor, deverl_sys_pref_gen:get_preference(indent_guides)),
+  ?stc:setBackSpaceUnIndents(Editor, true),
 
-	%% Indentation
-	?stc:setTabWidth(Editor,
-		list_to_integer(deverl_sys_pref_gen:get_preference(tab_width))),
-	?stc:setUseTabs(Editor, deverl_sys_pref_gen:get_preference(use_tabs)),
-	?stc:setIndentationGuides(Editor, deverl_sys_pref_gen:get_preference(indent_guides)),
-	?stc:setBackSpaceUnIndents(Editor, true),
-
-	%% Scrolling
+  %% Scrolling
   Policy = ?wxSTC_CARET_SLOP bor ?wxSTC_CARET_EVEN,
   ?stc:setYCaretPolicy(Editor, Policy, 3),
   ?stc:setXCaretPolicy(Editor, Policy, 3),
@@ -531,7 +528,9 @@ init(Config) ->
   {Panel, #state{parent_panel=Panel,
                  stc=Editor,
                  search=SearchRec,
-                 main_sz=Sizer}}.
+                 main_sz=Sizer,
+                 filename=Filename,
+                 lang=PrefInfo#lang_info.name}}.
 %% @hidden
 handle_info(Msg, State) ->
   io:format("Got Info(Editor) ~p~n",[Msg]),
@@ -550,15 +549,31 @@ handle_call(parent_panel, _From, State) ->
   {reply,State#state.parent_panel,State};
 handle_call(select_all, _From, State) ->
   ?stc:selectAll(State#state.stc),
-  deverl:toggle_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], true),
+  deverl:enable_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], true),
   {reply,ok,State};
 handle_call(Msg, _From, State) ->
   io:format("Handle call catchall, editor.erl ~p~n",[Msg]),
   {reply,State,State}.
 %% @hidden
-handle_cast(parse_functions, State) ->
+
+% perform any ui updates when this editor instance is made active
+handle_cast(set_focus, State) ->
+  update_sb_line(State#state.stc),
   parse_functions(State#state.stc),
+  deverl:check_menu_item({State#state.lang, "View"}), % check correct lang in menu
   {noreply,State};
+
+% handle pref changes
+handle_cast({set_lang, Lang}, State) ->
+  init_prefs(State#state.stc, Lang, deverl_sys_pref_gen:get_preference(theme), deverl_sys_pref_gen:get_font(editor_font)),
+  {noreply,State#state{lang=Lang}};
+handle_cast({set_prefs, Font}, State) ->
+  init_prefs(State#state.stc, State#state.lang, deverl_sys_pref_gen:get_preference(theme), Font),
+  {noreply,State};
+handle_cast({set_theme, Theme}, State) ->
+  init_prefs(State#state.stc, State#state.lang, Theme, deverl_sys_pref_gen:get_font(editor_font)),
+  {noreply,State};
+
 handle_cast({go_to_symbol, Symbol}, State) ->
   Text = ?stc:getText(State#state.stc),
   Regex = "^"++Symbol++"\\(",
@@ -688,11 +703,11 @@ handle_event(#wx{event=#wxStyledText{type=stc_marginclick, position=Pos, margin=
 %% =====================================================================
 
 handle_event(#wx{event=#wxStyledText{type=stc_savepointreached}}, State) ->
-  deverl:toggle_menu_items([?wxID_SAVE], false),
+  deverl:enable_menu_items([?wxID_SAVE], false),
   {noreply, State#state{dirty=false}};
 
 handle_event(#wx{event=#wxStyledText{type=stc_savepointleft}}, State) ->
-  deverl:toggle_menu_items([?wxID_SAVE], true),
+  deverl:enable_menu_items([?wxID_SAVE], true),
   {noreply, State#state{dirty=true}}; %% UNDO
 
 %% =====================================================================
@@ -759,27 +774,27 @@ handle_event(#wx{id=?WINDOW_EDITOR, event=#wxFocus{type=set_focus}}, State=#stat
   {noreply, State};
 
 handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->
-  deverl:toggle_menu_group([?MENU_GROUP_NOTEBOOK_KILL_FOCUS, ?MENU_GROUP_TEXT], false),
+  deverl:enable_menu_item_group([?MENU_GROUP_NOTEBOOK_KILL_FOCUS, ?MENU_GROUP_TEXT], false),
   {noreply, State};
 
 handle_event(#wx{event=#wxStyledText{type=stc_change}}, State=#state{stc=Editor}) ->
   case ?stc:canUndo(Editor) of
-    true -> deverl:toggle_menu_items([?wxID_UNDO], true);
-    false -> deverl:toggle_menu_items([?wxID_UNDO], false)
+    true -> deverl:enable_menu_items([?wxID_UNDO], true);
+    false -> deverl:enable_menu_items([?wxID_UNDO], false)
   end,
   case ?stc:canRedo(Editor) of
-    true -> deverl:toggle_menu_items([?wxID_REDO], true);
-    false -> deverl:toggle_menu_items([?wxID_REDO], false)
+    true -> deverl:enable_menu_items([?wxID_REDO], true);
+    false -> deverl:enable_menu_items([?wxID_REDO], false)
   end,
   {noreply, State};
 
 handle_event(#wx{event=#wxStyledText{type=stc_updateui}},State=#state{stc=Editor}) ->
   case ?stc:getSelection(Editor) of
     {N,N} ->
-      deverl:toggle_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], false),
+      deverl:enable_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], false),
       update_sb_line(Editor);
     _ ->
-      deverl:toggle_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], true),
+      deverl:enable_menu_items([?wxID_CUT, ?wxID_COPY, ?wxID_DELETE], true),
       update_sb_selection(Editor)
   end,
   update_line_margin(Editor),
@@ -800,19 +815,6 @@ terminate(_Reason, #state{parent_panel=Panel}) ->
 %% =====================================================================
 %% Internal functions
 %% =====================================================================
-
-%% =====================================================================
-%% @doc Defines the keywords in the Erlang language
-%% @private
-
-keywords() ->
-	KWS = ["after", "and", "andalso", "band", "begin", "bnot",
-	"bor", "bsl", "bsr", "bxor", "case", "catch", "cond", "div",
-	"end", "fun", "if", "let", "not", "of", "or", "orelse",
-	"receive", "rem", "try", "when", "xor"],
-	lists:flatten([KW ++ " " || KW <- KWS]).
-
-
 %% =====================================================================
 %% @doc
 
@@ -837,7 +839,6 @@ quickfind_bar(Parent) ->
   wxWindow:connect(Parent, command_button_clicked),
   {HSz, #search{tc=Tc1,next=Rb0,prev=Rb1,match_case=Cb}}.
 
-
 %% =====================================================================
 %% @doc
 %% @private
@@ -853,7 +854,6 @@ to_indent(Input) ->
     _ ->
       false
   end.
-
 
 %% =====================================================================
 %% @doc Update status bar line/col position
@@ -943,124 +943,15 @@ adjust_margin_width(Editor) ->
   end,
   ok.
 
-
-%% =====================================================================
-%% @doc
-
-set_font_style(Editor, Font) ->
-	Update = fun(Id) ->
-		?stc:styleSetFont(Editor, Id, Font)
-		end,
-	Update(?wxSTC_STYLE_DEFAULT),
-  % ?stc:styleClearAll(Editor), %% Needed to ensure all styles are resized
-	[Update(Id) || Id <- lists:seq(?wxSTC_ERLANG_DEFAULT, ?wxSTC_ERLANG_MODULES_ATT)],
-	update_line_margin(Editor),
-	ok.
-
-
-%% =====================================================================
-%% @doc
-%% @private
-
-setup_theme(Editor, [Def | Lex], Font) ->
-	Fg = deverl_editor_theme:hexstr_to_rgb(proplists:get_value(fgColour, Def)),
-	set_default_styles(Editor, Fg,
-		deverl_editor_theme:hexstr_to_rgb(proplists:get_value(bgColour, Def)), Font),
-	set_theme_styles(Editor, Def, Font),
-	apply_lexer_styles(Editor, Lex, Fg),
-	ok.
-
-
-%% =====================================================================
-%% @doc Sets all styles to have the same attributes as STYLE_DEFAULT.
-%% Must be called before setting any theme styles, as they will be reset.
-%% @private
-
-set_default_styles(Editor, Fg, Bg, Font) ->
-	?stc:styleSetBackground(Editor, ?wxSTC_STYLE_DEFAULT, Bg),
-	?stc:styleSetForeground(Editor, ?wxSTC_STYLE_DEFAULT, Fg),
-	?stc:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
-	?stc:styleClearAll(Editor),
-	ok.
-
-
-%% =====================================================================
-%% @doc Update all styles relating to a theme.
-%% @private
-
-set_theme_styles(Editor, Styles, Font) ->
-  ?stc:setCaretForeground(Editor,
-		deverl_editor_theme:hexstr_to_rgb(proplists:get_value(caret, Styles))),
-  ?stc:setSelBackground(Editor, true,
-		deverl_editor_theme:hexstr_to_rgb(proplists:get_value(selection, Styles))),
-	?stc:styleSetBackground(Editor, ?wxSTC_STYLE_LINENUMBER,
-		deverl_editor_theme:hexstr_to_rgb(proplists:get_value(marginBg, Styles))),
-	?stc:styleSetForeground(Editor, ?wxSTC_STYLE_LINENUMBER,
-		deverl_editor_theme:hexstr_to_rgb(proplists:get_value(marginFg, Styles))),
-	update_line_margin(Editor),
- 	set_font_style(Editor, Font),
-  set_marker_colour(Editor, {deverl_editor_theme:hexstr_to_rgb(proplists:get_value(markers, Styles)),
-		deverl_editor_theme:hexstr_to_rgb(proplists:get_value(markers, Styles))}).
-
-
 %% =====================================================================
 %% @doc Update the line number margin font and width.
 %% @private
 
 set_linenumber_default(Editor, Font) ->
-	?stc:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER,
-		(wxFont:getPointSize(Font) - ?MARGIN_LN_PT_OFFSET)),
-	adjust_margin_width(Editor),
-	ok.
-
-
-%% =====================================================================
-%% @doc
-%% @private
-
-apply_lexer_styles(Editor, Styles, Fg) ->
-	SetFg = fun ?stc:styleSetForeground/3,
-	SetFg(Editor, ?wxSTC_ERLANG_DEFAULT, Fg),
-	[ SetFg(Editor, Id, Rgb) || {Id, Rgb} <- proplists:get_value(fgColour, Styles)],
-	SetBg = fun ?stc:styleSetBackground/3,
-	[ SetBg(Editor, Id, Rgb) || {Id, Rgb} <- proplists:get_value(bgColour, Styles)],
-	[ set_font_style(Editor, Id, Fs) || {Id, Fs} <- proplists:get_value(fontStyle, Styles)],
-	[ set_font_size(Editor, Id, N) || {Id, N} <- proplists:get_value(fontSize, Styles)],
-	ok.
-
-
-%% =====================================================================
-%% @doc
-%% @private
-
-set_font_style(Editor, Id, Style) ->
-	case string:to_lower(Style) of
-		"italic" -> ?stc:styleSetItalic(Editor, Id, true);
-		"bold" -> ?stc:styleSetBold(Editor, Id, true);
-		"underlined" -> ?stc:styleSetUnderline(Editor, Id, true);
-		"uppercase" -> ?stc:styleSetCase(Editor, Id, ?wxSTC_CASE_UPPER)
-	end.
-
-
-%% =====================================================================
-%% @doc Update the colour of the markers used in the fold margin.
-%% @private
-
-set_marker_colour(Editor, {Fg, Bg}) ->
-	Update = fun(Id) ->
-		?stc:markerSetForeground(Editor, Id, Fg),
-		?stc:markerSetBackground(Editor, Id, Bg)
-		end,
-	[ Update(Id) || Id <- lists:seq(?wxSTC_MARKNUM_FOLDEREND, ?wxSTC_MARKNUM_FOLDEROPEN)].
-
-
-%% =====================================================================
-%% @doc
-%% @private
-
-set_font_size(Editor, Id, Size) ->
-	?stc:styleSetSize(Editor, Id, list_to_integer(Size)).
-
+  ?stc:styleSetSize(Editor, ?wxSTC_STYLE_LINENUMBER,
+    (wxFont:getPointSize(Font) - ?MARGIN_LN_PT_OFFSET)),
+  adjust_margin_width(Editor),
+  ok.
 
 %% =====================================================================
 %% Selections, Indentations
@@ -1223,7 +1114,6 @@ flash_current_line(Editor, Colour, Interval, N) ->
 
 %% =====================================================================
 %% @doc
-
 get_focus(This) ->
 	?stc:setFocus(This),
   wx_object:cast(This, parse_functions).
@@ -1231,7 +1121,6 @@ get_focus(This) ->
 
 %% =====================================================================
 %% @doc
-
 quick_find(Editor, Str, Case, Next) ->
   ?stc:searchAnchor(Editor),
   Flag = if Case -> ?wxSTC_FIND_MATCHCASE;
@@ -1250,7 +1139,6 @@ quick_find(Editor, Str, Case, Next) ->
 
 %% =====================================================================
 %% @doc
-
 find(Editor, Str, Start, End) ->
   case ?stc:findText(Editor, Start, End, Str, [{flags, ?wxSTC_FIND_WHOLEWORD}]) of
     -1 ->
@@ -1265,7 +1153,6 @@ find(Editor, Str, Start, End) ->
 
 %% =====================================================================
 %% @doc Replace all occurrences of str with RepStr.
-
 replace_all(Editor, Str, RepStr, Start, End) ->
   ?stc:setTargetStart(Editor, Start),
   ?stc:setTargetEnd(Editor, End),
@@ -1290,9 +1177,8 @@ replace_all(Editor, Str, RepStr, Start, End) ->
 
 %% =====================================================================
 %% @doc Initialise menu items
-
 menu_init(Editor) ->
-  deverl:toggle_menu_group([?MENU_GROUP_NOTEBOOK_SET_FOCUS], true),
+  deverl:enable_menu_item_group([?MENU_GROUP_NOTEBOOK_SET_FOCUS], true),
   Undo = case ?stc:canUndo(Editor) of
     true -> ?wxID_UNDO;
     false -> []
@@ -1315,5 +1201,126 @@ menu_init(Editor) ->
     false -> []
   end,
   Enable = lists:flatten([Undo, Redo, Paste, Save, Others]),
-  deverl:toggle_menu_items(Enable, true),
+  deverl:enable_menu_items(Enable, true),
   ok.
+  
+%% =====================================================================
+%% @doc Determines the corrects prefs to use for Filename.
+%% Returns a lang_info record for language associated to the extension.
+resolve_prefs(Filename) ->
+  resolve_prefs(filename:extension(Filename), ?langs).
+resolve_prefs(Extension, [Prefs=#lang_info{filetypes="*.*"} | T]) -> Prefs;
+resolve_prefs(Extension, [Prefs=#lang_info{filetypes=Types} | T]) ->
+  case string:str(Types, Extension) of
+    0 -> resolve_prefs(Extension, T);
+    _ -> Prefs
+  end.
+
+%% =====================================================================
+%% @doc Get the style record for StyleId.
+%% Takes a list of style records.
+widget_style_get(_StyleId, []) -> [];
+widget_style_get(StyleId, [S=#style{id=Id} | T]) ->
+  case string:to_integer(Id) of
+    {StyleId, _} -> {S#style.fg_colour, S#style.bg_colour};
+    {error, E} -> [];
+    P -> widget_style_get(StyleId, T)
+  end.
+  
+%% =====================================================================
+%% @doc Init the prefs.
+%% Called whenever a theme/font/lang is changed and at startup.
+init_prefs(Editor, Lang, Theme, Font) when is_list(Lang) ->
+  GetLang = fun F([L=#lang_info{name=Lang} | _T], Lang) -> L; % new named funs YAY!
+                F([_L | T], Lang) -> F(T, Lang);
+                F([L], _Lang) -> L
+            end,
+  PrefInfo = GetLang(?langs, Lang),
+  init_prefs(Editor, PrefInfo, Theme, Font);
+init_prefs(Editor, PrefInfo, Theme, Font) when is_record(PrefInfo, lang_info) ->
+  % get the theme
+  ThemeRaw = case deverl_theme:parse(Theme, PrefInfo#lang_info.name) of
+    error -> []; % set default lexer
+    T -> T
+  end,
+          
+  % set lexer
+  ?stc:setLexer(Editor, PrefInfo#lang_info.lexer),
+  
+  % set common
+  ?stc:styleSetFont(Editor, ?wxSTC_STYLE_DEFAULT, Font),
+  case widget_style_get(?wxSTC_STYLE_DEFAULT, proplists:get_value(widget_styles, ThemeRaw, [])) of
+    [] -> ok;
+    {FgColour0, BgColour0} ->
+      ?stc:styleSetForeground(Editor, ?wxSTC_STYLE_DEFAULT, hexstr_to_rgb(FgColour0)),
+      ?stc:styleSetBackground(Editor, ?wxSTC_STYLE_DEFAULT, hexstr_to_rgb(BgColour0))
+  end,
+  ?stc:styleClearAll(Editor), % set all to default
+  
+  % widget styles
+  case proplists:get_value(widget_styles, ThemeRaw) of
+    undefined -> ok;
+    Sr -> 
+      % Set fg/bg of the styles in Ps
+      Ps = lists:seq(?wxSTC_STYLE_DEFAULT, ?wxSTC_STYLE_CALLTIP),
+      lists:foreach(fun(E)->
+        case widget_style_get(E, Sr) of
+          [] -> ok;
+          {FgColour, BgColour} ->
+            ?stc:styleSetForeground(Editor, E, hexstr_to_rgb(FgColour)),
+            ?stc:styleSetBackground(Editor, E, hexstr_to_rgb(BgColour))
+        end
+      end, Ps),
+      case widget_style_get(2069, Sr) of % caret
+        [] -> ok;
+        {FgColour1, _} -> ?stc:setCaretForeground(Editor, hexstr_to_rgb(FgColour1))
+      end
+      % TODO markerSetForeground/markerSetBackground
+  end,
+  
+  % word styles
+  case proplists:get_value(word_styles, ThemeRaw) of
+    undefined -> ok;
+    Ss -> 
+      lists:foreach(
+      fun(Style=#style{id=undefined}) -> ok; % dodgy theme, undefined style id's
+        (Style) ->
+          case string:to_integer(Style#style.id) of
+            {error, _} -> io:format("DEBUG: Parsed a non-integer");
+            {Nr, _} ->
+              case Style#style.fg_colour of
+                undefined -> ok;
+                Fg -> ?stc:styleSetForeground(Editor, Nr, hexstr_to_rgb(Fg))
+              end,
+              case Style#style.bg_colour of
+                undefined -> ok;
+                Bg -> ?stc:styleSetBackground(Editor, Nr, hexstr_to_rgb(Bg))
+              end
+          end
+      end, Ss)
+  end,
+  
+  % set words
+  case PrefInfo#lang_info.words of
+    undefined -> ok;
+    Ws -> ?stc:setKeyWords(Editor, 0, Ws)
+  end,
+  ok.
+  
+%% =====================================================================
+%% @doc Convert the hex string from the theme file into {R,G,B}.
+hexstr_to_rgb(Rgb) ->
+  hexstr_to_rgb(Rgb, []).
+hexstr_to_rgb([], Acc) ->
+  list_to_tuple(lists:reverse(Acc));
+hexstr_to_rgb([A,B | T], Acc) ->
+  try
+    hexstr_to_rgb(T, [list_to_integer([A,B], 16) | Acc])
+  catch
+    error:_ -> {125,125,125} % prevents a crash when theme colours are invalid
+  end.
+  
+%% =====================================================================
+%% @doc Grab a list of the currently supported langs.
+get_supported_langs() ->
+  lists:map(fun(E) -> E#lang_info.name end, ?langs).

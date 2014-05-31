@@ -133,10 +133,20 @@ handle_info(_, State) ->
 	{noreply, State}.
 %% @hidden
 handle_call(Key, _From, State=#state{prefs_table=Table}) ->
-	{reply, ets:lookup_element(Table, Key, 2), State}.
+  try
+    ets:lookup_element(Table, Key, 2),
+    {reply, ets:lookup_element(Table, Key, 2), State}
+  catch
+    error:_ -> % not in table (probably a new pref addition to an existing table), get from defaults. stops crash on boot when prefs have been added
+      Defaults = deverl_sys_pref_defs:get_defaults(),
+      case proplists:get_value(Key, Defaults, no_default) of
+        no_default -> error("Requested preference does not exist");
+        Pref -> {reply, Pref, State}
+      end
+  end.
 %% @hidden
-handle_cast({Key, Value}, State=#state{prefs_table=Table}) ->
-  ets:update_element(Table, Key, {2, Value}),
+handle_cast(Tuple, State=#state{prefs_table=Table}) ->
+  ets:insert(Table, Tuple), % overwrite existing
   write_dets(Table),
 	{noreply, State}.
 %% @hidden
@@ -179,7 +189,7 @@ initialise_prefs(Table) ->
           wxDialog:destroy(Dlg),
           ets:update_element(Table, project_directory, {2, DefaultDir}),
           ensure_proj_dir(DefaultDir);
-        FileInfo0 ->
+        _FileInfo0 ->
           ok 
       end
   end,
@@ -193,16 +203,17 @@ initialise_prefs(Table) ->
     {error, _Reason1} ->
       %% Point to invalid directory, reset to default
       GenPref0#general_prefs{home_env_var=wx_misc:getHomeDir()};
-    FileInfo1 ->
+    _FileInfo1 ->
       GenPref0
   end,
   
+  %% TODO Remove all trace of this code for Uni
   %% Set the HOME env for those users who can't set it manually (Uni)
   case os:getenv("HOME") of
     false ->
       %% Set it
       os:putenv("HOME", GenPref1#general_prefs.home_env_var);
-    Home1 ->
+    _Home1 ->
       ok
   end,
   
@@ -226,7 +237,7 @@ initialise_prefs(Table) ->
         ErlPath -> %% save into prefs
           GenPref1#general_prefs{path_to_erl=ErlPath}
       end;
-    Path0 -> %% validate the path
+    _Path0 -> %% validate the path
       GenPref1
   end,
     
@@ -240,7 +251,7 @@ initialise_prefs(Table) ->
         ErlcPath -> %% save into prefs
           GenPref2#general_prefs{path_to_erlc=ErlcPath}
       end;
-    Path1 -> %% validate the path
+    _Path1 -> %% validate the path
       GenPref2
   end,
   
@@ -254,7 +265,7 @@ initialise_prefs(Table) ->
         DlzrPath -> %% save into prefs
           GenPref3#general_prefs{path_to_dialyzer=DlzrPath}
       end;
-    Path2 -> %% validate the path
+    _Path2 -> %% validate the path
       GenPref3
   end,
   

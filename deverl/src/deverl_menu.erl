@@ -167,7 +167,6 @@ build_menu(Frame) ->
   wxMenu:appendSeparator(Font),
   wxMenu:append(Font, ?MENU_ID_FONT_BIGGER, "Zoom In\tCtrl++"),
   wxMenu:append(Font, ?MENU_ID_FONT_SMALLER, "Zoom Out\tCtrl+-"),
-  wxMenu:appendSeparator(Font),
 
   View        = wxMenu:new([]),
   wxMenu:append(View, ?wxID_ANY, "Font", Font),
@@ -200,12 +199,19 @@ build_menu(Frame) ->
   wxMenu:append(View, ?MENU_ID_TAB_WIDTH, "Tab Width", IndentWidth),
 
   {Theme, _MaxId2} = generate_radio_submenu(wxMenu:new([]),
-  deverl_editor_theme:get_theme_names(), deverl_sys_pref_gen:get_preference(theme), ?MENU_ID_THEME_LOWEST),
+      deverl_theme:get_theme_names(), deverl_sys_pref_gen:get_preference(theme), ?MENU_ID_THEME_LOWEST),
+  wxMenu:appendSeparator(Theme),
+  wxMenu:append(Theme, ?MENU_ID_IMPORT_THEME, "Import"),
+
+  {Lang, _MaxId3} = generate_radio_submenu(wxMenu:new([]),
+      deverl_editor_wx:get_supported_langs(), "Erlang", ?MENU_ID_LANG_LOWEST),
 
   wxMenu:append(View, ?MENU_ID_INDENT_GUIDES, "Indent Guides\tCtrl+Alt+G", [{kind, ?wxITEM_CHECK}]),
   wxMenu:check(View, ?MENU_ID_INDENT_GUIDES, deverl_sys_pref_gen:get_preference(indent_guides)),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_THEME_SELECT, "Theme", Theme),
+  wxMenu:append(View, ?wxID_SEPARATOR, []),
+  wxMenu:append(View, ?MENU_ID_LANG_SELECT, "Language", Lang),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
   wxMenu:append(View, ?MENU_ID_FULLSCREEN, "Enter Fullscreen\tCtrl+Alt+F", []),
   wxMenu:append(View, ?wxID_SEPARATOR, []),
@@ -286,14 +292,6 @@ build_menu(Frame) ->
   wxMenuBar:append(MenuBar, Help, "Help"),
   
   wxFrame:connect(Frame, command_menu_selected), 
-  %wxFrame:connect(Frame, command_menu_selected, [{id,?wxID_CUT}, {skip, true}]), 
-  % wxFrame:connect(Frame, command_menu_selected,
-  %   [{id,?MENU_ID_LOWEST}, {lastId, ?MENU_ID_HIGHEST}]),
-	wxFrame:connect(Frame, command_menu_selected,
-		[{userData, Theme}, {id,?MENU_ID_THEME_LOWEST}, {lastId, ?MENU_ID_THEME_HIGHEST}]),
-	wxFrame:connect(Frame, command_menu_selected,
-		[{userData, IndentWidth}, {id,?MENU_ID_TAB_WIDTH_LOWEST}, {lastId, ?MENU_ID_TAB_WIDTH_HIGHEST}]),
-    
   MenuBar.
 
 

@@ -35,9 +35,10 @@
          start/1,
          set_title/1,
          display_output_window/1,
-         toggle_menu_group/2,
-         toggle_menu_items/2,
-         restart_console/0
+         enable_menu_item_group/2,
+         enable_menu_items/2,
+         restart_console/0,
+         check_menu_item/1
          ]).
 
 %% Server state
@@ -83,7 +84,6 @@
 %% =====================================================================
 %% @doc Start the erlang IDE.
 %% For debug Options @see wx:debug/1
-
 -spec start() -> wx_object:wx_object().
 
 start() ->
@@ -100,7 +100,6 @@ start(Options) ->
 
 %% =====================================================================
 %% @doc Update the frame's title.
-
 -spec set_title(string()) -> ok.
 
 set_title(Title) ->
@@ -112,24 +111,22 @@ set_title(Title) ->
 %% Menu items can be associated to one or more menu groups (in deverl_menu).
 %% Takes a list of menu group ids (defined in deverl.hrl), and enables
 %% disables all menu items belonging to that group(s).
+-spec enable_menu_item_group([integer()], boolean()) -> ok.
 
--spec toggle_menu_group([integer()], boolean()) -> ok.
-
-toggle_menu_group(Groups, Toggle) ->
-  wx_object:cast(?MODULE, {toggle_menu_group, Groups, Toggle}).
+enable_menu_item_group(Groups, Toggle) ->
+  wx_object:cast(?MODULE, {enable_menu_item_group, Groups, Toggle}).
 
 
--spec toggle_menu_items([integer()], boolean()) -> ok.
+-spec enable_menu_items([integer()], boolean()) -> ok.
 
-toggle_menu_items(Items, Toggle) ->
-  wx_object:cast(?MODULE, {toggle_menu_items, Items, Toggle}).
+enable_menu_items(Items, Toggle) ->
+  wx_object:cast(?MODULE, {enable_menu_items, Items, Toggle}).
 
 
 %% =====================================================================
 %% @doc Show the window identified by WinId in the output window, hiding 
 %%      the window currently displayed.
 %% ?WINDOW_LOG or ?WINDOW_OUTPUT
-
 -spec display_output_window(integer()) -> ok.
 
 display_output_window(WinId) ->
@@ -138,9 +135,14 @@ display_output_window(WinId) ->
 
 %% =====================================================================
 %% @doc Restart the console (remove the placeholder).
-
 restart_console() ->
   wx_object:cast(?MODULE, restart_console).
+  
+%% =====================================================================
+%% @doc Check a menu item.
+%% Args can be a menu item ID OR a tuple {Menu item label, Menu label}
+check_menu_item(Args) ->
+  wx_object:cast(?MODULE, {check_menu, Args}).
   
 
 %% =====================================================================
@@ -215,7 +217,7 @@ init(Options) ->
   wxSplitterWindow:connect(Frame, command_splitter_doubleclicked),
 
   %% Toggle menu defaults
-  toggle_menu_group([?MENU_GROUP_NOTEBOOK_EMPTY,
+  enable_menu_item_group([?MENU_GROUP_NOTEBOOK_EMPTY,
                      ?MENU_GROUP_PROJECTS_EMPTY,
                      ?MENU_GROUP_TEXT,
                      ?MENU_GROUP_NOTEBOOK_KILL_FOCUS], false),
@@ -240,7 +242,7 @@ init(Options) ->
 %% Console supervisor has exited, replace the console window
 %% @hidden
 handle_info({'EXIT', Pid, shutdown}, State=#state{console_sup_pid=Pid}) ->
-  toggle_menu_group([?MENU_GROUP_ERL], false),
+  enable_menu_item_group([?MENU_GROUP_ERL], false),
   Splitter = wx:typeCast(wxWindow:findWindowById(?SPLITTER_OUTPUT), wxSplitterWindow),
   Window1 = wxSplitterWindow:getWindow1(Splitter),
   wxSplitterWindow:replaceWindow(Splitter, Window1, 
@@ -270,13 +272,13 @@ handle_cast(restart_console, State) ->
     {ok, Pid} ->
       Window1 = wxSplitterWindow:getWindow1(Splitter),
       wxSplitterWindow:replaceWindow(Splitter, Window1, deverl_console_wx:new([{parent, Splitter}])),
-      toggle_menu_group([?MENU_GROUP_ERL], true),
+      enable_menu_item_group([?MENU_GROUP_ERL], true),
       {noreply, State#state{console_sup_pid=Pid}};
     _NotStarted ->
       {noreply, State}
   end;
   
-handle_cast({toggle_menu_group, Groups, Toggle}, State) ->
+handle_cast({enable_menu_item_group, Groups, Toggle}, State) ->
   Mb = wxFrame:getMenuBar(State#state.frame),
   Tb = wxFrame:getToolBar(State#state.frame),
   wx:foreach(fun(Group) ->
@@ -289,16 +291,16 @@ handle_cast({toggle_menu_group, Groups, Toggle}, State) ->
         MenuIds0
     end,
     lists:map(fun(MenuId) ->
-      toggle_menu_item(Mb, Tb, MenuId, Toggle)
+      enable_menu_item(Mb, Tb, MenuId, Toggle)
     end, MenuIds1)
   end, Groups),
   {noreply, State};
 
-handle_cast({toggle_menu_items, Items, Toggle}, State) ->
+handle_cast({enable_menu_items, Items, Toggle}, State) ->
   Mb = wxFrame:getMenuBar(State#state.frame),
   Tb = wxFrame:getToolBar(State#state.frame),
   wx:foreach(fun(Item) ->
-      toggle_menu_item(Mb, Tb, Item, Toggle)
+      enable_menu_item(Mb, Tb, Item, Toggle)
   end, Items),
   {noreply, State};
 
@@ -314,6 +316,18 @@ handle_cast({output_display, Id}, State) ->
   Splitter = wx:typeCast(wxWindow:findWindowById(?SPLITTER_OUTPUT), wxSplitterWindow),
   replace_output_window(Splitter, wxWindow:findWindowById(Id),
     State#state.splitter_output_active, State#state.splitter_output_pos),
+  {noreply, State};
+  
+handle_cast({check_menu, {MenuItemLabel, MenuLabel}}, State) ->
+  Mb=wxFrame:getMenuBar(State#state.frame),
+  MiId = wxMenuBar:findMenuItem(Mb, MenuLabel, MenuItemLabel),
+  Mi = wxMenuBar:findItem(Mb, MiId),
+  wxMenuItem:check(Mi),
+  {noreply, State};
+handle_cast({check_menu, Id}, State) ->
+  Mb=wxFrame:getMenuBar(State#state.frame),
+  Mi = wxMenuBar:findItem(Mb, Id),
+  wxMenuItem:check(Mi),
   {noreply, State}.
 
 %% @hidden
@@ -623,7 +637,7 @@ handle_event(#wx{id=?MENU_ID_GOTO_LINE}, State) ->
     end,
     deverl_doc_man_wx:apply_to_active_document(fun deverl_editor_wx:go_to_position/2, [{Ln2,Col2}])
   end,
-  %% Show the dialog
+  %% Show the dialog TODO no need to export get_current_pos/1, just add goto_line f() in editor
   [{Ln, Col} | _T] = deverl_doc_man_wx:apply_to_active_document(fun deverl_editor_wx:get_current_pos/1, []),
   Value = integer_to_list(Ln)++":"++integer_to_list(Col),
   Dlg = wxTextEntryDialog:new(State#state.frame, "Enter line:", [{caption, "Go to Line:"}, {value, Value}]),
@@ -826,20 +840,56 @@ handle_event(#wx{event=#wxCommand{type=command_menu_selected},id=?MENU_ID_MAX_UT
   wxFrame:thaw(Frame),
   {noreply, State};
 
-%% Sub-menus
-handle_event(#wx{id=Id, userData=ThemeMenu, event=#wxCommand{type=command_menu_selected}},
+%% Theme sub-menu
+handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
              State) when (Id >= ?MENU_ID_THEME_LOWEST) and (Id =< ?MENU_ID_THEME_HIGHEST) ->
-  {ok, Ckd} = deverl_menu:get_checked_menu_item(wxMenu:getMenuItems(ThemeMenu)),
-  deverl_doc_man_wx:apply_to_all_documents(fun deverl_editor_wx:set_theme/3, [wxMenuItem:getLabel(Ckd),
-    deverl_sys_pref_gen:get_font(editor_font)]),
-  deverl_sys_pref_gen:set_preference(theme, wxMenuItem:getLabel(Ckd)),
+  ThemeLbl = wxMenuItem:getLabel(wxMenuBar:findItem(wxFrame:getMenuBar(State#state.frame), Id)),
+  deverl_doc_man_wx:apply_to_all_documents(fun deverl_editor_wx:set_theme/2, [ThemeLbl]),
+  deverl_sys_pref_gen:set_preference(theme, ThemeLbl),
+  {noreply, State};
+% Lang sub-menu
+handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
+             State) when (Id >= ?MENU_ID_LANG_LOWEST) and (Id =< ?MENU_ID_LANG_HIGHEST) ->
+  LangLbl = wxMenuItem:getLabel(wxMenuBar:findItem(wxFrame:getMenuBar(State#state.frame), Id)),
+  deverl_doc_man_wx:apply_to_active_document(fun deverl_editor_wx:set_lang/2, [LangLbl]),
+  {noreply, State};
+% Tab width sub-menu
+handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
+             State) when Id >= ?MENU_ID_TAB_WIDTH_LOWEST, Id =< ?MENU_ID_TAB_WIDTH_HIGHEST ->
+  WidthLbl = wxMenuItem:getLabel(wxMenuBar:findItem(wxFrame:getMenuBar(State#state.frame), Id)),
+  deverl_doc_man_wx:apply_to_all_documents(fun deverl_editor_wx:set_tab_width/2, [list_to_integer(WidthLbl)]),
+  deverl_sys_pref_gen:set_preference(tab_width, WidthLbl),
   {noreply, State};
 
-handle_event(#wx{id=Id, userData=Menu, event=#wxCommand{type=command_menu_selected}},
-             State) when Id >= ?MENU_ID_TAB_WIDTH_LOWEST,
-             Id =< ?MENU_ID_TAB_WIDTH_HIGHEST  ->
-  deverl_doc_man_wx:apply_to_all_documents(fun deverl_editor_wx:set_tab_width/2, [list_to_integer(wxMenu:getLabel(Menu, Id))]),
-  deverl_sys_pref_gen:set_preference(tab_width, wxMenu:getLabel(Menu, Id)),
+handle_event(#wx{id=?MENU_ID_IMPORT_THEME}=R, State) ->
+  Fd = wxFileDialog:new(wx:null(), [{message, "Import a Notepad++ theme"}, {wildCard, "(*.xml)|*.xml"}, {style, ?wxFD_FILE_MUST_EXIST}]),
+  case wxFileDialog:showModal(Fd) of
+    ?wxID_CANCEL -> ok;
+    ?wxID_OK ->
+      Path = wxFileDialog:getPath(Fd),
+      case deverl_theme:import(Path) of
+        {error, Reason} -> deverl_lib_dlg_wx:message_quick(wx:null(), "Oops..", Reason);
+        _ -> % update menu
+          CurTheme = deverl_sys_pref_gen:get_preference(theme),
+          Themes0 = deverl_theme:get_theme_names(), % from theme dir
+          NewTheme = filename:basename(Path, ".xml"),
+          SubMenu = wxMenuItem:getSubMenu(wxMenuBar:findItem(wxFrame:getMenuBar(State#state.frame), ?MENU_ID_THEME_SELECT)),
+          % temporarily remove current theme items
+          lists:foreach(fun(E) -> wxMenu:delete(SubMenu, E) end, wxMenu:getMenuItems(SubMenu)),
+          % add all (so all belong to same radio group)
+          lists:foldl(fun(E, IdCtr) ->
+              wxMenu:appendRadioItem(SubMenu, IdCtr, E),
+                case E of
+                  CurTheme -> wxMenu:check(SubMenu, IdCtr, true);
+                  _ -> ok
+                end,
+                IdCtr+1
+            end, ?MENU_ID_THEME_LOWEST, Themes0),
+          wxMenu:append(SubMenu, ?wxID_SEPARATOR, []),
+          wxMenu:append(SubMenu, ?MENU_ID_IMPORT_THEME, "Import")
+      end
+  end,
+  wxFileDialog:destroy(Fd),
   {noreply, State};
 
 
@@ -881,7 +931,7 @@ create_utils(ParentA) ->
     {ok, Pid} ->
       {deverl_console_wx:new([{parent, Splitter}]), Pid};
     _NotStarted ->
-      toggle_menu_group([?MENU_GROUP_ERL], false),
+      enable_menu_item_group([?MENU_GROUP_ERL], false),
       {deverl_lib_widgets:placeholder(Splitter, "Oops, the console could not be loaded.", [{fgColour, ?wxRED}]), undefined}
   end,
 
@@ -978,13 +1028,13 @@ create_workspace(Parent, Frame) ->
 %% @doc Enable/disable a menu item.
 %% @private
 
--spec toggle_menu_item(MenuBar, ToolBar, ItemId, Enable) -> ok when
+-spec enable_menu_item(MenuBar, ToolBar, ItemId, Enable) -> ok when
   MenuBar :: wxMenuBar:wxMenuBar(),
   ToolBar :: wxToolBar:wxToolBar(),
   ItemId :: integer(), % The menu item's id
   Enable :: boolean().
 
-toggle_menu_item(MenuBar, ToolBar, ItemId, Enable) ->
+enable_menu_item(MenuBar, ToolBar, ItemId, Enable) ->
   wxMenuItem:enable(wxMenuBar:findItem(MenuBar, ItemId), [{enable, Enable}]),
   wxToolBar:enableTool(ToolBar, ItemId, Enable).
 

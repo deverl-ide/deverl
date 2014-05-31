@@ -83,7 +83,8 @@ init(Parent) ->
 do_init(Parent) ->
   ProjectId = deverl_proj_man:get_active_project(),
   ProjectName = deverl_proj_man:get_name(ProjectId),
-  BuildConfig = deverl_proj_man:get_build_config(ProjectId),
+  % BuildConfig = deverl_proj_man:get_build_config(ProjectId),
+  BuildConfig = [],
   Title = "Project Configuration - " ++ ProjectName,
     
   State = case BuildConfig of
@@ -94,7 +95,7 @@ do_init(Parent) ->
              function=io_lib:format("~s", [proplists:get_value(function, BuildConfig, [])]),
              args=io_lib:format("~s", [proplists:get_value(args, BuildConfig, [])])}
   end,
-  
+      
 	Dialog = wxDialog:new(Parent, ?wxID_ANY, Title, 
 		[{style, ?wxDEFAULT_DIALOG_STYLE bor ?wxRESIZE_BORDER bor ?wxDIALOG_EX_METAL}]),
 	wxDialog:centre(Dialog),

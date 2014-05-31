@@ -128,7 +128,6 @@ init({Parent, Config}) ->
 
 %% @hidden
 handle_event(#wx{id=?wxID_OK=Id, event=#wxCommand{type=command_button_clicked}}, State) ->
-  io:format("thing"),
   Listbox1 = wxXmlResource:xrcctrl(State#state.dlg, "listbox1", wxListBox),
   GetData = fun(E) ->
     wxListBox:getClientData(Listbox1, E)

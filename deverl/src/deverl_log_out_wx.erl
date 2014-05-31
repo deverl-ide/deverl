@@ -219,18 +219,18 @@ handle_event(#wx{event=#wxStyledText{type=stc_hotspot_click, position=Pos}},
 	{noreply, State};
 handle_event(#wx{event=#wxFocus{type=set_focus}}, State) ->
   %% Enable undo/redo
-  deverl:toggle_menu_items([?wxID_COPY, ?wxID_SELECTALL], true),
+  deverl:enable_menu_items([?wxID_COPY, ?wxID_SELECTALL], true),
   {noreply, State};
 handle_event(#wx{event=#wxFocus{type=kill_focus}}, State) ->
   %% Disable undo
-  deverl:toggle_menu_items([?wxID_COPY, ?wxID_SELECTALL], false),
+  deverl:enable_menu_items([?wxID_COPY, ?wxID_SELECTALL], false),
   {noreply, State};
 handle_event(#wx{event=#wxStyledText{type=stc_updateui}},State=#state{log=Log}) ->
   case ?stc:getSelection(Log) of
     {N,N} -> 
-      deverl:toggle_menu_items([?wxID_COPY], false);
+      deverl:enable_menu_items([?wxID_COPY], false);
     _ -> 
-      deverl:toggle_menu_items([?wxID_COPY], true)
+      deverl:enable_menu_items([?wxID_COPY], true)
   end,
   {noreply, State}.
 %% @hidden
