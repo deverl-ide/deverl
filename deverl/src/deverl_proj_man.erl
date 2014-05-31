@@ -254,9 +254,9 @@ set_project_configuration(Parent) ->
       cancelled;
     ?wxID_OK ->
       Config = deverl_dlg_proj_conf_wx:get_build_config(Dialog),
-      deverl_dlg_proj_conf_wx:close(Dialog),
       wx_object:call(?MODULE, {set_project_configuration, Config})
-  end.
+  end,
+  deverl_dlg_proj_conf_wx:destroy(Dialog).
 
 
 %% =====================================================================
@@ -333,21 +333,25 @@ handle_call({get_root, ProjectId}, _From, State=#state{projects=Projects}) ->
 	{reply, Root, State};
 
 handle_call({get_build_config, ProjectId}, _From, State=#state{projects=Projects0}) ->
-  #project{build_config=Bc0, root=Root}=Project = proplists:get_value(ProjectId, Projects0),
-    {Bc1, Projects1} = case Bc0 of
-      undefined -> %% Attempt to read the config file
-        Bc2 = load_build_config(Root),
-        Tmp = proplists:delete(ProjectId, Projects0),
-        {Bc2, [{ProjectId, Project#project{build_config=Bc2}} | Tmp]};
-      C ->
-        {C, Projects0}
-    end,
-    M = proplists:get_value(module, Bc1),
-    F = proplists:get_value(function, Bc1),
-    Bc3 = case M =:= [] orelse F =:= [] of
-      true -> undefined;
-      _ -> Bc1
-    end,
+  Project=#project{build_config=Bc0, root=Root} = proplists:get_value(ProjectId, Projects0),
+  {Bc1, Projects1} = case Bc0 of
+    undefined -> %% Attempt to read the config file
+      case load_build_config(Root) of
+        {error, _Err} ->
+          {[], Projects0};
+        Conf ->
+          Tmp = proplists:delete(ProjectId, Projects0),
+          {Conf, [{ProjectId, Project#project{build_config=Conf}} | Tmp]}
+      end;
+    C ->
+      {C, Projects0}
+  end,
+  M = proplists:get_value(module, Bc1, undefined),
+  F = proplists:get_value(function, Bc1, undefined),
+  Bc3 = case M =:= undefined orelse F =:= undefined of
+    true -> undefined;
+    _ -> Bc1
+  end,
   {reply, Bc3, State#state{projects=Projects1}};
 
 handle_call(close_project, _From, State=#state{frame=Frame, active_project=ActiveProject, projects=Projects}) ->
@@ -473,16 +477,11 @@ load_build_config(Path) ->
   Fh = filename:join([Path, ".build_config"]),
   case file:consult(Fh) of
     {error, {_Line, _Mod, _Term}} -> %% The file is badly formatted
-      % io:format("BUILD CONFIG BADLY FORMATTED~n"),
-      undefined;
+      {error, bad_format};
     {error, enoent} -> %% Does not exist
-      % io:format("BUILD CONFIG NOT EXISTS~n"),
-      undefined;
+      {error, enoent};
     {error, E} -> %% Other i/o error
-      %% Notify user of i/o error
-      % io:format("ERROR: ~p~n", [E]),
-      undefined;
+      {error, io};
     {ok, [Terms]} ->
-      % io:format("TERMS: ~p~n", [Terms]),
       Terms
   end.

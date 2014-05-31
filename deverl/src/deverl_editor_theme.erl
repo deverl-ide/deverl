@@ -145,7 +145,6 @@ get_theme_dir() ->
 %% =====================================================================
 %% Alternative SAX parser. Marvelous documentation on this.
 %% It may well be faster than the current DOM implemenation, however.
-%% @private
 % sax_print() ->
 %   xmerl_sax_console_parser:file("../priv/themes/Text.theme",
 %   [{event_fun, fun(Event, _Location, _State) ->

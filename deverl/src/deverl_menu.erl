@@ -234,9 +234,9 @@ build_menu(Frame) ->
   wxMenu:append(Document, ?MENU_ID_LC_SEL, "Lowercase Selection\tCtrl+Shift+U"),
   wxMenu:append(Document, ?wxID_SEPARATOR, []),
   wxMenu:append(Document, ?MENU_ID_STRIP_SPACES, "Strip Trailing Whitespace"),
-  wxMenu:append(Document, ?wxID_SEPARATOR, []),
-  wxMenu:append(Document, ?MENU_ID_FOLD_ALL, "Fold All"),
-  wxMenu:append(Document, ?MENU_ID_UNFOLD_ALL, "Unfold All"),
+  % wxMenu:append(Document, ?wxID_SEPARATOR, []),
+  % wxMenu:append(Document, ?MENU_ID_FOLD_ALL, "Fold All"),
+  % wxMenu:append(Document, ?MENU_ID_UNFOLD_ALL, "Unfold All"),
   wxMenu:append(Document, ?wxID_SEPARATOR, []),
   wxMenu:append(Document, ?MENU_ID_GOTO_LINE, "Go to Line..\tCtrl+L"),
 
@@ -274,11 +274,11 @@ build_menu(Frame) ->
 	wxMenu:append(Window, ?MENU_ID_PREV_TAB, "Previous Tab\tCtrl+{"),
 
   Help        = wxMenu:new([]),
-  wxMenu:append(Help, ?wxID_HELP, "Help"),
-  wxMenu:append(Help, ?MENU_ID_HOTKEYS, "Keyboard Shortcuts"),
+  % wxMenu:append(Help, ?wxID_HELP, "Help"),
+  % wxMenu:append(Help, ?MENU_ID_HOTKEYS, "Keyboard Shortcuts"),
   wxMenu:append(Help, ?wxID_SEPARATOR, []),
   wxMenu:append(Help, ?MENU_ID_SEARCH_DOC, "Search Erlang API"),
-  wxMenu:append(Help, ?MENU_ID_MANUAL, "IDE Manual"),
+  % wxMenu:append(Help, ?MENU_ID_MANUAL, "IDE Manual"),
   wxMenu:append(Help, ?wxID_SEPARATOR, []),
   wxMenu:append(Help, ?wxID_ABOUT, "About"),
 
@@ -412,9 +412,7 @@ generate_radio_submenu(Menu, [Label|T], ToCheck, StartId) ->
 %% @doc 
 
 disable_not_implemented(MenuBar, ToolBar) ->
-  ToDisable = [?MENU_ID_FOLD_ALL,
-               ?MENU_ID_UNFOLD_ALL ,
-               ?MENU_ID_ADD_TO_PLT,
+  ToDisable = [?MENU_ID_ADD_TO_PLT,
                ?MENU_ID_PLT_INFO,
                ?MENU_ID_DIAL_WARN,
                ?MENU_ID_WRANGLER,
