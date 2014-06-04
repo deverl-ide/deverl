@@ -1,7 +1,0 @@
-@title Welcome to the Deverl application!
-@doc Starts an instance of the IDE. Builds all wx components.
-@author Tom Richmond <tr201@kent.ac.uk>
-@author Mike Quested <mdq3@kent.ac.uk>
-@copyright Tom Richmond, Mike Quested 2014
-@version 0.4
-@end

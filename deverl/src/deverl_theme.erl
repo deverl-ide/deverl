@@ -42,7 +42,7 @@ get_theme_names() ->
 %% @doc Parse the theme file.
 %% Uses Notepad++ themes. If the LexerType for language Pref doesn't
 %% exist then it uses default WidgetStyles styles.
-%% @see extract/2 for return type/format.
+%% see extract/2 for return type/format.
 parse(Filename, Pref) ->
   Fn = filename:join([filename:dirname(code:which(?MODULE)), "../priv/themes", 
     filename:basename(Filename, ".xml")]) ++ ".xml",

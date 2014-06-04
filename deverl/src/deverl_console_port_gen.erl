@@ -155,6 +155,7 @@ open(Path, Options) ->
 		Port ->
       Port
 	catch
-		_:_ ->
+		_:E ->
+      io:format("ERROR: ~p~n", [E]),
 			throw(no_port)
 	end.
