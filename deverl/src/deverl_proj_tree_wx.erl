@@ -42,9 +42,9 @@
 -export([
         start/1,
         add_project/2,
-				add_project/3,
+        add_project/3,
         add_standalone_document/1,
-				remove_project/1,
+        remove_project/1,
         remove_standalone_document/1,
         set_has_children/1
         ]).
@@ -90,7 +90,7 @@
   Config :: list().
 
 start(Config) ->
-	wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
+    wx_object:start_link({local, ?MODULE}, ?MODULE, Config, []).
 
 
 %% =====================================================================
@@ -99,10 +99,10 @@ start(Config) ->
 -spec add_project(project_id(), path()) -> ok.
 
 add_project(Id, Dir) ->
-	wx_object:cast(?MODULE, {add_project, Id, Dir}).
+    wx_object:cast(?MODULE, {add_project, Id, Dir}).
 
 add_project(Id, Dir, Pos) ->
-	wx_object:cast(?MODULE, {add_project, Id, Dir, Pos}).
+    wx_object:cast(?MODULE, {add_project, Id, Dir, Pos}).
 
 
 %% =====================================================================
@@ -111,7 +111,7 @@ add_project(Id, Dir, Pos) ->
 -spec remove_project(project_id()) -> ok.
 
 remove_project(Id) ->
-	wx_object:cast(?MODULE, {remove_project, Id}).
+    wx_object:cast(?MODULE, {remove_project, Id}).
 
 
 %% =====================================================================
@@ -153,12 +153,12 @@ update_client_data(OldPath, NewPath) ->
 %% =====================================================================
 %% @hidden
 init(Config) ->
-	Parent = proplists:get_value(parent, Config),
-	Frame = proplists:get_value(frame, Config),
+  Parent = proplists:get_value(parent, Config),
+  Frame = proplists:get_value(frame, Config),
 
-	Panel = wxPanel:new(Parent),
-	MainSz = wxBoxSizer:new(?wxVERTICAL),
-	wxPanel:setSizer(Panel, MainSz),
+  Panel = wxPanel:new(Parent),
+  MainSz = wxBoxSizer:new(?wxVERTICAL),
+  wxPanel:setSizer(Panel, MainSz),
 
   Tree = wxTreeCtrl:new(Panel, [{style, ?wxTR_HAS_BUTTONS bor
                                         ?wxTR_HIDE_ROOT bor
@@ -168,17 +168,17 @@ init(Config) ->
                                         ?wxTR_LINES_AT_ROOT bor
                                         ?wxTR_TWIST_BUTTONS bor
                                         ?wxBORDER_NONE}]),
-	wxTreeCtrl:setIndent(Tree, 10),
-	ImgList = wxImageList:new(14,14),
+  wxTreeCtrl:setIndent(Tree, 10),
+  ImgList = wxImageList:new(14,14),
 
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/blue-folder-horizontal.png")))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/blue-folder-horizontal-open.png")))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/book.png")))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/book-open.png")))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/document.png")))),
-	wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/information-white.png")))),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/blue-folder-horizontal.png")))),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/blue-folder-horizontal-open.png")))),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/book.png")))),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/book-open.png")))),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/document.png")))),
+  wxImageList:add(ImgList, wxBitmap:new(wxImage:new(deverl_lib_widgets:rc_dir("14x14/information-white.png")))),
 
-	wxTreeCtrl:assignImageList(Tree, ImgList),
+  wxTreeCtrl:assignImageList(Tree, ImgList),
 
   Root = wxTreeCtrl:addRoot(Tree, "Root"),
   AddRoot =
@@ -197,7 +197,7 @@ init(Config) ->
   AddRoot(?HEADER_PROJECTS, "Projects", ?HEADER_PROJECTS_EMPTY),
   AddRoot(?HEADER_FILES, "Standalone Files", ?HEADER_FILES_EMPTY),
 
-	wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
+    wxSizer:add(MainSz, Tree, [{proportion, 1}, {flag, ?wxEXPAND}]),
   
   Menu = build_menu(),
 
@@ -210,7 +210,7 @@ init(Config) ->
   wxTreeCtrl:connect(Tree, command_tree_item_collapsed, []),
   wxTreeCtrl:connect(Tree, command_tree_item_menu, []),
 
-	{Panel, #state{frame=Frame, panel=Panel, tree=Tree, menu=Menu}}.
+    {Panel, #state{frame=Frame, panel=Panel, tree=Tree, menu=Menu}}.
 %% @hidden
 handle_info(Msg, State) ->
   io:format("Got Info ~p~n",[Msg]),
@@ -232,11 +232,11 @@ handle_cast({add_project, Id, Dir}, State=#state{tree=Tree}) ->
 
 handle_cast({remove_project, ProjectId}, State=#state{panel=Panel, tree=Tree}) ->
   Item = get_item_from_list(Tree, ProjectId, get_projects(Tree)),
-	wxPanel:freeze(Panel),
+    wxPanel:freeze(Panel),
   wxTreeCtrl:delete(Tree, Item),
   alternate_background_of_children(Tree, get_projects_root(Tree)),
   insert_placeholder(Tree, get_projects_root(Tree), ?HEADER_PROJECTS_EMPTY),
-	wxPanel:thaw(Panel),
+    wxPanel:thaw(Panel),
   {noreply,State};
 
 handle_cast({add_standalone, Path}, State=#state{tree=Tree}) ->
@@ -277,7 +277,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanding, item=
     false -> ok
   end,
   wxTreeCtrl:thaw(Tree),
-	{noreply, State};
+    {noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=Item}}, State) ->
   case is_selectable(Tree, Item) of
     true ->
@@ -291,7 +291,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_expanded, item=I
       wxTreeCtrl:setItemImage(Tree, Item, Idx);
     false -> ok
   end,
-	{noreply, State};
+    {noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsing, item=Item}}, State) ->
   case is_selectable(Tree, Item) of
     true ->
@@ -304,7 +304,7 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsing, item
       end;
     false -> ok
   end,
-	{noreply, State};
+    {noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=Item}}, State) ->
   case is_selectable(Tree, Item) of
     true ->
@@ -317,23 +317,23 @@ handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_collapsed, item=
       alternate_background_all(Tree);
     false -> ok
   end,
-	{noreply, State};
+    {noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changed, item=Item, itemOld=OldItem}}, State) ->
-	case wxTreeCtrl:isTreeItemIdOk(OldItem) of
-		false -> ok;
-		true -> select(Tree, Item)
-	end,
-	{noreply, State};
+    case wxTreeCtrl:isTreeItemIdOk(OldItem) of
+        false -> ok;
+        true -> select(Tree, Item)
+    end,
+    {noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_activated, item=Item}}, State) ->
   case is_selectable(Tree, Item) of
     true -> open_file(Tree, Item);
     false -> ok
   end,
-	{noreply, State};
+    {noreply, State};
 handle_event(#wx{obj=Tree, event=#wxTree{type=command_tree_item_menu, item=Item}}, State) ->
   Menu = init_menu(State#state.menu, Tree, Item),
   wxWindow:popupMenu(Tree, Menu),
-	{noreply, State};
+    {noreply, State};
 handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
             State=#state{frame=Frame, tree=Tree}) ->
   Item = wxTreeCtrl:getSelection(Tree),
@@ -357,7 +357,7 @@ handle_event(#wx{id=Id, event=#wxCommand{type=command_menu_selected}},
     ?MENU_ID_CLOSE_PROJECT -> ok;
     ?ID_CLEAR_EBIN -> ok
   end,
-	{noreply, State}.
+    {noreply, State}.
 %% @hidden
 handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changing}}, Event, _State) ->
   Item = wxTreeEvent:getItem(Event),
@@ -369,10 +369,10 @@ handle_sync_event(#wx{obj=Tree, event=#wxTree{type=command_tree_sel_changing}}, 
   end.
 %% @hidden
 code_change(_, _, State) ->
-	{ok, State}.
+    {ok, State}.
 %% @hidden
 terminate(_Reason, #state{panel=Panel}) ->
-	wxPanel:destroy(Panel).
+    wxPanel:destroy(Panel).
 
 
 %% =====================================================================
@@ -385,12 +385,12 @@ terminate(_Reason, #state{panel=Panel}) ->
 -spec get_path(wxTreeCtrl:wxTreeCtrl(), integer()) -> path().
 
 get_path(Tree, Item) ->
-	case wxTreeCtrl:getItemData(Tree, Item) of
-		{_Id, Path} ->
+    case wxTreeCtrl:getItemData(Tree, Item) of
+        {_Id, Path} ->
       Path;
-		Path ->
+        Path ->
       Path
-	end.
+    end.
 
 
 %% =====================================================================
@@ -410,12 +410,12 @@ alternate_background_all(Tree) ->
 -spec alternate_background_of_children(wxTreeCtrl:wxTreeCtrl(), integer()) -> term().
 
 alternate_background_of_children(Tree, Item0) ->
-	lists:foldl(
-	fun(Item1, Acc) ->
-		set_item_background(Tree, Item1, Acc),
-		Acc+1
-	end,
-	0, lists:reverse(get_children_recursively(Tree, Item0))).
+    lists:foldl(
+    fun(Item1, Acc) ->
+        set_item_background(Tree, Item1, Acc),
+        Acc+1
+    end,
+    0, lists:reverse(get_children_recursively(Tree, Item0))).
 
 
 %% =====================================================================
@@ -424,12 +424,12 @@ alternate_background_of_children(Tree, Item0) ->
 -spec set_item_background(wxTreeCtrl:wxTreeCtrl(), integer(), integer()) -> ok.
 
 set_item_background(Tree, Item, Index) ->
-	case Index rem 2 of
-	  0 ->
-			wxTreeCtrl:setItemBackgroundColour(Tree, Item, ?ROW_BG_EVEN);
-	  _ ->
-	 		wxTreeCtrl:setItemBackgroundColour(Tree, Item, ?ROW_BG_ODD)
-	end.
+    case Index rem 2 of
+      0 ->
+            wxTreeCtrl:setItemBackgroundColour(Tree, Item, ?ROW_BG_EVEN);
+      _ ->
+            wxTreeCtrl:setItemBackgroundColour(Tree, Item, ?ROW_BG_ODD)
+    end.
 
 
 %% =====================================================================
@@ -444,18 +444,18 @@ get_children_recursively(Tree, Item) ->
 -spec get_children_recursively(wxTreeCtrl:wxTreeCTrl(), integer(), [integer()]) -> [integer()].
 
 get_children_recursively(Tree, Item, Acc) ->
-	case wxTreeCtrl:isTreeItemIdOk(Item) of
-		false ->
+    case wxTreeCtrl:isTreeItemIdOk(Item) of
+        false ->
       Acc;
-		true ->
-			Res = case wxTreeCtrl:itemHasChildren(Tree, Item) and wxTreeCtrl:isExpanded(Tree, Item) of
-				true ->
-					{FirstChild,_} = wxTreeCtrl:getFirstChild(Tree, Item),
-					get_children_recursively(Tree, FirstChild, [Item|Acc]);
-				false -> [Item|Acc]
-			end,
-			get_children_recursively(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Res)
-	end.
+        true ->
+            Res = case wxTreeCtrl:itemHasChildren(Tree, Item) and wxTreeCtrl:isExpanded(Tree, Item) of
+                true ->
+                    {FirstChild,_} = wxTreeCtrl:getFirstChild(Tree, Item),
+                    get_children_recursively(Tree, FirstChild, [Item|Acc]);
+                false -> [Item|Acc]
+            end,
+            get_children_recursively(Tree, wxTreeCtrl:getNextSibling(Tree, Item), Res)
+    end.
 
 
 %% =====================================================================
@@ -475,10 +475,10 @@ get_all_items(Tree) ->
 
 get_item_from_path(_Tree, [], _Path) -> no_item;
 get_item_from_path(Tree, [H|T], Path) ->
-	case get_path(Tree, H) of
-		Path -> H;
-		_ -> get_item_from_path(Tree, T, Path)
-	end.
+    case get_path(Tree, H) of
+        Path -> H;
+        _ -> get_item_from_path(Tree, T, Path)
+    end.
 
 
 %% =====================================================================
@@ -489,8 +489,8 @@ get_item_from_path(Tree, [H|T], Path) ->
 
 insert(Tree, ParentItem, Dir0) ->
   Dir1 = filename:join([Dir0, "*"]),
-	Files = filelib:wildcard(Dir1),
-	add_files(Tree, ParentItem, lists:reverse(Files)).
+    Files = filelib:wildcard(Dir1),
+    add_files(Tree, ParentItem, lists:reverse(Files)).
 
 
 %% =====================================================================
@@ -506,19 +506,19 @@ add_files(Tree, Item, [File|Files]) ->
       ok; %% Hide hidden files
     _ ->
       FileName = filename:basename(File),
-    	IsDir = filelib:is_dir(File),
+        IsDir = filelib:is_dir(File),
       {Id, _} = wxTreeCtrl:getItemData(Tree, Item),
-    	case IsDir of
-    		true ->
-    			Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
+        case IsDir of
+            true ->
+                Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
           wxTreeCtrl:setItemImage(Tree, Child, ?ICON_FOLDER),
           check_dir_has_contents(Tree, Child, File);
-    		_ ->
+            _ ->
           Child = append_item(Tree, Item, FileName, [{data, {Id, File}}]),
           wxTreeCtrl:setItemImage(Tree, Child, ?ICON_DOCUMENT)
-    	end
+        end
     end,
-	add_files(Tree, Item, Files).
+    add_files(Tree, Item, Files).
 
 
 %% =====================================================================
@@ -527,16 +527,16 @@ add_files(Tree, Item, [File|Files]) ->
 -spec get_project_root(wxTreeCtrl:wxTreeCtrl(), integer()) -> integer().
 
 get_project_root(Tree, Item) ->
-	get_project_root(Tree, get_projects_root(Tree),
+    get_project_root(Tree, get_projects_root(Tree),
     wxTreeCtrl:getItemParent(Tree, Item), Item).
 
 -spec get_project_root(wxTreeCtrl:wxTreeCtrl(), integer(), integer(), integer()) -> integer().
 
 get_project_root(_Tree, Root, Root, Item) ->
-	Item;
+    Item;
 get_project_root(Tree, Root, Parent, Item) ->
-	get_project_root(Tree, Root, wxTreeCtrl:getItemParent(Tree, Parent),
-			wxTreeCtrl:getItemParent(Tree, Item)).
+    get_project_root(Tree, Root, wxTreeCtrl:getItemParent(Tree, Parent),
+            wxTreeCtrl:getItemParent(Tree, Item)).
 
 
 %% =====================================================================
@@ -619,28 +619,28 @@ add_dummy_child(Tree, Item) ->
 -spec print_tree_debug(wxTreeCtrl:wxTreeCtrl()) -> ok.
 
 print_tree_debug(Tree) ->
-	Root = wxTreeCtrl:getRootItem(Tree),
-	print_tree_debug(Tree, Root, 0).
+    Root = wxTreeCtrl:getRootItem(Tree),
+    print_tree_debug(Tree, Root, 0).
 
 -spec print_tree_debug(wxTreeCtrl:wxTreeCtrl(), integer(), integer()) -> ok.
 
 print_tree_debug(Tree, Node, Indent) ->
-	Spac = lists:duplicate(Indent + 1, "---"),
-	io:format(Spac ++ "Node: ~p~n", [wxTreeCtrl:getItemData(Tree, Node)]),
-	case wxTreeCtrl:itemHasChildren(Tree, Node) of
-		true ->
-			{Child, _} = wxTreeCtrl:getFirstChild(Tree, Node),
-			print_tree_debug(Tree, Child, Indent + 1);
-		false ->
+    Spac = lists:duplicate(Indent + 1, "---"),
+    io:format(Spac ++ "Node: ~p~n", [wxTreeCtrl:getItemData(Tree, Node)]),
+    case wxTreeCtrl:itemHasChildren(Tree, Node) of
+        true ->
+            {Child, _} = wxTreeCtrl:getFirstChild(Tree, Node),
+            print_tree_debug(Tree, Child, Indent + 1);
+        false ->
       ok
-	end,
-	Sibling = wxTreeCtrl:getNextSibling(Tree, Node),
-	case wxTreeCtrl:isTreeItemIdOk(Sibling) of
-		true ->
+    end,
+    Sibling = wxTreeCtrl:getNextSibling(Tree, Node),
+    case wxTreeCtrl:isTreeItemIdOk(Sibling) of
+        true ->
       print_tree_debug(Tree, Sibling, Indent);
-		false ->
+        false ->
       ok
-	end.
+    end.
 
 
 %% =====================================================================

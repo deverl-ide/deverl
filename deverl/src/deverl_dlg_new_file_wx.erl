@@ -45,28 +45,28 @@
 -define(MODULE_TYPES, [{erlang_basic, "Erlang Module",
                                       ".erl",
                                       "A standard Erlang module."},
-                       {header, "Erlang Header File",
-                                ".hrl",
-                                "An Erlang header file. Used for defining global macros, types and records."},
-                       {application, "OTP Application",
-                                     ".app",
-                                     "An application specification. Applications group together common modules, allowing them "
+                       {header,       "Erlang Header File",
+                                      ".hrl",
+                                      "An Erlang header file. Used for defining global macros, types and records."},
+                       {application,  "OTP Application",
+                                      ".app",
+                                      "An application specification. Applications group together common modules, allowing them "
                                       "to be started and stopped as a single unit. Erlang applications may also be used easily by "
                                       "other systems."},
-                       {gen_server, "OTP Gen Server",
-                                    ".erl",
-                                    "A behaviour module for implementing a client-server relationship."},
-                       {supervisor, "OTP Supervisor",
-                                    ".erl",
-                                    "OTP supervisor behaviour. A supervisor is responsible for monitoring child "
-                                    "processes. This includes starting, stopping, and restarting processes "
-                                    "where necessary."},
+                       {gen_server,   "OTP Gen Server",
+                                      ".erl",
+                                      "A behaviour module for implementing a client-server relationship."},
+                       {supervisor,   "OTP Supervisor",
+                                      ".erl",
+                                      "OTP supervisor behaviour. A supervisor is responsible for monitoring child "
+                                      "processes. This includes starting, stopping, and restarting processes "
+                                      "where necessary."},
                        {event_server, "OTP Gen FSM",
                                       ".erl",
                                       "A behaviour module for implementing a generic finite state machine."},
-                       {wx_object, "Wx Object",
-                                   ".erl",
-                                   "A behaviour module for the wxWidgets binding. It works like a regular gen_server module."}
+                       {wx_object,    "Wx Object",
+                                      ".erl",
+                                      "A behaviour module for the wxWidgets binding. It works like a regular gen_server module."}
                        ]).
 
 %% Server state
