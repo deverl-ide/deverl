@@ -277,6 +277,6 @@ change_selection(ActiveButton, NewButton, Pages, Tabs, Cont) ->
 	Page = get_page(Pages, NewButton),
 	wxWindow:show(Page),
 	wxPanel:layout(Cont),
-	wxPanel:refresh(Tabs),
 	wxPanel:update(Tabs),
+	wxPanel:refresh(Tabs),
 	ok.
