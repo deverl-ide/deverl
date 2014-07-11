@@ -270,18 +270,6 @@ get_page(Pages, Button) ->
 %% @private
 change_selection(B, B, _, _, _) -> ok;
 change_selection(ActiveButton, NewButton, Pages, Tabs, Cont) ->
-<<<<<<< HEAD
-	case ActiveButton of
-		undefined -> ok;
-		_ -> wxWindow:hide(get_page(Pages, ActiveButton))
-	end,
-	Page = get_page(Pages, NewButton),
-	wxWindow:show(Page),
-	wxPanel:layout(Cont),
-	wxPanel:update(Tabs),
-	wxPanel:refresh(Tabs),
-	ok.
-=======
     case ActiveButton of
         undefined -> ok;
         _ -> wxWindow:hide(get_page(Pages, ActiveButton))
@@ -292,4 +280,3 @@ change_selection(ActiveButton, NewButton, Pages, Tabs, Cont) ->
     wxPanel:update(Tabs),
     wxPanel:refresh(Tabs),
     ok.
->>>>>>> upstream/master
