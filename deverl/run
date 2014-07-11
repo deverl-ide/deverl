@@ -1,0 +1,18 @@
+#!/bin/bash
+# This just compiles src/* and starts the ide.
+# For development only
+
+# Path to this script
+# DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )" ;
+
+# Compile the src files
+make
+
+# Check the return code, exit couldn't compile
+rc=$?
+if [[ $rc != 0 ]] ; then
+    exit $rc
+fi
+
+# Start the ide
+erl -pa ./ebin -eval 'application:start(deverl)' 2> /dev/null

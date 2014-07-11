@@ -1,0 +1,12 @@
+{application, deverl,
+ [
+  {description, ""},
+  {vsn, git},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, {deverl_app, []}},
+  {env, []}
+ ]}.
