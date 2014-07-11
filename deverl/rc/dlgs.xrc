@@ -1251,6 +1251,7 @@
 		<title></title>
 		<centered>1</centered>
 		<object class="wxBoxSizer">
+			<minsize>500,650</minsize>
 			<orient>wxHORIZONTAL</orient>
 			<object class="sizeritem">
 				<option>1</option>
@@ -1259,6 +1260,7 @@
 				<object class="wxPanel" name="panel_1">
 					<style>wxTAB_TRAVERSAL</style>
 					<object class="wxBoxSizer">
+						<minsize>500,500</minsize>
 						<orient>wxHORIZONTAL</orient>
 						<object class="spacer">
 							<option>0</option>
@@ -1314,7 +1316,6 @@
 									<object class="wxPanel" name="swap_cont">
 										<style>wxTAB_TRAVERSAL</style>
 										<object class="wxBoxSizer">
-											<minsize>-1,170</minsize>
 											<orient>wxVERTICAL</orient>
 											<object class="sizeritem">
 												<option>1</option>
@@ -1542,10 +1543,11 @@
 									<flag>wxEXPAND</flag>
 									<border>0</border>
 									<object class="wxPanel" name="desc_panel">
+										<style>wxTAB_TRAVERSAL</style>
 										<bg>#ffffff</bg>
 										<fg>#000000</fg>
 										<object class="wxBoxSizer">
-											<minsize>-1,110</minsize>
+											<minsize>-1,100</minsize>
 											<orient>wxHORIZONTAL</orient>
 											<object class="sizeritem">
 												<option>0</option>
@@ -2423,11 +2425,12 @@
 		</object>
 	</object>
 	<object class="wxDialog" name="custom_tree_dlg">
-		<style>wxDEFAULT_DIALOG_STYLE</style>
+		<style>wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER</style>
 		<size>300,300</size>
 		<title></title>
 		<centered>1</centered>
 		<object class="wxBoxSizer">
+			<minsize>300,400</minsize>
 			<orient>wxVERTICAL</orient>
 			<object class="sizeritem">
 				<option>1</option>
